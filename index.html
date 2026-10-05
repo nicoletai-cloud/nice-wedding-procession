@@ -609,7 +609,7 @@ const DEF_S={
   vendors:[{name:'成家',rate:10},{name:'DR Wedding',rate:5},{name:'Gaga',rate:5},{name:'余諾',rate:5},{name:'想樂',rate:5},{name:'瑪莎',rate:5},{name:'個人',rate:5},{name:'幸福故事館',rate:0,monthly:true}],
   refs:['Mita Ho','詩雲Hana','Vicky','Queena琨娜','筱芩GIN','念純','Patty','Kiki Liu','Joanne','家妤','Angel','Niki Wu','Amber','Alisa','語柔','Polly','千千','Kiwi','小夏','滾滾','Susan','Clina','Bella','Alice','Coco','Vivian','Rita','Yuna'],
   vprices:{'幸福故事館':'M3=3500\nMY=4250\nMS=4800\nMX=6000\nM3+MX=9350\nMX*2=12000\nM3*2+MX=12200\nMY*2+MX=13800\nMX+M3*5=22700\nMX*6=35450'},
-  ver:5,dzKm:35,dzAmt:300,zBase:35,zRate:500,zRound:200,driveUrl:'',driveKey:'',
+  ver:5,dzKm:35,dzAmt:300,zBase:35,zRate:500,zRound:200,driveUrl:'https://script.google.com/macros/s/AKfycbwoKk13j5YOtkA5cTh3FtvECekYm0uMBPsid1H--kB7bhUVpDFvSnSA0iTzCfc8IT11_Q/exec',driveKey:'',
   zone:500,red:600,cane:1000,km:35,depMode:'driver',depPct:40,
   phone:'0981-836-668',email:'love@niceweddingcar.com',
   bank:'將來銀行(823)  | 營業部(1688)\n帳號：8865-36668-36668',
@@ -661,7 +661,7 @@ function saveS(){if(syncReady)S._ts=Date.now();store('nwcw_settings',S);pushSync
 let syncReady=false,syncBusy=false,syncTimer=null,syncAgain=false;
 function syncStat(t){const el=$('btnSync');if(el)el.textContent=t}
 function pushSync(){if(!syncReady)return;clearTimeout(syncTimer);syncTimer=setTimeout(doSync,1500)}
-async function doSync(){if(!S.driveUrl||!S.driveKey){syncStat('未設定同步');return}if(syncBusy){syncAgain=true;return}syncBusy=true;syncStat('同步中…');
+async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl;if(!S.driveUrl||!S.driveKey){syncStat('點我設定同步');return}if(syncBusy){syncAgain=true;return}syncBusy=true;syncStat('同步中…');
   try{const send={};Object.values(DB.orders).forEach(x=>{if(!x.sample)send[x.id]=x});
     const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'sync',orders:send,deleted:DB.deleted||{},settings:S._ts?S:null})});
     const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');
@@ -1264,7 +1264,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnApplyH':{if(o._suggestH){o.hours=o._suggestH;o._suggestH=null;save();fillInputs();renderCars();renderFleet();renderAll();$('confirmResult').insertAdjacentHTML('beforeend','<p class="hint">合約時數已更新，報價、合約、memo 都已重算。</p>');t.remove()}break}
    case 'btnParse':{const res=parseForm($('pasteBox').value);const n=applyForm(res);save();fillInputs();renderCars();syncFleet();renderFleet();renderFlow();renderAll();
      $('parseMsg').textContent=n?`已帶入 ${n} 個欄位，請核對。`:'沒有認出欄位，請確認貼上的是表單回覆。';break}
-   case 'btnSync':doSync();break;
+   case 'btnSync':{if(!S.driveKey){const k=(prompt('輸入同步金鑰（在電腦「價目設定」的 Drive 金鑰）')||'').trim();if(!k)break;S.driveKey=k;if(!S.driveUrl)S.driveUrl=DEF_S.driveUrl;store('nwcw_settings',S);toast('已設定同步，正在下載訂單…')}doSync();break}
    case 'btnSetupLink':{if(!S.driveUrl||!S.driveKey){toast('請先填 Drive 網址和金鑰');break}const u=`${location.origin}${location.pathname}#setup=${encodeURIComponent(JSON.stringify({u:S.driveUrl,k:S.driveKey}))}`;if(navigator.clipboard)navigator.clipboard.writeText(u).then(()=>toast('已複製手機設定連結，傳給自己後用手機打開一次即可'),()=>toast('複製失敗'));break}
    case 'btnCouple':$('coupleModal').hidden=false;break;
    case 'btnCoupleClose':$('coupleModal').hidden=true;break;
