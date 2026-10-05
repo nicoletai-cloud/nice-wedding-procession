@@ -145,6 +145,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
     <div class="brand"><b>好好禮車</b><span>Wedding Dispatch</span></div>
     <div class="orderbar">
       <select id="orderSel" aria-label="切換訂單"></select>
+      <button class="btn sm" id="btnSync" title="手機／電腦同步">同步</button>
       <button class="btn" id="btnCouple">新人資料</button>
       <button class="btn" id="btnNew">＋ 新訂單</button>
       <button class="btn" id="btnDup">複製此單</button>
@@ -456,7 +457,8 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
             <label class="f">訂單編號欄位 entry<input data-s="formEntry" id="s_entry"></label>
             <label class="f wide">Google Drive 存檔網址（Apps Script）<input data-s="driveUrl" id="s_driveUrl" placeholder="https://script.google.com/macros/s/…/exec"></label>
             <label class="f">Drive 金鑰<input data-s="driveKey" id="s_driveKey"></label>
-            <label class="f wide">司機教案網址（只存在這台電腦，不會公開）<input data-s="lessonUrl" id="s_lesson" placeholder="https://sites.google.com/…"></label>
+            <div class="f wide"><button class="btn sm pri" id="btnSetupLink" type="button">複製手機設定連結</button><span class="hint" style="margin:0 0 0 8px">傳給自己，用手機打開一次就會自動連上同步（連結含金鑰，請勿外傳）</span></div>
+            <label class="f wide">司機教案網址（存在你的 Drive，不會公開）<input data-s="lessonUrl" id="s_lesson" placeholder="https://sites.google.com/…"></label>
           </div>
           <div class="row" style="margin-top:12px"><button class="btn danger" id="btnResetS">恢復預設價目</button><span class="hint" id="resetMsg"></span></div>
         </div>
@@ -610,8 +612,26 @@ let o=DB.orders[DB.cur]||Object.values(DB.orders)[0];
 function migrate(x){const d=newOrder();if(x.paid===undefined)x.paid=false;if(!x.src)x.src={vendor:'',ref:'',rate:''};for(const k in d){if(x[k]===undefined)x[k]=clone(d[k])}for(const k in d.c){if(x.c[k]===undefined)x.c[k]=d.c[k]}for(const k in d.lang){if(!x.lang[k])x.lang[k]='zh'}
   (x.fleet||[]).forEach(f=>{if(f.emg===undefined)f.emg='';const m=(f.phone||'').match(/^(.*?)\s*[（(]\s*緊急聯絡人?\s*[:：]?\s*([^）)]*)[）)]\s*$/);if(m){f.phone=m[1].trim();if(!f.emg)f.emg=m[2].trim()}});return x}
 Object.values(DB.orders).forEach(migrate);
-function save(){o.updated=Date.now();DB.cur=o.id;DB.orders[o.id]=o;store('nwcw_orders',DB)}
-function saveS(){store('nwcw_settings',S)}
+function save(){o.updated=Date.now();DB.cur=o.id;DB.orders[o.id]=o;store('nwcw_orders',DB);pushSync()}
+function saveS(){if(syncReady)S._ts=Date.now();store('nwcw_settings',S);pushSync()}
+let syncReady=false,syncBusy=false,syncTimer=null,syncAgain=false;
+function syncStat(t){const el=$('btnSync');if(el)el.textContent=t}
+function pushSync(){if(!syncReady)return;clearTimeout(syncTimer);syncTimer=setTimeout(doSync,1500)}
+async function doSync(){if(!S.driveUrl||!S.driveKey){syncStat('未設定同步');return}if(syncBusy){syncAgain=true;return}syncBusy=true;syncStat('同步中…');
+  try{const send={};Object.values(DB.orders).forEach(x=>{if(!x.sample)send[x.id]=x});
+    const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'sync',orders:send,deleted:DB.deleted||{},settings:S._ts?S:null})});
+    const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');
+    let cur=false;DB.deleted=Object.assign({},DB.deleted||{},j.deleted||{});
+    Object.keys(j.orders||{}).forEach(id=>{const r=j.orders[id],l=DB.orders[id];if(!l||(+r.updated||0)>(+l.updated||0)){DB.orders[id]=migrate(r);if(id===o.id)cur=true}});
+    Object.keys(DB.deleted).forEach(id=>{const l=DB.orders[id];if(l&&(+l.updated||0)<=DB.deleted[id]){delete DB.orders[id];if(id===o.id)cur=true}});
+    const real=Object.values(DB.orders).filter(x=>!x.sample).sort((a,b)=>(b.updated||0)-(a.updated||0));
+    if(real.length){if(o.sample){o=real[0];cur=true}Object.values(DB.orders).forEach(x=>{if(x.sample)delete DB.orders[x.id]})}
+    if(!Object.keys(DB.orders).length){const s=sampleOrder();DB.orders[s.id]=s}
+    if(!DB.orders[o.id]){o=real[0]||Object.values(DB.orders)[0];cur=true}else o=DB.orders[o.id];
+    if(j.settings&&(+j.settings._ts||0)>(+S._ts||0)){const keep={driveUrl:S.driveUrl,driveKey:S.driveKey};S=Object.assign(clone(DEF_S),j.settings,keep);store('nwcw_settings',S);rebuildModels();renderPriceSettings();cur=true}
+    DB.cur=o.id;store('nwcw_orders',DB);if(cur)loadOrder();else renderOrderSel();
+    const d=new Date();syncStat(`已同步 ${p2(d.getHours())}:${p2(d.getMinutes())}`)}
+  catch(e){syncStat('同步失敗，點我重試');console.warn(e)}finally{syncBusy=false;if(syncAgain){syncAgain=false;pushSync()}}}
 
 /* ---------- helpers ---------- */
 const $=id=>document.getElementById(id);
@@ -1200,12 +1220,14 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnApplyH':{if(o._suggestH){o.hours=o._suggestH;o._suggestH=null;save();fillInputs();renderCars();renderFleet();renderAll();$('confirmResult').insertAdjacentHTML('beforeend','<p class="hint">合約時數已更新，報價、合約、memo 都已重算。</p>');t.remove()}break}
    case 'btnParse':{const res=parseForm($('pasteBox').value);const n=applyForm(res);save();fillInputs();renderCars();syncFleet();renderFleet();renderFlow();renderAll();
      $('parseMsg').textContent=n?`已帶入 ${n} 個欄位，請核對。`:'沒有認出欄位，請確認貼上的是表單回覆。';break}
+   case 'btnSync':doSync();break;
+   case 'btnSetupLink':{if(!S.driveUrl||!S.driveKey){toast('請先填 Drive 網址和金鑰');break}const u=`${location.origin}${location.pathname}#setup=${encodeURIComponent(JSON.stringify({u:S.driveUrl,k:S.driveKey}))}`;if(navigator.clipboard)navigator.clipboard.writeText(u).then(()=>toast('已複製手機設定連結，傳給自己後用手機打開一次即可'),()=>toast('複製失敗'));break}
    case 'btnCouple':$('coupleModal').hidden=false;break;
    case 'btnCoupleClose':$('coupleModal').hidden=true;break;
    case 'btnNew':{o=newOrder();DB.orders[o.id]=o;syncFleet();save();loadOrder();toast('已建立新訂單');break}
    case 'btnDup':{const n=clone(o);n.id=newOrder().id;n.sample=false;n.seq='';n._seqKey='';n._seq='';n.c=Object.assign(newOrder().c,{});n.fleet=n.fleet.map(f=>Object.assign(f,{plate:'',driver:'',phone:''}));o=n;DB.orders[o.id]=o;save();loadOrder();toast('已複製車款與價格到新訂單');break}
    case 'btnDel':{if(Date.now()-delArm>3000){delArm=Date.now();t.textContent='再按一次確認刪除';setTimeout(()=>{t.textContent='刪除'},3000);break}
-     delete DB.orders[o.id];t.textContent='刪除';const rest=Object.values(DB.orders);o=rest[0]||newOrder();DB.orders[o.id]=o;save();loadOrder();toast('已刪除');break}
+     DB.deleted=DB.deleted||{};DB.deleted[o.id]=Date.now();delete DB.orders[o.id];t.textContent='刪除';const rest=Object.values(DB.orders);o=rest[0]||newOrder();DB.orders[o.id]=o;save();loadOrder();toast('已刪除');break}
    case 'btnPrint':window.print();break;
    case 'btnDrive':saveToDrive();break;
    case 'btnMemoDocs':makeMemoDocs();break;
@@ -1230,6 +1252,10 @@ if(top){$('btnPrint').hidden=false;$('btnDrive').hidden=false}else{$('contractHi
 renderPriceSettings();loadOrder();
 let startTab='quote';try{startTab=sessionStorage.getItem('nwcw_tab')||'quote'}catch(_){}
 showTab(startTab);
+{const m=location.hash.match(/setup=([^&]+)/);if(m){try{const v=JSON.parse(decodeURIComponent(m[1]));if(v.u&&v.k){S.driveUrl=v.u;S.driveKey=v.k;store('nwcw_settings',S);renderPriceSettings();toast('已設定同步，正在下載訂單…')}}catch(_){}history.replaceState(null,'',location.pathname)}}
+syncReady=true;doSync();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')doSync()});
+setInterval(()=>{if(document.visibilityState==='visible')doSync()},60000);
 })();
 </script>
 
