@@ -388,6 +388,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
         <button data-who="cust" aria-pressed="true">客人用</button><button data-who="drv" aria-pressed="false">司機端</button>
       </div>
       <label class="row" style="font-size:13px;color:var(--muted);gap:6px">方案備註（顯示在車頭彩下一行）<input id="flagNote" data-b="flagNote" placeholder="例：多預備三組門把彩" style="width:220px"></label>
+      <label class="row" style="font-size:13px;color:var(--muted);gap:6px">加時寫法（空白＝依價目表）<input id="otText" data-b="otText" placeholder="例：M3 $800/0.5HR ; MX $1,200/0.5HR" style="width:260px"></label>
       <label class="row" style="font-size:13px;color:var(--muted);gap:6px"><input type="checkbox" id="routeInMemo" style="width:auto"> 加入「行程說明」列（路線說明）</label>
       <label class="row" hidden style="font-size:13px;color:var(--muted);gap:6px"><input type="checkbox" id="mapLinks" style="width:auto"> 地址附 Google Map 連結</label>
     </div>
@@ -755,7 +756,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   const pts=points(x).filter(pt=>pt.addr).map(pt=>({k:pt.k,title:pt.k==='A'?t.meet:pt.k==='B'?t.wed:t.other,addr:pt.addr,label:pt.label,map:pt.map}));
   const flow=x.flow.filter(f=>f.t||f.seg).map(f=>`${f.e?`${f.t}-${f.e}`:ap(f.t)} ${f.who?f.who+' ':''}${f.seg}`.trim());
   let pay=[];
-  const otl=MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m])}/HR`).join(' ; ');
+  const otl=(x.otText||'').trim()||MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m])}/HR`).join(' ; ');
   if(who==='cust'){
     if(lang==='en')pay=[`Balance ${money(r.balance,'en')} (incl. driver red envelope)`,`(Please don't wait until after the service to transfer; our accountant can't verify transfers in real time on holidays.)`,`Bank transfer details:`,S.bank,`Extra hours: ${MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m],'en')}/HR`).join(' ; ')}`];
     else if(lang==='ja')pay=[`残金 ${money(r.balance,'ja')}（ドライバーご祝儀込み）`,`（ご利用終了後のお振込みはお控えください。休日は経理がすぐに入金確認できません）`,`お振込先：`,S.bank,`延長：${MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m],'ja')}/HR`).join(' ; ')}`];
