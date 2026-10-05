@@ -714,7 +714,7 @@ const MT={
 function roleName(r,lang){return lang==='en'?(ROLE_EN[r]||r):lang==='ja'?(ROLE_JA[r]||r):r}
 function yn(v,lang){const t=MT[lang];return v==='是'?t.yes:v==='待確認'?t.tbd:t.no}
 function colorName(c,lang){if(lang==='zh')return c;const map={'白色':['White','ホワイト'],'黑色':['Black','ブラック'],'灰色':['Grey','グレー'],'紅色':['Red','レッド'],'藍色':['Blue','ブルー'],'銀色':['Silver','シルバー']};return map[c]?map[c][lang==='en'?0:1]:c}
-function tipsC(x,lang){const hasX=num(x.cars.X)>0;
+function tipsC(x,lang){const mc=(x.fleet||[]).find(f=>f.role==='主禮車');const hasX=mc?mc.m==='X':num(x.cars.X)>0;
  const zh=['集合時司機會先將車頭彩及門把花完成固定，方便攝影拍攝，若您集合時不需綁彩可提前告知。','為避免損傷車輛，提醒新人、親屬及攝影團隊操作車輛由駕駛協助。',
   hasX?'預約 Model X 為主禮車，因車門為上掀式鷗翼門設計，請摸蘋果/橘子親人在車輛抵達時，與車門保持小段距離。':null,'為安全起見，如前導車須施放鞭炮，建議請駕駛停車後在路邊施放並與車子保持距離。',
   '禮車負責人會在用車前一日與您聯繫，若您有指定路線可先與負責人溝通確認，或安排熟悉路線親友在前導車協助，每台車都配有無線電可即時溝通。'];
