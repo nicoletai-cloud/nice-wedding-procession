@@ -774,16 +774,16 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   if(who==='cust'){
     if(lang==='en')pay=[`Balance ${money(r.balance,'en')} (incl. driver red envelope)`,`(Please don't wait until after the service to transfer; our accountant can't verify transfers in real time on holidays.)`,`Bank transfer details:`,S.bank,`Extra hours: ${MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m],'en')}/HR`).join(' ; ')}`];
     else if(lang==='ja')pay=[`残金 ${money(r.balance,'ja')}（ドライバーご祝儀込み）`,`（ご利用終了後のお振込みはお控えください。休日は経理がすぐに入金確認できません）`,`お振込先：`,S.bank,`延長：${MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m],'ja')}/HR`).join(' ; ')}`];
-    else if(r.mon)pay=[`車資由${vendorOf(x).name}統一結算`,`當天請準備 ${money(r.onsite)} 交給主禮車司機（${[r.red?'司機紅包':'',r.cane?'甘蔗固定費':''].filter(Boolean).join('＋')}）`,`加時：${otl}`];
+    else if(r.mon)pay=[r.onsite?`當天請準備${[r.red?`司機紅包 ${money(S.red)}/台`:'',r.cane?`甘蔗固定費 ${money(r.cane)}`:''].filter(Boolean).join('、')}`:'',`加時：${otl}`].filter(Boolean);
     else pay=[`尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`,`(請勿當天用車結束才匯款，假日會計無法即時查帳)`,`❤️匯款資訊：`,S.bank,`加時：${otl}`];
   }else{
     const groups={};x.fleet.forEach(f=>{const v=payOf(f);const key=v==null?'?':v;(groups[key]=groups[key]||[]).push(f.role)});
-    pay=[r.mon?`現場收取 ${money(r.onsite)}（${[r.red?'司機紅包':'',r.cane?'甘蔗固定費':''].filter(Boolean).join('＋')}）｜車資由${vendorOf(x).name}月結`:x.balPaid?`尾款 ${money(r.balance)} 客人已匯款，現場不用收款`:`收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`];
+    pay=[r.mon?(r.onsite?`收取${[r.red?`紅包 ${money(S.red)}/台`:'',r.cane?`甘蔗固定費 ${money(r.cane)}`:''].filter(Boolean).join('、')}`:'現場不用收款'):x.balPaid?`尾款 ${money(r.balance)} 客人已匯款，現場不用收款`:`收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`];
     Object.keys(groups).forEach(v=>{const roles=[...new Set(groups[v])].join('＋');pay.push(+x.hours===0?`${roles} 實拿${v==='?'?'（未設定）':money(+v)}（單程接送・綁彩）`:`${roles} ${v==='?'?'（未設定）':money(+v)}/${hrsLabel(x.hours)}${r.red?'(含紅包)':''}`)});
     const ms=MODELS.filter(m=>num(x.cars[m])>0);
     if(+x.hours===0)pay.push(`等候 15 分鐘未出發，每半小時：${ms.map(m=>driverOtText(m,x).replace(' 等候每 0.5HR','')).join(' ; ')}`);
     else pay.push('超時 15 分鐘內不計 ; 第 16 分鐘起收超時費用',`加時：${otl}`);
-    const back=r.balance-r.dsum;if(!r.mon&&x.balPaid)pay.push('','酬勞由公司匯款');else if(!r.mon&&r.dok&&back>0)pay.push('',`匯回 ${money(back)}`);else if(!r.mon&&r.dok&&back<0)pay.push('',`差額 ${money(-back)} 由公司匯款`);
+    const back=r.balance-r.dsum;if(r.mon){if(r.dok&&r.dsum>r.onsite)pay.push('',`差額 ${money(r.dsum-r.onsite)} 由公司匯款`)}else if(x.balPaid)pay.push('','酬勞由公司匯款');else if(!r.mon&&r.dok&&back>0)pay.push('',`匯回 ${money(back)}`);else if(!r.mon&&r.dok&&back<0)pay.push('',`差額 ${money(-back)} 由公司匯款`);
   }
   return{no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(c.end)}`,gather:ap(c.gather),
     contact:`${cname||''}${crole}  ${c.phone||''}`.trim(),boss:`${ld.driver||''} ${ld.phone||''}`.trim(),plan:planName(x),
@@ -1110,8 +1110,9 @@ function renderSrc(){const v=vendorOf(o),r=calc(o);
   $('outRefRow').textContent=refRowText(o)}
 function settleInfo(x){const r=calc(x),ld=lead(x)||{},who=ld.driver||'負責人';
   const ds=(x.fleet||[]).map(f=>{const v=f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x);return `${f.driver||f.role} ${v==null?'未設定':money(v)}`}).join('、');
-  if(r.mon)return{st:`月結（現場收 ${money(r.onsite)}）`,act:`月結單，請確認司機酬勞：${ds}`};
-  if(!r.dok)return{st:'',act:'司機酬勞還沒設定'};
+  if(!r.dok)return{st:r.mon?'月結':'',act:'司機酬勞還沒設定'};
+  if(r.mon){const rp=x.red?num(S.red):0,dd=(x.fleet||[]).map(f=>{const v=f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x);return `${f.driver||f.role} ${money(v-rp)}`}).join('、'),gap=r.dsum-r.onsite;
+    return{st:`月結・司機收紅包 ${money(r.red)}${r.cane?`＋甘蔗 ${money(r.cane)}`:''}`,act:gap>0?`公司匯差額給司機：${r.cane?'':dd+'（'}共 ${money(gap)}${r.cane?'':'）'}`:''}}
   if(x.balPaid)return{st:`${money(r.balance)} 客人已匯款`,act:`公司匯酬勞給司機：${ds}（共 ${money(r.dsum)}）`};
   const back=r.balance-r.dsum;
   if(back>0)return{st:`${money(r.balance)} 司機現場收`,act:`${who} 匯回 ${money(back)}`};
