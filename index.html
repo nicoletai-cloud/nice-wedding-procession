@@ -733,7 +733,7 @@ const MT={
  ja:{gather:'ドライバー集合時間',contact:'ご連絡先',boss:'車両責任者',plan:'プラン',deco:'指定ボンネット飾り',cane:'サトウキビ固定',yes:'あり',no:'なし',tbd:'確認中',order:'車順',plate:'ナンバー',driver:'ドライバー',car:'車種',phone:'電話',
    meet:'集合場所',wed:'お迎え場所',other:'その他の場所',flow:'当日の流れ',route:'ルート',tipsC:'新郎新婦様へのご案内',tipsD:'ドライバーへの注意事項',pay:'お支払い',seats:n=>`${n}人乗り`,lead:'(責任者)',orderNo:'ご予約番号',all:'全車'}};
 function roleName(r,lang){return lang==='en'?(ROLE_EN[r]||r):lang==='ja'?(ROLE_JA[r]||r):r}
-function yn(v,lang){const t=MT[lang];return v==='是'?t.yes:v==='待確認'?t.tbd:t.no}
+function yn(v,lang){const t=MT[lang];v=(v||'').trim();return v==='是'?t.yes:v==='待確認'?t.tbd:(!v||/^(否|無|不)/.test(v))?t.no:v}
 function colorName(c,lang){if(lang==='zh')return c;const map={'白色':['White','ホワイト'],'黑色':['Black','ブラック'],'灰色':['Grey','グレー'],'紅色':['Red','レッド'],'藍色':['Blue','ブルー'],'銀色':['Silver','シルバー']};return map[c]?map[c][lang==='en'?0:1]:c}
 function tipsC(x,lang){const mc=(x.fleet||[]).find(f=>f.role==='主禮車');const hasX=mc?mc.m==='X':num(x.cars.X)>0;
  const zh=['集合時司機會先將車頭彩及門把花完成固定，方便攝影拍攝，若您集合時不需綁彩可提前告知。','為避免損傷車輛，提醒新人、親屬及攝影團隊操作車輛由駕駛協助。',
