@@ -750,7 +750,7 @@ const TIPS_D=['前一天確實清潔車輛及充電、遵守服裝規定、調�
 function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   const cname=contactName(x),crole=c.role==='其他'?'':`(${lang==='en'?(c.role==='新郎'?'Groom':'Bride'):lang==='ja'?(c.role==='新郎'?'新郎':'新婦'):c.role})`;
   const p=dparts(x.date);
-  const fleet=x.fleet.map(f=>({role:roleName(f.role,lang),plate:f.plate,driver:(f.driver||'')+(f.lead?' '+t.lead:''),car:`${f.up||MNAME[f.m]}`,spec:`${colorName(f.color||'',lang)} ${t.seats(f.seats||S.seats[f.m])}`.trim(),phone:f.phone}));
+  const fleet=x.fleet.map(f=>({role:roleName(f.role,lang),plate:f.plate,driver:(f.driver||'')+(f.lead?' '+t.lead:''),car:(f.up||'').trim()&&f.up.trim()!==MNAME[f.m]?`${f.up.trim()}(升等)`:MNAME[f.m],spec:`${colorName(f.color||'',lang)} ${t.seats(f.seats||S.seats[f.m])}`.trim(),phone:f.phone}));
   const pts=points(x).filter(pt=>pt.addr).map(pt=>({k:pt.k,title:pt.k==='A'?t.meet:pt.k==='B'?t.wed:t.other,addr:pt.addr,label:pt.label,map:pt.map}));
   const flow=x.flow.filter(f=>f.t||f.seg).map(f=>`${f.e?`${f.t}-${f.e}`:ap(f.t)} ${f.who?f.who+' ':''}${f.seg}`.trim());
   let pay=[];
