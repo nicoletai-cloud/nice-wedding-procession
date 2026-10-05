@@ -153,7 +153,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 
   <nav class="tabs" role="tablist" id="tabs">
     <button role="tab" data-tab="quote" aria-selected="true"><span class="n">1</span>報價・下單</button>
-    <button role="tab" data-tab="couple"><span class="n">2</span>新人資料</button>
+    <button role="tab" data-tab="couple"><span class="n">2</span>確認款項</button>
     <button role="tab" data-tab="contract"><span class="n">3</span>合約</button>
     <button role="tab" data-tab="find"><span class="n">4</span>找司機</button>
     <button role="tab" data-tab="dispatch"><span class="n">5</span>車隊與流程</button>
@@ -257,6 +257,30 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 
   <!-- 2 新人資料 -->
   <section class="tab" id="tab-couple" hidden>
+    <div class="grid" style="margin-bottom:18px">
+      <div class="card">
+        <h3>收款確認 <span id="payChip"></span></h3>
+        <div class="fields" style="margin-bottom:10px">
+          <label class="f">匯款日期<input type="date" id="c_pd" data-b="c.payDate"></label>
+          <label class="f">匯款金額<input id="c_pa" data-b="c.payAmt"></label>
+          <label class="f">匯款後五碼<input id="c_l5" data-b="c.last5"></label>
+        </div>
+        <div class="sum" id="payCheck"></div>
+        <div class="row" style="margin-top:12px"><button class="btn pri" id="btnPaid">已在銀行 App 確認收到訂金</button><button class="btn sm" id="btnUnpaid" hidden>取消確認</button></div>
+        <p class="hint">比對新人表單填的匯款金額和應付訂金。實際入帳請在將來銀行 App 看一眼後再按確認。</p>
+      </div>
+      <div class="card">
+        <h3>收到訂金回覆</h3>
+        <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm pri" data-copy="outPaidAck">複製</button></div>
+        <pre class="out" id="outPaidAck">已確認收到訂金，後續提供合約給您</pre>
+        <h3 style="margin-top:16px">提供合約 <small>附注意事項；有指定車色會自動拿掉第 7 點</small></h3>
+        <label class="f wide" style="margin-bottom:8px">合約連結（按「存到 Google Drive」後自動帶入，也可以自己貼）<input id="c_contractUrl" data-b="contractUrl" placeholder="https://drive.google.com/..."></label>
+        <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm pri" data-copy="outPaid">複製</button></div>
+        <pre class="out" id="outPaid"></pre>
+      </div>
+    </div>
+    <details style="margin-top:18px">
+      <summary class="btn" style="display:inline-block;margin-bottom:12px">新人資料／貼上表單回覆／行前確認（需要時再點開）</summary>
     <div class="grid">
       <div class="card">
         <h3>新人資料</h3>
@@ -293,9 +317,6 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
           <label class="f wide">路線說明<textarea id="c_route" data-b="c.route"></textarea></label>
           <label class="f">車頂掛實體甘蔗<select id="c_caneA" data-b="c.caneAns"><option value="">—</option><option>是</option><option>否</option><option>待確認</option></select></label>
           <label class="f">付費指定車頭彩<select id="c_decoA" data-b="c.decoAns"><option value="">—</option><option>是</option><option>否</option><option>待確認</option></select></label>
-          <label class="f">匯款日期<input type="date" id="c_pd" data-b="c.payDate"></label>
-          <label class="f">匯款金額<input id="c_pa" data-b="c.payAmt"></label>
-          <label class="f">匯款後五碼<input id="c_l5" data-b="c.last5"></label>
           <label class="f wide">合約備註<textarea id="c_note" data-b="note"></textarea></label>
         </div>
       </div>
@@ -319,6 +340,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
         </div>
       </div>
     </div>
+    </details>
   </section>
 
   <!-- 3 合約 -->
@@ -326,23 +348,6 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
     <div class="row" style="margin-bottom:12px;justify-content:space-between">
       <span class="hint" style="margin:0" id="contractHint">資料來自「報價」與「新人資料」，改那邊這裡就會更新。</span>
       <div class="row"><span class="hint" id="driveLink" style="margin:0"></span><button class="btn" id="btnDrive" hidden>存到 Google Drive</button><button class="btn pri" id="btnPrint" hidden>列印／存成 PDF</button></div>
-    </div>
-    <div class="grid" style="margin-bottom:18px">
-      <div class="card">
-        <h3>收款確認 <span id="payChip"></span></h3>
-        <div class="sum" id="payCheck"></div>
-        <div class="row" style="margin-top:12px"><button class="btn pri" id="btnPaid">已在銀行 App 確認收到訂金</button><button class="btn sm" id="btnUnpaid" hidden>取消確認</button></div>
-        <p class="hint">比對新人表單填的匯款金額和應付訂金。實際入帳請在將來銀行 App 看一眼後再按確認。</p>
-      </div>
-      <div class="card">
-        <h3>收到訂金回覆</h3>
-        <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm pri" data-copy="outPaidAck">複製</button></div>
-        <pre class="out" id="outPaidAck">已確認收到訂金，後續提供合約給您</pre>
-        <h3 style="margin-top:16px">提供合約 <small>附注意事項；有指定車色會自動拿掉第 7 點</small></h3>
-        <label class="f wide" style="margin-bottom:8px">合約連結（按「存到 Google Drive」後自動帶入，也可以自己貼）<input id="c_contractUrl" data-b="contractUrl" placeholder="https://drive.google.com/..."></label>
-        <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm pri" data-copy="outPaid">複製</button></div>
-        <pre class="out" id="outPaid"></pre>
-      </div>
     </div>
     <div class="paperwrap"><div class="paper" id="contractPaper"></div></div>
   </section>
