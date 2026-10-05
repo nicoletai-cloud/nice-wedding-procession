@@ -442,8 +442,8 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
     <div class="card" style="margin-bottom:18px">
       <h3>車款與價目 <small>客人價用於報價／合約；司機酬勞為同區域非跨區、含紅包</small></h3>
       <div class="tbl"><table class="ptbl" style="min-width:1500px">
-        <thead><tr><th rowspan="2">車款名稱</th><th rowspan="2">品牌</th><th rowspan="2">縮寫</th><th rowspan="2">座位</th><th colspan="6" class="grp">客人價</th><th colspan="7" class="grp">司機酬勞</th><th rowspan="2"></th></tr>
-        <tr><th>3HR</th><th>2HR</th><th>1.5HR</th><th>1HR</th><th>單程</th><th>加時/時</th><th>1H</th><th>2H</th><th>3H</th><th>超時/0.5H<br>(1–2H)</th><th>超時/1H<br>(3H+)</th><th>單程實拿</th><th>等候/0.5H</th></tr></thead>
+        <thead><tr><th rowspan="2">車款名稱</th><th rowspan="2">品牌</th><th rowspan="2">縮寫</th><th rowspan="2">座位</th><th colspan="6" class="grp">客人價</th><th colspan="9" class="grp">司機酬勞</th><th rowspan="2"></th></tr>
+        <tr><th>3HR</th><th>2HR</th><th>1.5HR</th><th>1HR</th><th>單程</th><th>加時/時</th><th>1H</th><th>1.5H</th><th>2H</th><th>3H</th><th>超時/0.5H<br>(1H/2H)</th><th>超時/0.5H<br>(1.5H)</th><th>超時/1H<br>(3H+)</th><th>單程實拿</th><th>等候/0.5H</th></tr></thead>
         <tbody id="priceBody"></tbody>
       </table></div>
       <div class="row" style="margin-top:8px"><button class="btn sm" id="btnModelAdd">＋ 新增車款</button></div>
@@ -507,7 +507,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 'use strict';
 let MODELS=[],MNAME={},MABBR={},MBRAND={};
 function rebuildModels(){MODELS=S.models.map(m=>m.id);MNAME={};MABBR={};MBRAND={};S.models.forEach(m=>{MNAME[m.id]=m.name;MABBR[m.id]=m.abbr||m.name;MBRAND[m.id]=m.brand||''})}
-const MK=['price','p2','short','p1','ptrip','ot','seats'],DK=['h1','h2','h3','ot05','ot1','trip','tripOt'];
+const MK=['price','p2','short','p1','ptrip','ot','seats'],DK=['h1','h15','h2','h3','ot05','ot15','ot1','trip','tripOt'];
 const ROLES=['前導車','主禮車','伴娘車','親友車','其他'];
 const ROLE_EN={'前導車':'Lead car','主禮車':'Main bridal car','伴娘車':'Bridesmaid car','親友車':'Family car','其他':'Car'};
 const ROLE_JA={'前導車':'先導車','主禮車':'メインブライダルカー','伴娘車':'ブライズメイド車','親友車':'親族車','其他':'車両'};
@@ -517,9 +517,9 @@ const DEF_S={
   short:{X:'',S:'',Y:'','3':'','W205':'','W212':'','W213':'','W222':'','W222M':'','W223':'','F30':'','F10':'','F02':'','G12':'','G12M':'','GHB':'','LEV':'','BTO':'','BTN':'','PAN':'','MAC':'','ALP':'','VITO':''},
   ot:{'LM':1600,'RRP':10000,'RRG':8000,X:1200,S:1000,Y:1000,'3':800,'W205':800,'W212':800,'W213':800,'W222':1600,'W222M':1600,'W223':3000,'F30':600,'F10':800,'F02':1000,'G12':1500,'G12M':2500,'GHB':2000,'LEV':2000,'BTO':3000,'BTN':8000,'PAN':2000,'MAC':1500,'ALP':1500,'VITO':1000},
   p2:{X:'',S:'',Y:'','3':'','W205':'','W212':'','W213':'','W222':'','W222M':'','W223':'','F30':'','F10':'','F02':'','G12':'','G12M':'','GHB':'','LEV':'','BTO':'','BTN':'','PAN':'','MAC':'','ALP':'','VITO':''},p1:{X:'',S:'',Y:'','3':'','W205':'','W212':'','W213':'','W222':'','W222M':'','W223':'','F30':'','F10':'','F02':'','G12':'','G12M':'','GHB':'','LEV':'','BTO':'','BTN':'','PAN':'','MAC':'','ALP':'','VITO':''},ptrip:{X:'',S:'',Y:'','3':'','W205':'','W212':'','W213':'','W222':'','W222M':'','W223':'','F30':'','F10':'','F02':'','G12':'','G12M':'','GHB':'','LEV':'','BTO':'','BTN':'','PAN':'','MAC':'','ALP':'','VITO':''},
-  dp:{X:{h1:3000,h2:4000,h3:4700,ot05:600,ot1:800,trip:1500,tripOt:600},
-      Y:{h1:2400,h2:3000,h3:3000,ot05:400,ot1:600,trip:1200,tripOt:400},
-      '3':{h1:1800,h2:2400,h3:2700,ot05:400,ot1:600,trip:1000,tripOt:400},
+  dp:{X:{h1:3000,h15:3200,ot15:600,h2:4000,h3:4700,ot05:600,ot1:800,trip:1500,tripOt:600},
+      Y:{h1:2400,h15:2600,ot15:600,h2:3000,h3:3000,ot05:400,ot1:600,trip:1200,tripOt:400},
+      '3':{h1:1800,h15:2000,ot15:600,h2:2400,h3:2700,ot05:400,ot1:600,trip:1000,tripOt:400},
       S:{h1:'',h2:'',h3:3500,ot05:'',ot1:600,trip:'',tripOt:''},
       'W205':{h1:'',h2:'',h3:3000,ot05:'',ot1:'',trip:'',tripOt:''},'W212':{h1:'',h2:'',h3:3000,ot05:'',ot1:'',trip:'',tripOt:''},'W213':{h1:'',h2:'',h3:3500,ot05:'',ot1:'',trip:'',tripOt:''},'W222':{h1:'',h2:'',h3:5000,ot05:'',ot1:'',trip:'',tripOt:''},'W222M':{h1:'',h2:'',h3:5500,ot05:'',ot1:'',trip:'',tripOt:''},'W223':{h1:'',h2:'',h3:10000,ot05:'',ot1:'',trip:'',tripOt:''},'F30':{h1:'',h2:'',h3:3200,ot05:'',ot1:'',trip:'',tripOt:''},'F10':{h1:'',h2:'',h3:3600,ot05:'',ot1:'',trip:'',tripOt:''},'F02':{h1:'',h2:'',h3:4000,ot05:'',ot1:'',trip:'',tripOt:''},'G12':{h1:'',h2:'',h3:6000,ot05:'',ot1:'',trip:'',tripOt:''},'G12M':{h1:'',h2:'',h3:7000,ot05:'',ot1:'',trip:'',tripOt:''},'GHB':{h1:'',h2:'',h3:6000,ot05:'',ot1:'',trip:'',tripOt:''},'LEV':{h1:'',h2:'',h3:5000,ot05:'',ot1:'',trip:'',tripOt:''},'BTO':{h1:'',h2:'',h3:'',ot05:'',ot1:'',trip:'',tripOt:''},'BTN':{h1:'',h2:'',h3:'',ot05:'',ot1:'',trip:'',tripOt:''},'PAN':{h1:'',h2:'',h3:8000,ot05:'',ot1:'',trip:'',tripOt:''},'MAC':{h1:'',h2:'',h3:8000,ot05:'',ot1:'',trip:'',tripOt:''},'ALP':{h1:'',h2:'',h3:3600,ot05:'',ot1:'',trip:'',tripOt:''},'RRG':{h1:'',h2:'',h3:30000,ot05:'',ot1:'',trip:'',tripOt:''},'RRP':{h1:'',h2:'',h3:45000,ot05:'',ot1:'',trip:'',tripOt:''},'LM':{h1:'',h2:'',h3:4000,ot05:'',ot1:'',trip:'',tripOt:''},'VITO':{h1:'',h2:'',h3:3000,ot05:'',ot1:'',trip:'',tripOt:''}},
   seats:{'RRG':5,'RRP':5,'LM':7,X:6,S:5,Y:5,'3':5,'W205':5,'W212':5,'W213':5,'W222':5,'W222M':5,'W223':5,'F30':5,'F10':5,'F02':5,'G12':5,'G12M':5,'GHB':5,'LEV':5,'BTO':5,'BTN':5,'PAN':4,'MAC':5,'ALP':7,'VITO':9},
@@ -552,7 +552,8 @@ if((S.ver||1)<2){['X','S','Y','3'].forEach(id=>{S.dp[id]=Object.assign(S.dp[id]|
 if((S.ver||1)<3){const P={"W212": [4200, 800], "W213": [4600, 800], "W222": [6800, 1600], "W222M": [7800, 1600], "W223": [12000, 3000], "F30": [3400, 600], "F10": [4000, 800], "F02": [5600, 1000], "G12": [6800, 1500], "G12M": [10000, 2500], "GHB": [10000, 2000], "LEV": [11000, 2000], "BTO": [16000, 3000], "BTN": [28000, 8000], "PAN": [10000, 2000], "MAC": [8000, 1500], "ALP": [5600, 1500], "VITO": [4500, 1000], "RRG": [42000, 8000], "RRP": [60000, 10000], "LM": [8000, 1600]};Object.keys(P).forEach(id=>{if(blank(S.price[id]))S.price[id]=P[id][0];if(blank(S.ot[id]))S.ot[id]=P[id][1]});S.ver=3}
 if((S.ver||1)<4){['BTO','BTN'].forEach(id=>{if(S.dp[id])S.dp[id].h3=''});[['RRG',30000],['RRP',45000],['LM',4000]].forEach(([id,v])=>{S.dp[id]=Object.assign(S.dp[id]||{h1:'',h2:'',ot05:'',ot1:'',trip:'',tripOt:''},{h3:v})});if(blank(S.price.W205))S.price.W205=3800;if(blank(S.ot.W205))S.ot.W205=800;S.ver=4}
 const MODELS_ALL=S.models.map(m=>m.id);if((S.ver||1)<5){const has=c=>S.bundles.some(b=>MODELS_ALL.every(m=>(+b.cars[m]||0)===(+c[m]||0)));[{name:'兩台禮車',cars:{X:2},price:13300},{name:'三台禮車',cars:{X:1,Y:2},price:15600}].forEach(b=>{if(!has(b.cars))S.bundles.push(b)});if(!S.vprices)S.vprices=clone(DEF_S.vprices);S.ver=5}
-S.models.forEach(m=>{MK.forEach(k=>{if(S[k][m.id]===undefined)S[k][m.id]=''});if(!S.dp[m.id])S.dp[m.id]={h1:'',h2:'',h3:'',ot05:'',ot1:'',trip:'',tripOt:''}});
+S.models.forEach(m=>{MK.forEach(k=>{if(S[k][m.id]===undefined)S[k][m.id]=''});if(!S.dp[m.id])S.dp[m.id]={h1:'',h2:'',h3:'',ot05:'',ot1:'',trip:'',tripOt:''};DK.forEach(k=>{if(S.dp[m.id][k]===undefined)S.dp[m.id][k]=''})});
+if((S.ver||1)<6){[['X',3200],['Y',2600],['3',2000]].forEach(([id,v])=>{if(S.dp[id]){S.dp[id].h15=v;S.dp[id].ot15=600}});S.ver=6}
 rebuildModels();
 
 function newOrder(){return{
@@ -631,11 +632,11 @@ function driverBasePay(m,x){const v=driverBasePay0(m,x);return v==null?null:v+dz
 function driverBasePay0(m,x){const d=S.dp[m];if(!d)return null;const h=+x.hours,g=k=>blank(d[k])?null:num(d[k]);
   if(h===0)return g('trip');
   if(h>=3){const a=g('h3'),b=g('ot1');return a==null||b==null&&h>3?null:a+Math.ceil(h-3-1e-9)*(b||0)}
-  if(h===1.5){const a=g('h1'),b=g('h2');return a==null||b==null?null:(a+b)/2}
+  if(h===1.5){const c=g('h15');if(c!=null)return c;const a=g('h1'),b=g('h2');return a==null||b==null?null:(a+b)/2}
   if(h>=2){const a=g('h2');return a==null?null:a+Math.ceil((h-2)/0.5-1e-9)*(g('ot05')||0)}
   const a=g('h1');return a==null?null:a+Math.max(0,Math.ceil((h-1)/0.5-1e-9))*(g('ot05')||0)}
 function driverOtText(m,x){const d=S.dp[m]||{},h=+x.hours;if(h===0)return `${MABBR[m]} 等候每 0.5HR ${blank(d.tripOt)?'未設定':money(d.tripOt)}`;
-  return h>=3?`${MABBR[m]} ${blank(d.ot1)?'未設定':money(d.ot1)}/HR`:`${MABBR[m]} ${blank(d.ot05)?'未設定':money(d.ot05)}/0.5HR`}
+  const o5=h===1.5&&!blank(d.ot15)?d.ot15:d.ot05;return h>=3?`${MABBR[m]} ${blank(d.ot1)?'未設定':money(d.ot1)}/HR`:`${MABBR[m]} ${blank(o5)?'未設定':money(o5)}/0.5HR`}
 function vendorOf(x){const v=(x.src&&x.src.vendor||'').trim();return v?(S.vendors||[]).find(d=>d.name===v)||{name:v,rate:0}:null}
 function refRate(x){const v=vendorOf(x);if(!v)return 0;return x.src.rate!==''&&x.src.rate!=null?num(x.src.rate):num(v.rate)}
 function isMonthly(x){const v=vendorOf(x);return !!(v&&v.monthly)}
@@ -882,7 +883,7 @@ function memoBlocks(m){const t=m.t,B=[];B.push({t:'title',text:`好好禮車　�
   B.push({t:'h',text:`${t.flow}：`},{t:'p',text:m.path},...m.flow.map(f=>({t:'p',text:f})),{t:'h',text:m.tipsTitle},...m.tips.map(x=>({t:'li',text:x})),{t:'h',text:t.pay});
   m.pay.forEach(x=>String(x).split('\n').forEach(l=>B.push({t:'p',text:l})));return B}
 function tplModel(x,who){const m=memoModel(x,who,'zh'),r=calc(x);const mc=(x.fleet||[]).find(f=>f.role==='主禮車');
-  return{no:m.no,wd:m.wd,dateLine:m.dateLine,gather:m.gather,contact:m.contact,boss:m.boss,plan:m.plan,flags:m.flags.split(' / ').slice(0,2).join(' / '),fleet:m.fleet,pts:m.pts,path:m.path,flow:m.flow,route:m.route,pay:m.pay,
+  return{no:m.no,wd:m.wd,dateLine:m.dateLine,gather:m.gather,contact:m.contact,boss:m.boss,plan:m.plan,flags:m.flags.split(' / ').slice(0,2).join(' / '),fleet:m.fleet,pts:m.pts,path:m.path,flow:m.flow,route:(m.route||'').replace(/\n/g,'\r'),pay:m.pay,
     xTip:mc?mc.m==='X':num(x.cars.X)>0,bank:S.bank,monthly:!!r.mon}}
 async function calcKm(){const c=o.c,cl=s=>String(s||'').replace(/（[^）]*）|\([^)]*\)/g,'').trim();
   const A=cl(c.meet),B=cl(c.wed),C=cl(c.o1),back=o.backHome!==false;
@@ -1139,7 +1140,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   switch(t.id){
    case 'btnFlowAdd':o.flow.push({t:'',who:'',seg:''});save();renderFlow();renderAll();break;
    case 'btnFlowAuto':autoFlow(o);save();fillInputs();renderFlow();renderAll();toast('已依地點重排流程');break;
-   case 'btnModelAdd':{const id='m'+Date.now().toString(36);S.models.push({id,name:'新車款',brand:'其他',abbr:''});MK.forEach(k=>S[k][id]='');S.dp[id]={h1:'',h2:'',h3:'',ot05:'',ot1:'',trip:'',tripOt:''};rebuildModels();saveS();renderPriceSettings();renderCars();break}
+   case 'btnModelAdd':{const id='m'+Date.now().toString(36);S.models.push({id,name:'新車款',brand:'其他',abbr:''});MK.forEach(k=>S[k][id]='');S.dp[id]={h1:'',h15:'',h2:'',h3:'',ot05:'',ot15:'',ot1:'',trip:'',tripOt:''};rebuildModels();saveS();renderPriceSettings();renderCars();break}
    case 'btnBundleAdd':S.bundles.push({name:'新方案',cars:{},price:0});saveS();renderPriceSettings();break;
    case 'btnConfirm':{const res=parseConfirm($('confirmBox').value);if(!Object.keys(res).length){$('confirmResult').innerHTML='<p class="hint">沒有認出欄位，請確認貼上的是行前確認的回覆。</p>';break}const r=applyConfirm(res);save();fillInputs();renderFlow();renderAll();renderConfirmResult(r);toast('已帶入行前確認');break}
    case 'btnApplyH':{if(o._suggestH){o.hours=o._suggestH;o._suggestH=null;save();fillInputs();renderCars();renderFleet();renderAll();$('confirmResult').insertAdjacentHTML('beforeend','<p class="hint">合約時數已更新，報價、合約、memo 都已重算。</p>');t.remove()}break}
