@@ -187,6 +187,13 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
             <label class="f">第幾組（留空＝自動）<input id="q_seq" data-b="seq" placeholder="自動"></label>
             <label class="f">訂單編號<input id="q_no" readonly tabindex="-1"></label>
           </div>
+          <div class="fields" style="margin-top:12px">
+            <label class="f wide">男方地址<input id="q_addrA" data-b="c.meet" placeholder="貼上地址"></label>
+            <label class="f wide">女方地址<input id="q_addrB" data-b="c.wed" placeholder="貼上地址"></label>
+            <label class="f wide">餐廳地址<input id="q_addrC" data-b="c.o1" placeholder="沒有就留空"></label>
+            <label class="f">路線<select id="q_back" data-b="backHome" data-bool><option value="1">男方→女方→男方→餐廳</option><option value="0">男方→女方→餐廳</option></select></label>
+          </div>
+          <div class="row" style="margin-top:8px;gap:10px"><button class="btn sm pri" id="btnKm" type="button">計算總里程</button><span class="hint" id="kmMsg" style="margin:0"></span></div>
         </div>
         <div class="card">
           <h3>車款 <span id="bundleChip"></span></h3>
@@ -550,7 +557,7 @@ rebuildModels();
 
 function newOrder(){return{
   id:'o'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
-  sample:false,cityA:'',cityB:'',code:'',seq:'',_seqKey:'',_seq:'',date:'',hours:3,km:S.km,
+  sample:false,backHome:true,cityA:'',cityB:'',code:'',seq:'',_seqKey:'',_seq:'',date:'',hours:3,km:S.km,
   cars:{X:1,S:0,Y:0,'3':0},zoneName:'',zones:0,tripKm:0,cane:0,deco:0,
   extras:[{n:'',a:0}],discName:'',discAmt:0,red:true,invoice:false,depOverride:'',note:'',
   src:{vendor:'',ref:'',rate:''},c:{combo:'',caneNote:'',chatName:'',channel:'LINE',groom:'',bride:'',role:'新娘',contact:'',phone:'',start:'',end:'',gather:'',
@@ -877,6 +884,19 @@ function memoBlocks(m){const t=m.t,B=[];B.push({t:'title',text:`好好禮車　�
 function tplModel(x,who){const m=memoModel(x,who,'zh'),r=calc(x);const mc=(x.fleet||[]).find(f=>f.role==='主禮車');
   return{no:m.no,wd:m.wd,dateLine:m.dateLine,gather:m.gather,contact:m.contact,boss:m.boss,plan:m.plan,flags:m.flags.split(' / ').slice(0,2).join(' / '),fleet:m.fleet,pts:m.pts,path:m.path,flow:m.flow,route:m.route,pay:m.pay,
     xTip:mc?mc.m==='X':num(x.cars.X)>0,bank:S.bank,monthly:!!r.mon}}
+async function calcKm(){const c=o.c,cl=s=>String(s||'').replace(/（[^）]*）|\([^)]*\)/g,'').trim();
+  const A=cl(c.meet),B=cl(c.wed),C=cl(c.o1),back=o.backHome!==false;
+  if(!A||!B){$('kmMsg').textContent='請先填男方和女方地址';return}
+  if(!S.driveUrl||!S.driveKey){$('kmMsg').textContent='請先到「價目設定」填 Drive 網址和金鑰';return}
+  const stops=C?(back?[A,B,A,C]:[A,B,C]):(back?[A,B,A]:[A,B]);
+  $('kmMsg').textContent='計算中…';
+  try{const u=new URL(S.driveUrl);u.searchParams.set('action','km');u.searchParams.set('token',S.driveKey);u.searchParams.set('stops',JSON.stringify(stops));
+    const j=await (await fetch(u)).json();if(!j.ok)throw new Error(j.error||'失敗');
+    o.tripKm=Math.ceil(j.km);o.sample=false;save();fillInputs();renderAll();
+    const nm=['男方','女方','男方','餐廳'],seq=C?(back?['男方','女方','男方','餐廳']:['男方','女方','餐廳']):(back?['男方','女方','男方']:['男方','女方']);
+    $('kmMsg').textContent=`總里程約 ${j.km} 公里（${j.legs.map((l,i)=>`${seq[i]}→${seq[i+1]} ${l.km}`).join('、')}），已填入總行程里程`}
+  catch(e){$('kmMsg').textContent='失敗：'+e.message}}
+document.addEventListener('input',e=>{const b=e.target&&e.target.dataset&&e.target.dataset.b;if(b)document.querySelectorAll('[data-b]').forEach(el=>{if(el!==e.target&&el.dataset.b===b&&el.tagName!=='SELECT')el.value=e.target.value})});
 async function makeMemoDocs(){const btn=$('btnMemoDocs');if(!S.driveUrl||!S.driveKey){toast('請先到「價目設定」填 Drive 網址和金鑰');showTab('settings');return}
   btn.disabled=true;$('memoDocMsg').textContent='建立中，約需 10 秒…';
   try{const no=orderNo(o);const docs=['cust','drv'].map(k=>({key:k,name:`訂單編號:${no}${k==='drv'?'-司機端':''}`,model:tplModel(o,k)}));
@@ -1132,6 +1152,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnPrint':window.print();break;
    case 'btnDrive':saveToDrive();break;
    case 'btnMemoDocs':makeMemoDocs();break;
+   case 'btnKm':calcKm();break;
    case 'btnPaid':{const d=new Date();o.paid=true;o.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`;o.sample=false;save();renderAll();toast('已標記收到訂金');break}
    case 'btnUnpaid':o.paid=false;o.paidAt='';save();renderAll();break;
    case 'btnResetS':{const keep={bank:S.bank,phone:S.phone,email:S.email,formBase:S.formBase,formEntry:S.formEntry};S=Object.assign(clone(DEF_S),keep);saveS();renderPriceSettings();fillInputs();renderCars();renderAll();$('resetMsg').textContent='已恢復預設價目';break}
