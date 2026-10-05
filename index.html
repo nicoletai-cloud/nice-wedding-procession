@@ -444,6 +444,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
         <div class="card">
           <h3>合作廠商與回金</h3>
           <label class="f">一行一家：名稱=回金%，月結廠商加「,月結」<textarea id="s_vendors" rows="8"></textarea></label>
+          <label class="f" style="margin-top:10px">幸福故事館配套價（3HR，一行一個：組合=價格）<textarea id="s_vp" rows="8"></textarea></label>
         </div>
         <div class="card">
           <h3>公司與匯款</h3>
@@ -490,11 +491,14 @@ const DEF_S={
     {name:'三台禮車',cars:{X:1,S:0,Y:0,'3':2},price:13900},
     {name:'三台禮車',cars:{X:2,S:0,Y:0,'3':1},price:16600},
     {name:'六台禮車',cars:{X:1,S:0,Y:0,'3':5},price:25800},
-    {name:'六台禮車',cars:{X:6,S:0,Y:0,'3':0},price:39800}],
+    {name:'六台禮車',cars:{X:6,S:0,Y:0,'3':0},price:39800},
+    {name:'兩台禮車',cars:{X:2},price:13300},
+    {name:'三台禮車',cars:{X:1,Y:2},price:15600}],
   cc:{'台北':'TP','新北':'NTP','基隆':'KL','桃園':'TY','新竹':'HC','苗栗':'ML','台中':'TC','彰化':'CH','南投':'NT','雲林':'YN','嘉義':'CY','台南':'TN','高雄':'KH','屏東':'PT','宜蘭':'YL','花蓮':'HL','台東':'TT','澎湖':'PH','金門':'KM','連江':'MZ'},
   vendors:[{name:'成家',rate:10},{name:'DR Wedding',rate:5},{name:'Gaga',rate:5},{name:'余諾',rate:5},{name:'想樂',rate:5},{name:'瑪莎',rate:5},{name:'個人',rate:5},{name:'幸福故事館',rate:0,monthly:true}],
   refs:['Mita Ho','詩雲Hana','Vicky','Queena琨娜','筱芩GIN','念純','Patty','Kiki Liu','Joanne','家妤','Angel','Niki Wu','Amber','Alisa','語柔','Polly','千千','Kiwi','小夏','滾滾','Susan','Clina','Bella','Alice','Coco','Vivian','Rita','Yuna'],
-  ver:4,dzKm:35,dzAmt:300,zBase:35,zRate:500,zRound:200,driveUrl:'',driveKey:'',
+  vprices:{'幸福故事館':'M3=3500\nMY=4250\nMS=4800\nMX=6000\nM3+MX=9350\nMX*2=12000\nM3*2+MX=12200\nMY*2+MX=13800\nMX+M3*5=22700\nMX*6=35450'},
+  ver:5,dzKm:35,dzAmt:300,zBase:35,zRate:500,zRound:200,driveUrl:'',driveKey:'',
   zone:500,red:600,cane:1000,km:35,depMode:'driver',depPct:40,
   phone:'0981-836-668',email:'love@niceweddingcar.com',
   bank:'將來銀行(823)  | 營業部(1688)\n帳號：8865-36668-36668',
@@ -510,6 +514,7 @@ if(!S.models||!S.models.length){S.models=clone(DEF_S.models)}else{DEF_S.models.f
 if((S.ver||1)<2){['X','S','Y','3'].forEach(id=>{S.dp[id]=Object.assign(S.dp[id]||{},{h3:DEF_S.dp[id].h3,ot1:DEF_S.dp[id].ot1})});S.ver=2;S.dzKm=35;S.dzAmt=300}
 if((S.ver||1)<3){const P={"W212": [4200, 800], "W213": [4600, 800], "W222": [6800, 1600], "W222M": [7800, 1600], "W223": [12000, 3000], "F30": [3400, 600], "F10": [4000, 800], "F02": [5600, 1000], "G12": [6800, 1500], "G12M": [10000, 2500], "GHB": [10000, 2000], "LEV": [11000, 2000], "BTO": [16000, 3000], "BTN": [28000, 8000], "PAN": [10000, 2000], "MAC": [8000, 1500], "ALP": [5600, 1500], "VITO": [4500, 1000], "RRG": [42000, 8000], "RRP": [60000, 10000], "LM": [8000, 1600]};Object.keys(P).forEach(id=>{if(blank(S.price[id]))S.price[id]=P[id][0];if(blank(S.ot[id]))S.ot[id]=P[id][1]});S.ver=3}
 if((S.ver||1)<4){['BTO','BTN'].forEach(id=>{if(S.dp[id])S.dp[id].h3=''});[['RRG',30000],['RRP',45000],['LM',4000]].forEach(([id,v])=>{S.dp[id]=Object.assign(S.dp[id]||{h1:'',h2:'',ot05:'',ot1:'',trip:'',tripOt:''},{h3:v})});if(blank(S.price.W205))S.price.W205=3800;if(blank(S.ot.W205))S.ot.W205=800;S.ver=4}
+const MODELS_ALL=S.models.map(m=>m.id);if((S.ver||1)<5){const has=c=>S.bundles.some(b=>MODELS_ALL.every(m=>(+b.cars[m]||0)===(+c[m]||0)));[{name:'兩台禮車',cars:{X:2},price:13300},{name:'三台禮車',cars:{X:1,Y:2},price:15600}].forEach(b=>{if(!has(b.cars))S.bundles.push(b)});if(!S.vprices)S.vprices=clone(DEF_S.vprices);S.ver=5}
 S.models.forEach(m=>{MK.forEach(k=>{if(S[k][m.id]===undefined)S[k][m.id]=''});if(!S.dp[m.id])S.dp[m.id]={h1:'',h2:'',h3:'',ot05:'',ot1:'',trip:'',tripOt:''}});
 rebuildModels();
 
@@ -596,10 +601,14 @@ function driverOtText(m,x){const d=S.dp[m]||{},h=+x.hours;if(h===0)return `${MAB
 function vendorOf(x){const v=(x.src&&x.src.vendor||'').trim();return v?(S.vendors||[]).find(d=>d.name===v)||{name:v,rate:0}:null}
 function refRate(x){const v=vendorOf(x);if(!v)return 0;return x.src.rate!==''&&x.src.rate!=null?num(x.src.rate):num(v.rate)}
 function isMonthly(x){const v=vendorOf(x);return !!(v&&v.monthly)}
+function vendorBase(x){const v=vendorOf(x);if(!v||!S.vprices||!S.vprices[v.name]||x.hours<3)return null;
+  const rows=S.vprices[v.name].split('\n').map(l=>{const m=l.split(/[=＝]/);return m.length>1?{cars:parseCombo(m[0]),price:num(m[1])}:null}).filter(r=>r&&Object.keys(r.cars).length);
+  const same=c=>MODELS.every(m=>num(c[m])===num(x.cars[m]));const hit=rows.find(r=>same(r.cars));if(hit)return hit.price;
+  let sum=0;for(const m of MODELS){const q=num(x.cars[m]);if(!q)continue;const one=rows.find(r=>Object.keys(r.cars).length===1&&num(r.cars[m])===1);if(!one)return null;sum+=one.price*q}return sum}
 function calc(x){
   const n=carCount(x),short=x.hours<3,b=findBundle(x),eh=extraH(x);
   let base=0;const miss=[];MODELS.forEach(m=>{if(!num(x.cars[m]))return;const cp=cPrice(m,x.hours);if(cp.miss)miss.push(blank(S.price[m])?`${MNAME[m]} 客人價未設定`:`${MNAME[m]} ${hrsLabel(x.hours)}價未設定，暫用 3HR 價`);base+=num(x.cars[m])*cp.v});
-  const listBase=base;if(b)base=num(b.price);
+  const listBase=base;if(b)base=num(b.price);const vb=vendorBase(x);if(vb!=null)base=vb;
   let ot=0;MODELS.forEach(m=>ot+=num(x.cars[m])*num(S.ot[m])*eh);
   const zone=zoneUnit(x)*n,cane=num(x.cane)*num(S.cane),deco=num(x.deco);
   const extras=x.extras.reduce((a,e)=>a+num(e.a),0),red=x.red?n*num(S.red):0,disc=num(x.discAmt);
@@ -614,8 +623,9 @@ function calc(x){
   else if(isMonthly(x))deposit=0;
   else if(S.depMode==='driver'&&dok&&dsum<total)deposit=total-dsum;
   else deposit=ceil100(total*num(S.depPct)/100);
-  const planFee=total-red-tax;const refAmt=Math.round(planFee*refRate(x)/100);
-  return{planFee,refAmt,n,b,eh,miss,base,listBase,ot,zone,cane,deco,extras,red,disc,tax,total,deposit,balance:total-deposit,rent:total-red,dsum,dok}}
+  const planFee=base+ot-disc;const refAmt=Math.round(planFee*refRate(x)/100);
+  const mon=isMonthly(x);const onsite=red+cane;const bill=total-onsite;
+  return{planFee,refAmt,mon,onsite,bill,vb,n,b,eh,miss,base,listBase,ot,zone,cane,deco,extras,red,disc,tax,total,deposit,balance:mon?onsite:total-deposit,rent:total-red,dsum,dok}}
 
 function qtyWord(q,lang){if(lang==='en')return '×'+q;if(lang==='ja')return q+'台';return (ZHN[q]||q)+'台'}
 function carsText(x,lang){const parts=MODELS.filter(m=>num(x.cars[m])>0).map((m,i,arr)=>((MBRAND[m]==='Tesla'&&(i===0||MBRAND[arr[i-1]]!=='Tesla'))?'Tesla ':'')+MNAME[m]+(lang==='en'?' ':' ')+qtyWord(num(x.cars[m]),lang));return parts.join(lang==='en'?', ':'、')||'—'}
@@ -660,7 +670,8 @@ function orderText(x,lang){const r=calc(x),f=feeLines(x,lang),no=orderNo(x),link
    r.red?`[ Please hand the driver red envelope (${money(S.red,lang)}/car) together with the balance directly to the main bridal car driver ]`:'','','',`Bank transfer details:`,S.bank,'',`Please transfer the deposit to the account above within 2 days, then fill out the form below to complete your booking:`,link,`( Enter N/A for any field that doesn't apply )`].join('\n');
  if(lang==='ja')return [`今回のご予約（ご予約番号：${no}）の内容は以下の通りです：`,`ご利用日：${fmtDate(x.date)}`,`ご予約車種：${carsText(x,lang)}`,`料金明細：${f[0]||''}`,...f.slice(1),`合計 = ${money(r.total,lang)}`,`プラン金額：${money(r.total,lang)}`,`お支払い手付金：${money(r.deposit,lang)}`,
    r.red?`[ ご祝儀 ${money(S.red,lang)}/台 は残金と一緒にメインカーのドライバーへ直接お渡しください ]`:'','','',`お振込先：`,S.bank,'',`2日以内に上記口座へ手付金をお振込みの上、下記フォームにご記入いただくとご予約完了となります：`,link,`（該当しない項目は N/A とご記入ください）`].join('\n');
- if(isMonthly(x))return [`您本次的訂單 (訂單編號：${no} ) 內容如下：`,`用車日期：${fmtDate(x.date)} `,`預約車款：${carsText(x,lang)}`,`費用明細：${f[0]||''}`,...f.slice(1),`合計=${money(r.total)}`,`方案金額：${money(r.total)} `,`本單費用由${vendorOf(x).name}月結，無需匯款訂金。`,'',`請填寫以下表單以完成訂車流程：`,link,`( 若無相關內容之欄位可以 N/A 填寫 )`].join('\n');
+ if(isMonthly(x))return [`您本次的訂單 (訂單編號：${no} ) 內容如下：`,`用車日期：${fmtDate(x.date)} `,`預約車款：${carsText(x,lang)}`,`車資由${vendorOf(x).name}統一結算，無需匯款訂金。`,'',
+   (r.red||r.cane)?`用車當天請準備以下費用交給主禮車司機：`:'',r.red?`司機紅包 ${money(S.red)}×${r.n} = ${money(r.red)}`:'',r.cane?`甘蔗固定費 ${money(S.cane)}×${num(x.cane)} = ${money(r.cane)}`:'','',`請填寫以下表單以完成訂車流程：`,link,`( 若無相關內容之欄位可以 N/A 填寫 )`].filter((t,i,a)=>t!==''||a[i-1]!=='').join('\n');
  return [`您本次的訂單 (訂單編號：${no} ) 內容如下：`,`用車日期：${fmtDate(x.date)} `,`預約車款：${carsText(x,lang)}`,`費用明細：${f[0]||''}`,...f.slice(1),`合計=${money(r.total)}`,`方案金額：${money(r.total)} `,`應付訂金：${money(r.deposit)} `,
    r.red?`[ 紅包${money(S.red)}/台同尾款直接交給主禮車司機 ]`:'','','',`匯款資訊：`,S.bank,'',`請於兩日內將訂金匯款至上列帳戶後填寫以下表單以完成訂車流程：`,link,`( 若無相關內容之欄位可以 N/A 填寫 )`].join('\n')}
 
@@ -718,10 +729,11 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   if(who==='cust'){
     if(lang==='en')pay=[`Balance ${money(r.balance,'en')} (incl. driver red envelope)`,`(Please don't wait until after the service to transfer; our accountant can't verify transfers in real time on holidays.)`,`Bank transfer details:`,S.bank,`Extra hours: ${MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m],'en')}/HR`).join(' ; ')}`];
     else if(lang==='ja')pay=[`残金 ${money(r.balance,'ja')}（ドライバーご祝儀込み）`,`（ご利用終了後のお振込みはお控えください。休日は経理がすぐに入金確認できません）`,`お振込先：`,S.bank,`延長：${MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m],'ja')}/HR`).join(' ; ')}`];
+    else if(r.mon)pay=[`車資由${vendorOf(x).name}統一結算`,`當天請準備 ${money(r.onsite)} 交給主禮車司機（${[r.red?'司機紅包':'',r.cane?'甘蔗固定費':''].filter(Boolean).join('＋')}）`,`加時：${otl}`];
     else pay=[`尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`,`(請勿當天用車結束才匯款，假日會計無法即時查帳)`,`❤️匯款資訊：`,S.bank,`加時：${otl}`];
   }else{
     const groups={};x.fleet.forEach(f=>{const v=payOf(f);const key=v==null?'?':v;(groups[key]=groups[key]||[]).push(f.role)});
-    pay=[`收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`];
+    pay=[r.mon?`現場收取 ${money(r.onsite)}（${[r.red?'司機紅包':'',r.cane?'甘蔗固定費':''].filter(Boolean).join('＋')}）｜車資由${vendorOf(x).name}月結`:`收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`];
     Object.keys(groups).forEach(v=>{const roles=[...new Set(groups[v])].join('＋');pay.push(+x.hours===0?`${roles} 實拿${v==='?'?'（未設定）':money(+v)}（單程接送・綁彩）`:`${roles} ${v==='?'?'（未設定）':money(+v)}/${hrsLabel(x.hours)}${r.red?'(含紅包)':''}`)});
     const ms=MODELS.filter(m=>num(x.cars[m])>0);
     if(+x.hours===0)pay.push(`等候 15 分鐘未出發，每半小時：${ms.map(m=>driverOtText(m,x).replace(' 等候每 0.5HR','')).join(' ; ')}`);
@@ -858,6 +870,7 @@ function setPath(obj,path,v){const ks=path.split('.');const last=ks.pop();const 
 function fillInputs(){document.querySelectorAll('[data-b]').forEach(el=>{const v=getPath(o,el.dataset.b);if(el.hasAttribute('data-bool'))el.value=v?'1':'0';else el.value=v==null?'':v});
   document.querySelectorAll('[data-s]').forEach(el=>{el.value=S[el.dataset.s]==null?'':S[el.dataset.s]});
   $('mapLinks').checked=!!o.mapLinks;
+  if(document.activeElement!==$('s_vp'))$('s_vp').value=(S.vprices&&S.vprices['幸福故事館'])||'';
   if(document.activeElement!==$('s_vendors'))$('s_vendors').value=(S.vendors||[]).map(v=>`${v.name}=${v.rate}${v.monthly?',月結':''}`).join('\n');
   if(document.activeElement!==$('s_cc'))$('s_cc').value=Object.entries(S.cc).map(([k,v])=>k+'='+v).join('\n');
   const hs=$('q_hours');if(![...hs.options].some(op=>+op.value===+o.hours)){const op=document.createElement('option');op.value=o.hours;op.textContent=hrsLabel(o.hours);hs.appendChild(op)}hs.value=String(o.hours)}
@@ -871,6 +884,7 @@ document.addEventListener('input',e=>{const el=e.target;
       if(o.flow[0]&&!o.flow[0].t){o.flow[0].t=o.c.start;renderFlow()}}
     if(/^cars|hours/.test(el.dataset.b)){syncFleet();renderFleet();renderCars()}
     save();renderAll();return}
+  if(el.id==='s_vp'){S.vprices=S.vprices||{};S.vprices['幸福故事館']=el.value;saveS();renderAll();return}
   if(el.id==='s_vendors'){S.vendors=el.value.split('\n').map(l=>{const m=l.split(/[=＝]/);if(!m[0].trim())return null;const rest=(m[1]||'');return{name:m[0].trim(),rate:num(rest),monthly:/月結/.test(rest)}}).filter(Boolean);saveS();renderAll();return}
   if(el.id==='refMonth'){renderRefs();return}
   if(el.id==='s_cc'){const cc={};el.value.split('\n').forEach(l=>{const m=l.split(/[=＝:：]/);if(m.length>=2&&m[0].trim())cc[m[0].trim().replace(/臺/g,'台')]=m[1].trim().toUpperCase()});S.cc=cc;saveS();renderAll();return}
@@ -897,11 +911,13 @@ document.addEventListener('toggle',e=>{const d=e.target;if(d.classList&&d.classL
 function renderSum(){const r=calc(o);const rows=[];
   rows.push([r.b?`${r.b.name}方案`:'車資',money(r.base)]);if(r.b&&r.listBase>r.base)rows.push([`<span class="sub">原價 ${money(r.listBase)}，省 ${money(r.listBase-r.base)}</span>`,'']);
   if(r.ot)rows.push([`超時 ${r.eh}HR`,money(r.ot)]);if(r.zone)rows.push([`跨區/里程費（${num(o.tripKm)}km）`,money(r.zone)]);if(r.cane)rows.push(['甘蔗固定費',money(r.cane)]);if(r.deco)rows.push(['指定車頭彩',money(r.deco)]);
+  if(r.vb!=null)rows.push([`<span class="sub">${esc(vendorOf(o).name)}配套價</span>`,'']);
   if(r.extras)rows.push(['加項',money(r.extras)]);if(r.disc)rows.push([o.discName||'折扣','-'+money(r.disc)]);if(r.tax)rows.push(['5% 營業稅',money(r.tax)]);if(r.red)rows.push([`司機禮 ×${r.n}`,money(r.red)]);
   $('sumBox').innerHTML=rows.map(([a,b])=>`<div><span>${a}</span><span>${b}</span></div>`).join('')+
    `<div class="tot"><span>合計</span><span>${money(r.total)}</span></div>
     <div><span>應付訂金${o.depOverride!==''?'（手動）':isMonthly(o)?'（月結）':S.depMode==='driver'&&r.dok?'（總額−司機車資）':`（${S.depPct}%）`}</span><span>${money(r.deposit)}</span></div>
-    <div class="sub"><span>尾款（含司機禮，當天交主禮車司機）</span><span>${money(r.balance)}</span></div>
+    ${r.mon?`<div><span>月結請款（${esc(vendorOf(o).name)}）</span><span>${money(r.bill)}</span></div>`:''}
+    <div class="sub"><span>${r.mon?'司機現場收（紅包＋甘蔗）':'尾款（含司機禮，當天交主禮車司機）'}</span><span>${money(r.balance)}</span></div>
     <div class="sub"><span>司機車資合計</span><span>${r.dok?money(r.dsum):'未設定'}</span></div>`;
   $('bundleChip').innerHTML=r.b?`<span class="chip ok">已套用 ${esc(r.b.name)}方案 ${money(r.b.price)}</span>`:(o.hours<3?`<span class="chip">${hrsLabel(o.hours)}不適用優惠方案</span>`:'')+r.miss.map(t=>`<span class="chip" style="color:var(--warn)">${esc(t)}</span>`).join('');
   $('payBox').innerHTML=o.fleet.map(f=>{const v=payOf(f);return `<div><span>${esc(f.role)}・${MNAME[f.m]}</span><span>${v==null?'未設定':money(v)}</span></div>`}).join('')+`<div class="tot"><span>合計</span><span>${r.dok?money(r.dsum):'—'}</span></div>`}
@@ -951,8 +967,8 @@ function renderRefs(){const mEl=$('refMonth');if(!mEl.value){const d=new Date();
   $('refBody').innerHTML=list.map(x=>{const r=calc(x),v=vendorOf(x);return `<tr><td>${esc(x.date.slice(5).replace('-','/'))}</td><td>${esc(orderNo(x))}</td><td>${esc(v.name)}</td><td>${esc(x.src.ref||'')}</td><td>${money(r.planFee)}</td><td>${isMonthly(x)?'月結':money(r.refAmt)}</td></tr>`}).join('')||'<tr><td colspan="6" class="hint">這個月沒有廠商推薦的訂單。</td></tr>';
   const by={};list.filter(x=>!isMonthly(x)).forEach(x=>{const k=vendorOf(x).name+(x.src.ref?' / '+x.src.ref:'');by[k]=(by[k]||0)+calc(x).refAmt});
   $('refSum').innerHTML=Object.keys(by).map(k=>`<div><span>${esc(k)}</span><span>${money(by[k])}</span></div>`).join('')+(Object.keys(by).length?`<div class="tot"><span>本月應付回金</span><span>${money(Object.values(by).reduce((a,b)=>a+b,0))}</span></div>`:'');
-  const mv=(S.vendors||[]).filter(v=>v.monthly);const bills=mv.map(v=>{const os=list.filter(x=>vendorOf(x).name===v.name);if(!os.length)return '';const tot=os.reduce((a,x)=>a+calc(x).total,0);
-    return [`【好好禮車】${ym.replace('-','年')}月 請款明細｜${v.name}`,...os.map(x=>`${x.date.slice(5).replace('-','/')} ${orderNo(x)} ${[x.c.groom,x.c.bride].filter(Boolean).join('&')} ${planName(x).replace(/^Tesla /,'')} ${money(calc(x).total)}`),`合計：${money(tot)}`,'',`匯款資訊：`,S.bank].join('\n')}).filter(Boolean);
+  const mv=(S.vendors||[]).filter(v=>v.monthly);const bills=mv.map(v=>{const os=list.filter(x=>vendorOf(x).name===v.name);if(!os.length)return '';const tot=os.reduce((a,x)=>a+calc(x).bill,0);
+    return [`【好好禮車】${ym.replace('-','年')}月 請款明細｜${v.name}`,...os.map(x=>`${x.date.slice(5).replace('-','/')} ${orderNo(x)} ${[x.c.groom,x.c.bride].filter(Boolean).join('&')} ${planName(x).replace(/^Tesla /,'').replace(/ \S*禮車方案$/,'')} ${money(calc(x).bill)}`),`合計：${money(tot)}`,`（司機紅包、甘蔗固定費由司機現場收取，不列入請款）`,'',`匯款資訊：`,S.bank].join('\n')}).filter(Boolean);
   $('billVendorName').textContent=mv.map(v=>v.name).join('、');$('outBill').textContent=bills.join('\n\n')||'這個月沒有月結廠商的訂單。'}
 function renderOrderSel(){const list=Object.values(DB.orders).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.updated-a.updated);
   $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(orderNo(x))}${x.c.groom||x.c.bride?'・'+esc([x.c.groom,x.c.bride].filter(Boolean).join('&')):''}${x.sample?'（範例）':''}${x.paid?'・已收訂':''}</option>`).join('')}
