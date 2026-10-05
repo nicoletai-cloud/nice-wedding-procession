@@ -345,7 +345,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
       <div class="card">
         <h3>車隊 <small>車序、車號、司機</small></h3>
         <div class="tbl"><table>
-          <thead><tr><th>車款</th><th>車序</th><th>車號</th><th>司機</th><th>電話</th><th>緊急聯絡 <small>只放 LINE 群組</small></th><th>顏色</th><th>座位</th><th>司機車資</th><th>負責人</th></tr></thead>
+          <thead><tr><th>車款</th><th>車序</th><th>車號</th><th>司機</th><th>電話</th><th>緊急聯絡 <small>只放 LINE 群組</small></th><th>升等為 <small>沒升等留空</small></th><th>顏色</th><th>座位</th><th>司機車資</th><th>負責人</th></tr></thead>
           <tbody id="fleetBody"></tbody>
         </table></div>
       </div>
@@ -745,7 +745,7 @@ const TIPS_D=['前一天確實清潔車輛及充電、遵守服裝規定、調�
 function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   const cname=contactName(x),crole=c.role==='其他'?'':`(${lang==='en'?(c.role==='新郎'?'Groom':'Bride'):lang==='ja'?(c.role==='新郎'?'新郎':'新婦'):c.role})`;
   const p=dparts(x.date);
-  const fleet=x.fleet.map(f=>({role:roleName(f.role,lang),plate:f.plate,driver:(f.driver||'')+(f.lead?' '+t.lead:''),car:`${MNAME[f.m]}`,spec:`${colorName(f.color||'',lang)} ${t.seats(f.seats||S.seats[f.m])}`.trim(),phone:f.phone}));
+  const fleet=x.fleet.map(f=>({role:roleName(f.role,lang),plate:f.plate,driver:(f.driver||'')+(f.lead?' '+t.lead:''),car:`${f.up||MNAME[f.m]}`,spec:`${colorName(f.color||'',lang)} ${t.seats(f.seats||S.seats[f.m])}`.trim(),phone:f.phone}));
   const pts=points(x).filter(pt=>pt.addr).map(pt=>({k:pt.k,title:pt.k==='A'?t.meet:pt.k==='B'?t.wed:t.other,addr:pt.addr,label:pt.label}));
   const flow=x.flow.filter(f=>f.t||f.seg).map(f=>`${ap(f.t)} ${f.who?f.who+' ':''}${f.seg}`.trim());
   let pay=[];
@@ -872,10 +872,12 @@ async function makeMemoDocs(){const btn=$('btnMemoDocs');if(!S.driveUrl||!S.driv
     const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'memo',orderNo:no,couple:[o.c.groom,o.c.bride].filter(Boolean).join('&'),docs})});
     const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');o.memoLinks=j.links;o.driveFolder=o.driveFolder||j.folder;save();renderMemoLinks();$('memoDocMsg').textContent='已更新';toast('memo 連結已更新')}
   catch(e){$('memoDocMsg').textContent='失敗：'+e.message}finally{btn.disabled=false}}
+function upText(x){const g={};(x.fleet||[]).forEach(f=>{const u=(f.up||'').trim();if(u&&u!==MNAME[f.m])(g[u]=g[u]||[]).push(f.role)});const k=Object.keys(g);if(!k.length)return '';
+  return '\n\n'+k.map(u=>`${[...new Set(g[u])].join('、')}有幫您升等為 ${u}`).join('；')+'，再請幫我們多多推薦喔！'}
 function renderMemoLinks(){const L=o.memoLinks||{};const row=(k,label)=>L[k]?`<div><span>${label}</span><span class="row" style="gap:6px"><a href="${esc(L[k])}" target="_blank" rel="noopener">開啟</a><button class="btn sm" data-copytext="${esc(L[k])}">複製連結</button></span></div>`:'';
   const cu=L.cust?String(L.cust).replace(/\?.*$/,''):'';
   $('memoLinks').innerHTML=(row('cust','客人 memo')+row('drv','司機派車單')||'<div class="sub">還沒有產生連結。</div>')+(cu?`<div class="row" style="justify-content:space-between;margin:12px 0 6px"><span class="hint" style="margin:0">傳給客人的訊息</span><button class="btn sm pri" data-copy="custLinkMsg">複製</button></div><pre class="out" id="custLinkMsg">提供司機資訊及注意事項：
-${esc(cu)}</pre>`:'');if($('lgMsg'))$('lgMsg').textContent=lgMsg(o)}
+${esc(cu)}${esc(upText(o))}</pre>`:'');if($('lgMsg'))$('lgMsg').textContent=lgMsg(o)}
 async function saveToDrive(){const btn=$('btnDrive');if(!S.driveUrl||!S.driveKey){toast('請先到「價目設定」填 Drive 網址和金鑰');showTab('settings');return}
   btn.disabled=true;btn.textContent='上傳中…';
   try{const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,orderNo:orderNo(o),html:contractPdfDoc(o),couple:[o.c.groom,o.c.bride].filter(Boolean).join('&')})});
@@ -1020,17 +1022,18 @@ function renderFleet(){$('fleetBody').innerHTML=o.fleet.map((f,i)=>{const dp=dri
   <td><input data-fl="${i}.driver" id="fl_d${i}" value="${esc(f.driver)}"></td>
   <td><input data-fl="${i}.phone" id="fl_t${i}" value="${esc(f.phone)}" inputmode="tel"></td>
   <td><input data-fl="${i}.emg" id="fl_e${i}" value="${esc(f.emg||'')}" inputmode="tel" placeholder="不會出現在 memo"></td>
+  <td><input data-fl="${i}.up" id="fl_u${i}" value="${esc(f.up||'')}" placeholder="例：Model Y" style="width:96px"></td>
   <td><input data-fl="${i}.color" id="fl_c${i}" value="${esc(f.color)}" style="width:72px"></td>
   <td><input type="number" data-fl="${i}.seats" id="fl_s${i}" value="${esc(f.seats)}" style="width:62px"></td>
   <td><input type="number" data-fl="${i}.pay" id="fl_y${i}" value="${esc(f.pay)}" placeholder="${dp==null?'未設定':dp}" style="width:96px"></td>
-  <td style="text-align:center"><input type="radio" name="leadR" data-fl="${i}.lead" id="fl_l${i}" ${f.lead?'checked':''} style="width:auto" aria-label="負責人"></td></tr>`}).join('')||'<tr><td colspan="10" class="hint">先在「報價」選車款。</td></tr>'}
+  <td style="text-align:center"><input type="radio" name="leadR" data-fl="${i}.lead" id="fl_l${i}" ${f.lead?'checked':''} style="width:auto" aria-label="負責人"></td></tr>`}).join('')||'<tr><td colspan="11" class="hint">先在「報價」選車款。</td></tr>'}
 function renderFlow(){$('flowList').innerHTML=o.flow.map((f,i)=>`<div class="fr"><input type="time" data-fw="${i}.t" id="fw_t${i}" value="${esc(f.t)}" aria-label="時間">
   <input class="who" data-fw="${i}.who" id="fw_w${i}" value="${esc(f.who)}" placeholder="全車隊" aria-label="車輛">
   <input class="sg" data-fw="${i}.seg" id="fw_s${i}" value="${esc(f.seg)}" placeholder="A - B" aria-label="路段">
   <button class="btn sm" data-fdel="${i}" aria-label="刪除這段">✕</button></div>`).join('')}
 function renderLangs(){document.querySelectorAll('.seg[data-lang]').forEach(s=>{const k=s.dataset.lang;
   s.innerHTML=[['zh','繁中'],['en','English'],['ja','日本語']].map(([v,t])=>`<button type="button" data-setlang="${k}:${v}" aria-pressed="${o.lang[k]===v}">${t}</button>`).join('')})}
-function renderMemo(){const who=o.memoWho||'cust';if($('routeInMemo'))$('routeInMemo').checked=!!o.routeInMemo;document.querySelectorAll('#memoWho button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.who===who));
+function renderMemo(){const who=o.memoWho||'cust';renderMemoLinks();if($('routeInMemo'))$('routeInMemo').checked=!!o.routeInMemo;document.querySelectorAll('#memoWho button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.who===who));
   const lang='zh';const m=memoModel(o,who,lang);
   $('outMemo').textContent=memoText(m,false);$('memoDoc').innerHTML=memoHTML(m,false)}
 function payState(x){const r=calc(x),c=x.c;const amt=num(String(c.payAmt||'').replace(/[^\d.]/g,''));return{r,amt,match:amt>0&&amt===r.deposit}}
