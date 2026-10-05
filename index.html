@@ -212,6 +212,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
         <div class="card">
           <h3>加項與折扣</h3>
           <div class="fields">
+            <label class="f wide">限時優惠（只顯示、不影響金額；一行一項：名稱=每台金額）<textarea id="q_promo" data-b="promoText" rows="2" placeholder="指定白色=800"></textarea></label>
             <label class="f">實體甘蔗台數<input type="number" id="q_cane" data-b="cane" data-num min="0"></label>
             <label class="f">指定車頭彩費用<input type="number" id="q_deco" data-b="deco" data-num min="0" placeholder="800–1000"></label>
             <label class="f">加項名稱<input id="q_x0n" data-b="extras.0.n" placeholder="例：指定路線"></label>
@@ -568,7 +569,7 @@ rebuildModels();
 function newOrder(){return{
   id:'o'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
   sample:false,backHome:true,cityA:'',cityB:'',code:'',seq:'',_seqKey:'',_seq:'',date:'',hours:3,km:S.km,
-  cars:{X:1,S:0,Y:0,'3':0},zoneName:'',zones:0,tripKm:0,cane:0,deco:0,
+  cars:{X:1,S:0,Y:0,'3':0},zoneName:'',zones:0,tripKm:0,promoText:'',cane:0,deco:0,
   extras:[{n:'',a:0}],discName:'',discAmt:0,red:true,invoice:false,depOverride:'',note:'',
   src:{vendor:'',ref:'',rate:''},c:{combo:'',caneNote:'',chatName:'',channel:'LINE',groom:'',bride:'',role:'新娘',contact:'',phone:'',start:'',end:'',gather:'',
      meet:'',meetL:'男方家',meetS:'',wed:'',wedL:'女方家',wedS:'',o1:'',o1L:'',o1S:'',o2:'',o2L:'',o2S:'',meetMap:'',wedMap:'',o1Map:'',o2Map:'',route:'',rel:'',contact2:'',rel2:'',phone2:'',
@@ -690,8 +691,9 @@ function mult(unit,q,lang){return q>1?`${money(unit,lang)}×${q} = ${money(unit*
 function feeLines(x,lang){const t=L[lang],r=calc(x),hl=hrsLabel(x.hours),out=[];const short=x.hours<3;
   const within=t.within(hl,num(x.km));
   if(r.b){const nm=MODELS.filter(m=>num(x.cars[m])>0).map(m=>MNAME[m]+(num(x.cars[m])>1?'*'+num(x.cars[m]):'')).join(' + ');
-    out.push(lang==='zh'?`${r.b.name}方案 ${nm} ${money(r.b.price,lang)} ${within}`:`${nm} ${t.bundle} ${money(r.b.price,lang)} ${within}`)}
+    out.push(lang==='zh'?`${comboText(x.cars)}=${money(r.b.price,lang)} ${within}`:`${nm} ${t.bundle} ${money(r.b.price,lang)} ${within}`)}
   else MODELS.forEach(m=>{const q=num(x.cars[m]);if(q)out.push(`${MNAME[m]} ${mult(cPrice(m,x.hours).v,q,lang)} ${+x.hours===0?(lang==='en'?'(one-way transfer)':lang==='ja'?'(片道送迎)':'(單程接送)'):within}`)});
+  if(lang==='zh')String(x.promoText||'').split('\n').forEach(l=>{const m=l.split(/[=＝]/);const n=(m[0]||'').trim(),a=num(m[1]);if(n&&a)out.push(`${n} ${money(a)}*${r.n}=${money(a*r.n)}(限時優惠免收)`)});
   if(r.eh)MODELS.forEach(m=>{const q=num(x.cars[m]);if(q)out.push(`${MNAME[m]} ${t.ot} ${r.eh}HR ${mult(num(S.ot[m])*r.eh,q,lang)}`)});
   if(r.zone)out.push(`跨區/里程費 ${mult(zoneUnit(x),r.n,lang)}`);
   if(r.cane)out.push(`${t.cane} ${mult(num(S.cane),num(x.cane),lang)}`);
@@ -722,7 +724,7 @@ function orderText(x,lang){const r=calc(x),f=feeLines(x,lang),no=orderNo(x),link
    r.red?`[ ご祝儀 ${money(S.red,lang)}/台 は残金と一緒にメインカーのドライバーへ直接お渡しください ]`:'','','',`お振込先：`,S.bank,'',`2日以内に上記口座へ手付金をお振込みの上、下記フォームにご記入いただくとご予約完了となります：`,link,`（該当しない項目は N/A とご記入ください）`].join('\n');
  if(isMonthly(x))return [`您本次的訂單 (訂單編號：${no} ) 內容如下：`,`用車日期：${fmtDate(x.date)} `,`預約車款：${carsText(x,lang)}`,`車資由${vendorOf(x).name}統一結算，無需匯款訂金。`,'',
    (r.red||r.cane)?`用車當天請準備以下費用交給主禮車司機：`:'',r.red?`司機紅包 ${money(S.red)}×${r.n} = ${money(r.red)}`:'',r.cane?`甘蔗固定費 ${money(S.cane)}×${num(x.cane)} = ${money(r.cane)}`:'','',`請填寫以下表單以完成訂車流程：`,link,`( 若無相關內容之欄位可以 N/A 填寫 )`].filter((t,i,a)=>t!==''||a[i-1]!=='').join('\n');
- return [`您本次的訂單 (訂單編號：${no} ) 內容如下：`,`用車日期：${fmtDate(x.date)} `,`預約車款：${carsText(x,lang)}`,`費用明細：${f[0]||''}`,...f.slice(1),`合計=${money(r.total)}`,`方案金額：${money(r.total)} `,`應付訂金：${money(r.deposit)} `,
+ return [`您本次的訂單 (訂單編號：${no} ) 內容如下：`,`用車日期：${fmtDate(x.date)} `,`預約車款：${carsText(x,lang)}`,`費用明細：`,...f,`合計=${money(r.total)}`,`方案金額：${money(r.total)} `,`應付訂金：${money(r.deposit)} `,
    r.red?`[ 紅包${money(S.red)}/台同尾款直接交給主禮車司機 ]`:'','','',`匯款資訊：`,S.bank,'',`請於兩日內將訂金匯款至上列帳戶後填寫以下表單以完成訂車流程：`,link,`( 若無相關內容之欄位可以 N/A 填寫 )`].join('\n')}
 
 /* ---------- fleet ---------- */
