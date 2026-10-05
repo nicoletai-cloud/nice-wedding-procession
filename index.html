@@ -172,6 +172,8 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
         <div class="card">
           <h3>用車資訊</h3>
           <div class="fields">
+            <label class="f">客人顯示名稱（LINE / FB / IG）<input id="q_chat" data-b="c.chatName" placeholder="對話裡的名字"></label>
+            <label class="f">聯絡管道<select id="q_ch" data-b="c.channel"><option>LINE</option><option>FB</option><option>IG</option></select></label>
             <label class="f">用車日期<input type="date" id="q_date" data-b="date"></label>
             <label class="f">用車時數
               <select id="q_hours" data-b="hours" data-num>
@@ -328,7 +330,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
         </table></div>
       </div>
       <div class="card">
-        <h3>TimeTree 行程 <small>標題與備註</small></h3>
+        <h3>TimeTree 行程 <small>標題＝客人顯示名稱，FB／IG 會註明；內容＝報價＋合約連結</small></h3>
         <div class="fields">
           <label class="f wide">標題<div class="row" style="flex-wrap:nowrap"><input id="ttTitle" readonly style="flex:1"><button class="btn sm pri" data-copyv="ttTitle">複製</button></div></label>
         </div>
@@ -476,7 +478,7 @@ function newOrder(){return{
   sample:false,cityA:'',cityB:'',code:'',seq:'',_seqKey:'',_seq:'',date:'',hours:3,km:S.km,
   cars:{X:1,S:0,Y:0,'3':0},zoneName:'',zones:0,tripKm:0,cane:0,deco:0,
   extras:[{n:'',a:0}],discName:'',discAmt:0,red:true,invoice:false,depOverride:'',note:'',
-  c:{groom:'',bride:'',role:'新娘',contact:'',phone:'',start:'',end:'',gather:'',
+  c:{chatName:'',channel:'LINE',groom:'',bride:'',role:'新娘',contact:'',phone:'',start:'',end:'',gather:'',
      meet:'',meetL:'男方家',meetS:'',wed:'',wedL:'女方家',wedS:'',o1:'',o1L:'',o1S:'',o2:'',o2L:'',o2S:'',route:'',
      caneAns:'',decoAns:'',payDate:'',payAmt:'',last5:''},
   fleet:[],path:'',flow:[],lang:{q:'zh',o:'zh',m:'zh'},memoWho:'cust',mapLinks:true,
@@ -494,7 +496,7 @@ function sampleOrder(){const o=newOrder();Object.assign(o,{sample:true,cityA:'�
 let DB=store('nwcw_orders');
 if(!DB||!DB.orders||!Object.keys(DB.orders).length){const s=sampleOrder();DB={cur:s.id,orders:{[s.id]:s}}}
 let o=DB.orders[DB.cur]||Object.values(DB.orders)[0];
-function migrate(x){const d=newOrder();if(x.paid===undefined)x.paid=false;for(const k in d){if(x[k]===undefined)x[k]=clone(d[k])}for(const k in d.c){if(x.c[k]===undefined)x.c[k]=''}for(const k in d.lang){if(!x.lang[k])x.lang[k]='zh'}return x}
+function migrate(x){const d=newOrder();if(x.paid===undefined)x.paid=false;for(const k in d){if(x[k]===undefined)x[k]=clone(d[k])}for(const k in d.c){if(x.c[k]===undefined)x.c[k]=d.c[k]}for(const k in d.lang){if(!x.lang[k])x.lang[k]='zh'}return x}
 Object.values(DB.orders).forEach(migrate);
 function save(){o.updated=Date.now();DB.cur=o.id;DB.orders[o.id]=o;store('nwcw_orders',DB)}
 function saveS(){store('nwcw_settings',S)}
@@ -877,13 +879,8 @@ function paidText(x){const r=calc(x),c=x.c,ps=payState(x);const p=dparts(x.date)
   return [`您好，已收到您的訂金匯款，謝謝！`,`訂單編號：${orderNo(x)}`,`匯款日期：${c.payDate?fmtDate(c.payDate):'—'}｜金額：${ps.amt?money(ps.amt):money(r.deposit)}｜後五碼：${c.last5||'—'}`,'',
    `用車日期：${x.date?fmtDate(x.date)+'（'+WD.zh[p.w]+'）':'未定'} ${c.start||''}${c.end?'-'+c.end:''}`,`預約車款：${carsText(x,'zh')}`,`尾款金額：${money(r.balance)}${r.red?'（含司機禮）':''}`,'',
    `附上「禮車預約單暨合約書」，請確認內容無誤後簽名回傳。`,x.driveFolder?`合約檔案：${x.driveFolder}`:'',`司機資訊將於用車日三天前提供，有任何問題歡迎隨時與我們聯繫。`].filter((s,i,a)=>s!==''||a[i-1]!=='').join('\n').replace(/\n+$/,'')}
-function ttTitle(x){const c=x.c;const who=[c.groom,c.bride].filter(Boolean).join('&')||'新人';const area=areaOf('meet')||'';return `【禮車】${area?area+' ':''}${who} ${planName(x).replace(/^Tesla /,'')} ${c.start||''}${c.end?'-'+c.end:''}`.replace(/\s+/g,' ').trim()}
-function ttMemo(x){const r=calc(x),c=x.c;const L=[`訂單編號：${orderNo(x)}`,`用車：${c.start||'--:--'}-${c.end||'--:--'}（${hrsLabel(x.hours)}）｜司機集合 ${c.gather||'--:--'}`,`聯絡人：${contactName(x)||''}(${c.role}) ${c.phone||''}`];
-  points(x).filter(pt=>pt.addr).forEach(pt=>L.push(`${pt.k}. ${pt.title}：${pt.addr}${pt.label?'（'+pt.label+'）':''}`));
-  if(x.path)L.push(`流程：${x.path}`);x.flow.filter(f=>f.t||f.seg).forEach(f=>L.push(`  ${f.t||''} ${f.who?f.who+' ':''}${f.seg}`.trimEnd()));
-  L.push('車隊：');x.fleet.forEach(f=>L.push(`  ${f.role} ${MNAME[f.m]} ${f.plate||''} ${f.driver||''} ${f.phone||''}`.trimEnd()));
-  L.push(`甘蔗：${c.caneAns||(x.cane?'是':'否')}｜指定車頭彩：${c.decoAns||'否'}`,`尾款：${money(r.balance)}${r.red?'（含司機禮）':''}｜訂金：${x.paid?'已收':'未收'}`);
-  return L.join('\n')}
+function ttTitle(x){const c=x.c;const nm=c.chatName||[c.groom,c.bride].filter(Boolean).join('&')||'（未填客人名稱）';return nm+(c.channel&&c.channel!=='LINE'?`（${c.channel}）`:'')}
+function ttMemo(x){return [quoteText(x,'zh'),'',`訂單編號：${orderNo(x)}`,`合約：${x.driveFolder||'（合約尚未存到 Drive，存檔後會自動帶入連結）'}`].join('\n')}
 function renderPay(){const ps=payState(o),r=ps.r,c=o.c;
   $('payCheck').innerHTML=`<div><span>應付訂金</span><span>${money(r.deposit)}</span></div><div><span>新人填的匯款金額</span><span>${ps.amt?money(ps.amt):'未填'}</span></div>
    <div><span>匯款日期／後五碼</span><span>${c.payDate?fmtDate(c.payDate):'—'}／${esc(c.last5||'—')}</span></div>`;
