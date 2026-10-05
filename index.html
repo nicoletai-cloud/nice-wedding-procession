@@ -856,9 +856,12 @@ function memoBlocks(m){const t=m.t,B=[];B.push({t:'title',text:`好好禮車　�
   if(m.route)B.push({t:'h',text:t.route},{t:'p',text:m.route});
   B.push({t:'h',text:`${t.flow}：`},{t:'p',text:m.path},...m.flow.map(f=>({t:'p',text:f})),{t:'h',text:m.tipsTitle},...m.tips.map(x=>({t:'li',text:x})),{t:'h',text:t.pay});
   m.pay.forEach(x=>String(x).split('\n').forEach(l=>B.push({t:'p',text:l})));return B}
+function tplModel(x,who){const m=memoModel(x,who,'zh'),r=calc(x);const mc=(x.fleet||[]).find(f=>f.role==='主禮車');
+  return{no:m.no,wd:m.wd,dateLine:m.dateLine,gather:m.gather,contact:m.contact,boss:m.boss,plan:m.plan,flags:m.flags,fleet:m.fleet,pts:m.pts,path:m.path,flow:m.flow,route:m.route,pay:m.pay,
+    xTip:mc?mc.m==='X':num(x.cars.X)>0,bank:S.bank,monthly:!!r.mon}}
 async function makeMemoDocs(){const btn=$('btnMemoDocs');if(!S.driveUrl||!S.driveKey){toast('請先到「價目設定」填 Drive 網址和金鑰');showTab('settings');return}
   btn.disabled=true;$('memoDocMsg').textContent='建立中，約需 10 秒…';
-  try{const no=orderNo(o);const docs=[{key:'cust',name:`訂單編號:${no}`,blocks:memoBlocks(memoModel(o,'cust','zh'))},{key:'drv',name:`訂單編號:${no}-司機端`,blocks:memoBlocks(memoModel(o,'drv','zh'))}];
+  try{const no=orderNo(o);const docs=['cust','drv'].map(k=>({key:k,name:`訂單編號:${no}${k==='drv'?'-司機端':''}`,model:tplModel(o,k)}));
     const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'memo',orderNo:no,couple:[o.c.groom,o.c.bride].filter(Boolean).join('&'),docs})});
     const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');o.memoLinks=j.links;o.driveFolder=o.driveFolder||j.folder;save();renderMemoLinks();$('memoDocMsg').textContent='已更新';toast('memo 連結已更新')}
   catch(e){$('memoDocMsg').textContent='失敗：'+e.message}finally{btn.disabled=false}}
