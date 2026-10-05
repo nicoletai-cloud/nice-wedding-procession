@@ -145,6 +145,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
     <div class="brand"><b>好好禮車</b><span>Wedding Dispatch</span></div>
     <div class="orderbar">
       <select id="orderSel" aria-label="切換訂單"></select>
+      <button class="btn" id="btnCouple">新人資料</button>
       <button class="btn" id="btnNew">＋ 新訂單</button>
       <button class="btn" id="btnDup">複製此單</button>
       <button class="btn danger" id="btnDel">刪除</button>
@@ -279,68 +280,6 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
         <pre class="out" id="outPaid"></pre>
       </div>
     </div>
-    <details style="margin-top:18px">
-      <summary class="btn" style="display:inline-block;margin-bottom:12px">新人資料／貼上表單回覆／行前確認（需要時再點開）</summary>
-    <div class="grid">
-      <div class="card">
-        <h3>新人資料</h3>
-        <div class="fields">
-          <label class="f">新郎姓名<input id="c_groom" data-b="c.groom"></label>
-          <label class="f">新娘姓名<input id="c_bride" data-b="c.bride"></label>
-          <label class="f">主要聯絡人
-            <select id="c_role" data-b="c.role"><option>新郎</option><option>新娘</option><option>其他</option></select></label>
-          <label class="f">聯絡人姓名（其他時填）<input id="c_cname" data-b="c.contact"></label>
-          <label class="f">聯絡人關係（其他時填）<input id="c_rel" data-b="c.rel" placeholder="例：新娘妹妹"></label>
-          <label class="f">聯絡電話<input id="c_phone" data-b="c.phone" inputmode="tel"></label>
-          <label class="f">第二聯絡人<input id="c_contact2" data-b="c.contact2" placeholder="沒有就留空"></label>
-          <label class="f">第二聯絡人關係<input id="c_rel2" data-b="c.rel2" placeholder="例：新郎"></label>
-          <label class="f">第二聯絡人電話<input id="c_phone2" data-b="c.phone2" inputmode="tel"></label>
-          <label class="f">開始用車<input type="time" id="c_start" data-b="c.start"></label>
-          <label class="f">結束用車<input type="time" id="c_end" data-b="c.end"></label>
-          <label class="f">司機集合時間<input type="time" id="c_gather" data-b="c.gather"></label>
-          <label class="f wide">A. 集合地點（完整地址）<input id="c_meet" data-b="c.meet"></label>
-          <label class="f">A 標註<input id="c_meetL" data-b="c.meetL" placeholder="男方家"></label>
-          <label class="f wide">A 導航定位連結（地址搜尋不到才填）<input id="c_meetMap" data-b="c.meetMap" placeholder="https://maps.app.goo.gl/…"></label>
-          <label class="f">A 短地區（找司機用）<input id="c_meetS" data-b="c.meetS" placeholder="自動"></label>
-          <label class="f wide">B. 迎娶地點（完整地址）<input id="c_wed" data-b="c.wed"></label>
-          <label class="f">B 標註<input id="c_wedL" data-b="c.wedL" placeholder="女方家"></label>
-          <label class="f wide">B 導航定位連結（地址搜尋不到才填）<input id="c_wedMap" data-b="c.wedMap" placeholder="https://maps.app.goo.gl/…"></label>
-          <label class="f">B 短地區<input id="c_wedS" data-b="c.wedS" placeholder="自動"></label>
-          <label class="f wide">C. 其他地點 1<input id="c_o1" data-b="c.o1"></label>
-          <label class="f">C 標註<input id="c_o1L" data-b="c.o1L" placeholder="例：宴客飯店"></label>
-          <label class="f wide">C 導航定位連結（地址搜尋不到才填）<input id="c_o1Map" data-b="c.o1Map" placeholder="https://maps.app.goo.gl/…"></label>
-          <label class="f">C 短地區<input id="c_o1S" data-b="c.o1S" placeholder="自動"></label>
-          <label class="f wide">D. 其他地點 2<input id="c_o2" data-b="c.o2"></label>
-          <label class="f">D 標註<input id="c_o2L" data-b="c.o2L"></label>
-          <label class="f wide">D 導航定位連結（地址搜尋不到才填）<input id="c_o2Map" data-b="c.o2Map" placeholder="https://maps.app.goo.gl/…"></label>
-          <label class="f">D 短地區<input id="c_o2S" data-b="c.o2S" placeholder="自動"></label>
-          <label class="f wide">路線說明<textarea id="c_route" data-b="c.route"></textarea></label>
-          <label class="f">車頂掛實體甘蔗<select id="c_caneA" data-b="c.caneAns"><option value="">—</option><option>是</option><option>否</option><option>待確認</option></select></label>
-          <label class="f">付費指定車頭彩<select id="c_decoA" data-b="c.decoAns"><option value="">—</option><option>是</option><option>否</option><option>待確認</option></select></label>
-          <label class="f wide">合約備註<textarea id="c_note" data-b="note"></textarea></label>
-        </div>
-      </div>
-      <div class="stack">
-        <div class="card">
-          <h3>貼上表單回覆 <small>自動拆欄位</small></h3>
-          <textarea id="pasteBox" rows="9" placeholder="把「好好禮車訂單回覆」的回覆貼在這裡：可以是試算表整列（含或不含標題列），或回覆通知信的內容。"></textarea>
-          <div class="row" style="margin-top:8px"><button class="btn pri" id="btnParse">帶入欄位</button><span class="hint" id="parseMsg"></span></div>
-        </div>
-        <div class="card">
-          <h3>行前確認 <small>用車前一週傳給客人</small></h3>
-          <div class="row" style="justify-content:space-between;margin-bottom:6px"><span class="hint" style="margin:0">空白確認訊息</span><button class="btn sm pri" data-copy="outConfirm">複製</button></div>
-          <pre class="out" id="outConfirm"></pre>
-          <label class="f" style="margin-top:12px">貼上客人的回覆<textarea id="confirmBox" rows="8" placeholder="把客人填好的整段訊息貼在這裡"></textarea></label>
-          <div class="row" style="margin-top:8px"><button class="btn pri" id="btnConfirm">帶入並比對合約</button></div>
-          <div id="confirmResult" style="margin-top:10px"></div>
-        </div>
-        <div class="card">
-          <h3>小抄</h3>
-          <p class="hint" style="margin:0">集合時間預設為開始用車前 20 分鐘。短地區會自動從地址轉成「彰化大村」這種格式，只用在找司機訊息；合約和 memo 一律用完整地址。</p>
-        </div>
-      </div>
-    </div>
-    </details>
   </section>
 
   <!-- 3 合約 -->
@@ -527,6 +466,70 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 </div>
 <div class="toast" id="toast" role="status"></div>
 
+<div id="coupleModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
+  <div style="max-width:1180px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px">
+    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">新人資料 <small>可查詢、貼上表單回覆、修改；改完直接關閉即可</small></h3><button class="btn" id="btnCoupleClose">關閉</button></div>
+    <div class="grid">
+      <div class="card">
+        <h3>新人資料</h3>
+        <div class="fields">
+          <label class="f">新郎姓名<input id="c_groom" data-b="c.groom"></label>
+          <label class="f">新娘姓名<input id="c_bride" data-b="c.bride"></label>
+          <label class="f">主要聯絡人
+            <select id="c_role" data-b="c.role"><option>新郎</option><option>新娘</option><option>其他</option></select></label>
+          <label class="f">聯絡人姓名（其他時填）<input id="c_cname" data-b="c.contact"></label>
+          <label class="f">聯絡人關係（其他時填）<input id="c_rel" data-b="c.rel" placeholder="例：新娘妹妹"></label>
+          <label class="f">聯絡電話<input id="c_phone" data-b="c.phone" inputmode="tel"></label>
+          <label class="f">第二聯絡人<input id="c_contact2" data-b="c.contact2" placeholder="沒有就留空"></label>
+          <label class="f">第二聯絡人關係<input id="c_rel2" data-b="c.rel2" placeholder="例：新郎"></label>
+          <label class="f">第二聯絡人電話<input id="c_phone2" data-b="c.phone2" inputmode="tel"></label>
+          <label class="f">開始用車<input type="time" id="c_start" data-b="c.start"></label>
+          <label class="f">結束用車<input type="time" id="c_end" data-b="c.end"></label>
+          <label class="f">司機集合時間<input type="time" id="c_gather" data-b="c.gather"></label>
+          <label class="f wide">A. 集合地點（完整地址）<input id="c_meet" data-b="c.meet"></label>
+          <label class="f">A 標註<input id="c_meetL" data-b="c.meetL" placeholder="男方家"></label>
+          <label class="f wide">A 導航定位連結（地址搜尋不到才填）<input id="c_meetMap" data-b="c.meetMap" placeholder="https://maps.app.goo.gl/…"></label>
+          <label class="f">A 短地區（找司機用）<input id="c_meetS" data-b="c.meetS" placeholder="自動"></label>
+          <label class="f wide">B. 迎娶地點（完整地址）<input id="c_wed" data-b="c.wed"></label>
+          <label class="f">B 標註<input id="c_wedL" data-b="c.wedL" placeholder="女方家"></label>
+          <label class="f wide">B 導航定位連結（地址搜尋不到才填）<input id="c_wedMap" data-b="c.wedMap" placeholder="https://maps.app.goo.gl/…"></label>
+          <label class="f">B 短地區<input id="c_wedS" data-b="c.wedS" placeholder="自動"></label>
+          <label class="f wide">C. 其他地點 1<input id="c_o1" data-b="c.o1"></label>
+          <label class="f">C 標註<input id="c_o1L" data-b="c.o1L" placeholder="例：宴客飯店"></label>
+          <label class="f wide">C 導航定位連結（地址搜尋不到才填）<input id="c_o1Map" data-b="c.o1Map" placeholder="https://maps.app.goo.gl/…"></label>
+          <label class="f">C 短地區<input id="c_o1S" data-b="c.o1S" placeholder="自動"></label>
+          <label class="f wide">D. 其他地點 2<input id="c_o2" data-b="c.o2"></label>
+          <label class="f">D 標註<input id="c_o2L" data-b="c.o2L"></label>
+          <label class="f wide">D 導航定位連結（地址搜尋不到才填）<input id="c_o2Map" data-b="c.o2Map" placeholder="https://maps.app.goo.gl/…"></label>
+          <label class="f">D 短地區<input id="c_o2S" data-b="c.o2S" placeholder="自動"></label>
+          <label class="f wide">路線說明<textarea id="c_route" data-b="c.route"></textarea></label>
+          <label class="f">車頂掛實體甘蔗<select id="c_caneA" data-b="c.caneAns"><option value="">—</option><option>是</option><option>否</option><option>待確認</option></select></label>
+          <label class="f">付費指定車頭彩<select id="c_decoA" data-b="c.decoAns"><option value="">—</option><option>是</option><option>否</option><option>待確認</option></select></label>
+          <label class="f wide">合約備註<textarea id="c_note" data-b="note"></textarea></label>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <h3>貼上表單回覆 <small>自動拆欄位</small></h3>
+          <textarea id="pasteBox" rows="9" placeholder="把「好好禮車訂單回覆」的回覆貼在這裡：可以是試算表整列（含或不含標題列），或回覆通知信的內容。"></textarea>
+          <div class="row" style="margin-top:8px"><button class="btn pri" id="btnParse">帶入欄位</button><span class="hint" id="parseMsg"></span></div>
+        </div>
+        <div class="card">
+          <h3>行前確認 <small>用車前一週傳給客人</small></h3>
+          <div class="row" style="justify-content:space-between;margin-bottom:6px"><span class="hint" style="margin:0">空白確認訊息</span><button class="btn sm pri" data-copy="outConfirm">複製</button></div>
+          <pre class="out" id="outConfirm"></pre>
+          <label class="f" style="margin-top:12px">貼上客人的回覆<textarea id="confirmBox" rows="8" placeholder="把客人填好的整段訊息貼在這裡"></textarea></label>
+          <div class="row" style="margin-top:8px"><button class="btn pri" id="btnConfirm">帶入並比對合約</button></div>
+          <div id="confirmResult" style="margin-top:10px"></div>
+        </div>
+        <div class="card">
+          <h3>小抄</h3>
+          <p class="hint" style="margin:0">集合時間預設為開始用車前 20 分鐘。短地區會自動從地址轉成「彰化大村」這種格式，只用在找司機訊息；合約和 memo 一律用完整地址。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 <script>
 (function(){
 'use strict';
@@ -1197,6 +1200,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnApplyH':{if(o._suggestH){o.hours=o._suggestH;o._suggestH=null;save();fillInputs();renderCars();renderFleet();renderAll();$('confirmResult').insertAdjacentHTML('beforeend','<p class="hint">合約時數已更新，報價、合約、memo 都已重算。</p>');t.remove()}break}
    case 'btnParse':{const res=parseForm($('pasteBox').value);const n=applyForm(res);save();fillInputs();renderCars();syncFleet();renderFleet();renderFlow();renderAll();
      $('parseMsg').textContent=n?`已帶入 ${n} 個欄位，請核對。`:'沒有認出欄位，請確認貼上的是表單回覆。';break}
+   case 'btnCouple':$('coupleModal').hidden=false;break;
+   case 'btnCoupleClose':$('coupleModal').hidden=true;break;
    case 'btnNew':{o=newOrder();DB.orders[o.id]=o;syncFleet();save();loadOrder();toast('已建立新訂單');break}
    case 'btnDup':{const n=clone(o);n.id=newOrder().id;n.sample=false;n.seq='';n._seqKey='';n._seq='';n.c=Object.assign(newOrder().c,{});n.fleet=n.fleet.map(f=>Object.assign(f,{plate:'',driver:'',phone:''}));o=n;DB.orders[o.id]=o;save();loadOrder();toast('已複製車款與價格到新訂單');break}
    case 'btnDel':{if(Date.now()-delArm>3000){delArm=Date.now();t.textContent='再按一次確認刪除';setTimeout(()=>{t.textContent='刪除'},3000);break}
