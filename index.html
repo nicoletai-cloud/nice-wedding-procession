@@ -212,6 +212,12 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
         <div class="card">
           <h3>加項與折扣</h3>
           <div class="fields">
+            <label class="f">指定車色<select id="q_color" data-b="colorReq"><option value="">不指定</option><option>白色</option><option>黑色</option><option>紅色</option></select></label>
+            <label class="f">車色每台金額<input type="number" id="q_colorFee" data-b="colorFee" data-num min="0" placeholder="800"></label>
+            <label class="f">指定台數（空白＝全部）<input type="number" id="q_colorQty" data-b="colorQty" data-num min="0"></label>
+            <label class="f">車色收費<select id="q_colorMode" data-b="colorMode"><option value="free">優惠免收（不影響金額）</option><option value="add">加價</option></select></label>
+            <label class="f">優惠名稱<select id="q_colorWaive" data-b="colorWaive"><option>限時優惠</option><option>主管優惠</option><option value="婚顧">婚顧優惠（用推薦廠商名稱）</option></select></label>
+            <label class="f">車款<select id="q_colorRare" data-b="colorRare" data-bool><option value="0">一般車款</option><option value="1">稀有車款（合約加註）</option></select></label>
             <label class="f wide">限時優惠（只顯示、不影響金額；一行一項：名稱=每台金額）<textarea id="q_promo" data-b="promoText" rows="2" placeholder="指定白色=800"></textarea></label>
             <label class="f">實體甘蔗台數<input type="number" id="q_cane" data-b="cane" data-num min="0"></label>
             <label class="f">指定車頭彩費用<input type="number" id="q_deco" data-b="deco" data-num min="0" placeholder="800–1000"></label>
@@ -569,7 +575,7 @@ rebuildModels();
 function newOrder(){return{
   id:'o'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
   sample:false,backHome:true,cityA:'',cityB:'',code:'',seq:'',_seqKey:'',_seq:'',date:'',hours:3,km:S.km,
-  cars:{X:1,S:0,Y:0,'3':0},zoneName:'',zones:0,tripKm:0,promoText:'',cane:0,deco:0,
+  cars:{X:1,S:0,Y:0,'3':0},zoneName:'',zones:0,tripKm:0,promoText:'',colorReq:'',colorFee:800,colorQty:0,colorMode:'free',colorWaive:'限時優惠',colorRare:false,cane:0,deco:0,
   extras:[{n:'',a:0}],discName:'',discAmt:0,red:true,invoice:false,depOverride:'',note:'',
   src:{vendor:'',ref:'',rate:''},c:{combo:'',caneNote:'',chatName:'',channel:'LINE',groom:'',bride:'',role:'新娘',contact:'',phone:'',start:'',end:'',gather:'',
      meet:'',meetL:'男方家',meetS:'',wed:'',wedL:'女方家',wedS:'',o1:'',o1L:'',o1S:'',o2:'',o2L:'',o2S:'',meetMap:'',wedMap:'',o1Map:'',o2Map:'',route:'',rel:'',contact2:'',rel2:'',phone2:'',
@@ -663,7 +669,8 @@ function calc(x){
   let ot=0;MODELS.forEach(m=>ot+=num(x.cars[m])*num(S.ot[m])*eh);
   const zone=zoneUnit(x)*n,cane=num(x.cane)*num(S.cane),deco=num(x.deco);
   const extras=x.extras.reduce((a,e)=>a+num(e.a),0),red=x.red?n*num(S.red):0,disc=num(x.discAmt);
-  const pre=base+ot+zone+cane+deco+extras-disc;
+  const colorAdd=x.colorReq&&x.colorMode==='add'?num(x.colorFee)*(num(x.colorQty)||n):0;
+  const pre=base+ot+zone+cane+deco+extras+colorAdd-disc;
   const tax=x.invoice?Math.round(pre*0.05):0;
   const total=pre+tax+red;
   // driver pay
@@ -676,7 +683,7 @@ function calc(x){
   else deposit=ceil100(total*num(S.depPct)/100);
   const planFee=base+ot-disc;const refAmt=Math.round(planFee*refRate(x)/100);
   const mon=isMonthly(x);const onsite=red+cane;const bill=total-onsite;
-  return{planFee,refAmt,mon,onsite,bill,vb,n,b,eh,miss,base,listBase,ot,zone,cane,deco,extras,red,disc,tax,total,deposit,balance:mon?onsite:total-deposit,rent:total-red,dsum,dok}}
+  return{colorAdd,planFee,refAmt,mon,onsite,bill,vb,n,b,eh,miss,base,listBase,ot,zone,cane,deco,extras,red,disc,tax,total,deposit,balance:mon?onsite:total-deposit,rent:total-red,dsum,dok}}
 
 function qtyWord(q,lang){if(lang==='en')return '×'+q;if(lang==='ja')return q+'台';return (ZHN[q]||q)+'台'}
 function carsText(x,lang){const parts=MODELS.filter(m=>num(x.cars[m])>0).map((m,i,arr)=>((MBRAND[m]==='Tesla'&&(i===0||MBRAND[arr[i-1]]!=='Tesla'))?'Tesla ':'')+MNAME[m]+(lang==='en'?' ':' ')+qtyWord(num(x.cars[m]),lang));return parts.join(lang==='en'?', ':'、')||'—'}
@@ -693,6 +700,8 @@ function feeLines(x,lang){const t=L[lang],r=calc(x),hl=hrsLabel(x.hours),out=[];
   if(r.b){const nm=MODELS.filter(m=>num(x.cars[m])>0).map(m=>MNAME[m]+(num(x.cars[m])>1?'*'+num(x.cars[m]):'')).join(' + ');
     out.push(lang==='zh'?`${comboText(x.cars)}=${money(r.b.price,lang)} ${within}`:`${nm} ${t.bundle} ${money(r.b.price,lang)} ${within}`)}
   else MODELS.forEach(m=>{const q=num(x.cars[m]);if(q)out.push(`${MNAME[m]} ${mult(cPrice(m,x.hours).v,q,lang)} ${+x.hours===0?(lang==='en'?'(one-way transfer)':lang==='ja'?'(片道送迎)':'(單程接送)'):within}`)});
+  if(x.colorReq){const a=num(x.colorFee),cq=num(x.colorQty)||r.n,v=vendorOf(x),wv=x.colorWaive==='婚顧'?`${(x.src&&x.src.ref)||(v&&v.name)||'婚顧'}優惠`:(x.colorWaive||'限時優惠');
+    if(lang==='zh')out.push(a?`指定${x.colorReq} ${money(a)}*${cq}=${money(a*cq)}${x.colorMode==='add'?'':`(${wv}免收)`}`:`指定${x.colorReq}`);else if(r.colorAdd)out.push(`${lang==='ja'?'指定カラー':'Custom color'} ${mult(a,cq,lang)}`)}
   if(lang==='zh')String(x.promoText||'').split('\n').forEach(l=>{const m=l.split(/[=＝]/);const n=(m[0]||'').trim(),a=num(m[1]);if(n&&a)out.push(`${n} ${money(a)}*${r.n}=${money(a*r.n)}(限時優惠免收)`)});
   if(r.eh)MODELS.forEach(m=>{const q=num(x.cars[m]);if(q)out.push(`${MNAME[m]} ${t.ot} ${r.eh}HR ${mult(num(S.ot[m])*r.eh,q,lang)}`)});
   if(r.zone)out.push(`跨區/里程費 ${mult(zoneUnit(x),r.n,lang)}`);
@@ -845,7 +854,7 @@ function contractHTML(x){const r=calc(x),c=x.c;const F=v=>`<span class="fill">${
   const otRows=MODELS.map(m=>`${MNAME[m]} ${money(S.ot[m])}/時`).filter((s,i)=>num(x.cars[MODELS[i]])>0);
   const caneTxt=c.caneAns?(c.caneAns+(x.cane?`（${x.cane} 台）`:'')):(x.cane?`是（${x.cane} 台）`:'');
   const pd=c.payDate?fmtDate(c.payDate):'';
-  const noteBits=[x.note,c.decoAns==='是'?`指定車頭彩${x.deco?' '+money(x.deco):''}`:'',num(x.tripKm)?`總行程里程 ${num(x.tripKm)} 公里`:'' ,x.invoice?'本單開立發票，金額已含 5% 營業稅':''].filter(Boolean);
+  const noteBits=[x.note,x.colorReq?`指定${x.colorReq}`:'',x.colorRare?'*稀有車款,若無指定顏色將由其他車色替代':'',c.decoAns==='是'?`指定車頭彩${x.deco?' '+money(x.deco):''}`:'',num(x.tripKm)?`總行程里程 ${num(x.tripKm)} 公里`:'' ,x.invoice?'本單開立發票，金額已含 5% 營業稅':''].filter(Boolean);
   return `<table class="plain"><tr><td style="width:64px"><div class="ring">好<br>好</div></td><td class="logo"><b>好好禮車</b><i>Nice Wedding Car</i></td>
    <td class="contact">${esc(S.phone)}<br>${esc(S.email)}</td></tr></table>
   <table class="plain ttl"><tr><td style="width:30%"></td><td style="text-align:center"><h2>禮車預約單暨合約書</h2></td><td class="no" style="width:30%">訂單編號：${F(orderNo(x))}</td></tr></table>
@@ -1056,7 +1065,7 @@ function renderCars(){const brands=[];MODELS.forEach(m=>{const b=MBRAND[m]||'其
 document.addEventListener('toggle',e=>{const d=e.target;if(d.classList&&d.classList.contains('brand-grp')){if(d.open)openBrands.add(d.dataset.brand);else openBrands.delete(d.dataset.brand)}},true);
 function renderSum(){const r=calc(o);const rows=[];
   rows.push([r.b?`${r.b.name}方案`:'車資',money(r.base)]);if(r.b&&r.listBase>r.base)rows.push([`<span class="sub">原價 ${money(r.listBase)}，省 ${money(r.listBase-r.base)}</span>`,'']);
-  if(r.ot)rows.push([`超時 ${r.eh}HR`,money(r.ot)]);if(r.zone)rows.push([`跨區/里程費（${num(o.tripKm)}km）`,money(r.zone)]);if(r.cane)rows.push(['甘蔗固定費',money(r.cane)]);if(r.deco)rows.push(['指定車頭彩',money(r.deco)]);
+  if(r.ot)rows.push([`超時 ${r.eh}HR`,money(r.ot)]);if(r.zone)rows.push([`跨區/里程費（${num(o.tripKm)}km）`,money(r.zone)]);if(r.cane)rows.push(['甘蔗固定費',money(r.cane)]);if(r.colorAdd)rows.push([`指定${o.colorReq}`,money(r.colorAdd)]);if(r.deco)rows.push(['指定車頭彩',money(r.deco)]);
   if(r.vb!=null)rows.push([`<span class="sub">${esc(vendorOf(o).name)}配套價</span>`,'']);
   if(r.extras)rows.push(['加項',money(r.extras)]);if(r.disc)rows.push([o.discName||'折扣','-'+money(r.disc)]);if(r.tax)rows.push(['5% 營業稅',money(r.tax)]);if(r.red)rows.push([`司機禮 ×${r.n}`,money(r.red)]);
   $('sumBox').innerHTML=rows.map(([a,b])=>`<div><span>${a}</span><span>${b}</span></div>`).join('')+
