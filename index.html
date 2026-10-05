@@ -136,6 +136,50 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
   #contractPaper{position:absolute;left:0;top:0;margin:0;border-radius:0}
   @page{size:A4;margin:0}
 }
+/* ===== 裝置適配：iPhone Duo 外螢幕(~466pt)、內螢幕(~626pt 直向／~890pt 橫向)、MacBook Air ===== */
+html{-webkit-text-size-adjust:100%}
+.wrap{padding-inline:max(16px,env(safe-area-inset-left)) max(16px,env(safe-area-inset-right));padding-bottom:calc(48px + env(safe-area-inset-bottom,0px))}
+@media (min-width:1280px){.wrap{max-width:1240px}}
+nav.tabs{scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+nav.tabs button{scroll-snap-align:start}
+/* 觸控裝置：放大點擊區、輸入框 16px 避免 iPhone 點了就自動放大 */
+@media (pointer:coarse){
+  input,select,textarea{font-size:16px;min-height:44px}
+  textarea{min-height:88px}
+  .tbl input,.tbl select{font-size:16px;min-height:40px}
+  .btn{min-height:40px;padding:8px 14px}
+  .btn.sm{min-height:34px;padding:6px 11px}
+  nav.tabs button{padding:13px 14px}
+  .step button{width:38px;height:38px}
+  .seg button{padding:8px 12px}
+}
+/* 內螢幕（展開）與一般平板直向 */
+@media screen and (max-width:900px){
+  header.top .orderbar{width:100%}
+  .orderbar select{max-width:none;flex:1 1 100%}
+  .orderbar .btn{flex:1 1 0;text-align:center}
+  .paper{zoom:.74}
+}
+/* 外螢幕（合起來）與一般手機 */
+@media screen and (max-width:520px){
+  header.top{padding-block:12px 8px;gap:8px}
+  .brand b{font-size:20px}
+  .brand span{display:none}
+  header.top .orderbar{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .orderbar select{grid-column:1/-1;max-width:none}
+  .orderbar .btn{width:100%;text-align:center;padding-inline:6px}
+  nav.tabs button{padding-inline:11px;font-size:14px}
+  section.tab{padding-top:12px}
+  .grid{gap:12px}
+  .card{padding:13px}
+  .fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px}
+  .out{font-size:14px;max-height:none}
+  .doc{padding:12px}
+  .paper{zoom:.53}
+  #coupleModal{padding:10px 8px!important}
+  #coupleModal>div{padding:12px!important}
+}
+@media print{.paper{zoom:1}}
 </style>
 
 </head>
