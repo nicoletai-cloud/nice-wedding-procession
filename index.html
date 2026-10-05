@@ -387,6 +387,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
       <div class="seg" id="memoWho">
         <button data-who="cust" aria-pressed="true">客人用</button><button data-who="drv" aria-pressed="false">司機端</button>
       </div>
+      <label class="row" style="font-size:13px;color:var(--muted);gap:6px">方案備註（顯示在車頭彩下一行）<input id="flagNote" data-b="flagNote" placeholder="例：多預備三組門把彩" style="width:220px"></label>
       <label class="row" style="font-size:13px;color:var(--muted);gap:6px"><input type="checkbox" id="routeInMemo" style="width:auto"> 加入「行程說明」列（路線說明）</label>
       <label class="row" hidden style="font-size:13px;color:var(--muted);gap:6px"><input type="checkbox" id="mapLinks" style="width:auto"> 地址附 Google Map 連結</label>
     </div>
@@ -770,7 +771,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   }
   return{no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(c.end)}`,gather:ap(c.gather),
     contact:`${cname||''}${crole}  ${c.phone||''}`.trim(),boss:`${ld.driver||''} ${ld.phone||''}`.trim(),plan:planName(x),
-    flags:`${t.deco}：${yn(c.decoAns,lang)} / ${t.cane}：${yn(c.caneAns||(x.cane?'是':'否'),lang)}`,fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',
+    flags:`${t.deco}：${yn(c.decoAns,lang)} / ${t.cane}：${yn(c.caneAns||(x.cane?'是':'否'),lang)}`+((x.flagNote||'').trim()?`\n*${x.flagNote.trim()}`:''),fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',
     tips:who==='cust'?tipsC(x,lang):TIPS_D,tipsTitle:who==='cust'?t.tipsC:t.tipsD,pay,t}}
 function memoText(m,maps){const t=m.t,L2=[];
   L2.push(`好好禮車           ${t.orderNo}:${m.no}`,`Wedding Day ${m.wd}`,'———————',m.dateLine,`${t.gather}：${m.gather}`,`${t.contact}：${m.contact}`,`${t.boss}：${m.boss}`,'',`${t.plan}`,m.plan,m.flags,'');
