@@ -603,7 +603,7 @@ function dparts(d){if(!d)return null;const [y,m,dd]=d.split('-').map(Number);con
 const p2=n=>String(n).padStart(2,'0');
 function fmtDate(d,lang){const p=dparts(d);if(!p)return '（未定）';return `${p.y}/${p2(p.m)}/${p2(p.d)}`}
 function fmtMDW(d,lang){const p=dparts(d);if(!p)return '（未定）';const w=WD[lang||'zh'][p.w];return lang==='en'?`${p2(p.m)}/${p2(p.d)} (${w})`:`${p2(p.m)}/${p2(p.d)}(${w})`}
-function ap(t){if(!t)return '';const [h,m]=t.split(':').map(Number);return `${p2(h)}:${p2(m)}${h<12?'am':'pm'}`}
+function ap(t){if(!t)return '';const [h,m]=t.split(':').map(Number);return `${p2(h>12?h-12:h)}:${p2(m)}${h<12?'am':'pm'}`}
 function addMin(t,mins){if(!t)return '';let [h,m]=t.split(':').map(Number);let x=h*60+m+mins;x=(x+1440)%1440;return `${p2(Math.floor(x/60))}:${p2(x%60)}`}
 function hrsLabel(h){return +h===0?'單程':h+'HR'}
 function dstr(x){const p=dparts(x.date);return p?`${p.y}${p2(p.m)}${p2(p.d)}`:'YYYYMMDD'}
