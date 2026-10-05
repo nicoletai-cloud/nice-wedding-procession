@@ -383,6 +383,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
       <div class="seg" id="memoWho">
         <button data-who="cust" aria-pressed="true">客人用</button><button data-who="drv" aria-pressed="false">司機端</button>
       </div>
+      <label class="row" style="font-size:13px;color:var(--muted);gap:6px"><input type="checkbox" id="routeInMemo" style="width:auto"> 加入「行程說明」列（路線說明）</label>
       <label class="row" hidden style="font-size:13px;color:var(--muted);gap:6px"><input type="checkbox" id="mapLinks" style="width:auto"> 地址附 Google Map 連結</label>
     </div>
     <div class="card" style="margin-bottom:18px">
@@ -764,7 +765,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   }
   return{no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(c.end)}`,gather:ap(c.gather),
     contact:`${cname||''}${crole}  ${c.phone||''}`.trim(),boss:`${ld.driver||''} ${ld.phone||''}`.trim(),plan:planName(x),
-    flags:`${t.deco}：${yn(c.decoAns,lang)} / ${t.cane}：${yn(c.caneAns||(x.cane?'是':'否'),lang)}`+(c.combo?` / 訂結一起：${c.combo}`:'')+(c.caneNote?` / 女方甘蔗竹子：${c.caneNote}`:''),fleet,pts,path:x.path,flow,route:c.route,
+    flags:`${t.deco}：${yn(c.decoAns,lang)} / ${t.cane}：${yn(c.caneAns||(x.cane?'是':'否'),lang)}`,fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',
     tips:who==='cust'?tipsC(x,lang):TIPS_D,tipsTitle:who==='cust'?t.tipsC:t.tipsD,pay,t}}
 function memoText(m,maps){const t=m.t,L2=[];
   L2.push(`好好禮車           ${t.orderNo}:${m.no}`,`Wedding Day ${m.wd}`,'———————',m.dateLine,`${t.gather}：${m.gather}`,`${t.contact}：${m.contact}`,`${t.boss}：${m.boss}`,'',`${t.plan}`,m.plan,m.flags,'');
@@ -986,7 +987,8 @@ document.addEventListener('input',e=>{const el=e.target;
   if(el.id==='mapLinks'){o.mapLinks=el.checked;save();renderMemo()}
 });
 document.addEventListener('change',e=>{if(e.target.dataset.fl&&e.target.dataset.fl.endsWith('.role')){o.fleet.sort((a,b)=>{const r=x=>{const i=ROLES.indexOf(x.role);return i<0?9:i};return r(a)-r(b)});save();renderFleet();renderAll()}
-  if(e.target.id==='mapLinks'){o.mapLinks=e.target.checked;save();renderMemo()}});
+  if(e.target.id==='mapLinks'){o.mapLinks=e.target.checked;save();renderMemo()}
+  if(e.target.id==='routeInMemo'){o.routeInMemo=e.target.checked;save();renderMemo()}});
 
 /* ---------- renderers ---------- */
 function carRow(m){const cp=cPrice(m,o.hours);const pr=blank(S.price[m])?'客人價未設定':`${money(cp.v)}／${hrsLabel(o.hours)}${cp.miss?'（暫用 3HR 價）':''}${num(S.ot[m])?`・加時 ${money(S.ot[m])}/時`:''}`;
@@ -1026,7 +1028,7 @@ function renderFlow(){$('flowList').innerHTML=o.flow.map((f,i)=>`<div class="fr"
   <button class="btn sm" data-fdel="${i}" aria-label="刪除這段">✕</button></div>`).join('')}
 function renderLangs(){document.querySelectorAll('.seg[data-lang]').forEach(s=>{const k=s.dataset.lang;
   s.innerHTML=[['zh','繁中'],['en','English'],['ja','日本語']].map(([v,t])=>`<button type="button" data-setlang="${k}:${v}" aria-pressed="${o.lang[k]===v}">${t}</button>`).join('')})}
-function renderMemo(){const who=o.memoWho||'cust';document.querySelectorAll('#memoWho button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.who===who));
+function renderMemo(){const who=o.memoWho||'cust';if($('routeInMemo'))$('routeInMemo').checked=!!o.routeInMemo;document.querySelectorAll('#memoWho button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.who===who));
   const lang='zh';const m=memoModel(o,who,lang);
   $('outMemo').textContent=memoText(m,false);$('memoDoc').innerHTML=memoHTML(m,false)}
 function payState(x){const r=calc(x),c=x.c;const amt=num(String(c.payAmt||'').replace(/[^\d.]/g,''));return{r,amt,match:amt>0&&amt===r.deposit}}
