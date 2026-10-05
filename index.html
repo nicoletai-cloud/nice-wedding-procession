@@ -723,8 +723,8 @@ function quoteText(x,lang){const r=calc(x),f=feeLines(x,lang);const d=x.date?fmt
    x.invoice?'＊5%営業税込みの金額です。':'＊現金価格です（5%営業税別）。',`＊16分目から延長料金が発生し、1時間未満は1時間で計算します：${otRates(x,lang)}`,
    r.cane?'':`＊車の屋根に本物のサトウキビを付ける場合：${money(S.cane,lang)}/台`].filter(s=>s!=='').join('\n');
  return [`【好好禮車 報價】`,`用車日期：${d}`,(+x.hours===0?`用車方式：單程接送`:`用車時數：${hrsLabel(x.hours)}（${num(x.km)} 公里內）`),`預約車款：${carsText(x,lang)}`,`費用明細：`,...f,`合計=${money(r.total)}`,'',
-   x.invoice?'＊以上含發票 5% 營業稅':'＊以上為現金價，不含發票 5% 營業稅',`＊超過 15 分鐘內不加收，第 16 分鐘起計算超時（未滿一小時以一小時計）：${otRates(x,lang)}`,
-   r.cane?'':`＊實體甘蔗掛車頂另計 ${money(S.cane)}/台`,r.red?'':`＊不含司機紅包 ${money(S.red)}/台`].filter(s=>s!=='').join('\n')}
+   x.invoice?'＊以上含發票 5% 營業稅':'＊以上為現金價，不含發票 5% 營業稅',
+   r.red?'':`＊不含司機紅包 ${money(S.red)}/台`].filter(s=>s!=='').join('\n')}
 
 function orderText(x,lang){const r=calc(x),f=feeLines(x,lang),no=orderNo(x),link=formLink(x);
  if(lang==='en')return [`Your booking (Order No.: ${no}) details:`,`Date: ${fmtDate(x.date)}`,`Vehicle(s): ${carsText(x,lang)}`,`Charges: ${f[0]||''}`,...f.slice(1),`Total = ${money(r.total,lang)}`,`Package amount: ${money(r.total,lang)}`,`Deposit due: ${money(r.deposit,lang)}`,
