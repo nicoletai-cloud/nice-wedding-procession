@@ -335,7 +335,11 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
         <p class="hint">比對新人表單填的匯款金額和應付訂金。實際入帳請在將來銀行 App 看一眼後再按確認。</p>
       </div>
       <div class="card">
-        <h3>已收訂金通知 <small>附合約傳給客人</small></h3>
+        <h3>收到訂金回覆</h3>
+        <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm pri" data-copy="outPaidAck">複製</button></div>
+        <pre class="out" id="outPaidAck">已確認收到訂金，後續提供合約給您</pre>
+        <h3 style="margin-top:16px">提供合約 <small>附注意事項；有指定車色會自動拿掉第 7 點</small></h3>
+        <label class="f wide" style="margin-bottom:8px">合約連結（按「存到 Google Drive」後自動帶入，也可以自己貼）<input id="c_contractUrl" data-b="contractUrl" placeholder="https://drive.google.com/..."></label>
         <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm pri" data-copy="outPaid">複製</button></div>
         <pre class="out" id="outPaid"></pre>
       </div>
@@ -575,7 +579,7 @@ rebuildModels();
 function newOrder(){return{
   id:'o'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
   sample:false,backHome:true,cityA:'',cityB:'',code:'',seq:'',_seqKey:'',_seq:'',date:'',hours:3,km:S.km,
-  cars:{X:1,S:0,Y:0,'3':0},zoneName:'',zones:0,tripKm:0,promoText:'',colorReq:'',colorFee:800,colorQty:0,colorMode:'free',colorWaive:'限時優惠',colorRare:false,cane:0,deco:0,
+  cars:{X:1,S:0,Y:0,'3':0},zoneName:'',zones:0,tripKm:0,promoText:'',contractUrl:'',colorReq:'',colorFee:800,colorQty:0,colorMode:'free',colorWaive:'限時優惠',colorRare:false,cane:0,deco:0,
   extras:[{n:'',a:0}],discName:'',discAmt:0,red:true,invoice:false,depOverride:'',note:'',
   src:{vendor:'',ref:'',rate:''},c:{combo:'',caneNote:'',chatName:'',channel:'LINE',groom:'',bride:'',role:'新娘',contact:'',phone:'',start:'',end:'',gather:'',
      meet:'',meetL:'男方家',meetS:'',wed:'',wedL:'女方家',wedS:'',o1:'',o1L:'',o1S:'',o2:'',o2L:'',o2S:'',meetMap:'',wedMap:'',o1Map:'',o2Map:'',route:'',rel:'',contact2:'',rel2:'',phone2:'',
@@ -939,7 +943,7 @@ async function saveToDrive(){const btn=$('btnDrive');if(!S.driveUrl||!S.driveKey
   btn.disabled=true;btn.textContent='上傳中…';
   try{const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,orderNo:orderNo(o),html:contractPdfDoc(o),couple:[o.c.groom,o.c.bride].filter(Boolean).join('&')})});
     const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');
-    o.driveFolder=j.folder;save();$('driveLink').innerHTML=`<a href="${esc(j.folder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`;toast('合約 PDF 已存到 Drive')}
+    o.driveFolder=j.folder;if(j.file)o.contractUrl=j.file;save();fillInputs();renderAll();$('driveLink').innerHTML=`<a href="${esc(j.folder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`;toast('合約 PDF 已存到 Drive')}
   catch(e){toast('存檔失敗：'+e.message)}finally{btn.disabled=false;btn.textContent='存到 Google Drive'}}
 
 /* ---------- form paste parser ---------- */
@@ -1097,7 +1101,10 @@ function renderMemo(){const who=o.memoWho||'cust';renderMemoLinks();if($('routeI
   const lang='zh';const m=memoModel(o,who,lang);
   $('outMemo').textContent=memoText(m,false);$('memoDoc').innerHTML=memoHTML(m,false)}
 function payState(x){const r=calc(x),c=x.c;const amt=num(String(c.payAmt||'').replace(/[^\d.]/g,''));return{r,amt,match:amt>0&&amt===r.deposit}}
-function paidText(x){const r=calc(x),c=x.c,ps=payState(x);const p=dparts(x.date);
+function paidText(x){const tips=['禮車會提早大約20分鐘抵達集合地點，並佈置完車彩，如不先綁彩可提前告知。','如需要綁甘蔗豬肉，請提前告知準備專業工具架設。(甘蔗豬肉是新人自備，司機準備專用工具架設)','禮車行駛路線，請新人安排熟悉路線親友乘坐前導車引路，如無安排將依導航or司機熟悉路線行駛。','服務當天如有不能拍攝清晰人像照片之情況，請務必提前告知『客服』。','用車前三日會提供司機資訊，一天前司機會再次聯絡確認細節。','尾款、甘蔗固定費及司機禮請於用車日交給司機，可交由親友轉交。'];
+  if(!x.colorReq)tips.push('車色無法指定，一般為黑色或白色由派車人員安排。');
+  return ['已經收到訂金，合約提供您留存：',(x.contractUrl||'').trim()||'（請貼上合約連結）','',...tips.map((t,i)=>`${i+1}.${t}`)].join('\n')}
+function paidTextOld(x){const r=calc(x),c=x.c,ps=payState(x);const p=dparts(x.date);
   return [`您好，已收到您的訂金匯款，謝謝！`,`訂單編號：${orderNo(x)}`,`匯款日期：${c.payDate?fmtDate(c.payDate):'—'}｜金額：${ps.amt?money(ps.amt):money(r.deposit)}｜後五碼：${c.last5||'—'}`,'',
    `用車日期：${x.date?fmtDate(x.date)+'（'+WD.zh[p.w]+'）':'未定'} ${c.start||''}${c.end?'-'+c.end:''}`,`預約車款：${carsText(x,'zh')}`,`尾款金額：${money(r.balance)}${r.red?'（含司機禮）':''}`,'',
    `附上「禮車預約單暨合約書」，請確認內容無誤後簽名回傳。`,x.driveFolder?`合約檔案：${x.driveFolder}`:'',`司機資訊將於用車日三天前提供，有任何問題歡迎隨時與我們聯繫。`].filter((s,i,a)=>s!==''||a[i-1]!=='').join('\n').replace(/\n+$/,'')}
