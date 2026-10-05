@@ -260,7 +260,11 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
           <label class="f">主要聯絡人
             <select id="c_role" data-b="c.role"><option>新郎</option><option>新娘</option><option>其他</option></select></label>
           <label class="f">聯絡人姓名（其他時填）<input id="c_cname" data-b="c.contact"></label>
+          <label class="f">聯絡人關係（其他時填）<input id="c_rel" data-b="c.rel" placeholder="例：新娘妹妹"></label>
           <label class="f">聯絡電話<input id="c_phone" data-b="c.phone" inputmode="tel"></label>
+          <label class="f">第二聯絡人<input id="c_contact2" data-b="c.contact2" placeholder="沒有就留空"></label>
+          <label class="f">第二聯絡人關係<input id="c_rel2" data-b="c.rel2" placeholder="例：新郎"></label>
+          <label class="f">第二聯絡人電話<input id="c_phone2" data-b="c.phone2" inputmode="tel"></label>
           <label class="f">開始用車<input type="time" id="c_start" data-b="c.start"></label>
           <label class="f">結束用車<input type="time" id="c_end" data-b="c.end"></label>
           <label class="f">司機集合時間<input type="time" id="c_gather" data-b="c.gather"></label>
@@ -568,7 +572,7 @@ function newOrder(){return{
   cars:{X:1,S:0,Y:0,'3':0},zoneName:'',zones:0,tripKm:0,cane:0,deco:0,
   extras:[{n:'',a:0}],discName:'',discAmt:0,red:true,invoice:false,depOverride:'',note:'',
   src:{vendor:'',ref:'',rate:''},c:{combo:'',caneNote:'',chatName:'',channel:'LINE',groom:'',bride:'',role:'新娘',contact:'',phone:'',start:'',end:'',gather:'',
-     meet:'',meetL:'男方家',meetS:'',wed:'',wedL:'女方家',wedS:'',o1:'',o1L:'',o1S:'',o2:'',o2L:'',o2S:'',meetMap:'',wedMap:'',o1Map:'',o2Map:'',route:'',
+     meet:'',meetL:'男方家',meetS:'',wed:'',wedL:'女方家',wedS:'',o1:'',o1L:'',o1S:'',o2:'',o2L:'',o2S:'',meetMap:'',wedMap:'',o1Map:'',o2Map:'',route:'',rel:'',contact2:'',rel2:'',phone2:'',
      caneAns:'',decoAns:'',payDate:'',payAmt:'',last5:''},
   fleet:[],path:'',flow:[],lang:{q:'zh',o:'zh',m:'zh'},memoWho:'cust',mapLinks:true,
   updated:Date.now()}}
@@ -603,6 +607,7 @@ function dparts(d){if(!d)return null;const [y,m,dd]=d.split('-').map(Number);con
 const p2=n=>String(n).padStart(2,'0');
 function fmtDate(d,lang){const p=dparts(d);if(!p)return '（未定）';return `${p.y}/${p2(p.m)}/${p2(p.d)}`}
 function fmtMDW(d,lang){const p=dparts(d);if(!p)return '（未定）';const w=WD[lang||'zh'][p.w];return lang==='en'?`${p2(p.m)}/${p2(p.d)} (${w})`:`${p2(p.m)}/${p2(p.d)}(${w})`}
+const ph=s=>String(s||'').replace(/[-\s]/g,'');
 function ap(t){if(!t)return '';const [h,m]=t.split(':').map(Number);return `${p2(h>12?h-12:h)}:${p2(m)}${h<12?'am':'pm'}`}
 function addMin(t,mins){if(!t)return '';let [h,m]=t.split(':').map(Number);let x=h*60+m+mins;x=(x+1440)%1440;return `${p2(Math.floor(x/60))}:${p2(x%60)}`}
 function hrsLabel(h){return +h===0?'單程':h+'HR'}
@@ -764,9 +769,9 @@ function tipsC(x,lang){const mc=(x.fleet||[]).find(f=>f.role==='主禮車');cons
  return ({zh,en,ja}[lang]).filter(Boolean)}
 const TIPS_D=['前一天確實清潔車輛及充電、遵守服裝規定、調整座椅角度、注意禮貌積極協助新人及負責人完成任務、抽菸請迴避新人。','請事先將所有行程定點設定於導航中，點選上列地址連結後可跳轉至 Google Map。','安全第一：車隊行駛跟車中務必以安全為第一考量，若車隊中斷可在定點集合後再出發。','保護車輛：為避免損傷車輛，請主動協助新人開關車門及行李箱，施放鞭炮建議客人下車施放，待鞭炮結束後車隊再行駛。','遵守禮俗：迎娶中禮車不能倒車、迴轉，狹窄巷弄請特別留意注意轉彎角度。','任務當天起床、出發、到點請在群組回報。','車隊出發、任務結束請負責人在群組回報。','任務結束請確實查看車上是否有客人遺留物品並交還對講機後方可離開。'];
 function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
-  const cname=contactName(x),crole=c.role==='其他'?'':`(${lang==='en'?(c.role==='新郎'?'Groom':'Bride'):lang==='ja'?(c.role==='新郎'?'新郎':'新婦'):c.role})`;
+  const cname=contactName(x),crole=c.role==='其他'?((c.rel||'').trim()?`(${c.rel.trim()})`:''):`(${lang==='en'?(c.role==='新郎'?'Groom':'Bride'):lang==='ja'?(c.role==='新郎'?'新郎':'新婦'):c.role})`;
   const p=dparts(x.date);
-  const fleet=x.fleet.map(f=>({role:roleName(f.role,lang),plate:f.plate,driver:(f.driver||'')+(f.lead?' '+t.lead:''),car:(f.up||'').trim()&&f.up.trim()!==MNAME[f.m]?`${f.up.trim()}(升等)`:MNAME[f.m],spec:`${colorName(f.color||'',lang)} ${t.seats(f.seats||S.seats[f.m])}`.trim(),phone:f.phone}));
+  const fleet=x.fleet.map(f=>({role:roleName(f.role,lang),plate:f.plate,driver:(f.driver||'')+(f.lead?' '+t.lead:''),car:(f.up||'').trim()&&f.up.trim()!==MNAME[f.m]?`${f.up.trim()}(升等)`:MNAME[f.m],spec:`${colorName(f.color||'',lang)} ${t.seats(f.seats||S.seats[f.m])}`.trim(),phone:ph(f.phone)}));
   const pts=points(x).filter(pt=>pt.addr).map(pt=>({k:pt.k,title:pt.k==='A'?t.meet:pt.k==='B'?t.wed:t.other,addr:pt.addr,label:pt.label,map:pt.map}));
   const flow=x.flow.filter(f=>f.t||f.seg).map(f=>`${f.e?`${f.t}-${f.e}`:ap(f.t)} ${f.who?f.who+' ':''}${f.seg}`.trim());
   let pay=[];
@@ -786,7 +791,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
     const back=r.balance-r.dsum;if(r.mon){if(r.dok&&r.dsum>r.onsite)pay.push('',`差額 ${money(r.dsum-r.onsite)} 由公司匯款`)}else if(x.balPaid)pay.push('','酬勞由公司匯款');else if(!r.mon&&r.dok&&back>0)pay.push('',`匯回 ${money(back)}`);else if(!r.mon&&r.dok&&back<0)pay.push('',`差額 ${money(-back)} 由公司匯款`);
   }
   return{no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(c.end)}`,gather:ap(c.gather),
-    contact:`${cname||''}${crole}  ${c.phone||''}`.trim(),boss:`${ld.driver||''} ${ld.phone||''}`.trim(),plan:planName(x),
+    contact:(c.contact2||'').trim()?`\n${cname||''}${crole}  ${ph(c.phone)} / ${c.contact2.trim()}${(c.rel2||'').trim()?`(${c.rel2.trim()})`:''} ${ph(c.phone2)}`.trimEnd():`${cname||''}${crole}  ${ph(c.phone)}`.trim(),boss:`${ld.driver||''} ${ph(ld.phone)}`.trim(),plan:planName(x),
     flags:`${t.deco}：${yn(c.decoAns,lang)} / ${t.cane}：${yn(c.caneAns||(x.cane?'是':'否'),lang)}`+((x.flagNote||'').trim()?`\n*${x.flagNote.trim()}`:''),fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',
     tips:who==='cust'?tipsC(x,lang):TIPS_D,tipsTitle:who==='cust'?t.tipsC:t.tipsD,pay,t}}
 function memoText(m,maps){const t=m.t,L2=[];
@@ -890,7 +895,7 @@ function memoBlocks(m){const t=m.t,B=[];B.push({t:'title',text:`好好禮車　�
   B.push({t:'h',text:`${t.flow}：`},{t:'p',text:m.path},...m.flow.map(f=>({t:'p',text:f})),{t:'h',text:m.tipsTitle},...m.tips.map(x=>({t:'li',text:x})),{t:'h',text:t.pay});
   m.pay.forEach(x=>String(x).split('\n').forEach(l=>B.push({t:'p',text:l})));return B}
 function tplModel(x,who){const m=memoModel(x,who,'zh'),r=calc(x);const mc=(x.fleet||[]).find(f=>f.role==='主禮車');
-  return{no:m.no,wd:m.wd,dateLine:m.dateLine,gather:m.gather,contact:m.contact,boss:m.boss,plan:m.plan,flags:m.flags.split(' / ').slice(0,2).join(' / '),fleet:m.fleet,pts:m.pts,path:m.path,flow:m.flow,route:(m.route||'').replace(/\n/g,'\r'),pay:m.pay,
+  return{no:m.no,wd:m.wd,dateLine:m.dateLine,gather:m.gather,contact:m.contact.replace(/\n/g,'\r'),boss:m.boss,plan:m.plan,flags:m.flags.split(' / ').slice(0,2).join(' / '),fleet:m.fleet,pts:m.pts,path:m.path,flow:m.flow,route:(m.route||'').replace(/\n/g,'\r'),pay:m.pay,
     xTip:mc?mc.m==='X':num(x.cars.X)>0,bank:S.bank,monthly:!!r.mon}}
 async function calcKm(){const c=o.c,cl=s=>String(s||'').replace(/（[^）]*）|\([^)]*\)/g,'').trim();
   const A=cl(c.meet),B=cl(c.wed),C=cl(c.o1),back=o.backHome!==false;
@@ -1090,7 +1095,7 @@ function ttTitle(x){const c=x.c;const nm=c.chatName||[c.groom,c.bride].filter(Bo
   return `${ch}${nm}${ref}-禮車${cities?'-'+cities:''}${p?'-'+p.m+'/'+p.d:''}`}
 function lgName(x){const c=x.c,p=dparts(x.date);const nm=[c.groom,c.bride].filter(Boolean).join('&')||c.chatName||'客人';return `${p?p.m+'/'+p.d+' ':''}${nm} 禮車`}
 function lgMsg(x){const c=x.c,p=dparts(x.date),L=x.memoLinks||{},ld=lead(x)||{};
-  const cars=x.fleet.map(f=>[`${f.role}｜${MNAME[f.m]} ${f.color||''}｜${f.plate||'—'}`,`　${f.driver||'（未派）'}${f.lead?'（負責人）':''} ${f.phone||''}`.trimEnd(),f.emg?`　緊急聯絡：${f.emg}`:''].filter(Boolean).join('\n'));
+  const cars=x.fleet.map(f=>[`${f.role}｜${MNAME[f.m]} ${f.color||''}｜${f.plate||'—'}`,`　${f.driver||'（未派）'}${f.lead?'（負責人）':''} ${ph(f.phone)}`.trimEnd(),f.emg?`　緊急聯絡：${ph(f.emg)}`:''].filter(Boolean).join('\n'));
   return ['各位司機好，這是本次禮車任務群組',`訂單編號：${orderNo(x)}`,`日期：${x.date?fmtDate(x.date)+'（'+WD.zh[p.w]+'）':'未定'}`,`司機集合：${c.gather||'—'}　${c.meetL?c.meetL+'：':''}${c.meet||''}`.trimEnd(),`用車時間：${c.start||'--:--'} - ${c.end||'--:--'}`,
     `派車單：${L.drv||'（請先到「司機／客人 memo」產生連結）'}`,'','車隊',...cars,'',`負責人：${ld.driver||'—'}`,'請大家看完派車單回覆「收到」，當天出發前在群組報到，謝謝！'].join('\n')}
 function ttMemo(x){return [quoteText(x,'zh'),'',`訂單編號：${orderNo(x)}`,`合約：${x.driveFolder||'（合約尚未存到 Drive，存檔後會自動帶入連結）'}`].join('\n')}
