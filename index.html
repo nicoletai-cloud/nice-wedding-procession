@@ -752,7 +752,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   const p=dparts(x.date);
   const fleet=x.fleet.map(f=>({role:roleName(f.role,lang),plate:f.plate,driver:(f.driver||'')+(f.lead?' '+t.lead:''),car:`${f.up||MNAME[f.m]}`,spec:`${colorName(f.color||'',lang)} ${t.seats(f.seats||S.seats[f.m])}`.trim(),phone:f.phone}));
   const pts=points(x).filter(pt=>pt.addr).map(pt=>({k:pt.k,title:pt.k==='A'?t.meet:pt.k==='B'?t.wed:t.other,addr:pt.addr,label:pt.label,map:pt.map}));
-  const flow=x.flow.filter(f=>f.t||f.seg).map(f=>`${ap(f.t)} ${f.who?f.who+' ':''}${f.seg}`.trim());
+  const flow=x.flow.filter(f=>f.t||f.seg).map(f=>`${f.e?`${f.t}-${f.e}`:ap(f.t)} ${f.who?f.who+' ':''}${f.seg}`.trim());
   let pay=[];
   const otl=MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m])}/HR`).join(' ; ');
   if(who==='cust'){
@@ -1034,7 +1034,7 @@ function renderFleet(){$('fleetBody').innerHTML=o.fleet.map((f,i)=>{const dp=dri
   <td><input type="number" data-fl="${i}.seats" id="fl_s${i}" value="${esc(f.seats)}" style="width:62px"></td>
   <td><input type="number" data-fl="${i}.pay" id="fl_y${i}" value="${esc(f.pay)}" placeholder="${dp==null?'未設定':dp}" style="width:96px"></td>
   <td style="text-align:center"><input type="radio" name="leadR" data-fl="${i}.lead" id="fl_l${i}" ${f.lead?'checked':''} style="width:auto" aria-label="負責人"></td></tr>`}).join('')||'<tr><td colspan="11" class="hint">先在「報價」選車款。</td></tr>'}
-function renderFlow(){$('flowList').innerHTML=o.flow.map((f,i)=>`<div class="fr"><input type="time" data-fw="${i}.t" id="fw_t${i}" value="${esc(f.t)}" aria-label="時間">
+function renderFlow(){$('flowList').innerHTML=o.flow.map((f,i)=>`<div class="fr"><input type="time" data-fw="${i}.t" id="fw_t${i}" value="${esc(f.t)}" aria-label="時間"><input type="time" data-fw="${i}.e" id="fw_e${i}" value="${esc(f.e||'')}" aria-label="到（可留空）" title="到（可留空）">
   <input class="who" data-fw="${i}.who" id="fw_w${i}" value="${esc(f.who)}" placeholder="全車隊" aria-label="車輛">
   <input class="sg" data-fw="${i}.seg" id="fw_s${i}" value="${esc(f.seg)}" placeholder="A - B" aria-label="路段">
   <button class="btn sm" data-fdel="${i}" aria-label="刪除這段">✕</button></div>`).join('')}
