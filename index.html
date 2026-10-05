@@ -479,6 +479,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
             <label class="f">訂單編號欄位 entry<input data-s="formEntry" id="s_entry"></label>
             <label class="f wide">Google Drive 存檔網址（Apps Script）<input data-s="driveUrl" id="s_driveUrl" placeholder="https://script.google.com/macros/s/…/exec"></label>
             <label class="f">Drive 金鑰<input data-s="driveKey" id="s_driveKey"></label>
+            <label class="f wide">司機教案網址（只存在這台電腦，不會公開）<input data-s="lessonUrl" id="s_lesson" placeholder="https://sites.google.com/…"></label>
           </div>
           <div class="row" style="margin-top:12px"><button class="btn danger" id="btnResetS">恢復預設價目</button><span class="hint" id="resetMsg"></span></div>
         </div>
@@ -872,12 +873,14 @@ async function makeMemoDocs(){const btn=$('btnMemoDocs');if(!S.driveUrl||!S.driv
     const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'memo',orderNo:no,couple:[o.c.groom,o.c.bride].filter(Boolean).join('&'),docs})});
     const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');o.memoLinks=j.links;o.driveFolder=o.driveFolder||j.folder;save();renderMemoLinks();$('memoDocMsg').textContent='已更新';toast('memo 連結已更新')}
   catch(e){$('memoDocMsg').textContent='失敗：'+e.message}finally{btn.disabled=false}}
+function drvLinkText(du){return ['提供行程及注意事項：',du,'','感謝大家的支援，','雖然大部分的人都不是第一次出任務了，','但為了讓客人有一致的服務體驗，','請每一位詳細閱讀以下教案內容：',(S.lessonUrl||'（請到「價目設定」填司機教案網址）')+' (請勿外傳)','',
+  '* 左上角點選三條線後有每一個職責需要留意的內容，請務必詳讀。','* 負責人可點選綠色按鈕複製發文模板。','* 內容會持續更新，請務必每次任務前都詳細閱讀。','* 詳讀完畢請在此回覆。'].join('\n')}
 function upText(x){const g={};(x.fleet||[]).forEach(f=>{const u=(f.up||'').trim();if(u&&u!==MNAME[f.m])(g[u]=g[u]||[]).push(f.role)});const k=Object.keys(g);if(!k.length)return '';
   return '\n\n'+k.map(u=>`${[...new Set(g[u])].join('、')}有幫您升等為 ${u}`).join('；')+'，再請幫我們多多推薦喔！'}
 function renderMemoLinks(){const L=o.memoLinks||{};const row=(k,label)=>L[k]?`<div><span>${label}</span><span class="row" style="gap:6px"><a href="${esc(L[k])}" target="_blank" rel="noopener">開啟</a><button class="btn sm" data-copytext="${esc(L[k])}">複製連結</button></span></div>`:'';
   const cu=L.cust?String(L.cust).replace(/\?.*$/,''):'';
   $('memoLinks').innerHTML=(row('cust','客人 memo')+row('drv','司機派車單')||'<div class="sub">還沒有產生連結。</div>')+(cu?`<div class="row" style="justify-content:space-between;margin:12px 0 6px"><span class="hint" style="margin:0">傳給客人的訊息</span><button class="btn sm pri" data-copy="custLinkMsg">複製</button></div><pre class="out" id="custLinkMsg">提供司機資訊及注意事項：
-${esc(cu)}${esc(upText(o))}</pre>`:'');if($('lgMsg'))$('lgMsg').textContent=lgMsg(o)}
+${esc(cu)}${esc(upText(o))}</pre>`:'')+(L.drv?`<div class="row" style="justify-content:space-between;margin:12px 0 6px"><span class="hint" style="margin:0">傳給司機的訊息</span><button class="btn sm pri" data-copy="drvLinkMsg">複製</button></div><pre class="out" id="drvLinkMsg">${esc(drvLinkText(String(L.drv).replace(/\?.*$/,'')+'?usp=sharing'))}</pre>`:'');if($('lgMsg'))$('lgMsg').textContent=lgMsg(o)}
 async function saveToDrive(){const btn=$('btnDrive');if(!S.driveUrl||!S.driveKey){toast('請先到「價目設定」填 Drive 網址和金鑰');showTab('settings');return}
   btn.disabled=true;btn.textContent='上傳中…';
   try{const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,orderNo:orderNo(o),html:contractPdfDoc(o),couple:[o.c.groom,o.c.bride].filter(Boolean).join('&')})});
