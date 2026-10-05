@@ -382,7 +382,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
       <div class="seg" id="memoWho">
         <button data-who="cust" aria-pressed="true">客人用</button><button data-who="drv" aria-pressed="false">司機端</button>
       </div>
-      <label class="row" style="font-size:13px;color:var(--muted);gap:6px"><input type="checkbox" id="mapLinks" style="width:auto"> 地址附 Google Map 連結</label>
+      <label class="row" hidden style="font-size:13px;color:var(--muted);gap:6px"><input type="checkbox" id="mapLinks" style="width:auto"> 地址附 Google Map 連結</label>
     </div>
     <div class="card" style="margin-bottom:18px">
       <h3>memo 連結 <small>Google 文件，知道連結的人可檢視；資料改了再按一次，連結不變</small></h3>
@@ -852,7 +852,7 @@ function contractPdfDoc(x){
 function memoBlocks(m){const t=m.t,B=[];B.push({t:'title',text:`好好禮車　　${t.orderNo}:${m.no}`},{t:'p',text:`Wedding Day ${m.wd}`},{t:'p',text:'———————'},{t:'p',text:m.dateLine},
   {t:'p',text:`${t.gather}：${m.gather}`},{t:'p',text:`${t.contact}：${m.contact}`},{t:'p',text:`${t.boss}：${m.boss}`},{t:'h',text:t.plan},{t:'p',text:m.plan},{t:'p',text:m.flags},
   {t:'table',rows:[[t.order,t.plate,t.driver,t.car,t.phone],...m.fleet.map(f=>[f.role||'',f.plate||'',f.driver||'',`${f.car}\n${f.spec}`,f.phone||''])]});
-  m.pts.forEach(p=>{B.push({t:'h',text:`${p.k}. ${p.title}`},{t:'link',text:p.addr,url:mapUrl(p.addr)});if(p.label)B.push({t:'p',text:`(${p.label})`})});
+  m.pts.forEach(p=>{B.push({t:'h',text:`${p.k}. ${p.title}`},{t:'p',text:p.addr});if(p.label)B.push({t:'p',text:`(${p.label})`})});
   if(m.route)B.push({t:'h',text:t.route},{t:'p',text:m.route});
   B.push({t:'h',text:`${t.flow}：`},{t:'p',text:m.path},...m.flow.map(f=>({t:'p',text:f})),{t:'h',text:m.tipsTitle},...m.tips.map(x=>({t:'li',text:x})),{t:'h',text:t.pay});
   m.pay.forEach(x=>String(x).split('\n').forEach(l=>B.push({t:'p',text:l})));return B}
@@ -1022,7 +1022,7 @@ function renderLangs(){document.querySelectorAll('.seg[data-lang]').forEach(s=>{
   s.innerHTML=[['zh','繁中'],['en','English'],['ja','日本語']].map(([v,t])=>`<button type="button" data-setlang="${k}:${v}" aria-pressed="${o.lang[k]===v}">${t}</button>`).join('')})}
 function renderMemo(){const who=o.memoWho||'cust';document.querySelectorAll('#memoWho button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.who===who));
   const lang='zh';const m=memoModel(o,who,lang);
-  $('outMemo').textContent=memoText(m,o.mapLinks);$('memoDoc').innerHTML=memoHTML(m,o.mapLinks)}
+  $('outMemo').textContent=memoText(m,false);$('memoDoc').innerHTML=memoHTML(m,false)}
 function payState(x){const r=calc(x),c=x.c;const amt=num(String(c.payAmt||'').replace(/[^\d.]/g,''));return{r,amt,match:amt>0&&amt===r.deposit}}
 function paidText(x){const r=calc(x),c=x.c,ps=payState(x);const p=dparts(x.date);
   return [`您好，已收到您的訂金匯款，謝謝！`,`訂單編號：${orderNo(x)}`,`匯款日期：${c.payDate?fmtDate(c.payDate):'—'}｜金額：${ps.amt?money(ps.amt):money(r.deposit)}｜後五碼：${c.last5||'—'}`,'',
