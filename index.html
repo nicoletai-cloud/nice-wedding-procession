@@ -259,15 +259,19 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
           <label class="f">司機集合時間<input type="time" id="c_gather" data-b="c.gather"></label>
           <label class="f wide">A. 集合地點（完整地址）<input id="c_meet" data-b="c.meet"></label>
           <label class="f">A 標註<input id="c_meetL" data-b="c.meetL" placeholder="男方家"></label>
+          <label class="f wide">A 導航定位連結（地址搜尋不到才填）<input id="c_meetMap" data-b="c.meetMap" placeholder="https://maps.app.goo.gl/…"></label>
           <label class="f">A 短地區（找司機用）<input id="c_meetS" data-b="c.meetS" placeholder="自動"></label>
           <label class="f wide">B. 迎娶地點（完整地址）<input id="c_wed" data-b="c.wed"></label>
           <label class="f">B 標註<input id="c_wedL" data-b="c.wedL" placeholder="女方家"></label>
+          <label class="f wide">B 導航定位連結（地址搜尋不到才填）<input id="c_wedMap" data-b="c.wedMap" placeholder="https://maps.app.goo.gl/…"></label>
           <label class="f">B 短地區<input id="c_wedS" data-b="c.wedS" placeholder="自動"></label>
           <label class="f wide">C. 其他地點 1<input id="c_o1" data-b="c.o1"></label>
           <label class="f">C 標註<input id="c_o1L" data-b="c.o1L" placeholder="例：宴客飯店"></label>
+          <label class="f wide">C 導航定位連結（地址搜尋不到才填）<input id="c_o1Map" data-b="c.o1Map" placeholder="https://maps.app.goo.gl/…"></label>
           <label class="f">C 短地區<input id="c_o1S" data-b="c.o1S" placeholder="自動"></label>
           <label class="f wide">D. 其他地點 2<input id="c_o2" data-b="c.o2"></label>
           <label class="f">D 標註<input id="c_o2L" data-b="c.o2L"></label>
+          <label class="f wide">D 導航定位連結（地址搜尋不到才填）<input id="c_o2Map" data-b="c.o2Map" placeholder="https://maps.app.goo.gl/…"></label>
           <label class="f">D 短地區<input id="c_o2S" data-b="c.o2S" placeholder="自動"></label>
           <label class="f wide">路線說明<textarea id="c_route" data-b="c.route"></textarea></label>
           <label class="f">車頂掛實體甘蔗<select id="c_caneA" data-b="c.caneAns"><option value="">—</option><option>是</option><option>否</option><option>待確認</option></select></label>
@@ -548,7 +552,7 @@ function newOrder(){return{
   cars:{X:1,S:0,Y:0,'3':0},zoneName:'',zones:0,tripKm:0,cane:0,deco:0,
   extras:[{n:'',a:0}],discName:'',discAmt:0,red:true,invoice:false,depOverride:'',note:'',
   src:{vendor:'',ref:'',rate:''},c:{combo:'',caneNote:'',chatName:'',channel:'LINE',groom:'',bride:'',role:'新娘',contact:'',phone:'',start:'',end:'',gather:'',
-     meet:'',meetL:'男方家',meetS:'',wed:'',wedL:'女方家',wedS:'',o1:'',o1L:'',o1S:'',o2:'',o2L:'',o2S:'',route:'',
+     meet:'',meetL:'男方家',meetS:'',wed:'',wedL:'女方家',wedS:'',o1:'',o1L:'',o1S:'',o2:'',o2L:'',o2S:'',meetMap:'',wedMap:'',o1Map:'',o2Map:'',route:'',
      caneAns:'',decoAns:'',payDate:'',payAmt:'',last5:''},
   fleet:[],path:'',flow:[],lang:{q:'zh',o:'zh',m:'zh'},memoWho:'cust',mapLinks:true,
   updated:Date.now()}}
@@ -714,7 +718,7 @@ function payOf(f){return f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,o)
 function lead(x){return x.fleet.find(f=>f.lead)||x.fleet.find(f=>f.role==='主禮車')||x.fleet[0]}
 
 /* ---------- locations / flow ---------- */
-function points(x){const c=x.c,pts=[];[['A','meet','集合地點'],['B','wed','迎娶地點'],['C','o1','其他地點'],['D','o2','其他地點']].forEach(([k,f,t],i)=>{if(c[f]||i<2)pts.push({k,addr:c[f],label:c[f+'L'],title:t,f})});return pts}
+function points(x){const c=x.c,pts=[];[['A','meet','集合地點'],['B','wed','迎娶地點'],['C','o1','其他地點'],['D','o2','其他地點']].forEach(([k,f,t],i)=>{if(c[f]||i<2)pts.push({k,addr:c[f],label:c[f+'L'],map:(c[f+'Map']||'').trim(),title:t,f})});return pts}
 function autoFlow(x){const pts=points(x).filter(p=>p.addr);const ks=pts.map(p=>p.k);const c=x.c;
   if(ks.length<2){x.path=ks[0]||'';x.flow=[{t:c.start||'',who:'',seg:ks[0]||''}];return}
   const seq=ks.length===2?['A','B','A']:ks; x.path=seq.join(' - ');
@@ -747,7 +751,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   const cname=contactName(x),crole=c.role==='其他'?'':`(${lang==='en'?(c.role==='新郎'?'Groom':'Bride'):lang==='ja'?(c.role==='新郎'?'新郎':'新婦'):c.role})`;
   const p=dparts(x.date);
   const fleet=x.fleet.map(f=>({role:roleName(f.role,lang),plate:f.plate,driver:(f.driver||'')+(f.lead?' '+t.lead:''),car:`${f.up||MNAME[f.m]}`,spec:`${colorName(f.color||'',lang)} ${t.seats(f.seats||S.seats[f.m])}`.trim(),phone:f.phone}));
-  const pts=points(x).filter(pt=>pt.addr).map(pt=>({k:pt.k,title:pt.k==='A'?t.meet:pt.k==='B'?t.wed:t.other,addr:pt.addr,label:pt.label}));
+  const pts=points(x).filter(pt=>pt.addr).map(pt=>({k:pt.k,title:pt.k==='A'?t.meet:pt.k==='B'?t.wed:t.other,addr:pt.addr,label:pt.label,map:pt.map}));
   const flow=x.flow.filter(f=>f.t||f.seg).map(f=>`${ap(f.t)} ${f.who?f.who+' ':''}${f.seg}`.trim());
   let pay=[];
   const otl=MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m])}/HR`).join(' ; ');
@@ -771,7 +775,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
 function memoText(m,maps){const t=m.t,L2=[];
   L2.push(`好好禮車           ${t.orderNo}:${m.no}`,`Wedding Day ${m.wd}`,'———————',m.dateLine,`${t.gather}：${m.gather}`,`${t.contact}：${m.contact}`,`${t.boss}：${m.boss}`,'',`${t.plan}`,m.plan,m.flags,'');
   m.fleet.forEach(f=>L2.push(`${f.role}｜${f.plate||'—'}｜${f.driver||'—'}｜${f.car} ${f.spec}｜${f.phone||'—'}`));
-  L2.push('');m.pts.forEach(p=>{L2.push(`${p.k}. ${p.title}`,p.addr+(p.label?`\n(${p.label})`:''));if(maps)L2.push(mapUrl(p.addr))});
+  L2.push('');m.pts.forEach(p=>{L2.push(`${p.k}. ${p.title}`,p.addr+(p.label?`\n(${p.label})`:'')+(p.map?`\n導航定位：${p.map}`:''));if(maps)L2.push(mapUrl(p.addr))});
   if(m.route)L2.push(`${t.route}：${m.route}`);
   L2.push('',`${t.flow}：`,m.path,...m.flow,'',m.tipsTitle);
   m.tips.forEach((s,i)=>L2.push(m.tipsTitle===MT.zh.tipsD?`* ${s}`:`${i+1}. ${s}`));
@@ -784,7 +788,7 @@ function memoHTML(m,maps){const t=m.t;
   <h4>${esc(t.plan)}</h4><div>${esc(m.plan)}</div><div>${esc(m.flags)}</div>
   <div class="tbl" style="margin-top:10px"><table><thead><tr><th>${esc(t.order)}</th><th>${esc(t.plate)}</th><th>${esc(t.driver)}</th><th>${esc(t.car)}</th><th>${esc(t.phone)}</th></tr></thead><tbody>
   ${m.fleet.map(f=>`<tr><td>${esc(f.role)}</td><td>${esc(f.plate)}</td><td>${esc(f.driver)}</td><td>${esc(f.car)}<br><small>${esc(f.spec)}</small></td><td>${esc(f.phone)}</td></tr>`).join('')}</tbody></table></div>
-  <div class="tbl"><table style="margin-top:10px"><tbody>${m.pts.map(p=>`<tr><th style="width:130px">${esc(p.k)}. ${esc(p.title)}</th><td>${maps?`<a href="${esc(mapUrl(p.addr))}" target="_blank" rel="noopener">${esc(p.addr)}</a>`:esc(p.addr)}${p.label?`<br>(${esc(p.label)})`:''}</td></tr>`).join('')}
+  <div class="tbl"><table style="margin-top:10px"><tbody>${m.pts.map(p=>`<tr><th style="width:130px">${esc(p.k)}. ${esc(p.title)}</th><td>${maps?`<a href="${esc(mapUrl(p.addr))}" target="_blank" rel="noopener">${esc(p.addr)}</a>`:esc(p.addr)}${p.label?`<br>(${esc(p.label)})`:''}${p.map?`<br>導航定位：<a href="${esc(p.map)}" target="_blank" rel="noopener">${esc(p.map)}</a>`:''}</td></tr>`).join('')}
   ${m.route?`<tr><th>${esc(t.route)}</th><td>${esc(m.route)}</td></tr>`:''}
   <tr><th>${esc(t.flow)}</th><td><b>${esc(m.path)}</b><br>${m.flow.map(esc).join('<br>')}</td></tr></tbody></table></div>
   <h4>${esc(m.tipsTitle)}</h4><ol>${m.tips.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
