@@ -344,7 +344,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
       <div class="card">
         <h3>車隊 <small>車序、車號、司機</small></h3>
         <div class="tbl"><table>
-          <thead><tr><th>車款</th><th>車序</th><th>車號</th><th>司機</th><th>電話</th><th>顏色</th><th>座位</th><th>司機車資</th><th>負責人</th></tr></thead>
+          <thead><tr><th>車款</th><th>車序</th><th>車號</th><th>司機</th><th>電話</th><th>緊急聯絡 <small>只放 LINE 群組</small></th><th>顏色</th><th>座位</th><th>司機車資</th><th>負責人</th></tr></thead>
           <tbody id="fleetBody"></tbody>
         </table></div>
       </div>
@@ -355,6 +355,14 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
         </div>
         <div class="row" style="justify-content:space-between;margin:10px 0 6px"><span class="hint" style="margin:0" id="ttWhen"></span><button class="btn sm pri" data-copy="ttMemo">複製備註</button></div>
         <pre class="out" id="ttMemo"></pre>
+      </div>
+      <div class="card">
+        <h3>司機 LINE 群組 <small>建群後貼開場訊息；緊急聯絡人只出現在這裡</small></h3>
+        <div class="fields">
+          <label class="f wide">群組名稱<div class="row" style="flex-wrap:nowrap"><input id="lgName" readonly style="flex:1"><button class="btn sm pri" data-copyv="lgName">複製</button></div></label>
+        </div>
+        <div class="row" style="justify-content:space-between;margin:10px 0 6px"><span class="hint" style="margin:0">開場訊息</span><button class="btn sm pri" data-copy="lgMsg">複製訊息</button></div>
+        <pre class="out" id="lgMsg"></pre>
       </div>
       <div class="card">
         <h3>禮車流程</h3>
@@ -554,7 +562,8 @@ function sampleOrder(){const o=newOrder();Object.assign(o,{sample:true,cityA:'�
 let DB=store('nwcw_orders');
 if(!DB||!DB.orders||!Object.keys(DB.orders).length){const s=sampleOrder();DB={cur:s.id,orders:{[s.id]:s}}}
 let o=DB.orders[DB.cur]||Object.values(DB.orders)[0];
-function migrate(x){const d=newOrder();if(x.paid===undefined)x.paid=false;if(!x.src)x.src={vendor:'',ref:'',rate:''};for(const k in d){if(x[k]===undefined)x[k]=clone(d[k])}for(const k in d.c){if(x.c[k]===undefined)x.c[k]=d.c[k]}for(const k in d.lang){if(!x.lang[k])x.lang[k]='zh'}return x}
+function migrate(x){const d=newOrder();if(x.paid===undefined)x.paid=false;if(!x.src)x.src={vendor:'',ref:'',rate:''};for(const k in d){if(x[k]===undefined)x[k]=clone(d[k])}for(const k in d.c){if(x.c[k]===undefined)x.c[k]=d.c[k]}for(const k in d.lang){if(!x.lang[k])x.lang[k]='zh'}
+  (x.fleet||[]).forEach(f=>{if(f.emg===undefined)f.emg='';const m=(f.phone||'').match(/^(.*?)\s*[（(]\s*緊急聯絡人?\s*[:：]?\s*([^）)]*)[）)]\s*$/);if(m){f.phone=m[1].trim();if(!f.emg)f.emg=m[2].trim()}});return x}
 Object.values(DB.orders).forEach(migrate);
 function save(){o.updated=Date.now();DB.cur=o.id;DB.orders[o.id]=o;store('nwcw_orders',DB)}
 function saveS(){store('nwcw_settings',S)}
@@ -854,7 +863,7 @@ async function makeMemoDocs(){const btn=$('btnMemoDocs');if(!S.driveUrl||!S.driv
     const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');o.memoLinks=j.links;o.driveFolder=o.driveFolder||j.folder;save();renderMemoLinks();$('memoDocMsg').textContent='已更新';toast('memo 連結已更新')}
   catch(e){$('memoDocMsg').textContent='失敗：'+e.message}finally{btn.disabled=false}}
 function renderMemoLinks(){const L=o.memoLinks||{};const row=(k,label)=>L[k]?`<div><span>${label}</span><span class="row" style="gap:6px"><a href="${esc(L[k])}" target="_blank" rel="noopener">開啟</a><button class="btn sm" data-copytext="${esc(L[k])}">複製連結</button></span></div>`:'';
-  $('memoLinks').innerHTML=row('cust','客人 memo')+row('drv','司機派車單')||'<div class="sub">還沒有產生連結。</div>'}
+  $('memoLinks').innerHTML=row('cust','客人 memo')+row('drv','司機派車單')||'<div class="sub">還沒有產生連結。</div>';if($('lgMsg'))$('lgMsg').textContent=lgMsg(o)}
 async function saveToDrive(){const btn=$('btnDrive');if(!S.driveUrl||!S.driveKey){toast('請先到「價目設定」填 Drive 網址和金鑰');showTab('settings');return}
   btn.disabled=true;btn.textContent='上傳中…';
   try{const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,orderNo:orderNo(o),html:contractPdfDoc(o),couple:[o.c.groom,o.c.bride].filter(Boolean).join('&')})});
@@ -997,10 +1006,11 @@ function renderFleet(){$('fleetBody').innerHTML=o.fleet.map((f,i)=>{const dp=dri
   <td><input data-fl="${i}.plate" id="fl_p${i}" value="${esc(f.plate)}" placeholder="ABC-1234"></td>
   <td><input data-fl="${i}.driver" id="fl_d${i}" value="${esc(f.driver)}"></td>
   <td><input data-fl="${i}.phone" id="fl_t${i}" value="${esc(f.phone)}" inputmode="tel"></td>
+  <td><input data-fl="${i}.emg" id="fl_e${i}" value="${esc(f.emg||'')}" inputmode="tel" placeholder="不會出現在 memo"></td>
   <td><input data-fl="${i}.color" id="fl_c${i}" value="${esc(f.color)}" style="width:72px"></td>
   <td><input type="number" data-fl="${i}.seats" id="fl_s${i}" value="${esc(f.seats)}" style="width:62px"></td>
   <td><input type="number" data-fl="${i}.pay" id="fl_y${i}" value="${esc(f.pay)}" placeholder="${dp==null?'未設定':dp}" style="width:96px"></td>
-  <td style="text-align:center"><input type="radio" name="leadR" data-fl="${i}.lead" id="fl_l${i}" ${f.lead?'checked':''} style="width:auto" aria-label="負責人"></td></tr>`}).join('')||'<tr><td colspan="9" class="hint">先在「報價」選車款。</td></tr>'}
+  <td style="text-align:center"><input type="radio" name="leadR" data-fl="${i}.lead" id="fl_l${i}" ${f.lead?'checked':''} style="width:auto" aria-label="負責人"></td></tr>`}).join('')||'<tr><td colspan="10" class="hint">先在「報價」選車款。</td></tr>'}
 function renderFlow(){$('flowList').innerHTML=o.flow.map((f,i)=>`<div class="fr"><input type="time" data-fw="${i}.t" id="fw_t${i}" value="${esc(f.t)}" aria-label="時間">
   <input class="who" data-fw="${i}.who" id="fw_w${i}" value="${esc(f.who)}" placeholder="全車隊" aria-label="車輛">
   <input class="sg" data-fw="${i}.seg" id="fw_s${i}" value="${esc(f.seg)}" placeholder="A - B" aria-label="路段">
@@ -1018,13 +1028,18 @@ function paidText(x){const r=calc(x),c=x.c,ps=payState(x);const p=dparts(x.date)
 function ttTitle(x){const c=x.c;const nm=c.chatName||[c.groom,c.bride].filter(Boolean).join('&')||'（未填客人名稱）';const ch=c.channel&&c.channel!=='LINE'?`(${c.channel.toLowerCase()})`:'';
   const ref=x.src&&x.src.ref?'x'+x.src.ref:'';const cities=[...new Set([x.cityA,x.cityB].filter(Boolean))].join('/')||areaOf('meet')||'';const p=dparts(x.date);
   return `${ch}${nm}${ref}-禮車${cities?'-'+cities:''}${p?'-'+p.m+'/'+p.d:''}`}
+function lgName(x){const c=x.c,p=dparts(x.date);const nm=[c.groom,c.bride].filter(Boolean).join('&')||c.chatName||'客人';return `${p?p.m+'/'+p.d+' ':''}${nm} 禮車`}
+function lgMsg(x){const c=x.c,p=dparts(x.date),L=x.memoLinks||{},ld=lead(x)||{};
+  const cars=x.fleet.map(f=>[`${f.role}｜${MNAME[f.m]} ${f.color||''}｜${f.plate||'—'}`,`　${f.driver||'（未派）'}${f.lead?'（負責人）':''} ${f.phone||''}`.trimEnd(),f.emg?`　緊急聯絡：${f.emg}`:''].filter(Boolean).join('\n'));
+  return ['各位司機好，這是本次禮車任務群組',`訂單編號：${orderNo(x)}`,`日期：${x.date?fmtDate(x.date)+'（'+WD.zh[p.w]+'）':'未定'}`,`司機集合：${c.gather||'—'}　${c.meetL?c.meetL+'：':''}${c.meet||''}`.trimEnd(),`用車時間：${c.start||'--:--'} - ${c.end||'--:--'}`,
+    `派車單：${L.drv||'（請先到「司機／客人 memo」產生連結）'}`,'','車隊',...cars,'',`負責人：${ld.driver||'—'}`,'請大家看完派車單回覆「收到」，當天出發前在群組報到，謝謝！'].join('\n')}
 function ttMemo(x){return [quoteText(x,'zh'),'',`訂單編號：${orderNo(x)}`,`合約：${x.driveFolder||'（合約尚未存到 Drive，存檔後會自動帶入連結）'}`].join('\n')}
 function renderPay(){const ps=payState(o),r=ps.r,c=o.c;
   $('payCheck').innerHTML=`<div><span>應付訂金</span><span>${money(r.deposit)}</span></div><div><span>新人填的匯款金額</span><span>${ps.amt?money(ps.amt):'未填'}</span></div>
    <div><span>匯款日期／後五碼</span><span>${c.payDate?fmtDate(c.payDate):'—'}／${esc(c.last5||'—')}</span></div>`;
   $('payChip').innerHTML=o.paid?`<span class="chip ok">已確認收款 ${esc(o.paidAt||'')}</span>`:ps.amt?(ps.match?'<span class="chip ok">金額相符，待確認入帳</span>':'<span class="chip" style="color:var(--warn)">金額不符，請核對</span>'):'<span class="chip">尚未填匯款資料</span>';
   $('btnPaid').hidden=!!o.paid;$('btnUnpaid').hidden=!o.paid;$('outPaid').textContent=paidText(o);
-  $('ttTitle').value=ttTitle(o);$('ttWhen').textContent=`日期 ${o.date?fmtDate(o.date):'未定'}　${o.c.start||'--:--'} → ${o.c.end||'--:--'}`;$('ttMemo').textContent=ttMemo(o)}
+  $('ttTitle').value=ttTitle(o);$('ttWhen').textContent=`日期 ${o.date?fmtDate(o.date):'未定'}　${o.c.start||'--:--'} → ${o.c.end||'--:--'}`;$('ttMemo').textContent=ttMemo(o);$('lgName').value=lgName(o);$('lgMsg').textContent=lgMsg(o)}
 function refRowText(x){const r=calc(x),v=vendorOf(x);const p=dparts(x.date);
   return [p?`${p.y}/${p.m}/${p.d}`:'',orderNo(x),planName(x).replace(/^Tesla /,'').replace(/ \S*禮車方案$/,''),v?v.name:'',x.src.ref||'',money(r.planFee),v?refRate(x)+'%':'',v&&r.refAmt?money(r.refAmt):'','',isMonthly(x)?'月結':''].join('\t')}
 function renderSrc(){const v=vendorOf(o),r=calc(o);
