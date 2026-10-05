@@ -376,6 +376,11 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
       </div>
       <label class="row" style="font-size:13px;color:var(--muted);gap:6px"><input type="checkbox" id="mapLinks" style="width:auto"> 地址附 Google Map 連結</label>
     </div>
+    <div class="card" style="margin-bottom:18px">
+      <h3>memo 連結 <small>Google 文件，知道連結的人可檢視；資料改了再按一次，連結不變</small></h3>
+      <div class="row"><button class="btn pri" id="btnMemoDocs">產生／更新兩份 memo 連結</button><span class="hint" id="memoDocMsg" style="margin:0"></span></div>
+      <div class="sum" id="memoLinks" style="margin-top:10px"></div>
+    </div>
     <div class="grid">
       <div class="card">
         <h3>文字版 <small>直接貼 Line</small></h3>
@@ -835,6 +840,21 @@ function contractPdfDoc(x){
   .lbl{width:80px;white-space:nowrap}.vert{text-align:center;font-weight:700;width:30px}ul{margin:0;padding-left:14px}ol{margin:3px 0;padding-left:20px}.fill{color:#5B3F1E;font-weight:700}
   .sign{margin-top:18px;font-size:14px}.sign td{padding:0 8px}`;
   return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(orderNo(x))}</title><style>${css}</style></head><body>${contractHTML(x)}</body></html>`}
+function memoBlocks(m){const t=m.t,B=[];B.push({t:'title',text:`好好禮車　　${t.orderNo}:${m.no}`},{t:'p',text:`Wedding Day ${m.wd}`},{t:'p',text:'———————'},{t:'p',text:m.dateLine},
+  {t:'p',text:`${t.gather}：${m.gather}`},{t:'p',text:`${t.contact}：${m.contact}`},{t:'p',text:`${t.boss}：${m.boss}`},{t:'h',text:t.plan},{t:'p',text:m.plan},{t:'p',text:m.flags},
+  {t:'table',rows:[[t.order,t.plate,t.driver,t.car,t.phone],...m.fleet.map(f=>[f.role||'',f.plate||'',f.driver||'',`${f.car}\n${f.spec}`,f.phone||''])]});
+  m.pts.forEach(p=>{B.push({t:'h',text:`${p.k}. ${p.title}`},{t:'link',text:p.addr,url:mapUrl(p.addr)});if(p.label)B.push({t:'p',text:`(${p.label})`})});
+  if(m.route)B.push({t:'h',text:t.route},{t:'p',text:m.route});
+  B.push({t:'h',text:`${t.flow}：`},{t:'p',text:m.path},...m.flow.map(f=>({t:'p',text:f})),{t:'h',text:m.tipsTitle},...m.tips.map(x=>({t:'li',text:x})),{t:'h',text:t.pay});
+  m.pay.forEach(x=>String(x).split('\n').forEach(l=>B.push({t:'p',text:l})));return B}
+async function makeMemoDocs(){const btn=$('btnMemoDocs');if(!S.driveUrl||!S.driveKey){toast('請先到「價目設定」填 Drive 網址和金鑰');showTab('settings');return}
+  btn.disabled=true;$('memoDocMsg').textContent='建立中，約需 10 秒…';
+  try{const no=orderNo(o);const docs=[{key:'cust',name:`訂單編號:${no}`,blocks:memoBlocks(memoModel(o,'cust','zh'))},{key:'drv',name:`訂單編號:${no}-司機端`,blocks:memoBlocks(memoModel(o,'drv','zh'))}];
+    const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'memo',orderNo:no,couple:[o.c.groom,o.c.bride].filter(Boolean).join('&'),docs})});
+    const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');o.memoLinks=j.links;o.driveFolder=o.driveFolder||j.folder;save();renderMemoLinks();$('memoDocMsg').textContent='已更新';toast('memo 連結已更新')}
+  catch(e){$('memoDocMsg').textContent='失敗：'+e.message}finally{btn.disabled=false}}
+function renderMemoLinks(){const L=o.memoLinks||{};const row=(k,label)=>L[k]?`<div><span>${label}</span><span class="row" style="gap:6px"><a href="${esc(L[k])}" target="_blank" rel="noopener">開啟</a><button class="btn sm" data-copytext="${esc(L[k])}">複製連結</button></span></div>`:'';
+  $('memoLinks').innerHTML=row('cust','客人 memo')+row('drv','司機派車單')||'<div class="sub">還沒有產生連結。</div>'}
 async function saveToDrive(){const btn=$('btnDrive');if(!S.driveUrl||!S.driveKey){toast('請先到「價目設定」填 Drive 網址和金鑰');showTab('settings');return}
   btn.disabled=true;btn.textContent='上傳中…';
   try{const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,orderNo:orderNo(o),html:contractPdfDoc(o),couple:[o.c.groom,o.c.bride].filter(Boolean).join('&')})});
@@ -1023,7 +1043,7 @@ function renderRefs(){const mEl=$('refMonth');if(!mEl.value){const d=new Date();
   $('billVendorName').textContent=mv.map(v=>v.name).join('、');$('outBill').textContent=bills.join('\n\n')||'這個月沒有月結廠商的訂單。'}
 function renderOrderSel(){const list=Object.values(DB.orders).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.updated-a.updated);
   $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(orderNo(x))}${x.c.groom||x.c.bride?'・'+esc([x.c.groom,x.c.bride].filter(Boolean).join('&')):''}${x.sample?'（範例）':''}${x.paid?'・已收訂':''}</option>`).join('')}
-function renderAll(){$('outConfirm').textContent=CONFIRM_TPL;renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
+function renderAll(){renderMemoLinks();$('outConfirm').textContent=CONFIRM_TPL;renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
   $('outQuote').textContent=quoteText(o,'zh');$('outOrder').textContent=orderText(o,'zh');
   $('outFind').textContent=findText(o);$('contractPaper').innerHTML=contractHTML(o);renderMemo();
   ['meet','wed','o1','o2'].forEach(k=>{$('c_'+k+'S').placeholder=shortArea(o.c[k])||'自動'});
@@ -1045,6 +1065,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.setlang){const [k,v]=t.dataset.setlang.split(':');o.lang[k]=v;save();renderLangs();renderAll();return}
   if(t.dataset.who){o.memoWho=t.dataset.who;save();renderMemo();return}
   if(t.dataset.copy){copy($(t.dataset.copy).textContent,$(t.dataset.copy));return}
+  if(t.dataset.copytext){const v=t.dataset.copytext;if(navigator.clipboard)navigator.clipboard.writeText(v).then(()=>toast('已複製'),()=>toast('複製失敗，請點開啟後從網址列複製'));return}
   if(t.dataset.copyv){const el=$(t.dataset.copyv);if(navigator.clipboard)navigator.clipboard.writeText(el.value).then(()=>toast('已複製'),()=>{el.select();toast('已選取文字，請按複製')});else{el.select()}return}
   if(t.dataset.fdel){o.flow.splice(+t.dataset.fdel,1);save();renderFlow();renderAll();return}
   if(t.dataset.mdel){const md=S.models[+t.dataset.mdel];if(Object.values(DB.orders).some(x=>num(x.cars[md.id])>0)){toast('有訂單用到這個車款，先把那些訂單的車數改成 0');return}
@@ -1066,6 +1087,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
      delete DB.orders[o.id];t.textContent='刪除';const rest=Object.values(DB.orders);o=rest[0]||newOrder();DB.orders[o.id]=o;save();loadOrder();toast('已刪除');break}
    case 'btnPrint':window.print();break;
    case 'btnDrive':saveToDrive();break;
+   case 'btnMemoDocs':makeMemoDocs();break;
    case 'btnPaid':{const d=new Date();o.paid=true;o.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`;o.sample=false;save();renderAll();toast('已標記收到訂金');break}
    case 'btnUnpaid':o.paid=false;o.paidAt='';save();renderAll();break;
    case 'btnResetS':{const keep={bank:S.bank,phone:S.phone,email:S.email,formBase:S.formBase,formEntry:S.formEntry};S=Object.assign(clone(DEF_S),keep);saveS();renderPriceSettings();fillInputs();renderCars();renderAll();$('resetMsg').textContent='已恢復預設價目';break}
