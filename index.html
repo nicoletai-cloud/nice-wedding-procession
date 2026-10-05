@@ -180,7 +180,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
               <select id="q_hours" data-b="hours" data-num>
                 <option value="0">單程接送</option><option value="1">1HR</option><option value="1.5">1.5HR</option><option value="2">2HR</option><option value="3">3HR</option><option value="4">4HR</option><option value="5">5HR</option><option value="6">6HR</option><option value="7">7HR</option><option value="8">8HR</option>
               </select></label>
-            <label class="f">公里數<input type="number" id="q_km" data-b="km" data-num min="0"></label>
+            <label class="f">總行程里程（公里）<input type="number" id="q_trip" data-b="tripKm" data-num min="0" placeholder="填地址後按「計算總里程」"></label>
             <label class="f">集合縣市<select id="q_cityA" data-b="cityA"><option value="">—</option><option>台北</option><option>新北</option><option>基隆</option><option>桃園</option><option>新竹</option><option>苗栗</option><option>台中</option><option>彰化</option><option>南投</option><option>雲林</option><option>嘉義</option><option>台南</option><option>高雄</option><option>屏東</option><option>宜蘭</option><option>花蓮</option><option>台東</option><option>澎湖</option><option>金門</option><option>連江</option></select></label>
             <label class="f">迎娶縣市<select id="q_cityB" data-b="cityB"><option value="">—</option><option>台北</option><option>新北</option><option>基隆</option><option>桃園</option><option>新竹</option><option>苗栗</option><option>台中</option><option>彰化</option><option>南投</option><option>雲林</option><option>嘉義</option><option>台南</option><option>高雄</option><option>屏東</option><option>宜蘭</option><option>花蓮</option><option>台東</option><option>澎湖</option><option>金門</option><option>連江</option></select></label>
             <label class="f">縣市代碼（留空＝自動）<input id="q_code" data-b="code" placeholder="自動"></label>
@@ -212,7 +212,6 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
         <div class="card">
           <h3>加項與折扣</h3>
           <div class="fields">
-            <label class="f">總行程里程（公里）<input type="number" id="q_trip" data-b="tripKm" data-num min="0" placeholder="35 以內免填"></label>
             <label class="f">實體甘蔗台數<input type="number" id="q_cane" data-b="cane" data-num min="0"></label>
             <label class="f">指定車頭彩費用<input type="number" id="q_deco" data-b="deco" data-num min="0" placeholder="800–1000"></label>
             <label class="f">加項名稱<input id="q_x0n" data-b="extras.0.n" placeholder="例：指定路線"></label>
@@ -1008,7 +1007,7 @@ function applyForm(res){const c=o.c;let n=0;o.sample=false;const set=(k,v)=>{if(
 /* ---------- binding ---------- */
 function getPath(obj,path){return path.split('.').reduce((a,k)=>a==null?a:a[k],obj)}
 function setPath(obj,path,v){const ks=path.split('.');const last=ks.pop();const t=ks.reduce((a,k)=>a[k],obj);t[last]=v}
-function fillInputs(){document.querySelectorAll('[data-b]').forEach(el=>{const v=getPath(o,el.dataset.b);if(el.hasAttribute('data-bool'))el.value=v?'1':'0';else el.value=v==null?'':v});
+function fillInputs(){document.querySelectorAll('[data-b]').forEach(el=>{const v=getPath(o,el.dataset.b);if(el.hasAttribute('data-bool'))el.value=v?'1':'0';else el.value=v==null||(el.dataset.b==='tripKm'&&!+v)?'':v});
   document.querySelectorAll('[data-s]').forEach(el=>{el.value=S[el.dataset.s]==null?'':S[el.dataset.s]});
   $('mapLinks').checked=!!o.mapLinks;
   if(document.activeElement!==$('s_vp'))$('s_vp').value=(S.vprices&&S.vprices['幸福故事館'])||'';
