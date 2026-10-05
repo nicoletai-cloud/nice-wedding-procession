@@ -608,6 +608,7 @@ const p2=n=>String(n).padStart(2,'0');
 function fmtDate(d,lang){const p=dparts(d);if(!p)return '（未定）';return `${p.y}/${p2(p.m)}/${p2(p.d)}`}
 function fmtMDW(d,lang){const p=dparts(d);if(!p)return '（未定）';const w=WD[lang||'zh'][p.w];return lang==='en'?`${p2(p.m)}/${p2(p.d)} (${w})`:`${p2(p.m)}/${p2(p.d)}(${w})`}
 const ph=s=>String(s||'').replace(/[-\s]/g,'');
+const noFloor=s=>String(s||'').replace(/(\d+號(?:之\d+)?)\s*(?:\d+|[一二三四五六七八九十]+|[Bb]\d+)\s*(?:樓|[Ff]).*$/,'$1');
 function ap(t){if(!t)return '';const [h,m]=t.split(':').map(Number);return `${p2(h>12?h-12:h)}:${p2(m)}${h<12?'am':'pm'}`}
 function addMin(t,mins){if(!t)return '';let [h,m]=t.split(':').map(Number);let x=h*60+m+mins;x=(x+1440)%1440;return `${p2(Math.floor(x/60))}:${p2(x%60)}`}
 function hrsLabel(h){return +h===0?'單程':h+'HR'}
@@ -772,7 +773,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   const cname=contactName(x),crole=c.role==='其他'?((c.rel||'').trim()?`(${c.rel.trim()})`:''):`(${lang==='en'?(c.role==='新郎'?'Groom':'Bride'):lang==='ja'?(c.role==='新郎'?'新郎':'新婦'):c.role})`;
   const p=dparts(x.date);
   const fleet=x.fleet.map(f=>({role:roleName(f.role,lang),plate:f.plate,driver:(f.driver||'')+(f.lead?' '+t.lead:''),car:(f.up||'').trim()&&f.up.trim()!==MNAME[f.m]?`${f.up.trim()}(升等)`:MNAME[f.m],spec:`${colorName(f.color||'',lang)} ${t.seats(f.seats||S.seats[f.m])}`.trim(),phone:ph(f.phone)}));
-  const pts=points(x).filter(pt=>pt.addr).map(pt=>({k:pt.k,title:pt.k==='A'?t.meet:pt.k==='B'?t.wed:t.other,addr:pt.addr,label:pt.label,map:pt.map}));
+  const pts=points(x).filter(pt=>pt.addr).map(pt=>({k:pt.k,title:pt.k==='A'?t.meet:pt.k==='B'?t.wed:t.other,addr:noFloor(pt.addr),label:pt.label,map:pt.map}));
   const flow=x.flow.filter(f=>f.t||f.seg).map(f=>`${f.e?`${f.t}-${f.e}`:ap(f.t)} ${f.who?f.who+' ':''}${f.seg}`.trim());
   let pay=[];
   const otl=(x.otText||'').trim()||MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m])}/HR`).join(' ; ');
