@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style>
+<title>好好禮車婚禮派車</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Layout: brand bar + order switcher, sticky step tabs, two-column (inputs | outputs) workbench that stacks on phones */
+:root{
+  --bg:#FBF6F3; --surface:#FFFFFF; --surface-2:#F6ECE6; --fg:#4A3A2E; --muted:#8C7A6B; --line:#E8DACF;
+  --accent:#A9793B; --accent-ink:#FFFFFF; --accent-soft:#F3E6D6; --ok:#4F7A4A; --warn:#B5652B;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-label:"Montserrat","Noto Sans TC","PingFang TC",sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1D1916; --surface:#26211D; --surface-2:#2F2823; --fg:#EFE4DA; --muted:#A8988A; --line:#3D342D;
+  --accent:#CFA163; --accent-ink:#1D1916; --accent-soft:#3A2E22; --ok:#8DB886; --warn:#E09A62; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1D1916; --surface:#26211D; --surface-2:#2F2823; --fg:#EFE4DA; --muted:#A8988A; --line:#3D342D;
+  --accent:#CFA163; --accent-ink:#1D1916; --accent-soft:#3A2E22; --ok:#8DB886; --warn:#E09A62; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:0 48px}
+header.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding-block:18px 12px}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto}
+.brand b{font-size:22px;color:var(--accent);letter-spacing:.06em;font-weight:700}
+.brand span{font-family:var(--f-label);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+.orderbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.orderbar select{max-width:260px}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);overflow-x:auto;display:flex;gap:2px;scrollbar-width:none}
+nav.tabs button{flex:0 0 auto;border:0;background:none;color:var(--muted);font:500 14px var(--f-body);padding:12px 14px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+nav.tabs button .n{font-family:var(--f-label);font-size:11px;margin-right:6px;opacity:.7}
+nav.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.sample{margin-top:14px;padding:10px 14px;border-radius:var(--r);background:var(--accent-soft);font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+section.tab{padding-top:18px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.card h3{margin:0 0 12px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card h3 small{font-weight:400;color:var(--muted);font-size:12px}
+.stack{display:grid;gap:14px}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 12px}
+.fields .wide{grid-column:1/-1}
+label.f{display:grid;gap:4px;font-size:12px;color:var(--muted);min-width:0}
+input,select,textarea{font:inherit;font-size:15px;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:70px}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.btn{font:500 14px var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:7px 12px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.sm{padding:4px 9px;font-size:13px}
+.btn.danger{color:var(--warn)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.cars{display:grid;gap:8px}
+.car{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}
+.car .nm{font-family:var(--f-label);font-weight:700;letter-spacing:.08em;font-size:13px}
+.car .pr{font-size:12px;color:var(--muted)}
+.step{display:flex;align-items:center;gap:6px}
+.step button{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:16px;cursor:pointer;line-height:1}
+.step output{min-width:22px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.chip{display:inline-block;font-size:12px;padding:2px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:500}
+.chip.ok{color:var(--ok)}
+.sum{display:grid;gap:4px;font-variant-numeric:tabular-nums}
+.sum div{display:flex;justify-content:space-between;gap:12px}
+.sum .tot{border-top:1px solid var(--line);margin-top:6px;padding-top:8px;font-weight:700;font-size:17px}
+.sum .sub{color:var(--muted);font-size:13px}
+.out{white-space:pre-wrap;word-break:break-word;background:var(--surface-2);border-radius:8px;padding:12px 14px;margin:0;font:14px/1.65 var(--f-body);max-height:560px;overflow:auto}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--surface);color:var(--muted);padding:5px 10px;font:13px var(--f-body);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+.tbl{overflow-x:auto}
+.tbl table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+.tbl th,.tbl td{border-bottom:1px solid var(--line);padding:6px;text-align:left;vertical-align:middle}
+.tbl th{font-size:12px;color:var(--muted);font-weight:500}
+.tbl input,.tbl select{padding:6px 8px;font-size:14px}
+.ptbl th.grp{text-align:center;border-bottom:1px solid var(--line);color:var(--accent)}
+.ptbl td:first-child,.ptbl thead tr:first-child th:first-child{position:sticky;left:0;background:var(--surface);z-index:1}
+.ptbl input{min-width:80px}
+.ptbl td:first-child input{min-width:150px}
+.brand-grp{border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.brand-grp summary{cursor:pointer;font-weight:700;font-size:13px;padding:4px 0;color:var(--muted)}
+.brand-grp[open] summary{margin-bottom:6px}
+.brand-grp .cars{margin-bottom:4px}
+.flow{display:grid;gap:6px}
+.flow .fr{display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,1fr) auto;gap:6px}
+@media (max-width:520px){.flow .fr{grid-template-columns:96px minmax(0,1fr) auto}.flow .fr .who{grid-column:2/3}.flow .fr .sg{grid-column:1/3}}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+/* memo doc preview */
+.doc{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;font-size:14px}
+.doc .dh{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline;border-bottom:1px solid var(--accent);padding-bottom:8px}
+.doc .dh b{color:var(--accent);font-size:20px;letter-spacing:.08em}
+.doc .wd{font-family:var(--f-label);letter-spacing:.2em;text-transform:uppercase;color:var(--accent);font-size:12px;margin:12px 0 4px}
+.doc h4{margin:16px 0 6px;font-size:13px;color:var(--accent);letter-spacing:.06em}
+.doc table{border-collapse:collapse;width:100%;min-width:520px}
+.doc td,.doc th{border:1px solid var(--line);padding:6px 8px;vertical-align:top;text-align:left}
+.doc th{background:var(--surface-2);font-weight:500;font-size:12px}
+.doc ol,.doc ul{margin:4px 0;padding-left:22px}
+.doc a{color:var(--accent)}
+/* contract: paper document, fixed light palette by design */
+.paperwrap{overflow-x:auto;padding-bottom:6px}
+.paper{--paper:#F9EEEA;--ink:#1F1B18;--gold:#C49A63;background:var(--paper);color:var(--ink);width:794px;min-height:1123px;margin:0 auto;padding:34px 40px;font-family:var(--f-body);font-size:13px;line-height:1.45;border-radius:4px}
+.paper .ph{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.paper .logo{display:flex;align-items:center;gap:12px;color:var(--gold)}
+.paper .logo .ring{width:54px;height:54px;border:1.5px solid var(--gold);border-radius:50%;display:grid;place-items:center;font-size:15px;line-height:1.05;text-align:center}
+.paper .logo b{font-size:30px;font-weight:500;letter-spacing:.04em;display:block;line-height:1.1}
+.paper .logo i{font-family:var(--f-label);font-size:12px;letter-spacing:.12em;font-style:normal}
+.paper .contact{color:var(--gold);text-align:right;font-size:15px}
+.paper .ttl{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;margin:14px 0 10px}
+.paper .ttl h2{grid-column:2;margin:0;font-size:20px;letter-spacing:.06em}
+.paper .ttl .no{justify-self:end;font-size:14px}
+.paper table{border-collapse:collapse;width:100%;color:var(--ink)}
+.paper td,.paper th{border:1px solid var(--ink);padding:5px 8px;vertical-align:middle;text-align:left;font-weight:400}
+.paper th.sec{text-align:center;font-weight:700;font-size:14px;padding:7px}
+.paper .lbl{width:92px;white-space:nowrap}
+.paper .dot td.v{border-bottom:1px dotted var(--ink)}
+.paper .vert{text-align:center;font-weight:700;width:38px;line-height:1.5}
+.paper ul{margin:0;padding-left:16px}
+.paper ol{margin:4px 0;padding-left:22px}
+.paper .fill{color:#5B3F1E;font-weight:500}
+.paper .sign{display:flex;justify-content:space-between;margin-top:22px;font-size:16px;padding-inline:10px}
+.paper .sign span{min-width:240px}
+.printonly{display:none}
+@media print{
+  body{background:#fff}
+  body *{visibility:hidden}
+  #contractPaper,#contractPaper *{visibility:visible}
+  #contractPaper{position:absolute;left:0;top:0;margin:0;border-radius:0}
+  @page{size:A4;margin:0}
+}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><b>好好禮車</b><span>Wedding Dispatch</span></div>
+    <div class="orderbar">
+      <select id="orderSel" aria-label="切換訂單"></select>
+      <button class="btn" id="btnNew">＋ 新訂單</button>
+      <button class="btn" id="btnDup">複製此單</button>
+      <button class="btn danger" id="btnDel">刪除</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs">
+    <button role="tab" data-tab="quote" aria-selected="true"><span class="n">1</span>報價・下單</button>
+    <button role="tab" data-tab="couple"><span class="n">2</span>新人資料</button>
+    <button role="tab" data-tab="contract"><span class="n">3</span>合約</button>
+    <button role="tab" data-tab="find"><span class="n">4</span>找司機</button>
+    <button role="tab" data-tab="dispatch"><span class="n">5</span>車隊與流程</button>
+    <button role="tab" data-tab="memo"><span class="n">6</span>司機／客人 memo</button>
+    <button role="tab" data-tab="settings"><span class="n">7</span>價目設定</button>
+  </nav>
+
+  <div class="sample" id="sampleBar" hidden>
+    <span class="chip">範例訂單</span><span>這是示範用的假資料，按「＋ 新訂單」開始一筆真的訂單。</span>
+  </div>
+
+  <!-- 1 報價 -->
+  <section class="tab" id="tab-quote">
+    <div class="grid">
+      <div class="stack">
+        <div class="card">
+          <h3>用車資訊</h3>
+          <div class="fields">
+            <label class="f">用車日期<input type="date" id="q_date" data-b="date"></label>
+            <label class="f">用車時數
+              <select id="q_hours" data-b="hours" data-num>
+                <option value="0">單程接送</option><option value="1">1HR</option><option value="1.5">1.5HR</option><option value="2">2HR</option><option value="3">3HR</option><option value="4">4HR</option><option value="5">5HR</option><option value="6">6HR</option><option value="7">7HR</option><option value="8">8HR</option>
+              </select></label>
+            <label class="f">公里數<input type="number" id="q_km" data-b="km" data-num min="0"></label>
+            <label class="f">集合縣市<select id="q_cityA" data-b="cityA"><option value="">—</option><option>台北</option><option>新北</option><option>基隆</option><option>桃園</option><option>新竹</option><option>苗栗</option><option>台中</option><option>彰化</option><option>南投</option><option>雲林</option><option>嘉義</option><option>台南</option><option>高雄</option><option>屏東</option><option>宜蘭</option><option>花蓮</option><option>台東</option><option>澎湖</option><option>金門</option><option>連江</option></select></label>
+            <label class="f">迎娶縣市<select id="q_cityB" data-b="cityB"><option value="">—</option><option>台北</option><option>新北</option><option>基隆</option><option>桃園</option><option>新竹</option><option>苗栗</option><option>台中</option><option>彰化</option><option>南投</option><option>雲林</option><option>嘉義</option><option>台南</option><option>高雄</option><option>屏東</option><option>宜蘭</option><option>花蓮</option><option>台東</option><option>澎湖</option><option>金門</option><option>連江</option></select></label>
+            <label class="f">縣市代碼（留空＝自動）<input id="q_code" data-b="code" placeholder="自動"></label>
+            <label class="f">第幾組（留空＝自動）<input id="q_seq" data-b="seq" placeholder="自動"></label>
+            <label class="f">訂單編號<input id="q_no" readonly tabindex="-1"></label>
+          </div>
+        </div>
+        <div class="card">
+          <h3>車款 <span id="bundleChip"></span></h3>
+          <div class="cars" id="carList"></div>
+        </div>
+        <div class="card">
+          <h3>加項與折扣</h3>
+          <div class="fields">
+            <label class="f">跨區名稱<input id="q_zn" data-b="zoneName" placeholder="例：宜蘭"></label>
+            <label class="f">跨區數（每區每台 $500）<input type="number" id="q_zs" data-b="zones" data-num min="0"></label>
+            <label class="f">司機跨區多出公里（每 35km +$300/台）<input type="number" id="q_dz" data-b="dzKm" data-num min="0" placeholder="0"></label>
+            <label class="f">實體甘蔗台數<input type="number" id="q_cane" data-b="cane" data-num min="0"></label>
+            <label class="f">指定車頭彩費用<input type="number" id="q_deco" data-b="deco" data-num min="0" placeholder="800–1000"></label>
+            <label class="f">加項名稱<input id="q_x0n" data-b="extras.0.n" placeholder="例：指定路線"></label>
+            <label class="f">加項金額<input type="number" id="q_x0a" data-b="extras.0.a" data-num></label>
+            <label class="f">折扣名稱<input id="q_dn" data-b="discName" placeholder="例：早鳥"></label>
+            <label class="f">折扣金額<input type="number" id="q_da" data-b="discAmt" data-num min="0"></label>
+            <label class="f">司機禮／紅包<select id="q_red" data-b="red" data-bool><option value="1">含 $600/台</option><option value="0">不含</option></select></label>
+            <label class="f">發票<select id="q_inv" data-b="invoice" data-bool><option value="0">現金價（不開發票）</option><option value="1">開發票 +5%</option></select></label>
+            <label class="f">應付訂金（留空＝自動）<input type="number" id="q_dep" data-b="depOverride" placeholder="自動"></label>
+          </div>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <h3>金額試算</h3>
+          <div class="sum" id="sumBox"></div>
+        </div>
+        <div class="card">
+          <h3>報價訊息 <small>貼 Line／FB</small></h3>
+          <div class="row" style="justify-content:flex-end;margin-bottom:8px">
+            <button class="btn sm pri" data-copy="outQuote">複製</button>
+          </div>
+          <pre class="out" id="outQuote"></pre>
+        </div>
+        <div class="card">
+          <h3>下單訊息 <small>含匯款資訊與新人表單</small></h3>
+          <div class="row" style="justify-content:flex-end;margin-bottom:8px">
+            <button class="btn sm pri" data-copy="outOrder">複製</button>
+          </div>
+          <pre class="out" id="outOrder"></pre>
+          <p class="hint">表單連結已自動帶入訂單編號，不必再填「好好禮車管理端」表單。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 新人資料 -->
+  <section class="tab" id="tab-couple" hidden>
+    <div class="grid">
+      <div class="card">
+        <h3>新人資料</h3>
+        <div class="fields">
+          <label class="f">新郎姓名<input id="c_groom" data-b="c.groom"></label>
+          <label class="f">新娘姓名<input id="c_bride" data-b="c.bride"></label>
+          <label class="f">主要聯絡人
+            <select id="c_role" data-b="c.role"><option>新郎</option><option>新娘</option><option>其他</option></select></label>
+          <label class="f">聯絡人姓名（其他時填）<input id="c_cname" data-b="c.contact"></label>
+          <label class="f">聯絡電話<input id="c_phone" data-b="c.phone" inputmode="tel"></label>
+          <label class="f">開始用車<input type="time" id="c_start" data-b="c.start"></label>
+          <label class="f">結束用車<input type="time" id="c_end" data-b="c.end"></label>
+          <label class="f">司機集合時間<input type="time" id="c_gather" data-b="c.gather"></label>
+          <label class="f wide">A. 集合地點（完整地址）<input id="c_meet" data-b="c.meet"></label>
+          <label class="f">A 標註<input id="c_meetL" data-b="c.meetL" placeholder="男方家"></label>
+          <label class="f">A 短地區（找司機用）<input id="c_meetS" data-b="c.meetS" placeholder="自動"></label>
+          <label class="f wide">B. 迎娶地點（完整地址）<input id="c_wed" data-b="c.wed"></label>
+          <label class="f">B 標註<input id="c_wedL" data-b="c.wedL" placeholder="女方家"></label>
+          <label class="f">B 短地區<input id="c_wedS" data-b="c.wedS" placeholder="自動"></label>
+          <label class="f wide">C. 其他地點 1<input id="c_o1" data-b="c.o1"></label>
+          <label class="f">C 標註<input id="c_o1L" data-b="c.o1L" placeholder="例：宴客飯店"></label>
+          <label class="f">C 短地區<input id="c_o1S" data-b="c.o1S" placeholder="自動"></label>
+          <label class="f wide">D. 其他地點 2<input id="c_o2" data-b="c.o2"></label>
+          <label class="f">D 標註<input id="c_o2L" data-b="c.o2L"></label>
+          <label class="f">D 短地區<input id="c_o2S" data-b="c.o2S" placeholder="自動"></label>
+          <label class="f wide">路線說明<textarea id="c_route" data-b="c.route"></textarea></label>
+          <label class="f">車頂掛實體甘蔗<select id="c_caneA" data-b="c.caneAns"><option value="">—</option><option>是</option><option>否</option><option>待確認</option></select></label>
+          <label class="f">付費指定車頭彩<select id="c_decoA" data-b="c.decoAns"><option value="">—</option><option>是</option><option>否</option><option>待確認</option></select></label>
+          <label class="f">匯款日期<input type="date" id="c_pd" data-b="c.payDate"></label>
+          <label class="f">匯款金額<input id="c_pa" data-b="c.payAmt"></label>
+          <label class="f">匯款後五碼<input id="c_l5" data-b="c.last5"></label>
+          <label class="f wide">合約備註<textarea id="c_note" data-b="note"></textarea></label>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <h3>貼上表單回覆 <small>自動拆欄位</small></h3>
+          <textarea id="pasteBox" rows="9" placeholder="把「好好禮車訂單回覆」的回覆貼在這裡：可以是試算表整列（含或不含標題列），或回覆通知信的內容。"></textarea>
+          <div class="row" style="margin-top:8px"><button class="btn pri" id="btnParse">帶入欄位</button><span class="hint" id="parseMsg"></span></div>
+        </div>
+        <div class="card">
+          <h3>小抄</h3>
+          <p class="hint" style="margin:0">集合時間預設為開始用車前 20 分鐘。短地區會自動從地址轉成「彰化大村」這種格式，只用在找司機訊息；合約和 memo 一律用完整地址。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 合約 -->
+  <section class="tab" id="tab-contract" hidden>
+    <div class="row" style="margin-bottom:12px;justify-content:space-between">
+      <span class="hint" style="margin:0" id="contractHint">資料來自「報價」與「新人資料」，改那邊這裡就會更新。</span>
+      <button class="btn pri" id="btnPrint" hidden>列印／存成 PDF</button>
+    </div>
+    <div class="paperwrap"><div class="paper" id="contractPaper"></div></div>
+  </section>
+
+  <!-- 4 找司機 -->
+  <section class="tab" id="tab-find" hidden>
+    <div class="grid">
+      <div class="card">
+        <h3>找司機訊息 <small>貼司機群組</small></h3>
+        <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm pri" data-copy="outFind">複製</button></div>
+        <pre class="out" id="outFind"></pre>
+      </div>
+      <div class="card">
+        <h3>司機車資</h3>
+        <p class="hint" style="margin:0 0 10px">預設＝價目設定的司機酬勞（含紅包）＋超時，跨區每多 35km 每台 +$300。個別車輛可在「車隊與流程」再調。</p>
+        <div class="sum" id="payBox"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 車隊與流程 -->
+  <section class="tab" id="tab-dispatch" hidden>
+    <div class="stack">
+      <div class="card">
+        <h3>車隊 <small>車序、車號、司機</small></h3>
+        <div class="tbl"><table>
+          <thead><tr><th>車款</th><th>車序</th><th>車號</th><th>司機</th><th>電話</th><th>顏色</th><th>座位</th><th>司機車資</th><th>負責人</th></tr></thead>
+          <tbody id="fleetBody"></tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <h3>禮車流程</h3>
+        <div class="fields" style="margin-bottom:10px">
+          <label class="f">流程代號<input id="d_path" data-b="path" placeholder="A - B - A"></label>
+        </div>
+        <div class="flow" id="flowList"></div>
+        <div class="row" style="margin-top:8px"><button class="btn sm" id="btnFlowAdd">＋ 加一段</button><button class="btn sm" id="btnFlowAuto">依地點重排</button></div>
+        <p class="hint">每段寫「時間＋哪幾台車＋A - B」，例如 10:00 伴娘車 B - A。留空車輛＝全車隊。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 memo -->
+  <section class="tab" id="tab-memo" hidden>
+    <div class="row" style="margin-bottom:12px;gap:14px">
+      <div class="seg" id="memoWho">
+        <button data-who="cust" aria-pressed="true">客人用</button><button data-who="drv" aria-pressed="false">司機端</button>
+      </div>
+      <label class="row" style="font-size:13px;color:var(--muted);gap:6px"><input type="checkbox" id="mapLinks" style="width:auto"> 地址附 Google Map 連結</label>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>文字版 <small>直接貼 Line</small></h3>
+        <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm pri" data-copy="outMemo">複製</button></div>
+        <pre class="out" id="outMemo"></pre>
+      </div>
+      <div class="doc" id="memoDoc"></div>
+    </div>
+  </section>
+
+  <!-- 7 設定 -->
+  <section class="tab" id="tab-settings" hidden>
+    <div class="card" style="margin-bottom:18px">
+      <h3>車款與價目 <small>客人價用於報價／合約；司機酬勞為同區域非跨區、含紅包</small></h3>
+      <div class="tbl"><table class="ptbl" style="min-width:1500px">
+        <thead><tr><th rowspan="2">車款名稱</th><th rowspan="2">品牌</th><th rowspan="2">縮寫</th><th rowspan="2">座位</th><th colspan="6" class="grp">客人價</th><th colspan="7" class="grp">司機酬勞</th><th rowspan="2"></th></tr>
+        <tr><th>3HR</th><th>2HR</th><th>1.5HR</th><th>1HR</th><th>單程</th><th>加時/時</th><th>1H</th><th>2H</th><th>3H</th><th>超時/0.5H<br>(1–2H)</th><th>超時/1H<br>(3H+)</th><th>單程實拿</th><th>等候/0.5H</th></tr></thead>
+        <tbody id="priceBody"></tbody>
+      </table></div>
+      <div class="row" style="margin-top:8px"><button class="btn sm" id="btnModelAdd">＋ 新增車款</button></div>
+      <p class="hint">留空＝未設定。客人價空著時金額試算會提醒；某時數的客人價空著會先用 3HR 價。司機 1.5H ＝ (1H＋2H)÷2，4H 以上＝3H＋每小時超時；單程接送（綁彩）等候 15 分鐘未出發，每半小時加收。司機酬勞空著時，訂金改用百分比算。</p>
+    </div>
+    <div class="grid">
+      <div class="stack">
+        <div class="card">
+          <h3>優惠方案 <small>車數完全符合時自動套用（3HR 價）</small></h3>
+          <div class="tbl"><table style="min-width:420px">
+            <thead><tr><th>方案名</th><th>組合（用縮寫，例 MX+M3*2）</th><th>價格</th><th></th></tr></thead>
+            <tbody id="bundleBody"></tbody>
+          </table></div>
+          <button class="btn sm" id="btnBundleAdd" style="margin-top:8px">＋ 新增方案</button>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <h3>其他費用與訂金</h3>
+          <div class="fields">
+            <label class="f">跨區 / 區 / 台（客人）<input type="number" data-s="zone" id="s_zone"></label>
+            <label class="f">司機跨區每多幾公里<input type="number" data-s="dzKm" id="s_dzKm"></label>
+            <label class="f">司機跨區加多少 / 台<input type="number" data-s="dzAmt" id="s_dzAmt"></label>
+            <label class="f">司機禮 / 台<input type="number" data-s="red" id="s_red"></label>
+            <label class="f">甘蔗固定費 / 台<input type="number" data-s="cane" id="s_cane"></label>
+            <label class="f">預設公里數（3HR）<input type="number" data-s="km" id="s_km"></label>
+            <label class="f wide">縣市代碼（訂單編號用，一行一個「縣市=代碼」）<textarea id="s_cc" rows="5"></textarea></label>
+            <label class="f">訂金算法<select data-s="depMode" id="s_depMode"><option value="driver">總額 − 司機車資（尾款＝司機收）</option><option value="pct">總額 × 百分比</option></select></label>
+            <label class="f">訂金百分比<input type="number" data-s="depPct" id="s_depPct"></label>
+          </div>
+        </div>
+        <div class="card">
+          <h3>公司與匯款</h3>
+          <div class="fields">
+            <label class="f">電話<input data-s="phone" id="s_phone"></label>
+            <label class="f">Email<input data-s="email" id="s_email"></label>
+            <label class="f wide">匯款資訊<textarea data-s="bank" id="s_bank" rows="3"></textarea></label>
+            <label class="f wide">新人表單網址<input data-s="formBase" id="s_form"></label>
+            <label class="f">訂單編號欄位 entry<input data-s="formEntry" id="s_entry"></label>
+          </div>
+          <div class="row" style="margin-top:12px"><button class="btn danger" id="btnResetS">恢復預設價目</button><span class="hint" id="resetMsg"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+'use strict';
+let MODELS=[],MNAME={},MABBR={},MBRAND={};
+function rebuildModels(){MODELS=S.models.map(m=>m.id);MNAME={};MABBR={};MBRAND={};S.models.forEach(m=>{MNAME[m.id]=m.name;MABBR[m.id]=m.abbr||m.name;MBRAND[m.id]=m.brand||''})}
+const MK=['price','p2','short','p1','ptrip','ot','seats'],DK=['h1','h2','h3','ot05','ot1','trip','tripOt'];
+const ROLES=['前導車','主禮車','伴娘車','親友車','其他'];
+const ROLE_EN={'前導車':'Lead car','主禮車':'Main bridal car','伴娘車':'Bridesmaid car','親友車':'Family car','其他':'Car'};
+const ROLE_JA={'前導車':'先導車','主禮車':'メインブライダルカー','伴娘車':'ブライズメイド車','親友車':'親族車','其他':'車両'};
+const DEF_S={
+  models:[{"id": "X", "name": "Model X", "brand": "Tesla", "abbr": "MX"}, {"id": "S", "name": "Model S", "brand": "Tesla", "abbr": "MS"}, {"id": "Y", "name": "Model Y", "brand": "Tesla", "abbr": "MY"}, {"id": "3", "name": "Model 3", "brand": "Tesla", "abbr": "M3"}, {"id": "W205", "name": "Benz W205", "brand": "Benz", "abbr": "W205"}, {"id": "W212", "name": "Benz W212(改)", "brand": "Benz", "abbr": "W212"}, {"id": "W213", "name": "Benz W213", "brand": "Benz", "abbr": "W213"}, {"id": "W222", "name": "Benz W222(2013-2018)", "brand": "Benz", "abbr": "W222"}, {"id": "W222M", "name": "Benz W222(改)(2018-2020)", "brand": "Benz", "abbr": "W222改"}, {"id": "W223", "name": "Benz W223", "brand": "Benz", "abbr": "W223"}, {"id": "F30", "name": "BMW F30", "brand": "BMW", "abbr": "F30"}, {"id": "F10", "name": "BMW F10", "brand": "BMW", "abbr": "F10"}, {"id": "F02", "name": "BMW F02", "brand": "BMW", "abbr": "F02"}, {"id": "G12", "name": "BMW G12", "brand": "BMW", "abbr": "G12"}, {"id": "G12M", "name": "BMW G12(改)", "brand": "BMW", "abbr": "G12改"}, {"id": "GHB", "name": "Maserati Ghibli", "brand": "Maserati", "abbr": "Ghibli"}, {"id": "LEV", "name": "Maserati Levante", "brand": "Maserati", "abbr": "Levante"}, {"id": "BTO", "name": "Bentley 舊款(2017)", "brand": "Bentley", "abbr": "賓利舊款"}, {"id": "BTN", "name": "Bentley 新款", "brand": "Bentley", "abbr": "賓利新款"}, {"id": "PAN", "name": "Porsche Panamera", "brand": "Porsche", "abbr": "Panamera"}, {"id": "MAC", "name": "Porsche Macan", "brand": "Porsche", "abbr": "Macan"}, {"id": "ALP", "name": "Toyota Alphard", "brand": "Toyota", "abbr": "Alphard"}, {"id": "VITO", "name": "Benz VITO", "brand": "Benz", "abbr": "VITO"}],
+  price:{X:6800,S:5400,Y:4800,'3':4000,'W205':'','W212':'','W213':'','W222':'','W222M':'','W223':'','F30':'','F10':'','F02':'','G12':'','G12M':'','GHB':'','LEV':'','BTO':'','BTN':'','PAN':'','MAC':'','ALP':'','VITO':''},
+  short:{X:'',S:'',Y:'','3':'','W205':'','W212':'','W213':'','W222':'','W222M':'','W223':'','F30':'','F10':'','F02':'','G12':'','G12M':'','GHB':'','LEV':'','BTO':'','BTN':'','PAN':'','MAC':'','ALP':'','VITO':''},
+  ot:{X:1200,S:1000,Y:1000,'3':800,'W205':'','W212':'','W213':'','W222':'','W222M':'','W223':'','F30':'','F10':'','F02':'','G12':'','G12M':'','GHB':'','LEV':'','BTO':'','BTN':'','PAN':'','MAC':'','ALP':'','VITO':''},
+  p2:{X:'',S:'',Y:'','3':'','W205':'','W212':'','W213':'','W222':'','W222M':'','W223':'','F30':'','F10':'','F02':'','G12':'','G12M':'','GHB':'','LEV':'','BTO':'','BTN':'','PAN':'','MAC':'','ALP':'','VITO':''},p1:{X:'',S:'',Y:'','3':'','W205':'','W212':'','W213':'','W222':'','W222M':'','W223':'','F30':'','F10':'','F02':'','G12':'','G12M':'','GHB':'','LEV':'','BTO':'','BTN':'','PAN':'','MAC':'','ALP':'','VITO':''},ptrip:{X:'',S:'',Y:'','3':'','W205':'','W212':'','W213':'','W222':'','W222M':'','W223':'','F30':'','F10':'','F02':'','G12':'','G12M':'','GHB':'','LEV':'','BTO':'','BTN':'','PAN':'','MAC':'','ALP':'','VITO':''},
+  dp:{X:{h1:3000,h2:4000,h3:4700,ot05:600,ot1:800,trip:1500,tripOt:600},
+      Y:{h1:2400,h2:3000,h3:3000,ot05:400,ot1:600,trip:1200,tripOt:400},
+      '3':{h1:1800,h2:2400,h3:2700,ot05:400,ot1:600,trip:1000,tripOt:400},
+      S:{h1:'',h2:'',h3:3500,ot05:'',ot1:600,trip:'',tripOt:''},
+      'W205':{h1:'',h2:'',h3:3000,ot05:'',ot1:'',trip:'',tripOt:''},'W212':{h1:'',h2:'',h3:3000,ot05:'',ot1:'',trip:'',tripOt:''},'W213':{h1:'',h2:'',h3:3500,ot05:'',ot1:'',trip:'',tripOt:''},'W222':{h1:'',h2:'',h3:5000,ot05:'',ot1:'',trip:'',tripOt:''},'W222M':{h1:'',h2:'',h3:5500,ot05:'',ot1:'',trip:'',tripOt:''},'W223':{h1:'',h2:'',h3:10000,ot05:'',ot1:'',trip:'',tripOt:''},'F30':{h1:'',h2:'',h3:3200,ot05:'',ot1:'',trip:'',tripOt:''},'F10':{h1:'',h2:'',h3:3600,ot05:'',ot1:'',trip:'',tripOt:''},'F02':{h1:'',h2:'',h3:4000,ot05:'',ot1:'',trip:'',tripOt:''},'G12':{h1:'',h2:'',h3:6000,ot05:'',ot1:'',trip:'',tripOt:''},'G12M':{h1:'',h2:'',h3:7000,ot05:'',ot1:'',trip:'',tripOt:''},'GHB':{h1:'',h2:'',h3:6000,ot05:'',ot1:'',trip:'',tripOt:''},'LEV':{h1:'',h2:'',h3:5000,ot05:'',ot1:'',trip:'',tripOt:''},'BTO':{h1:'',h2:'',h3:20000,ot05:'',ot1:'',trip:'',tripOt:''},'BTN':{h1:'',h2:'',h3:20000,ot05:'',ot1:'',trip:'',tripOt:''},'PAN':{h1:'',h2:'',h3:8000,ot05:'',ot1:'',trip:'',tripOt:''},'MAC':{h1:'',h2:'',h3:8000,ot05:'',ot1:'',trip:'',tripOt:''},'ALP':{h1:'',h2:'',h3:3600,ot05:'',ot1:'',trip:'',tripOt:''},'VITO':{h1:'',h2:'',h3:3000,ot05:'',ot1:'',trip:'',tripOt:''}},
+  seats:{X:6,S:5,Y:5,'3':5,'W205':5,'W212':5,'W213':5,'W222':5,'W222M':5,'W223':5,'F30':5,'F10':5,'F02':5,'G12':5,'G12M':5,'GHB':5,'LEV':5,'BTO':5,'BTN':5,'PAN':4,'MAC':5,'ALP':7,'VITO':9},
+  bundles:[
+    {name:'兩台禮車',cars:{X:1,S:0,Y:0,'3':1},price:10600},
+    {name:'三台禮車',cars:{X:1,S:0,Y:0,'3':2},price:13900},
+    {name:'三台禮車',cars:{X:2,S:0,Y:0,'3':1},price:16600},
+    {name:'六台禮車',cars:{X:1,S:0,Y:0,'3':5},price:25800},
+    {name:'六台禮車',cars:{X:6,S:0,Y:0,'3':0},price:39800}],
+  cc:{'台北':'TP','新北':'NTP','基隆':'KL','桃園':'TY','新竹':'HC','苗栗':'ML','台中':'TC','彰化':'CH','南投':'NT','雲林':'YN','嘉義':'CY','台南':'TN','高雄':'KH','屏東':'PT','宜蘭':'YL','花蓮':'HL','台東':'TT','澎湖':'PH','金門':'KM','連江':'MZ'},
+  ver:2,dzKm:35,dzAmt:300,
+  zone:500,red:600,cane:1000,km:35,depMode:'driver',depPct:40,
+  phone:'0981-836-668',email:'love@niceweddingcar.com',
+  bank:'將來銀行(823)  | 營業部(1688)\n帳號：8865-36668-36668',
+  formBase:'https://docs.google.com/forms/d/e/1FAIpQLSd0D0W-WIzil0gGTuESCXCBMzMCnLObm6dwGMC_8WA5ehtqgA/viewform',
+  formEntry:'entry.1145960587'
+};
+const clone=x=>JSON.parse(JSON.stringify(x));
+function store(k,v){try{if(v===undefined){const s=localStorage.getItem(k);return s?JSON.parse(s):null}localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
+let S=Object.assign(clone(DEF_S),store('nwcw_settings')||{});
+if(!S.dp||!S.dp.X||S.dp.X.h1===undefined)S.dp=clone(DEF_S.dp);
+if(!S.models||!S.models.length){S.models=clone(DEF_S.models)}else{DEF_S.models.forEach(m=>{if(!S.models.some(x=>x.id===m.id)&&!(S.removed||[]).includes(m.id))S.models.push(clone(m))})}
+[...MK,'dp'].forEach(k=>{S[k]=Object.assign(clone(DEF_S[k]),S[k]||{})});
+if((S.ver||1)<2){['X','S','Y','3'].forEach(id=>{S.dp[id]=Object.assign(S.dp[id]||{},{h3:DEF_S.dp[id].h3,ot1:DEF_S.dp[id].ot1})});S.ver=2;S.dzKm=35;S.dzAmt=300}
+S.models.forEach(m=>{MK.forEach(k=>{if(S[k][m.id]===undefined)S[k][m.id]=''});if(!S.dp[m.id])S.dp[m.id]={h1:'',h2:'',h3:'',ot05:'',ot1:'',trip:'',tripOt:''}});
+rebuildModels();
+
+function newOrder(){return{
+  id:'o'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+  sample:false,cityA:'',cityB:'',code:'',seq:'',_seqKey:'',_seq:'',date:'',hours:3,km:S.km,
+  cars:{X:1,S:0,Y:0,'3':0},zoneName:'',zones:0,dzKm:0,cane:0,deco:0,
+  extras:[{n:'',a:0}],discName:'',discAmt:0,red:true,invoice:false,depOverride:'',note:'',
+  c:{groom:'',bride:'',role:'新娘',contact:'',phone:'',start:'',end:'',gather:'',
+     meet:'',meetL:'男方家',meetS:'',wed:'',wedL:'女方家',wedS:'',o1:'',o1L:'',o1S:'',o2:'',o2L:'',o2S:'',route:'',
+     caneAns:'',decoAns:'',payDate:'',payAmt:'',last5:''},
+  fleet:[],path:'',flow:[],lang:{q:'zh',o:'zh',m:'zh'},memoWho:'cust',mapLinks:true,
+  updated:Date.now()}}
+function sampleOrder(){const o=newOrder();Object.assign(o,{sample:true,cityA:'彰化',cityB:'台中',date:'2026-10-06',hours:3,
+  cars:{X:1,S:0,Y:0,'3':2},path:'A - B - A'});
+  Object.assign(o.c,{groom:'王大明',bride:'林小美',role:'新郎',phone:'0912345678',start:'08:30',end:'11:30',gather:'08:10',
+   meet:'彰化縣大村鄉美港村美港橫巷8號',wed:'台中市大里區福大路2-5巷10號',caneAns:'否',decoAns:'否'});
+  o.fleet=[{m:'3',role:'前導車',plate:'ABC-1234',driver:'張司機',phone:'0900000001',color:'白色',seats:5,pay:'',lead:false},
+           {m:'X',role:'主禮車',plate:'ABC-5678',driver:'黃司機',phone:'0900000002',color:'白色',seats:6,pay:'',lead:true},
+           {m:'3',role:'伴娘車',plate:'ABC-9012',driver:'李司機',phone:'0900000003',color:'白色',seats:5,pay:'',lead:false}];
+  o.flow=[{t:'08:30',who:'',seg:'A - B'},{t:'10:00',who:'伴娘車',seg:'B - A'},{t:'10:35',who:'前導車+主禮車',seg:'B - A'}];
+  return o}
+
+let DB=store('nwcw_orders');
+if(!DB||!DB.orders||!Object.keys(DB.orders).length){const s=sampleOrder();DB={cur:s.id,orders:{[s.id]:s}}}
+let o=DB.orders[DB.cur]||Object.values(DB.orders)[0];
+function migrate(x){const d=newOrder();for(const k in d){if(x[k]===undefined)x[k]=clone(d[k])}for(const k in d.c){if(x.c[k]===undefined)x.c[k]=''}for(const k in d.lang){if(!x.lang[k])x.lang[k]='zh'}return x}
+Object.values(DB.orders).forEach(migrate);
+function save(){o.updated=Date.now();DB.cur=o.id;DB.orders[o.id]=o;store('nwcw_orders',DB)}
+function saveS(){store('nwcw_settings',S)}
+
+/* ---------- helpers ---------- */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const num=v=>{const n=parseFloat(v);return isFinite(n)?n:0};
+const money=(n,lang)=>(lang&&lang!=='zh'?'NT$':'$')+Math.round(n).toLocaleString('en-US');
+const ceil100=n=>Math.ceil(n/100)*100;
+const ZHN=['零','一','兩','三','四','五','六','七','八','九','十'];
+const WD={zh:['日','一','二','三','四','五','六'],en:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],ja:['日','月','火','水','木','金','土']};
+function dparts(d){if(!d)return null;const [y,m,dd]=d.split('-').map(Number);const dt=new Date(y,m-1,dd);return{y,m,d:dd,w:dt.getDay()}}
+const p2=n=>String(n).padStart(2,'0');
+function fmtDate(d,lang){const p=dparts(d);if(!p)return '（未定）';return `${p.y}/${p2(p.m)}/${p2(p.d)}`}
+function fmtMDW(d,lang){const p=dparts(d);if(!p)return '（未定）';const w=WD[lang||'zh'][p.w];return lang==='en'?`${p2(p.m)}/${p2(p.d)} (${w})`:`${p2(p.m)}/${p2(p.d)}(${w})`}
+function ap(t){if(!t)return '';const [h,m]=t.split(':').map(Number);return `${p2(h)}:${p2(m)}${h<12?'am':'pm'}`}
+function addMin(t,mins){if(!t)return '';let [h,m]=t.split(':').map(Number);let x=h*60+m+mins;x=(x+1440)%1440;return `${p2(Math.floor(x/60))}:${p2(x%60)}`}
+function hrsLabel(h){return +h===0?'單程':h+'HR'}
+function dstr(x){const p=dparts(x.date);return p?`${p.y}${p2(p.m)}${p2(p.d)}`:'YYYYMMDD'}
+function autoCode(x){const cs=[x.cityA,x.cityB].filter(Boolean);return [...new Set(cs)].map(c=>S.cc[c]||'').join('')}
+function codeOf(x){return (x.code||autoCode(x)||'').toUpperCase()}
+/* 同日期＋同縣市代碼的第幾組：第一次決定後就固定，刪掉別張單也不會變號 */
+function autoSeq(x){const key=dstr(x)+codeOf(x);if(x._seqKey===key&&x._seq)return x._seq;
+  let mx=0;Object.values(DB.orders).forEach(y=>{if(y.id===x.id)return;if(dstr(y)+codeOf(y)===key)mx=Math.max(mx,num(y.seq||autoSeq(y)))});
+  x._seqKey=key;x._seq=p2(mx+1);return x._seq}
+function seqOf(x){return x.seq?p2(num(x.seq)||x.seq):autoSeq(x)}
+function orderNo(x){return dstr(x)+codeOf(x)+seqOf(x)}
+function countyOf(a){if(!a)return '';const m=a.replace(/臺/g,'台').replace(/^\s*\d{3,6}\s*/,'').match(/^(台北|新北|桃園|台中|台南|高雄|基隆|新竹|嘉義|苗栗|彰化|南投|雲林|屏東|宜蘭|花蓮|台東|澎湖|金門|連江)/);return m?m[1]:''}
+function shortArea(a){if(!a)return '';let s=a.replace(/臺/g,'台').replace(/^\s*\d{3,6}\s*/,'').trim();
+  const m=s.match(/^(台北|新北|桃園|台中|台南|高雄|基隆|新竹|嘉義|苗栗|彰化|南投|雲林|屏東|宜蘭|花蓮|台東|澎湖|金門|連江)[縣市]?(.{1,3}?)[區鎮鄉市]/);
+  if(m)return m[1]+m[2];const m2=s.match(/^(台北|新北|桃園|台中|台南|高雄|基隆|新竹|嘉義|苗栗|彰化|南投|雲林|屏東|宜蘭|花蓮|台東|澎湖|金門|連江)/);
+  return m2?m2[1]:s.slice(0,8)}
+function areaOf(k){return o.c[k+'S']||shortArea(o.c[k])}
+function mapUrl(a){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(a)}
+function formLink(x){const base=S.formBase.split('?')[0];return `${base}?usp=pp_url&${S.formEntry}=${encodeURIComponent(orderNo(x))}`}
+function carCount(x){return MODELS.reduce((a,m)=>a+num(x.cars[m]),0)}
+function contactName(x){const c=x.c;return c.role==='新郎'?c.groom:c.role==='新娘'?c.bride:c.contact}
+
+/* ---------- pricing ---------- */
+function findBundle(x){if(x.hours<3)return null;return S.bundles.find(b=>MODELS.every(m=>num(b.cars[m])===num(x.cars[m]))&&carCount(x)>1)||null}
+function extraH(x){return x.hours>3?Math.ceil(x.hours-3-1e-9):0}
+function blank(v){return v===''||v==null}
+function cPrice(m,h){const t=+h===0?S.ptrip:h<1.5?S.p1:h<2?S.short:h<3?S.p2:S.price;const v=t[m];return blank(v)?{v:num(S.price[m]),miss:true}:{v:num(v),miss:false}}
+function dzExtra(x){const k=num(x.dzKm);return k>0?Math.ceil(k/num(S.dzKm||35))*num(S.dzAmt):0}
+function driverBasePay(m,x){const v=driverBasePay0(m,x);return v==null?null:v+dzExtra(x)}
+function driverBasePay0(m,x){const d=S.dp[m];if(!d)return null;const h=+x.hours,g=k=>blank(d[k])?null:num(d[k]);
+  if(h===0)return g('trip');
+  if(h>=3){const a=g('h3'),b=g('ot1');return a==null||b==null&&h>3?null:a+Math.ceil(h-3-1e-9)*(b||0)}
+  if(h===1.5){const a=g('h1'),b=g('h2');return a==null||b==null?null:(a+b)/2}
+  if(h>=2){const a=g('h2');return a==null?null:a+Math.ceil((h-2)/0.5-1e-9)*(g('ot05')||0)}
+  const a=g('h1');return a==null?null:a+Math.max(0,Math.ceil((h-1)/0.5-1e-9))*(g('ot05')||0)}
+function driverOtText(m,x){const d=S.dp[m]||{},h=+x.hours;if(h===0)return `${MABBR[m]} 等候每 0.5HR ${blank(d.tripOt)?'未設定':money(d.tripOt)}`;
+  return h>=3?`${MABBR[m]} ${blank(d.ot1)?'未設定':money(d.ot1)}/HR`:`${MABBR[m]} ${blank(d.ot05)?'未設定':money(d.ot05)}/0.5HR`}
+function calc(x){
+  const n=carCount(x),short=x.hours<3,b=findBundle(x),eh=extraH(x);
+  let base=0;const miss=[];MODELS.forEach(m=>{if(!num(x.cars[m]))return;const cp=cPrice(m,x.hours);if(cp.miss)miss.push(blank(S.price[m])?`${MNAME[m]} 客人價未設定`:`${MNAME[m]} ${hrsLabel(x.hours)}價未設定，暫用 3HR 價`);base+=num(x.cars[m])*cp.v});
+  const listBase=base;if(b)base=num(b.price);
+  let ot=0;MODELS.forEach(m=>ot+=num(x.cars[m])*num(S.ot[m])*eh);
+  const zone=num(x.zones)*n*num(S.zone),cane=num(x.cane)*num(S.cane),deco=num(x.deco);
+  const extras=x.extras.reduce((a,e)=>a+num(e.a),0),red=x.red?n*num(S.red):0,disc=num(x.discAmt);
+  const pre=base+ot+zone+cane+deco+extras-disc;
+  const tax=x.invoice?Math.round(pre*0.05):0;
+  const total=pre+tax+red;
+  // driver pay
+  const fl=fleetOf(x);let dsum=0,dok=fl.length>0;
+  fl.forEach(f=>{const v=f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x);if(v==null)dok=false;else dsum+=v});
+  let deposit;
+  if(x.depOverride!==''&&x.depOverride!=null)deposit=num(x.depOverride);
+  else if(S.depMode==='driver'&&dok&&dsum<total)deposit=total-dsum;
+  else deposit=ceil100(total*num(S.depPct)/100);
+  return{n,b,eh,miss,base,listBase,ot,zone,cane,deco,extras,red,disc,tax,total,deposit,balance:total-deposit,rent:total-red,dsum,dok}}
+
+function qtyWord(q,lang){if(lang==='en')return '×'+q;if(lang==='ja')return q+'台';return (ZHN[q]||q)+'台'}
+function carsText(x,lang){const parts=MODELS.filter(m=>num(x.cars[m])>0).map((m,i,arr)=>((MBRAND[m]==='Tesla'&&(i===0||MBRAND[arr[i-1]]!=='Tesla'))?'Tesla ':'')+MNAME[m]+(lang==='en'?' ':' ')+qtyWord(num(x.cars[m]),lang));return parts.join(lang==='en'?', ':'、')||'—'}
+function planName(x){const r=calc(x);const parts=MODELS.filter(m=>num(x.cars[m])>0).map(m=>MABBR[m]+(num(x.cars[m])>1?'*'+num(x.cars[m]):''));
+  const nm=r.b?r.b.name:(r.n>1?(ZHN[r.n]||r.n)+'台禮車':'');
+  const allT=MODELS.filter(m=>num(x.cars[m])>0).every(m=>MBRAND[m]==='Tesla');return (allT?'Tesla ':'')+parts.join('+')+(nm?' '+nm+'方案':'')}
+const L={
+ zh:{km:k=>` 公里`,within:(h,k)=>`(${h} ${k} 公里)`,ot:'超時',zone:'調度',zoneDef:'跨區調度',cane:'甘蔗固定費',deco:'指定車頭彩',red:'司機禮',disc:'折扣',tax:'發票 5% 營業稅',bundle:'方案'},
+ en:{within:(h,k)=>`(${h}, within ${k} km)`,ot:'overtime',zone:' dispatch fee',zoneDef:'Cross-region fee',cane:'Sugarcane fee',deco:'Custom hood decoration',red:'Driver red envelope',disc:'Discount',tax:'5% business tax (invoice)',bundle:'package'},
+ ja:{within:(h,k)=>`(${h}・${k}km以内)`,ot:'延長',zone:'配車費',zoneDef:'越境配車費',cane:'サトウキビ固定費',deco:'指定ボンネット飾り',red:'ドライバーご祝儀',disc:'割引',tax:'領収書発行 5%営業税',bundle:'プラン'}};
+function mult(unit,q,lang){return q>1?`${money(unit,lang)}×${q} = ${money(unit*q,lang)}`:money(unit,lang)}
+function feeLines(x,lang){const t=L[lang],r=calc(x),hl=hrsLabel(x.hours),out=[];const short=x.hours<3;
+  const within=t.within(hl,num(x.km));
+  if(r.b){const nm=MODELS.filter(m=>num(x.cars[m])>0).map(m=>MNAME[m]+(num(x.cars[m])>1?'*'+num(x.cars[m]):'')).join(' + ');
+    out.push(lang==='zh'?`${r.b.name}方案 ${nm} ${money(r.b.price,lang)} ${within}`:`${nm} ${t.bundle} ${money(r.b.price,lang)} ${within}`)}
+  else MODELS.forEach(m=>{const q=num(x.cars[m]);if(q)out.push(`${MNAME[m]} ${mult(cPrice(m,x.hours).v,q,lang)} ${+x.hours===0?(lang==='en'?'(one-way transfer)':lang==='ja'?'(片道送迎)':'(單程接送)'):within}`)});
+  if(r.eh)MODELS.forEach(m=>{const q=num(x.cars[m]);if(q)out.push(`${MNAME[m]} ${t.ot} ${r.eh}HR ${mult(num(S.ot[m])*r.eh,q,lang)}`)});
+  if(r.zone){const lab=x.zoneName?(x.zoneName+t.zone):t.zoneDef;out.push(`${lab} ${mult(num(S.zone),num(x.zones)*r.n,lang)}`)}
+  if(r.cane)out.push(`${t.cane} ${mult(num(S.cane),num(x.cane),lang)}`);
+  if(r.deco)out.push(`${t.deco} ${money(r.deco,lang)}`);
+  x.extras.forEach(e=>{if(num(e.a))out.push(`${e.n||'加項'} ${money(num(e.a),lang)}`)});
+  if(r.disc)out.push(`${x.discName||t.disc} -${money(r.disc,lang)}`);
+  if(r.tax)out.push(`${t.tax} ${money(r.tax,lang)}`);
+  if(r.red)out.push(`${t.red} ${mult(num(S.red),r.n,lang)}`);
+  return out}
+function otRates(x,lang){const ms=MODELS.filter(m=>num(x.cars[m])>0);return ms.map(m=>`${MNAME[m]} ${money(S.ot[m],lang)}${lang==='en'?'/hr':lang==='ja'?'/時間':'/時'}`).join(lang==='en'?', ':'、')}
+
+/* ---------- messages ---------- */
+function quoteText(x,lang){const r=calc(x),f=feeLines(x,lang);const d=x.date?fmtDate(x.date)+(()=>{const p=dparts(x.date);return lang==='en'?` (${WD.en[p.w]})`:`（${WD[lang][p.w]}）`})():(lang==='en'?'TBD':lang==='ja'?'未定':'未定');
+ if(lang==='en')return [`[Nice Wedding Car] Quote`,`Date: ${d}`,(+x.hours===0?'Service: one-way transfer':`Hours: ${hrsLabel(x.hours)} (within ${num(x.km)} km)`),`Vehicle(s): ${carsText(x,lang)}`,`Charges:`,...f,`Total = ${money(r.total,lang)}`,'',
+   x.invoice?'* Price includes 5% business tax.':'* Cash price; 5% business tax not included.',`* Overtime starts from the 16th minute, charged per started hour: ${otRates(x,lang)}`,
+   r.cane?'':`* Real sugarcane on the roof: ${money(S.cane,lang)}/car (optional)`,`* A driver red envelope of ${money(S.red,lang)}/car is customary.`].filter(s=>s!=='').join('\n');
+ if(lang==='ja')return [`【好好禮車】お見積り`,`ご利用日：${d}`,(+x.hours===0?'ご利用内容：片道送迎':`ご利用時間：${hrsLabel(x.hours)}（${num(x.km)}km以内）`),`ご予約車種：${carsText(x,lang)}`,`料金明細：`,...f,`合計 = ${money(r.total,lang)}`,'',
+   x.invoice?'＊5%営業税込みの金額です。':'＊現金価格です（5%営業税別）。',`＊16分目から延長料金が発生し、1時間未満は1時間で計算します：${otRates(x,lang)}`,
+   r.cane?'':`＊車の屋根に本物のサトウキビを付ける場合：${money(S.cane,lang)}/台`].filter(s=>s!=='').join('\n');
+ return [`【好好禮車 報價】`,`用車日期：${d}`,(+x.hours===0?`用車方式：單程接送`:`用車時數：${hrsLabel(x.hours)}（${num(x.km)} 公里內）`),`預約車款：${carsText(x,lang)}`,`費用明細：`,...f,`合計=${money(r.total)}`,'',
+   x.invoice?'＊以上含發票 5% 營業稅':'＊以上為現金價，不含發票 5% 營業稅',`＊超過 15 分鐘內不加收，第 16 分鐘起計算超時（未滿一小時以一小時計）：${otRates(x,lang)}`,
+   r.cane?'':`＊實體甘蔗掛車頂另計 ${money(S.cane)}/台`,r.red?'':`＊不含司機紅包 ${money(S.red)}/台`].filter(s=>s!=='').join('\n')}
+
+function orderText(x,lang){const r=calc(x),f=feeLines(x,lang),no=orderNo(x),link=formLink(x);
+ if(lang==='en')return [`Your booking (Order No.: ${no}) details:`,`Date: ${fmtDate(x.date)}`,`Vehicle(s): ${carsText(x,lang)}`,`Charges: ${f[0]||''}`,...f.slice(1),`Total = ${money(r.total,lang)}`,`Package amount: ${money(r.total,lang)}`,`Deposit due: ${money(r.deposit,lang)}`,
+   r.red?`[ Please hand the driver red envelope (${money(S.red,lang)}/car) together with the balance directly to the main bridal car driver ]`:'','','',`Bank transfer details:`,S.bank,'',`Please transfer the deposit to the account above within 2 days, then fill out the form below to complete your booking:`,link,`( Enter N/A for any field that doesn't apply )`].join('\n');
+ if(lang==='ja')return [`今回のご予約（ご予約番号：${no}）の内容は以下の通りです：`,`ご利用日：${fmtDate(x.date)}`,`ご予約車種：${carsText(x,lang)}`,`料金明細：${f[0]||''}`,...f.slice(1),`合計 = ${money(r.total,lang)}`,`プラン金額：${money(r.total,lang)}`,`お支払い手付金：${money(r.deposit,lang)}`,
+   r.red?`[ ご祝儀 ${money(S.red,lang)}/台 は残金と一緒にメインカーのドライバーへ直接お渡しください ]`:'','','',`お振込先：`,S.bank,'',`2日以内に上記口座へ手付金をお振込みの上、下記フォームにご記入いただくとご予約完了となります：`,link,`（該当しない項目は N/A とご記入ください）`].join('\n');
+ return [`您本次的訂單 (訂單編號：${no} ) 內容如下：`,`用車日期：${fmtDate(x.date)} `,`預約車款：${carsText(x,lang)}`,`費用明細：${f[0]||''}`,...f.slice(1),`合計=${money(r.total)}`,`方案金額：${money(r.total)} `,`應付訂金：${money(r.deposit)} `,
+   r.red?`[ 紅包${money(S.red)}/台同尾款直接交給主禮車司機 ]`:'','','',`匯款資訊：`,S.bank,'',`請於兩日內將訂金匯款至上列帳戶後填寫以下表單以完成訂車流程：`,link,`( 若無相關內容之欄位可以 N/A 填寫 )`].join('\n')}
+
+/* ---------- fleet ---------- */
+function expandCars(x){const a=[];MODELS.forEach(m=>{for(let i=0;i<num(x.cars[m]);i++)a.push(m)});return a}
+function defaultRoles(list){const roles=new Array(list.length).fill('伴娘車');const xi=list.indexOf('X');const mainI=xi>=0?xi:0;roles[mainI]='主禮車';
+  if(list.length>1){let li=list.findIndex((m,i)=>i!==mainI&&m==='S');if(li<0)li=list.findIndex((m,i)=>i!==mainI&&m!=='X');if(li<0)li=list.findIndex((m,i)=>i!==mainI);if(li>=0)roles[li]='前導車'}
+  return roles}
+function fleetOf(x){const want=expandCars(x);const cur=x.fleet||[];const pool=cur.slice();const out=[];const roles=defaultRoles(want);
+  want.forEach((m,i)=>{const k=pool.findIndex(f=>f.m===m);if(k>=0){out.push(pool.splice(k,1)[0])}else out.push({m,role:roles[i],plate:'',driver:'',phone:'',color:'白色',seats:S.seats[m],pay:'',lead:roles[i]==='主禮車'})});
+  const ord=r=>{const i=ROLES.indexOf(r);return i<0?9:i};
+  return out.sort((a,b)=>ord(a.role)-ord(b.role))}
+function syncFleet(){o.fleet=fleetOf(o)}
+function payOf(f){return f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,o)}
+function lead(x){return x.fleet.find(f=>f.lead)||x.fleet.find(f=>f.role==='主禮車')||x.fleet[0]}
+
+/* ---------- locations / flow ---------- */
+function points(x){const c=x.c,pts=[];[['A','meet','集合地點'],['B','wed','迎娶地點'],['C','o1','其他地點'],['D','o2','其他地點']].forEach(([k,f,t],i)=>{if(c[f]||i<2)pts.push({k,addr:c[f],label:c[f+'L'],title:t,f})});return pts}
+function autoFlow(x){const pts=points(x).filter(p=>p.addr);const ks=pts.map(p=>p.k);const c=x.c;
+  if(ks.length<2){x.path=ks[0]||'';x.flow=[{t:c.start||'',who:'',seg:ks[0]||''}];return}
+  const seq=ks.length===2?['A','B','A']:ks; x.path=seq.join(' - ');
+  x.flow=[];for(let i=0;i<seq.length-1;i++)x.flow.push({t:i===0?(c.start||''):'',who:'',seg:seq[i]+' - '+seq[i+1]})}
+
+/* ---------- memo ---------- */
+const MT={
+ zh:{gather:'司機集合時間',contact:'聯絡人',boss:'禮車負責人',plan:'禮車方案',deco:'指定車頭彩',cane:'固定甘蔗',yes:'是',no:'否',tbd:'待確認',order:'車序',plate:'車號',driver:'駕駛',car:'車款',phone:'電話',
+   meet:'集合地點',wed:'迎娶地點',other:'其他地點',flow:'禮車流程',route:'路線說明',tipsC:'給新人的小提醒',tipsD:'給司機的小提醒',pay:'款項',seats:n=>`${n} 人座`,lead:'(負責人)',orderNo:'訂單編號',all:'全車隊'},
+ en:{gather:'Driver meeting time',contact:'Contact',boss:'Fleet coordinator',plan:'Package',deco:'Custom hood decoration',cane:'Sugarcane on roof',yes:'Yes',no:'No',tbd:'TBC',order:'Role',plate:'Plate',driver:'Driver',car:'Car',phone:'Phone',
+   meet:'Meeting point',wed:'Bride pick-up',other:'Other stop',flow:'Schedule',route:'Route notes',tipsC:'Reminders for the couple',tipsD:'Driver reminders',pay:'Payment',seats:n=>`${n} seats`,lead:'(coordinator)',orderNo:'Order No.',all:'All cars'},
+ ja:{gather:'ドライバー集合時間',contact:'ご連絡先',boss:'車両責任者',plan:'プラン',deco:'指定ボンネット飾り',cane:'サトウキビ固定',yes:'あり',no:'なし',tbd:'確認中',order:'車順',plate:'ナンバー',driver:'ドライバー',car:'車種',phone:'電話',
+   meet:'集合場所',wed:'お迎え場所',other:'その他の場所',flow:'当日の流れ',route:'ルート',tipsC:'新郎新婦様へのご案内',tipsD:'ドライバーへの注意事項',pay:'お支払い',seats:n=>`${n}人乗り`,lead:'(責任者)',orderNo:'ご予約番号',all:'全車'}};
+function roleName(r,lang){return lang==='en'?(ROLE_EN[r]||r):lang==='ja'?(ROLE_JA[r]||r):r}
+function yn(v,lang){const t=MT[lang];return v==='是'?t.yes:v==='待確認'?t.tbd:t.no}
+function colorName(c,lang){if(lang==='zh')return c;const map={'白色':['White','ホワイト'],'黑色':['Black','ブラック'],'灰色':['Grey','グレー'],'紅色':['Red','レッド'],'藍色':['Blue','ブルー'],'銀色':['Silver','シルバー']};return map[c]?map[c][lang==='en'?0:1]:c}
+function tipsC(x,lang){const hasX=num(x.cars.X)>0;
+ const zh=['集合時司機會先將車頭彩及門把花完成固定，方便攝影拍攝，若您集合時不需綁彩可提前告知。','為避免損傷車輛，提醒新人、親屬及攝影團隊操作車輛由駕駛協助。',
+  hasX?'預約 Model X 為主禮車，因車門為上掀式鷗翼門設計，請摸蘋果/橘子親人在車輛抵達時，與車門保持小段距離。':null,'為安全起見，如前導車須施放鞭炮，建議請駕駛停車後在路邊施放並與車子保持距離。',
+  '禮車負責人會在用車前一日與您聯繫，若您有指定路線可先與負責人溝通確認，或安排熟悉路線親友在前導車協助，每台車都配有無線電可即時溝通。'];
+ const en=['At the meeting time, the drivers will first attach the hood decoration and door-handle flowers so the photographer can take pictures. Let us know in advance if you don\'t need them then.','To avoid damage to the cars, please let the drivers operate the vehicles for the couple, family and photography team.',
+  hasX?'The main car is a Model X with upward-opening falcon-wing doors. Please ask the family member greeting the car (with the apple/orange) to keep a little distance from the doors when it arrives.':null,'For safety, if firecrackers are set off from the lead car, please have the driver stop first and set them off at the roadside, away from the car.',
+  'The fleet coordinator will contact you the day before. If you have a specific route, please confirm it with the coordinator, or arrange a family member who knows the way to ride in the lead car. Every car has a radio for real-time communication.'];
+ const ja=['集合時にドライバーがボンネット飾りとドアハンドルの花を取り付けますので、撮影にご利用いただけます。集合時に飾り付けが不要な場合は事前にお知らせください。','車両保護のため、新郎新婦様・ご親族・撮影チームの方の車両操作はドライバーがお手伝いします。',
+  hasX?'メインカーの Model X は上に開くファルコンウィングドアです。車の到着時、お迎えのご親族（りんご/みかん係）の方はドアから少し距離をとってください。':null,'安全のため、先導車から爆竹を鳴らす場合は、ドライバーが停車してから路肩で、車から離れて鳴らしてください。',
+  '車両責任者が前日にご連絡します。ルートのご指定がある場合は責任者と事前にご確認いただくか、道に詳しいご親族に先導車へご同乗いただけます。各車に無線機を装備しています。'];
+ return ({zh,en,ja}[lang]).filter(Boolean)}
+const TIPS_D=['前一天確實清潔車輛及充電、遵守服裝規定、調整座椅角度、注意禮貌積極協助新人及負責人完成任務、抽菸請迴避新人。','請事先將所有行程定點設定於導航中，點選上列地址連結後可跳轉至 Google Map。','安全第一：車隊行駛跟車中務必以安全為第一考量，若車隊中斷可在定點集合後再出發。','保護車輛：為避免損傷車輛，請主動協助新人開關車門及行李箱，施放鞭炮建議客人下車施放，待鞭炮結束後車隊再行駛。','遵守禮俗：迎娶中禮車不能倒車、迴轉，狹窄巷弄請特別留意注意轉彎角度。','任務當天起床、出發、到點請在群組回報。','車隊出發、任務結束請負責人在群組回報。','任務結束請確實查看車上是否有客人遺留物品並交還對講機後方可離開。'];
+function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
+  const cname=contactName(x),crole=c.role==='其他'?'':`(${lang==='en'?(c.role==='新郎'?'Groom':'Bride'):lang==='ja'?(c.role==='新郎'?'新郎':'新婦'):c.role})`;
+  const p=dparts(x.date);
+  const fleet=x.fleet.map(f=>({role:roleName(f.role,lang),plate:f.plate,driver:(f.driver||'')+(f.lead?' '+t.lead:''),car:`${MNAME[f.m]}`,spec:`${colorName(f.color||'',lang)} ${t.seats(f.seats||S.seats[f.m])}`.trim(),phone:f.phone}));
+  const pts=points(x).filter(pt=>pt.addr).map(pt=>({k:pt.k,title:pt.k==='A'?t.meet:pt.k==='B'?t.wed:t.other,addr:pt.addr,label:pt.label}));
+  const flow=x.flow.filter(f=>f.t||f.seg).map(f=>`${ap(f.t)} ${f.who?f.who+' ':''}${f.seg}`.trim());
+  let pay=[];
+  const otl=MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m])}/HR`).join(' ; ');
+  if(who==='cust'){
+    if(lang==='en')pay=[`Balance ${money(r.balance,'en')} (incl. driver red envelope)`,`(Please don't wait until after the service to transfer; our accountant can't verify transfers in real time on holidays.)`,`Bank transfer details:`,S.bank,`Extra hours: ${MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m],'en')}/HR`).join(' ; ')}`];
+    else if(lang==='ja')pay=[`残金 ${money(r.balance,'ja')}（ドライバーご祝儀込み）`,`（ご利用終了後のお振込みはお控えください。休日は経理がすぐに入金確認できません）`,`お振込先：`,S.bank,`延長：${MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m],'ja')}/HR`).join(' ; ')}`];
+    else pay=[`尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`,`(請勿當天用車結束才匯款，假日會計無法即時查帳)`,`❤️匯款資訊：`,S.bank,`加時：${otl}`];
+  }else{
+    const groups={};x.fleet.forEach(f=>{const v=payOf(f);const key=v==null?'?':v;(groups[key]=groups[key]||[]).push(f.role)});
+    pay=[`收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`];
+    Object.keys(groups).forEach(v=>{const roles=[...new Set(groups[v])].join('＋');pay.push(+x.hours===0?`${roles} 實拿${v==='?'?'（未設定）':money(+v)}（單程接送・綁彩）`:`${roles} ${v==='?'?'（未設定）':money(+v)}/${hrsLabel(x.hours)}${r.red?'(含紅包)':''}`)});
+    const ms=MODELS.filter(m=>num(x.cars[m])>0);
+    if(+x.hours===0)pay.push(`等候 15 分鐘未出發，每半小時：${ms.map(m=>driverOtText(m,x).replace(' 等候每 0.5HR','')).join(' ; ')}`);
+    else pay.push('超時 15 分鐘內不計 ; 第 16 分鐘起收超時費用',`加時：${ms.map(m=>driverOtText(m,x)).join(' ; ')}`);
+  }
+  return{no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(c.end)}`,gather:ap(c.gather),
+    contact:`${cname||''}${crole}  ${c.phone||''}`.trim(),boss:`${ld.driver||''} ${ld.phone||''}`.trim(),plan:planName(x),
+    flags:`${t.deco}：${yn(c.decoAns,lang)} / ${t.cane}：${yn(c.caneAns||(x.cane?'是':'否'),lang)}`,fleet,pts,path:x.path,flow,route:c.route,
+    tips:who==='cust'?tipsC(x,lang):TIPS_D,tipsTitle:who==='cust'?t.tipsC:t.tipsD,pay,t}}
+function memoText(m,maps){const t=m.t,L2=[];
+  L2.push(`好好禮車           ${t.orderNo}:${m.no}`,`Wedding Day ${m.wd}`,'———————',m.dateLine,`${t.gather}：${m.gather}`,`${t.contact}：${m.contact}`,`${t.boss}：${m.boss}`,'',`${t.plan}`,m.plan,m.flags,'');
+  m.fleet.forEach(f=>L2.push(`${f.role}｜${f.plate||'—'}｜${f.driver||'—'}｜${f.car} ${f.spec}｜${f.phone||'—'}`));
+  L2.push('');m.pts.forEach(p=>{L2.push(`${p.k}. ${p.title}`,p.addr+(p.label?`\n(${p.label})`:''));if(maps)L2.push(mapUrl(p.addr))});
+  if(m.route)L2.push(`${t.route}：${m.route}`);
+  L2.push('',`${t.flow}：`,m.path,...m.flow,'',m.tipsTitle);
+  m.tips.forEach((s,i)=>L2.push(m.tipsTitle===MT.zh.tipsD?`* ${s}`:`${i+1}. ${s}`));
+  L2.push('',t.pay,...m.pay);return L2.join('\n')}
+function memoHTML(m,maps){const t=m.t;
+  return `<div class="dh"><b>好好禮車</b><span>${esc(t.orderNo)}:${esc(m.no)}</span></div>
+  <div class="wd">Wedding Day ${esc(m.wd)}</div>
+  <div><b>${esc(m.dateLine)}</b></div>
+  <div>${esc(t.gather)}：${esc(m.gather)}</div><div>${esc(t.contact)}：${esc(m.contact)}</div><div>${esc(t.boss)}：${esc(m.boss)}</div>
+  <h4>${esc(t.plan)}</h4><div>${esc(m.plan)}</div><div>${esc(m.flags)}</div>
+  <div class="tbl" style="margin-top:10px"><table><thead><tr><th>${esc(t.order)}</th><th>${esc(t.plate)}</th><th>${esc(t.driver)}</th><th>${esc(t.car)}</th><th>${esc(t.phone)}</th></tr></thead><tbody>
+  ${m.fleet.map(f=>`<tr><td>${esc(f.role)}</td><td>${esc(f.plate)}</td><td>${esc(f.driver)}</td><td>${esc(f.car)}<br><small>${esc(f.spec)}</small></td><td>${esc(f.phone)}</td></tr>`).join('')}</tbody></table></div>
+  <div class="tbl"><table style="margin-top:10px"><tbody>${m.pts.map(p=>`<tr><th style="width:130px">${esc(p.k)}. ${esc(p.title)}</th><td>${maps?`<a href="${esc(mapUrl(p.addr))}" target="_blank" rel="noopener">${esc(p.addr)}</a>`:esc(p.addr)}${p.label?`<br>(${esc(p.label)})`:''}</td></tr>`).join('')}
+  ${m.route?`<tr><th>${esc(t.route)}</th><td>${esc(m.route)}</td></tr>`:''}
+  <tr><th>${esc(t.flow)}</th><td><b>${esc(m.path)}</b><br>${m.flow.map(esc).join('<br>')}</td></tr></tbody></table></div>
+  <h4>${esc(m.tipsTitle)}</h4><ol>${m.tips.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
+  <h4>${esc(t.pay)}</h4><div>${m.pay.map(s=>esc(s).replace(/\n/g,'<br>')).join('<br>')}</div>`}
+
+/* ---------- 找司機 ---------- */
+function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr);
+  const route=pts.map(p=>areaOf(p.f)+(p.label?`(${p.label})`:'')).join(' → ')||'（地點未填）';
+  const need=x.fleet.map(f=>`${f.role} ${MNAME[f.m]}`);const cnt={};need.forEach(s=>cnt[s]=(cnt[s]||0)+1);
+  const groups={};x.fleet.forEach(f=>{const v=payOf(f);const k=v==null?'?':v;(groups[k]=groups[k]||[]).push(f.role)});
+  const payL=Object.keys(groups).map(v=>`${[...new Set(groups[v])].join('、')} ${v==='?'?'（待定）':money(+v)}`).join('／');
+  return [`【好好禮車｜找司機】`,`${fmtMDW(x.date,'zh')} ${ap(c.start)||'--:--'}-${ap(c.end)||'--:--'}（${hrsLabel(x.hours)}）`,`集合時間：${ap(c.gather)||'待定'}`,`地點：${route}`,`禮車流程：${x.path||'待定'}`,
+   `需求：${Object.keys(cnt).map(k=>`${k}${cnt[k]>1?' ×'+cnt[k]:''}`).join('、')||'—'}`,`車資：${payL}${r.red?'（含紅包）':''}`,
+   `甘蔗：${c.caneAns||(x.cane?'是':'否')}｜指定車頭彩：${c.decoAns||'否'}`,`有空的司機請回覆，謝謝！`].join('\n')}
+
+/* ---------- contract ---------- */
+const CLAUSES=['所有車輛皆附司機，著正式服裝，出車前一律洗車、清內裝。','若新人要求趕時辰，而導致車輛行駛違反中華民國交通法規須由訂車人吸收罰款。','此報價單暨合約書為現金價格，不含發票 5%營業稅。','行程異動請於用車前三天電話或 Line 告知。','車隊會在指定時間提早 10~15 分鐘左右到達準備，實際依指定時間計算。','倘若發生以下情形而致無法依約定時間用車者，本公司將向消費者酌收手續費：','預訂車輛如遇不可抗拒因素無法出車時，訂車人同意租車公司免費升級為更高階車款。','若無加價指定車色，則由本公司安排車色，並於用車日三天前提供司機聯絡資訊。','本公司非常重視服務流程與品質，若訂車人未透過本公司窗口直接與司機有任何協議，如產生糾紛或其他衍生相關問題，本公司將不負擔任何賠償責任。'];
+function contractHTML(x){const r=calc(x),c=x.c;const F=v=>`<span class="fill">${esc(v||'')}</span>`;
+  const user=[c.groom,c.bride].filter(Boolean).join('、');
+  const cars=MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MBRAND[m]==='Tesla'?'Tesla ':''}${MNAME[m]} × ${num(x.cars[m])}`);
+  const otRows=MODELS.map(m=>`${MNAME[m]} ${money(S.ot[m])}/時`).filter((s,i)=>num(x.cars[MODELS[i]])>0);
+  const caneTxt=c.caneAns?(c.caneAns+(x.cane?`（${x.cane} 台）`:'')):(x.cane?`是（${x.cane} 台）`:'');
+  const pd=c.payDate?fmtDate(c.payDate):'';
+  const noteBits=[x.note,c.decoAns==='是'?`指定車頭彩${x.deco?' '+money(x.deco):''}`:'',x.zones?`跨區：${x.zoneName||''} ${x.zones} 區`:'' ,x.invoice?'本單開立發票，金額已含 5% 營業稅':''].filter(Boolean);
+  return `<div class="ph"><div class="logo"><div class="ring">好<br>好</div><div><b>好好禮車</b><i>Nice Wedding Car</i></div></div>
+   <div class="contact">${esc(S.phone)}<br>${esc(S.email)}</div></div>
+  <div class="ttl"><h2>禮車預約單暨合約書</h2><div class="no">訂單編號：${F(orderNo(x))}</div></div>
+  <table>
+   <tr><th class="sec" colspan="2">基本資料</th><th class="sec" colspan="2">使用時間</th><td class="vert" rowspan="4">選<br>用<br>車<br>款</td><td rowspan="4" style="width:150px">${cars.map(F).join('<br>')}</td></tr>
+   <tr><td class="lbl">用車人</td><td>${F(user||contactName(x))}</td><td class="lbl">開始時間</td><td>${F(c.start)}</td></tr>
+   <tr><td class="lbl">電話</td><td>${F(c.phone)}</td><td class="lbl">結束時間</td><td>${F(c.end)}</td></tr>
+   <tr><td class="lbl">用車日期</td><td>${F(x.date?fmtDate(x.date):'')}</td><td class="lbl">總共使用時數</td><td style="text-align:right">${+x.hours===0?F('單程接送'):F(x.hours)+' 小時'}</td></tr>
+  </table>
+  <table style="border-top:0"><tbody class="dot">
+   <tr><td class="lbl" style="border-top:0">集合地點</td><td class="v" style="border-top:0">${F(c.meet)}${c.meetL?F(`（${c.meetL}）`):''}</td></tr>
+   <tr><td class="lbl">迎娶地點</td><td class="v">${F(c.wed)}${c.wedL?F(`（${c.wedL}）`):''}</td></tr>
+   <tr><td class="lbl">其他地點 1</td><td class="v">${F(c.o1)}${c.o1L?F(`（${c.o1L}）`):''}</td></tr>
+   <tr><td class="lbl">其他地點 2</td><td class="v">${F(c.o2)}${c.o2L?F(`（${c.o2L}）`):''}</td></tr>
+   <tr><td class="lbl">路線說明</td><td>${F(c.route||x.path)}</td></tr>
+  </tbody></table>
+  <table style="border-top:0">
+   <tr><th class="sec" colspan="5" style="border-top:0">費用明細</th></tr>
+   <tr><td class="lbl">租金總計</td><td>${F(money(r.rent))}</td><td class="lbl">匯款日期</td><td>${F(pd)}</td>
+     <td rowspan="5" style="width:265px;vertical-align:top"><ul>
+      <li>超過 15 分鐘內不加收超時費</li><li>超過 16 分鐘起開始計算超時費用<br>(未滿一小時仍以一小時計)</li><li>以上費用含駕駛、油資、過路費</li>
+      <li>如有額外超時費用、跨區費用則依本公司規定另計</li><li>尾款請於用車當日結清</li><li>隨車附手把彩 2 個<br>新娘座車另附車頭彩 1 組</li>
+      <li>定金請於收到此合約 24 小時內完成匯款</li><li>逾時未匯款，車輛將不保留，請在匯款前先再次確認</li></ul></td></tr>
+   <tr><td class="lbl">預付訂金</td><td>${F(money(r.deposit))}</td><td class="lbl">匯款後五碼</td><td>${F(c.last5)}</td></tr>
+   <tr><td class="lbl">尾款金額</td><td>${F(money(r.rent-r.deposit))}</td><td class="lbl">匯款金額</td><td>${F(c.payAmt)}</td></tr>
+   <tr><td class="lbl">跨區費用</td><td>每區 ${money(S.zone)}/台${x.zones?`<br>${F(`${x.zoneName||''} ${x.zones} 區`)}`:''}</td>
+     <td colspan="2" rowspan="2">以上不含司機紅包 ${money(S.red)}/人<br>甘蔗 ${money(S.cane)}/車，於尾款支付<br>是否需要甘蔗：${F(caneTxt)}</td></tr>
+   <tr><td class="lbl">超時費用</td><td>${otRows.join('<br>')}</td></tr>
+   <tr><th class="sec" colspan="5">注意事項</th></tr>
+   <tr><td colspan="5"><ol>${CLAUSES.map((s,i)=>`<li>${esc(s)}${i===5?'<ol type="a"><li>付訂金當日起取消用車, 則不退回</li><li>因個人因素婚期延期用車時, 訂金可保留, 但不接受轉讓和改變用途</li></ol>':''}</li>`).join('')}</ol></td></tr>
+   <tr><td colspan="5" style="height:110px;vertical-align:top">備註：${noteBits.map(s=>F(s)).join('<br>')}</td></tr>
+  </table>
+  <div class="sign"><span>禮車公司：好好禮車</span><span>租車人：</span></div>`}
+
+/* ---------- form paste parser ---------- */
+const FORM_ORDER=['orderNo','groom','bride','role','phone','start','end','meet','wed','o1','o2','route','caneAns','decoAns','payDate','payAmt','last5'];
+const LABELS=[['orderNo',/訂單編號/],['groom',/新郎姓名/],['bride',/新娘姓名/],['phone',/主要聯絡人電話/],['role',/主要聯絡人(?!電話)/],['start',/開始用車時間/],['end',/結束用車時間/],['meet',/集合地點/],['wed',/迎娶地點/],['o1',/其他地點\s*1/],['o2',/其他地點\s*2/],['route',/路線說明/],['caneAns',/車頂需掛實體甘蔗[?？]?/],['decoAns',/是否需.{0,3}付費.{0,3}指定或設計客製化車頭彩/],['payDate',/匯款日期/],['payAmt',/匯款金額/],['last5',/匯款後五碼/]];
+function normTime(v){v=(v||'').trim();let m=v.match(/(上午|下午|AM|PM|am|pm)?\s*(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM|am|pm|上午|下午)?/);if(!m)return '';let h=+m[2];const mer=(m[1]||m[4]||'').toLowerCase();
+  if((mer==='下午'||mer==='pm')&&h<12)h+=12;if((mer==='上午'||mer==='am')&&h===12)h=0;return `${p2(h)}:${m[3]}`}
+function normDate(v){v=(v||'').trim();let m=v.match(/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);if(m)return `${m[1]}-${p2(m[2])}-${p2(m[3])}`;m=v.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m)return `${m[3]}-${p2(m[1])}-${p2(m[2])}`;return ''}
+function parseForm(text){const res={};text=text.replace(/\r/g,'');
+  const lines=text.split('\n').filter(l=>l.trim());
+  if(lines.length&&lines.some(l=>l.includes('\t'))){
+    const rows=lines.map(l=>l.split('\t'));let hdr=null,row;
+    if(rows.length>=2&&rows[0].some(h=>/新郎姓名/.test(h))){hdr=rows[0];row=rows[rows.length-1]}else row=rows[rows.length-1];
+    if(hdr){hdr.forEach((h,i)=>{const L=LABELS.find(([k,re])=>re.test(h));if(L&&res[L[0]]==null)res[L[0]]=row[i]})}
+    else{let r=row.slice();if(r.length>FORM_ORDER.length||/\d{4}\/\d{1,2}\/\d{1,2}.*\d:\d/.test(r[0]))r=r.slice(r.length-FORM_ORDER.length);FORM_ORDER.forEach((k,i)=>{if(r[i]!=null)res[k]=r[i]})}
+  }else{const hits=[];LABELS.forEach(([k,re])=>{const g=new RegExp(re.source,'g');let m;while((m=g.exec(text))){hits.push({k,i:m.index,e:m.index+m[0].length});break}});
+    hits.sort((a,b)=>a.i-b.i);hits.forEach((h,j)=>{let v=text.slice(h.e,j+1<hits.length?hits[j+1].i:text.length);v=v.replace(/^[\s*＊:：?？]+/,'').split('\n').map(s=>s.trim()).filter(Boolean);res[h.k]=(v.join(' ')||'').trim()})}
+  for(const k in res)res[k]=(res[k]||'').trim();return res}
+function applyForm(res){const c=o.c;let n=0;o.sample=false;const set=(k,v)=>{if(v){c[k]=v;n++}};
+  set('groom',res.groom);set('bride',res.bride);
+  if(res.role){if(/新郎/.test(res.role))c.role='新郎';else if(/新娘/.test(res.role))c.role='新娘';else{c.role='其他';c.contact=res.role}n++}
+  set('phone',res.phone);set('start',normTime(res.start));set('end',normTime(res.end));
+  ['meet','wed','o1','o2','route'].forEach(k=>{const v=res[k];if(v&&!/^n\/?a$/i.test(v))set(k,v)});
+  ['caneAns','decoAns'].forEach(k=>{const v=res[k]||'';if(/待確認/.test(v))set(k,'待確認');else if(/是/.test(v))set(k,'是');else if(/否/.test(v))set(k,'否')});
+  set('payDate',normDate(res.payDate));set('payAmt',res.payAmt);set('last5',res.last5);
+  if(res.orderNo){const m=res.orderNo.match(/^(\d{4})(\d{2})(\d{2})([A-Za-z]*)(\d*)$/);if(m){o.date=`${m[1]}-${m[2]}-${m[3]}`;if(m[4]&&m[4].toUpperCase()!==autoCode(o))o.code=m[4];if(m[5])o.seq=m[5]}}
+  if(!o.cityA&&countyOf(c.meet))o.cityA=countyOf(c.meet);if(!o.cityB&&countyOf(c.wed))o.cityB=countyOf(c.wed);
+  if(res.start&&c.start){c.gather=addMin(c.start,-20);o._autoG=c.gather;if(o.flow[0])o.flow[0].t=c.start}
+  if(c.start&&c.end){let [a,b]=[c.start,c.end].map(t=>{const [h,m]=t.split(':').map(Number);return h*60+m});let d=(b-a+1440)%1440/60;if(d>0){const h=d<=1.5?1.5:Math.ceil(d);if(h!==o.hours){o.hours=h}}}
+  if(!o.flow.length||o.flow.every(f=>!f.t))autoFlow(o);
+  return n}
+
+/* ---------- binding ---------- */
+function getPath(obj,path){return path.split('.').reduce((a,k)=>a==null?a:a[k],obj)}
+function setPath(obj,path,v){const ks=path.split('.');const last=ks.pop();const t=ks.reduce((a,k)=>a[k],obj);t[last]=v}
+function fillInputs(){document.querySelectorAll('[data-b]').forEach(el=>{const v=getPath(o,el.dataset.b);if(el.hasAttribute('data-bool'))el.value=v?'1':'0';else el.value=v==null?'':v});
+  document.querySelectorAll('[data-s]').forEach(el=>{el.value=S[el.dataset.s]==null?'':S[el.dataset.s]});
+  $('mapLinks').checked=!!o.mapLinks;
+  if(document.activeElement!==$('s_cc'))$('s_cc').value=Object.entries(S.cc).map(([k,v])=>k+'='+v).join('\n');
+  const hs=$('q_hours');if(![...hs.options].some(op=>+op.value===+o.hours)){const op=document.createElement('option');op.value=o.hours;op.textContent=hrsLabel(o.hours);hs.appendChild(op)}hs.value=String(o.hours)}
+document.addEventListener('input',e=>{const el=e.target;
+  if(el.dataset.b){let v=el.value;if(el.hasAttribute('data-num'))v=el.value===''?0:num(el.value);if(el.hasAttribute('data-bool'))v=el.value==='1';
+    if(el.dataset.b==='depOverride')v=el.value===''?'':num(el.value);
+    setPath(o,el.dataset.b,v);o.sample=false;
+    if(el.dataset.b==='c.meet'&&!o.cityA&&countyOf(o.c.meet)){o.cityA=countyOf(o.c.meet);$('q_cityA').value=o.cityA}
+    if(el.dataset.b==='c.wed'&&!o.cityB&&countyOf(o.c.wed)){o.cityB=countyOf(o.c.wed);$('q_cityB').value=o.cityB}
+    if(el.dataset.b==='c.start'&&o.c.start){if(!o.c.gather||o.c.gather===o._autoG){o.c.gather=addMin(o.c.start,-20);o._autoG=o.c.gather;$('c_gather').value=o.c.gather}
+      if(o.flow[0]&&!o.flow[0].t){o.flow[0].t=o.c.start;renderFlow()}}
+    if(/^cars|hours/.test(el.dataset.b)){syncFleet();renderFleet();renderCars()}
+    save();renderAll();return}
+  if(el.id==='s_cc'){const cc={};el.value.split('\n').forEach(l=>{const m=l.split(/[=＝:：]/);if(m.length>=2&&m[0].trim())cc[m[0].trim().replace(/臺/g,'台')]=m[1].trim().toUpperCase()});S.cc=cc;saveS();renderAll();return}
+  if(el.dataset.s){const k=el.dataset.s;S[k]=el.type==='number'?num(el.value):el.value;saveS();renderAll();return}
+  if(el.dataset.p){const [grp,m,k]=el.dataset.p.split('.');const v=el.value===''?'':num(el.value);if(k)S[grp][m][k]=v;else S[grp][m]=v;saveS();renderCars();renderFleet();renderAll();return}
+  if(el.dataset.mm){const [i,k]=el.dataset.mm.split('.');S.models[+i][k]=el.value;rebuildModels();saveS();renderCars();renderAll();return}
+  if(el.dataset.bd){const [i,k]=el.dataset.bd.split('.');const b=S.bundles[+i];if(k==='name')b.name=el.value;else if(k==='price')b.price=num(el.value);else if(k==='combo')b.cars=parseCombo(el.value);else b.cars[k]=num(el.value);saveS();renderAll();return}
+  if(el.dataset.fl){const [i,k]=el.dataset.fl.split('.');const f=o.fleet[+i];if(k==='lead'){o.fleet.forEach(x=>x.lead=false);f.lead=el.checked}else f[k]=(k==='seats')?num(el.value):el.value;o.sample=false;save();renderAll();return}
+  if(el.dataset.fw){const [i,k]=el.dataset.fw.split('.');o.flow[+i][k]=el.value;o.sample=false;save();renderAll();return}
+  if(el.id==='mapLinks'){o.mapLinks=el.checked;save();renderMemo()}
+});
+document.addEventListener('change',e=>{if(e.target.dataset.fl&&e.target.dataset.fl.endsWith('.role')){o.fleet.sort((a,b)=>{const r=x=>{const i=ROLES.indexOf(x.role);return i<0?9:i};return r(a)-r(b)});save();renderFleet();renderAll()}
+  if(e.target.id==='mapLinks'){o.mapLinks=e.target.checked;save();renderMemo()}});
+
+/* ---------- renderers ---------- */
+function carRow(m){const cp=cPrice(m,o.hours);const pr=blank(S.price[m])?'客人價未設定':`${money(cp.v)}／${hrsLabel(o.hours)}${cp.miss?'（暫用 3HR 價）':''}${num(S.ot[m])?`・加時 ${money(S.ot[m])}/時`:''}`;
+  return `<div class="car"><div><div class="nm">${esc(MNAME[m]).toUpperCase()}</div><div class="pr">${pr}・${S.seats[m]||'?'} 人座</div></div>
+  <div class="step"><button type="button" data-step="${m}" data-d="-1" aria-label="減少 ${esc(MNAME[m])}">−</button><output>${num(o.cars[m])}</output><button type="button" data-step="${m}" data-d="1" aria-label="增加 ${esc(MNAME[m])}">＋</button></div></div>`}
+const openBrands=new Set(['Tesla']);
+function renderCars(){const brands=[];MODELS.forEach(m=>{const b=MBRAND[m]||'其他';if(!brands.includes(b))brands.push(b)});
+  $('carList').innerHTML=brands.map(b=>{const ms=MODELS.filter(m=>(MBRAND[m]||'其他')===b);const q=ms.reduce((a,m)=>a+num(o.cars[m]),0);
+    return `<details class="brand-grp" data-brand="${esc(b)}"${openBrands.has(b)||q?' open':''}><summary>${esc(b)}${q?`（已選 ${q} 台）`:''}</summary><div class="cars">${ms.map(carRow).join('')}</div></details>`}).join('')}
+document.addEventListener('toggle',e=>{const d=e.target;if(d.classList&&d.classList.contains('brand-grp')){if(d.open)openBrands.add(d.dataset.brand);else openBrands.delete(d.dataset.brand)}},true);
+function renderSum(){const r=calc(o);const rows=[];
+  rows.push([r.b?`${r.b.name}方案`:'車資',money(r.base)]);if(r.b&&r.listBase>r.base)rows.push([`<span class="sub">原價 ${money(r.listBase)}，省 ${money(r.listBase-r.base)}</span>`,'']);
+  if(r.ot)rows.push([`超時 ${r.eh}HR`,money(r.ot)]);if(r.zone)rows.push([`${o.zoneName||'跨區'}調度`,money(r.zone)]);if(r.cane)rows.push(['甘蔗固定費',money(r.cane)]);if(r.deco)rows.push(['指定車頭彩',money(r.deco)]);
+  if(r.extras)rows.push(['加項',money(r.extras)]);if(r.disc)rows.push([o.discName||'折扣','-'+money(r.disc)]);if(r.tax)rows.push(['5% 營業稅',money(r.tax)]);if(r.red)rows.push([`司機禮 ×${r.n}`,money(r.red)]);
+  $('sumBox').innerHTML=rows.map(([a,b])=>`<div><span>${a}</span><span>${b}</span></div>`).join('')+
+   `<div class="tot"><span>合計</span><span>${money(r.total)}</span></div>
+    <div><span>應付訂金${o.depOverride!==''?'（手動）':S.depMode==='driver'&&r.dok?'（總額−司機車資）':`（${S.depPct}%）`}</span><span>${money(r.deposit)}</span></div>
+    <div class="sub"><span>尾款（含司機禮，當天交主禮車司機）</span><span>${money(r.balance)}</span></div>
+    <div class="sub"><span>司機車資合計</span><span>${r.dok?money(r.dsum):'未設定'}</span></div>`;
+  $('bundleChip').innerHTML=r.b?`<span class="chip ok">已套用 ${esc(r.b.name)}方案 ${money(r.b.price)}</span>`:(o.hours<3?`<span class="chip">${hrsLabel(o.hours)}不適用優惠方案</span>`:'')+r.miss.map(t=>`<span class="chip" style="color:var(--warn)">${esc(t)}</span>`).join('');
+  $('payBox').innerHTML=o.fleet.map(f=>{const v=payOf(f);return `<div><span>${esc(f.role)}・${MNAME[f.m]}</span><span>${v==null?'未設定':money(v)}</span></div>`}).join('')+`<div class="tot"><span>合計</span><span>${r.dok?money(r.dsum):'—'}</span></div>`}
+function renderFleet(){$('fleetBody').innerHTML=o.fleet.map((f,i)=>{const dp=driverBasePay(f.m,o);return `<tr><td><b>${MNAME[f.m]}</b></td>
+  <td><select data-fl="${i}.role" id="fl_r${i}">${ROLES.map(r=>`<option${r===f.role?' selected':''}>${r}</option>`).join('')}</select></td>
+  <td><input data-fl="${i}.plate" id="fl_p${i}" value="${esc(f.plate)}" placeholder="ABC-1234"></td>
+  <td><input data-fl="${i}.driver" id="fl_d${i}" value="${esc(f.driver)}"></td>
+  <td><input data-fl="${i}.phone" id="fl_t${i}" value="${esc(f.phone)}" inputmode="tel"></td>
+  <td><input data-fl="${i}.color" id="fl_c${i}" value="${esc(f.color)}" style="width:72px"></td>
+  <td><input type="number" data-fl="${i}.seats" id="fl_s${i}" value="${esc(f.seats)}" style="width:62px"></td>
+  <td><input type="number" data-fl="${i}.pay" id="fl_y${i}" value="${esc(f.pay)}" placeholder="${dp==null?'未設定':dp}" style="width:96px"></td>
+  <td style="text-align:center"><input type="radio" name="leadR" data-fl="${i}.lead" id="fl_l${i}" ${f.lead?'checked':''} style="width:auto" aria-label="負責人"></td></tr>`}).join('')||'<tr><td colspan="9" class="hint">先在「報價」選車款。</td></tr>'}
+function renderFlow(){$('flowList').innerHTML=o.flow.map((f,i)=>`<div class="fr"><input type="time" data-fw="${i}.t" id="fw_t${i}" value="${esc(f.t)}" aria-label="時間">
+  <input class="who" data-fw="${i}.who" id="fw_w${i}" value="${esc(f.who)}" placeholder="全車隊" aria-label="車輛">
+  <input class="sg" data-fw="${i}.seg" id="fw_s${i}" value="${esc(f.seg)}" placeholder="A - B" aria-label="路段">
+  <button class="btn sm" data-fdel="${i}" aria-label="刪除這段">✕</button></div>`).join('')}
+function renderLangs(){document.querySelectorAll('.seg[data-lang]').forEach(s=>{const k=s.dataset.lang;
+  s.innerHTML=[['zh','繁中'],['en','English'],['ja','日本語']].map(([v,t])=>`<button type="button" data-setlang="${k}:${v}" aria-pressed="${o.lang[k]===v}">${t}</button>`).join('')})}
+function renderMemo(){const who=o.memoWho||'cust';document.querySelectorAll('#memoWho button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.who===who));
+  const lang='zh';const m=memoModel(o,who,lang);
+  $('outMemo').textContent=memoText(m,o.mapLinks);$('memoDoc').innerHTML=memoHTML(m,o.mapLinks)}
+function renderOrderSel(){const list=Object.values(DB.orders).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.updated-a.updated);
+  $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(orderNo(x))}${x.c.groom||x.c.bride?'・'+esc([x.c.groom,x.c.bride].filter(Boolean).join('&')):''}${x.sample?'（範例）':''}</option>`).join('')}
+function renderAll(){$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
+  $('outQuote').textContent=quoteText(o,'zh');$('outOrder').textContent=orderText(o,'zh');
+  $('outFind').textContent=findText(o);$('contractPaper').innerHTML=contractHTML(o);renderMemo();
+  ['meet','wed','o1','o2'].forEach(k=>{$('c_'+k+'S').placeholder=shortArea(o.c[k])||'自動'});
+  $('sampleBar').hidden=!o.sample;renderOrderSel()}
+function comboText(cars){return MODELS.filter(m=>num(cars[m])>0).map(m=>MABBR[m]+(num(cars[m])>1?'*'+num(cars[m]):'')).join('+')}
+function parseCombo(t){const cars={};String(t).split(/[+＋]/).forEach(p=>{const m=p.trim().match(/^(.+?)(?:\s*[*×xX]\s*(\d+))?$/);if(!m)return;const key=m[1].trim().toLowerCase();
+  const id=MODELS.find(x=>MABBR[x].toLowerCase()===key)||MODELS.find(x=>MNAME[x].toLowerCase()===key);if(id)cars[id]=(cars[id]||0)+(m[2]?+m[2]:1)});return cars}
+function renderPriceSettings(){const ip=(g,m,k)=>{const v=k?S[g][m][k]:S[g][m];return `<td><input type="number" data-p="${g}.${m}${k?'.'+k:''}" id="sp_${g}_${m}${k||''}" value="${blank(v)?'':v}" placeholder="—"></td>`};
+  $('priceBody').innerHTML=S.models.map((md,i)=>{const m=md.id;return `<tr><td><input data-mm="${i}.name" id="mm_n${i}" value="${esc(md.name)}"></td><td><input data-mm="${i}.brand" id="mm_b${i}" value="${esc(md.brand)}" style="min-width:80px"></td><td><input data-mm="${i}.abbr" id="mm_a${i}" value="${esc(md.abbr)}" style="min-width:70px"></td>${ip('seats',m)}
+    ${['price','p2','short','p1','ptrip','ot'].map(k=>ip(k,m)).join('')}${DK.map(k=>ip('dp',m,k)).join('')}<td><button class="btn sm danger" data-mdel="${i}">刪除</button></td></tr>`}).join('');
+  $('bundleBody').innerHTML=S.bundles.map((b,i)=>`<tr><td><input data-bd="${i}.name" id="bd_n${i}" value="${esc(b.name)}"></td><td><input data-bd="${i}.combo" id="bd_c${i}" value="${esc(comboText(b.cars))}" placeholder="MX+M3*2"></td>
+  <td><input type="number" data-bd="${i}.price" id="bd_p${i}" value="${b.price}"></td><td><button class="btn sm danger" data-bdel="${i}">刪除</button></td></tr>`).join('')}
+
+/* ---------- clicks ---------- */
+let delArm=0;
+document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
+  if(t.dataset.tab){showTab(t.dataset.tab);return}
+  if(t.dataset.step){const m=t.dataset.step;o.cars[m]=Math.max(0,num(o.cars[m])+(+t.dataset.d));o.sample=false;syncFleet();save();renderCars();renderFleet();renderAll();return}
+  if(t.dataset.setlang){const [k,v]=t.dataset.setlang.split(':');o.lang[k]=v;save();renderLangs();renderAll();return}
+  if(t.dataset.who){o.memoWho=t.dataset.who;save();renderMemo();return}
+  if(t.dataset.copy){copy($(t.dataset.copy).textContent,$(t.dataset.copy));return}
+  if(t.dataset.fdel){o.flow.splice(+t.dataset.fdel,1);save();renderFlow();renderAll();return}
+  if(t.dataset.mdel){const md=S.models[+t.dataset.mdel];if(Object.values(DB.orders).some(x=>num(x.cars[md.id])>0)){toast('有訂單用到這個車款，先把那些訂單的車數改成 0');return}
+    if(t.textContent!=='確認刪除'){t.textContent='確認刪除';setTimeout(()=>{t.textContent='刪除'},3000);return}
+    S.models.splice(+t.dataset.mdel,1);S.removed=(S.removed||[]).concat(md.id);rebuildModels();saveS();renderPriceSettings();renderCars();renderAll();return}
+  if(t.dataset.bdel){S.bundles.splice(+t.dataset.bdel,1);saveS();renderPriceSettings();renderAll();return}
+  switch(t.id){
+   case 'btnFlowAdd':o.flow.push({t:'',who:'',seg:''});save();renderFlow();renderAll();break;
+   case 'btnFlowAuto':autoFlow(o);save();fillInputs();renderFlow();renderAll();toast('已依地點重排流程');break;
+   case 'btnModelAdd':{const id='m'+Date.now().toString(36);S.models.push({id,name:'新車款',brand:'其他',abbr:''});MK.forEach(k=>S[k][id]='');S.dp[id]={h1:'',h2:'',h3:'',ot05:'',ot1:'',trip:'',tripOt:''};rebuildModels();saveS();renderPriceSettings();renderCars();break}
+   case 'btnBundleAdd':S.bundles.push({name:'新方案',cars:{},price:0});saveS();renderPriceSettings();break;
+   case 'btnParse':{const res=parseForm($('pasteBox').value);const n=applyForm(res);save();fillInputs();renderCars();syncFleet();renderFleet();renderFlow();renderAll();
+     $('parseMsg').textContent=n?`已帶入 ${n} 個欄位，請核對。`:'沒有認出欄位，請確認貼上的是表單回覆。';break}
+   case 'btnNew':{o=newOrder();DB.orders[o.id]=o;syncFleet();save();loadOrder();toast('已建立新訂單');break}
+   case 'btnDup':{const n=clone(o);n.id=newOrder().id;n.sample=false;n.seq='';n._seqKey='';n._seq='';n.c=Object.assign(newOrder().c,{});n.fleet=n.fleet.map(f=>Object.assign(f,{plate:'',driver:'',phone:''}));o=n;DB.orders[o.id]=o;save();loadOrder();toast('已複製車款與價格到新訂單');break}
+   case 'btnDel':{if(Date.now()-delArm>3000){delArm=Date.now();t.textContent='再按一次確認刪除';setTimeout(()=>{t.textContent='刪除'},3000);break}
+     delete DB.orders[o.id];t.textContent='刪除';const rest=Object.values(DB.orders);o=rest[0]||newOrder();DB.orders[o.id]=o;save();loadOrder();toast('已刪除');break}
+   case 'btnPrint':window.print();break;
+   case 'btnResetS':{const keep={bank:S.bank,phone:S.phone,email:S.email,formBase:S.formBase,formEntry:S.formEntry};S=Object.assign(clone(DEF_S),keep);saveS();renderPriceSettings();fillInputs();renderCars();renderAll();$('resetMsg').textContent='已恢復預設價目';break}
+  }});
+$('orderSel').addEventListener('change',e=>{o=DB.orders[e.target.value];save();loadOrder()});
+function copy(text,el){const done=()=>toast('已複製');
+  const fb=()=>{const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);try{document.execCommand('copy')?done():toast('已選取文字，請按複製')}catch(_){toast('已選取文字，請按複製')}};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(done,fb);else fb()}
+let tt;function toast(s){const t=$('toast');t.textContent=s;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1600)}
+function showTab(name){document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===name));
+  document.querySelectorAll('section.tab').forEach(s=>s.hidden=s.id!=='tab-'+name);try{sessionStorage.setItem('nwcw_tab',name)}catch(_){}}
+function loadOrder(){migrate(o);syncFleet();fillInputs();renderLangs();renderCars();renderFleet();renderFlow();renderAll()}
+
+/* print only works when the page is opened directly (e.g. GitHub Pages) */
+let top=false;try{top=window.self===window.top}catch(_){top=false}
+if(top){$('btnPrint').hidden=false}else{$('contractHint').textContent='資料來自「報價」與「新人資料」。列印／存 PDF 請在 GitHub Pages 版本操作。'}
+
+renderPriceSettings();loadOrder();
+let startTab='quote';try{startTab=sessionStorage.getItem('nwcw_tab')||'quote'}catch(_){}
+showTab(startTab);
+})();
+</script>
+
+</body>
+</html>
