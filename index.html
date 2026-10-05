@@ -863,7 +863,7 @@ function memoBlocks(m){const t=m.t,B=[];B.push({t:'title',text:`好好禮車　�
   B.push({t:'h',text:`${t.flow}：`},{t:'p',text:m.path},...m.flow.map(f=>({t:'p',text:f})),{t:'h',text:m.tipsTitle},...m.tips.map(x=>({t:'li',text:x})),{t:'h',text:t.pay});
   m.pay.forEach(x=>String(x).split('\n').forEach(l=>B.push({t:'p',text:l})));return B}
 function tplModel(x,who){const m=memoModel(x,who,'zh'),r=calc(x);const mc=(x.fleet||[]).find(f=>f.role==='主禮車');
-  return{no:m.no,wd:m.wd,dateLine:m.dateLine,gather:m.gather,contact:m.contact,boss:m.boss,plan:m.plan,flags:m.flags,fleet:m.fleet,pts:m.pts,path:m.path,flow:m.flow,route:m.route,pay:m.pay,
+  return{no:m.no,wd:m.wd,dateLine:m.dateLine,gather:m.gather,contact:m.contact,boss:m.boss,plan:m.plan,flags:m.flags.split(' / ').slice(0,2).join(' / '),fleet:m.fleet,pts:m.pts,path:m.path,flow:m.flow,route:m.route,pay:m.pay,
     xTip:mc?mc.m==='X':num(x.cars.X)>0,bank:S.bank,monthly:!!r.mon}}
 async function makeMemoDocs(){const btn=$('btnMemoDocs');if(!S.driveUrl||!S.driveKey){toast('請先到「價目設定」填 Drive 網址和金鑰');showTab('settings');return}
   btn.disabled=true;$('memoDocMsg').textContent='建立中，約需 10 秒…';
