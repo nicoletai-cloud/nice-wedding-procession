@@ -285,6 +285,19 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
       <span class="hint" style="margin:0" id="contractHint">資料來自「報價」與「新人資料」，改那邊這裡就會更新。</span>
       <div class="row"><span class="hint" id="driveLink" style="margin:0"></span><button class="btn" id="btnDrive" hidden>存到 Google Drive</button><button class="btn pri" id="btnPrint" hidden>列印／存成 PDF</button></div>
     </div>
+    <div class="grid" style="margin-bottom:18px">
+      <div class="card">
+        <h3>收款確認 <span id="payChip"></span></h3>
+        <div class="sum" id="payCheck"></div>
+        <div class="row" style="margin-top:12px"><button class="btn pri" id="btnPaid">已在銀行 App 確認收到訂金</button><button class="btn sm" id="btnUnpaid" hidden>取消確認</button></div>
+        <p class="hint">比對新人表單填的匯款金額和應付訂金。實際入帳請在將來銀行 App 看一眼後再按確認。</p>
+      </div>
+      <div class="card">
+        <h3>已收訂金通知 <small>附合約傳給客人</small></h3>
+        <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm pri" data-copy="outPaid">複製</button></div>
+        <pre class="out" id="outPaid"></pre>
+      </div>
+    </div>
     <div class="paperwrap"><div class="paper" id="contractPaper"></div></div>
   </section>
 
@@ -313,6 +326,14 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
           <thead><tr><th>車款</th><th>車序</th><th>車號</th><th>司機</th><th>電話</th><th>顏色</th><th>座位</th><th>司機車資</th><th>負責人</th></tr></thead>
           <tbody id="fleetBody"></tbody>
         </table></div>
+      </div>
+      <div class="card">
+        <h3>TimeTree 行程 <small>標題與備註</small></h3>
+        <div class="fields">
+          <label class="f wide">標題<div class="row" style="flex-wrap:nowrap"><input id="ttTitle" readonly style="flex:1"><button class="btn sm pri" data-copyv="ttTitle">複製</button></div></label>
+        </div>
+        <div class="row" style="justify-content:space-between;margin:10px 0 6px"><span class="hint" style="margin:0" id="ttWhen"></span><button class="btn sm pri" data-copy="ttMemo">複製備註</button></div>
+        <pre class="out" id="ttMemo"></pre>
       </div>
       <div class="card">
         <h3>禮車流程</h3>
@@ -473,7 +494,7 @@ function sampleOrder(){const o=newOrder();Object.assign(o,{sample:true,cityA:'�
 let DB=store('nwcw_orders');
 if(!DB||!DB.orders||!Object.keys(DB.orders).length){const s=sampleOrder();DB={cur:s.id,orders:{[s.id]:s}}}
 let o=DB.orders[DB.cur]||Object.values(DB.orders)[0];
-function migrate(x){const d=newOrder();for(const k in d){if(x[k]===undefined)x[k]=clone(d[k])}for(const k in d.c){if(x.c[k]===undefined)x.c[k]=''}for(const k in d.lang){if(!x.lang[k])x.lang[k]='zh'}return x}
+function migrate(x){const d=newOrder();if(x.paid===undefined)x.paid=false;for(const k in d){if(x[k]===undefined)x[k]=clone(d[k])}for(const k in d.c){if(x.c[k]===undefined)x.c[k]=''}for(const k in d.lang){if(!x.lang[k])x.lang[k]='zh'}return x}
 Object.values(DB.orders).forEach(migrate);
 function save(){o.updated=Date.now();DB.cur=o.id;DB.orders[o.id]=o;store('nwcw_orders',DB)}
 function saveS(){store('nwcw_settings',S)}
@@ -851,9 +872,27 @@ function renderLangs(){document.querySelectorAll('.seg[data-lang]').forEach(s=>{
 function renderMemo(){const who=o.memoWho||'cust';document.querySelectorAll('#memoWho button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.who===who));
   const lang='zh';const m=memoModel(o,who,lang);
   $('outMemo').textContent=memoText(m,o.mapLinks);$('memoDoc').innerHTML=memoHTML(m,o.mapLinks)}
+function payState(x){const r=calc(x),c=x.c;const amt=num(String(c.payAmt||'').replace(/[^\d.]/g,''));return{r,amt,match:amt>0&&amt===r.deposit}}
+function paidText(x){const r=calc(x),c=x.c,ps=payState(x);const p=dparts(x.date);
+  return [`您好，已收到您的訂金匯款，謝謝！`,`訂單編號：${orderNo(x)}`,`匯款日期：${c.payDate?fmtDate(c.payDate):'—'}｜金額：${ps.amt?money(ps.amt):money(r.deposit)}｜後五碼：${c.last5||'—'}`,'',
+   `用車日期：${x.date?fmtDate(x.date)+'（'+WD.zh[p.w]+'）':'未定'} ${c.start||''}${c.end?'-'+c.end:''}`,`預約車款：${carsText(x,'zh')}`,`尾款金額：${money(r.balance)}${r.red?'（含司機禮）':''}`,'',
+   `附上「禮車預約單暨合約書」，請確認內容無誤後簽名回傳。`,x.driveFolder?`合約檔案：${x.driveFolder}`:'',`司機資訊將於用車日三天前提供，有任何問題歡迎隨時與我們聯繫。`].filter((s,i,a)=>s!==''||a[i-1]!=='').join('\n').replace(/\n+$/,'')}
+function ttTitle(x){const c=x.c;const who=[c.groom,c.bride].filter(Boolean).join('&')||'新人';const area=areaOf('meet')||'';return `【禮車】${area?area+' ':''}${who} ${planName(x).replace(/^Tesla /,'')} ${c.start||''}${c.end?'-'+c.end:''}`.replace(/\s+/g,' ').trim()}
+function ttMemo(x){const r=calc(x),c=x.c;const L=[`訂單編號：${orderNo(x)}`,`用車：${c.start||'--:--'}-${c.end||'--:--'}（${hrsLabel(x.hours)}）｜司機集合 ${c.gather||'--:--'}`,`聯絡人：${contactName(x)||''}(${c.role}) ${c.phone||''}`];
+  points(x).filter(pt=>pt.addr).forEach(pt=>L.push(`${pt.k}. ${pt.title}：${pt.addr}${pt.label?'（'+pt.label+'）':''}`));
+  if(x.path)L.push(`流程：${x.path}`);x.flow.filter(f=>f.t||f.seg).forEach(f=>L.push(`  ${f.t||''} ${f.who?f.who+' ':''}${f.seg}`.trimEnd()));
+  L.push('車隊：');x.fleet.forEach(f=>L.push(`  ${f.role} ${MNAME[f.m]} ${f.plate||''} ${f.driver||''} ${f.phone||''}`.trimEnd()));
+  L.push(`甘蔗：${c.caneAns||(x.cane?'是':'否')}｜指定車頭彩：${c.decoAns||'否'}`,`尾款：${money(r.balance)}${r.red?'（含司機禮）':''}｜訂金：${x.paid?'已收':'未收'}`);
+  return L.join('\n')}
+function renderPay(){const ps=payState(o),r=ps.r,c=o.c;
+  $('payCheck').innerHTML=`<div><span>應付訂金</span><span>${money(r.deposit)}</span></div><div><span>新人填的匯款金額</span><span>${ps.amt?money(ps.amt):'未填'}</span></div>
+   <div><span>匯款日期／後五碼</span><span>${c.payDate?fmtDate(c.payDate):'—'}／${esc(c.last5||'—')}</span></div>`;
+  $('payChip').innerHTML=o.paid?`<span class="chip ok">已確認收款 ${esc(o.paidAt||'')}</span>`:ps.amt?(ps.match?'<span class="chip ok">金額相符，待確認入帳</span>':'<span class="chip" style="color:var(--warn)">金額不符，請核對</span>'):'<span class="chip">尚未填匯款資料</span>';
+  $('btnPaid').hidden=!!o.paid;$('btnUnpaid').hidden=!o.paid;$('outPaid').textContent=paidText(o);
+  $('ttTitle').value=ttTitle(o);$('ttWhen').textContent=`日期 ${o.date?fmtDate(o.date):'未定'}　${o.c.start||'--:--'} → ${o.c.end||'--:--'}`;$('ttMemo').textContent=ttMemo(o)}
 function renderOrderSel(){const list=Object.values(DB.orders).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.updated-a.updated);
-  $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(orderNo(x))}${x.c.groom||x.c.bride?'・'+esc([x.c.groom,x.c.bride].filter(Boolean).join('&')):''}${x.sample?'（範例）':''}</option>`).join('')}
-function renderAll(){$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
+  $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(orderNo(x))}${x.c.groom||x.c.bride?'・'+esc([x.c.groom,x.c.bride].filter(Boolean).join('&')):''}${x.sample?'（範例）':''}${x.paid?'・已收訂':''}</option>`).join('')}
+function renderAll(){renderPay();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
   $('outQuote').textContent=quoteText(o,'zh');$('outOrder').textContent=orderText(o,'zh');
   $('outFind').textContent=findText(o);$('contractPaper').innerHTML=contractHTML(o);renderMemo();
   ['meet','wed','o1','o2'].forEach(k=>{$('c_'+k+'S').placeholder=shortArea(o.c[k])||'自動'});
@@ -875,6 +914,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.setlang){const [k,v]=t.dataset.setlang.split(':');o.lang[k]=v;save();renderLangs();renderAll();return}
   if(t.dataset.who){o.memoWho=t.dataset.who;save();renderMemo();return}
   if(t.dataset.copy){copy($(t.dataset.copy).textContent,$(t.dataset.copy));return}
+  if(t.dataset.copyv){const el=$(t.dataset.copyv);if(navigator.clipboard)navigator.clipboard.writeText(el.value).then(()=>toast('已複製'),()=>{el.select();toast('已選取文字，請按複製')});else{el.select()}return}
   if(t.dataset.fdel){o.flow.splice(+t.dataset.fdel,1);save();renderFlow();renderAll();return}
   if(t.dataset.mdel){const md=S.models[+t.dataset.mdel];if(Object.values(DB.orders).some(x=>num(x.cars[md.id])>0)){toast('有訂單用到這個車款，先把那些訂單的車數改成 0');return}
     if(t.textContent!=='確認刪除'){t.textContent='確認刪除';setTimeout(()=>{t.textContent='刪除'},3000);return}
@@ -893,6 +933,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
      delete DB.orders[o.id];t.textContent='刪除';const rest=Object.values(DB.orders);o=rest[0]||newOrder();DB.orders[o.id]=o;save();loadOrder();toast('已刪除');break}
    case 'btnPrint':window.print();break;
    case 'btnDrive':saveToDrive();break;
+   case 'btnPaid':{const d=new Date();o.paid=true;o.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`;o.sample=false;save();renderAll();toast('已標記收到訂金');break}
+   case 'btnUnpaid':o.paid=false;o.paidAt='';save();renderAll();break;
    case 'btnResetS':{const keep={bank:S.bank,phone:S.phone,email:S.email,formBase:S.formBase,formEntry:S.formEntry};S=Object.assign(clone(DEF_S),keep);saveS();renderPriceSettings();fillInputs();renderCars();renderAll();$('resetMsg').textContent='已恢復預設價目';break}
   }});
 $('orderSel').addEventListener('change',e=>{o=DB.orders[e.target.value];save();loadOrder()});
