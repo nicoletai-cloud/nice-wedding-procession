@@ -106,7 +106,7 @@ function upd(){$('btnSubmit').disabled=!(sigData&&$('agree').checked)}
 $('agree').onchange=upd;
 $('btnSubmit').onclick=async()=>{const b=$('btnSubmit');b.disabled=true;b.textContent='送出中…';$('btnRedo').disabled=true;
   try{const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'signSubmit',k:key,img:sigData})});const j=await r.json();
-    if(!j.ok)throw new Error(j.error||'送出失敗');done(j.signedAt,j.pdf);window.scrollTo({top:0,behavior:'smooth'})}
+    if(!j.ok)throw new Error(j.error||'送出失敗');let at=j.signedAt,pdf=j.pdf;if(!at){try{const g=await (await fetch(API+'?action=sign&k='+encodeURIComponent(key))).json();at=g.signedAt;pdf=g.pdf}catch(e){}}done(at||Date.now(),pdf);window.scrollTo({top:0,behavior:'smooth'})}
   catch(e){msg('送出失敗：'+String(e.message||e).replace(/[<>&]/g,'')+'，請稍後再試一次。','err');b.textContent='確認送出';$('btnRedo').disabled=false;upd()}};
 load();
 })();
