@@ -1460,7 +1460,23 @@ function renderInbox(){const n=IB.filter(u=>u.pending).length;$('btnInbox').inne
   const chip=(k,l,c)=>`<button class="btn sm${ibF===k?' pri':''}" data-ibf="${k}">${l} ${c}</button>`;
   $('ibChips').innerHTML=chip('pending','待回覆',n)+cats.map(c=>chip('cat:'+c,cn(c),IB.filter(u=>u.pending&&(u.cat||'')===c).length)).join('')+chip('done','已回覆（3 天內）',IB.length-n);
   $('ibBatch').innerHTML=`<button class="btn sm" data-ibb="all">${ibSel.size&&ibSel.size===rows.length?'取消全選':'全選'}</button>`+(ibF==='done'?`<button class="btn sm pri" data-ibb="reopen"${ibSel.size?'':' disabled'}>改回待回覆</button>`:`<button class="btn sm pri" data-ibb="done"${ibSel.size?'':' disabled'}>已回覆</button>`)+`<span class="hint" style="margin:0 0 0 4px">已選 ${ibSel.size} / ${rows.length}</span>`;
-  $('ibList').innerHTML=rows.length?rows.map(u=>`<label class="todo-row"><input type="checkbox" data-ibsel="${esc(u.uid)}" style="width:auto"${ibSel.has(u.uid)?' checked':''}><div class="m"><div><b>${esc(u.name||'（讀不到名字）')}</b><span class="sub">${ibAgo(u.pending?u.since:u.doneAt)}</span></div><div class="sub" style="white-space:pre-line">${esc((u.texts||[]).slice(-3).join('\n'))}</div></div><div class="tg"><select data-ibcat="${esc(u.uid)}" style="width:auto">${cats.map(c=>`<option value="${c}"${(u.cat||'')===c?' selected':''}>${cn(c)}</option>`).join('')}</select></div>${u.pending?`<button class="btn sm pri" data-ibdone="${esc(u.uid)}">已回覆</button>`:''}</label>`).join(''):'<p class="hint">沒有訊息。</p>'}
+  $('ibList').innerHTML=rows.length?rows.map(u=>`<label class="todo-row"><input type="checkbox" data-ibsel="${esc(u.uid)}" style="width:auto"${ibSel.has(u.uid)?' checked':''}><div class="m"><div><b>${esc(u.name||'（讀不到名字）')}</b><span class="sub">${ibAgo(u.pending?u.since:u.doneAt)}</span></div><div class="sub" style="white-space:pre-line">${esc((u.texts||[]).slice(-3).join('\n'))}</div>${ibBot(u)}</div><div class="tg"><select data-ibcat="${esc(u.uid)}" style="width:auto">${cats.map(c=>`<option value="${c}"${(u.cat||'')===c?' selected':''}>${cn(c)}</option>`).join('')}</select></div>${u.bot&&u.bot.step==='done'?`<button class="btn sm" data-ibq="${esc(u.uid)}">${u.order&&DB.orders[u.order]?'開啟報價':'建立報價'}</button>`:''}${u.pending?`<button class="btn sm pri" data-ibdone="${esc(u.uid)}">已回覆</button>`:''}</label>`).join(''):'<p class="hint">沒有訊息。</p>'}
+function ibBot(u){const b=u.bot;if(!b)return '';if(b.step!=='done')return b.stop?'':'<div class="sub">🤖 機器人問答進行中…</div>';const d=b.data||{};
+  return `<div class="sub" style="color:#8a6a3a">🤖 婚期 ${esc(d.iso||((d.month||'').trim()||'未定'))}｜男方 ${esc(d.groomAddr||d.groom||'—')}｜女方 ${esc(d.brideAddr||d.bride||'—')}${d.venue?'｜餐廳 '+esc(d.venue):''}｜${esc(d.meal||'—')}${d.time?' '+esc(d.time):''}｜車款 ${esc(d.car||'—')}</div>`}
+function ibQuote(uid){const u=IB.find(x=>x.uid===uid);if(!u)return;$('inboxModal').hidden=true;
+  if(u.order&&DB.orders[u.order]){o=DB.orders[u.order];DB.cur=o.id;store('nwcw_orders',DB);loadOrder();showTab('quote');return}
+  const d=(u.bot&&u.bot.data)||{};o=newOrder();o.sample=false;
+  o.c.chatName=u.name||'';o.c.channel='LINE';if(d.iso)o.date=d.iso;
+  o.need.dateSt=d.st||'';o.need.month=d.iso?'':(d.month||'').trim();o.need.brand={tesla:'特斯拉',benz:'賓士',other:'其他'}[d.brand]||'';
+  o.cars=d.brand==='benz'?{X:0,S:0,Y:0,'3':0,W222:1,W213:1}:{X:1,S:0,Y:0,'3':1};
+  o.c.meet=d.groomAddr||d.groom||'';o.c.wed=d.brideAddr||d.bride||'';if(d.venue){o.c.o1=d.venueAddr||d.venue;o.c.o1L='宴客餐廳'}
+  if(d.meal==='午宴'){o.c.start='08:30';o.c.end='11:30'}else if(d.meal==='晚宴'){o.c.start='14:30';o.c.end='17:30'}
+  o.cityA=countyOf(o.c.meet);o.cityB=countyOf(o.c.wed);
+  o.need.note=['LINE 機器人問答','婚期：'+(d.date||'—'),'地區：'+(d.area||'—'),'時段：'+(d.meal||'—')+(d.time?' '+d.time:''),'車款：'+(d.car||'—')].join('\n');
+  DB.orders[o.id]=o;syncFleet();save();loadOrder();showTab('quote');
+  toast(d.meal?'已建立報價：時段先帶預設，地址請再確認':'已建立報價：地址、時段請再確認');
+  ibCall({action:'inboxSet',uids:[uid],set:{order:o.id}}).then(r=>{IB=r;renderInbox()}).catch(()=>{});
+  if(o.c.meet&&o.c.wed)setTimeout(()=>{try{calcKm()}catch(_){}},300)}
 async function ibSet(uids,set){try{IB=await ibCall({action:'inboxSet',uids,set});ibSel.clear();renderInbox();toast(set.done?'已標記已回覆':'已更新')}catch(e){toast('更新失敗，請再試一次')}}
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset)return;if(t.dataset.ibsel){t.checked?ibSel.add(t.dataset.ibsel):ibSel.delete(t.dataset.ibsel);renderInbox()}else if(t.dataset.ibcat!==undefined&&t.dataset.ibcat){ibSet([t.dataset.ibcat],{cat:t.value||'其他'})}});
 
@@ -1472,6 +1488,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.setlang){const [k,v]=t.dataset.setlang.split(':');o.lang[k]=v;save();renderLangs();renderAll();return}
   if(t.dataset.who){o.memoWho=t.dataset.who;save();renderMemo();return}
   if(t.dataset.ibf){ibF=t.dataset.ibf;ibSel.clear();renderInbox();return}
+  if(t.dataset.ibq){e.preventDefault();ibQuote(t.dataset.ibq);return}
   if(t.dataset.ibdone){e.preventDefault();ibSet([t.dataset.ibdone],{done:true});return}
   if(t.dataset.ibb){const rows=[...document.querySelectorAll('[data-ibsel]')].map(c=>c.dataset.ibsel);if(t.dataset.ibb==='all'){if(ibSel.size===rows.length)ibSel.clear();else rows.forEach(id=>ibSel.add(id));renderInbox()}else if(ibSel.size)ibSet([...ibSel],t.dataset.ibb==='done'?{done:true}:{reopen:true});return}
   if(t.dataset.scpick){$('scKey').value=t.dataset.scpick;scLoad();$('scText').focus();return}
@@ -1540,6 +1557,7 @@ syncReady=true;doSync();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')doSync()});
 setInterval(()=>{if(document.visibilityState==='visible')doSync()},60000);
 loadInbox();setInterval(()=>{if(document.visibilityState==='visible')loadInbox()},60000);
+{const ib=new URLSearchParams(location.search).get('ib');if(ib){$('inboxModal').hidden=false;renderInbox();history.replaceState(null,'',location.pathname);toast('機器人問答結果在這裡，按「建立報價」')}}
 })();
 </script>
 
