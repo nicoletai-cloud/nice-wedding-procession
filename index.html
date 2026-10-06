@@ -808,7 +808,9 @@ function driverBasePay0(m,x){const d=S.dp[m];if(!d)return null;const h=+x.hours,
   const a=g('h1');return a==null?null:a+Math.max(0,Math.ceil((h-1)/0.5-1e-9))*(g('ot05')||0)}
 function driverOtText(m,x){const d=S.dp[m]||{},h=+x.hours;if(h===0)return `${MABBR[m]} 等候每 0.5HR ${blank(d.tripOt)?'未設定':money(d.tripOt)}`;
   const o5=h===1.5&&!blank(d.ot15)?d.ot15:d.ot05;return h>=3?`${MABBR[m]} ${blank(d.ot1)?'未設定':money(d.ot1)}/HR`:`${MABBR[m]} ${blank(o5)?'未設定':money(o5)}/0.5HR`}
-function vendorOf(x){const v=(x.src&&x.src.vendor||'').trim();return v?(S.vendors||[]).find(d=>d.name===v)||{name:v,rate:0}:null}
+function vendorOf(x){const v=(x.src&&x.src.vendor||'').trim();return v?(S.vendors||[]).find(d=>d.name===v)||{name:v,rate:5}:null}
+function vLabel(x){const v=(x.src&&x.src.vendor||'').trim();if(!v)return '';const r=(x.src.ref||'').trim();return v+(r&&r!==v?' '+r:'')}
+function coupleName(x){const c=[x.c.groom,x.c.bride].filter(Boolean).join('&'),v=vLabel(x);return c+(v?`(${v})`:'')}
 function refRate(x){const v=vendorOf(x);if(!v)return 0;return x.src.rate!==''&&x.src.rate!=null?num(x.src.rate):num(v.rate)}
 function isMonthly(x){const v=vendorOf(x);return !!(v&&v.monthly)}
 function vendorBase(x){const v=vendorOf(x);if(!v||!S.vprices||!S.vprices[v.name]||x.hours<3)return null;
@@ -1078,7 +1080,7 @@ document.addEventListener('input',e=>{const b=e.target&&e.target.dataset&&e.targ
 async function makeMemoDocs(){const btn=$('btnMemoDocs');if(!S.driveUrl||!S.driveKey){toast('請先到「價目設定」填 Drive 網址和金鑰');showTab('settings');return}
   btn.disabled=true;$('memoDocMsg').textContent='建立中，約需 10 秒…';
   try{const no=orderNo(o);const docs=['cust','drv'].map(k=>({key:k,name:`訂單編號:${no}${k==='drv'?'-司機端':''}`,model:tplModel(o,k)}));
-    const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'memo',orderNo:no,couple:[o.c.groom,o.c.bride].filter(Boolean).join('&'),docs})});
+    const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'memo',orderNo:no,couple:coupleName(o),docs})});
     const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');o.memoLinks=j.links;o.driveFolder=o.driveFolder||j.folder;save();renderMemoLinks();$('memoDocMsg').textContent='已更新';toast('memo 連結已更新')}
   catch(e){$('memoDocMsg').textContent='失敗：'+e.message}finally{btn.disabled=false}}
 function drvLinkText(du){return ['提供行程及注意事項：',du,'','感謝大家的支援，','雖然大部分的人都不是第一次出任務了，','但為了讓客人有一致的服務體驗，','請每一位詳細閱讀以下教案內容：',(S.lessonUrl||'（請到「價目設定」填司機教案網址）')+' (請勿外傳)','',
@@ -1091,7 +1093,7 @@ function renderMemoLinks(){const L=o.memoLinks||{};const row=(k,label)=>L[k]?`<d
 ${esc(cu)}${esc(upText(o))}</pre>`:'')+(L.drv?`<div class="row" style="justify-content:space-between;margin:12px 0 6px"><span class="hint" style="margin:0">傳給司機的訊息</span><button class="btn sm pri" data-copy="drvLinkMsg">複製</button></div><pre class="out" id="drvLinkMsg">${esc(drvLinkText(String(L.drv).replace(/\?.*$/,'')+'?usp=sharing'))}</pre>`:'');if($('lgMsg'))$('lgMsg').textContent=lgMsg(o)}
 async function saveToDrive(){const btn=$('btnDrive');if(!S.driveUrl||!S.driveKey){toast('請先到「價目設定」填 Drive 網址和金鑰');showTab('settings');return}
   btn.disabled=true;btn.textContent='上傳中…';
-  try{const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,orderNo:orderNo(o),html:contractPdfDoc(o),couple:[o.c.groom,o.c.bride].filter(Boolean).join('&')})});
+  try{const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,orderNo:orderNo(o),html:contractPdfDoc(o),couple:coupleName(o)})});
     const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');
     o.driveFolder=j.folder;if(j.file)o.contractUrl=j.file;save();fillInputs();renderAll();$('driveLink').innerHTML=`<a href="${esc(j.folder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`;toast('合約 PDF 已存到 Drive')}
   catch(e){toast('存檔失敗：'+e.message)}finally{btn.disabled=false;btn.textContent='存到 Google Drive'}}
@@ -1303,7 +1305,7 @@ function renderRefs(){renderSettle();const mEl=$('refMonth');if(!mEl.value){cons
     return [`【好好禮車】${ym.replace('-','年')}月 請款明細｜${v.name}`,...os.map(x=>`${x.date.slice(5).replace('-','/')} ${orderNo(x)} ${[x.c.groom,x.c.bride].filter(Boolean).join('&')} ${planName(x).replace(/^Tesla /,'').replace(/ \S*禮車方案$/,'')} ${money(calc(x).bill)}`),`合計：${money(tot)}`,`（司機紅包、甘蔗固定費由司機現場收取，不列入請款）`,'',`匯款資訊：`,S.bank].join('\n')}).filter(Boolean);
   $('billVendorName').textContent=mv.map(v=>v.name).join('、');$('outBill').textContent=bills.join('\n\n')||'這個月沒有月結廠商的訂單。'}
 function renderOrderSel(){const list=Object.values(DB.orders).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.updated-a.updated);
-  $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(orderNo(x))}${x.c.groom||x.c.bride?'・'+esc([x.c.groom,x.c.bride].filter(Boolean).join('&')):''}${x.sample?'（範例）':'・'+STAGE_LABEL[stageOf(x)]}</option>`).join('');renderTodoBadge();if(!$('todoModal').hidden)renderTodo()}
+  $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(orderNo(x))}${x.c.groom||x.c.bride||vLabel(x)?'・'+esc(coupleName(x)):''}${x.sample?'（範例）':'・'+STAGE_LABEL[stageOf(x)]}</option>`).join('');renderTodoBadge();if(!$('todoModal').hidden)renderTodo()}
 function renderAll(){renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派':'',k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就指派':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月指派':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月指派':'白色特斯拉：用車前一週指派'):''].filter(Boolean);$('headHint').textContent=rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):'本單沒有提前指派車頭的需求。'}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=CONFIRM_TPL;renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
   $('outQuote').textContent=quoteText(o,'zh');$('outOrder').textContent=orderText(o,'zh');
   renderFind();$('contractPaper').innerHTML=contractHTML(o);renderMemo();
