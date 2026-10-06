@@ -258,6 +258,7 @@ nav.tabs button{scroll-snap-align:start}
             <label class="f">在意的重點<select id="n_care" data-b="need.care"><option value="">未表示</option><option>婚紗上下車／拍照</option><option>經典正式</option><option>預算</option><option>準時與流程</option></select></label>
             <label class="f">乘車人數<input id="n_pax" data-b="need.pax" placeholder="新人＋親友，兒童另註"></label>
             <label class="f">預算<input id="n_budget" data-b="need.budget" placeholder="客人說了才填"></label>
+            <label class="f">特殊車款有車嗎<select id="n_avail" data-b="need.avail"><option value="">未確認</option><option>已確認有車</option><option>沒車，需替代</option></select></label>
             <label class="f">約定再聯繫日<input type="date" id="n_next" data-b="need.next"></label>
             <label class="f wide">其他需求／備註<input id="n_note" data-b="need.note" placeholder="行李、禮俗、特殊要求…"></label>
           </div>
@@ -702,7 +703,7 @@ function newOrder(){return{
      meet:'',meetL:'男方家',meetS:'',wed:'',wedL:'女方家',wedS:'',o1:'',o1L:'',o1S:'',o2:'',o2L:'',o2S:'',meetMap:'',wedMap:'',o1Map:'',o2Map:'',route:'',rel:'',contact2:'',rel2:'',phone2:'',
      caneAns:'',decoAns:'',payDate:'',payAmt:'',last5:'',photoReq:'',photoUrl:''},
   fleet:[],path:'',flow:[],lang:{q:'zh',o:'zh',m:'zh'},memoWho:'cust',mapLinks:true,
-  need:{dateSt:'',month:'',brand:'',care:'',pax:'',budget:'',next:'',note:''},sent:[],quotes:[],
+  need:{dateSt:'',month:'',brand:'',care:'',pax:'',budget:'',next:'',note:'',avail:''},sent:[],quotes:[],
   inqAt:Date.now(),orderedAt:'',followAt:'',lost:false,formAt:'',paidTs:'',cfSentAt:'',cfDoneAt:'',revAskAt:'',revLinkAt:'',revSkip:false,photoSentAt:'',carHead:'',
   updated:Date.now()}}
 function sampleOrder(){const o=newOrder();Object.assign(o,{sample:true,cityA:'彰化',cityB:'台中',date:'2026-10-06',hours:3,
@@ -943,7 +944,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
     Object.keys(groups).forEach(v=>{const roles=[...new Set(groups[v])].join('＋');pay.push(+x.hours===0?`${roles} 實拿${v==='?'?'（未設定）':money(+v)}（單程接送・綁彩）`:`${roles} ${v==='?'?'（未設定）':money(+v)}/${hrsLabel(x.hours)}${r.red?'(含紅包)':''}`)});
     const ms=MODELS.filter(m=>num(x.cars[m])>0);
     if(+x.hours===0)pay.push(`等候 15 分鐘未出發，每半小時：${ms.map(m=>driverOtText(m,x).replace(' 等候每 0.5HR','')).join(' ; ')}`);
-    else pay.push('超時 15 分鐘內不計 ; 第 16 分鐘起收超時費用',`加時：${otl}`);
+    else pay.push(x.hours<3?'未滿 3 小時方案無緩衝，超過即以每 0.5 小時計超時':'超時 15 分鐘內不計 ; 第 16 分鐘起收超時費用',`加時：${otl}`);
     const back=r.balance-r.dsum;if(r.mon){if(r.dok&&r.dsum>r.onsite)pay.push('',`差額 ${money(r.dsum-r.onsite)} 由公司匯款`)}else if(x.balPaid)pay.push('','酬勞由公司匯款');else if(!r.mon&&r.dok&&back>0)pay.push('',`匯回 ${money(back)}`);else if(!r.mon&&r.dok&&back<0)pay.push('',`差額 ${money(-back)} 由公司匯款`);
   }
   return{no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(c.end)}`,gather:ap(c.gather),
@@ -996,7 +997,7 @@ const CLAUSES=['所有車輛皆附司機，著正式服裝，出車前一律洗�
 function contractHTML(x){const r=calc(x),c=x.c;const F=v=>`<span class="fill">${esc(v||'')}</span>`;
   const user=[c.groom,c.bride].filter(Boolean).join('、');
   const cars=MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MBRAND[m]==='Tesla'?'Tesla ':''}${MNAME[m]} × ${num(x.cars[m])}`);
-  const otRows=MODELS.map(m=>`${MNAME[m]} ${money(S.ot[m])}/時`).filter((s,i)=>num(x.cars[MODELS[i]])>0);
+  const otRows=MODELS.map(m=>`${MNAME[m]} ${money(S.ot[m])}/${+x.hours>0&&x.hours<3?'每 30 分鐘':'時'}`).filter((s,i)=>num(x.cars[MODELS[i]])>0);
   const caneTxt=c.caneAns?(c.caneAns+(x.cane?`（${x.cane} 台）`:'')):(x.cane?`是（${x.cane} 台）`:'');
   const pd=c.payDate?fmtDate(c.payDate):'';
   const noteBits=[x.note,x.colorReq?`指定${x.colorReq}`:'',x.colorRare?'*稀有車款,若無指定顏色將由其他車色替代':'',c.decoAns==='是'?`指定車頭彩${x.deco?' '+money(x.deco):''}`:'',num(x.tripKm)?`總行程里程 ${num(x.tripKm)} 公里`:'' ,x.invoice?'本單開立發票，金額已含 5% 營業稅':''].filter(Boolean);
@@ -1020,7 +1021,7 @@ function contractHTML(x){const r=calc(x),c=x.c;const F=v=>`<span class="fill">${
    <tr><th class="sec" colspan="5" style="border-top:0">費用明細</th></tr>
    <tr><td class="lbl">租金總計</td><td>${F(money(r.rent))}</td><td class="lbl">匯款日期</td><td>${F(pd)}</td>
      <td rowspan="5" style="width:265px;vertical-align:top"><ul>
-      <li>超過 15 分鐘內不加收超時費</li><li>超過 16 分鐘起開始計算超時費用<br>(未滿一小時仍以一小時計)</li><li>以上費用含駕駛、油資、過路費</li>
+      <li>用車時間自禮車出發起算；司機於出發前 20 分鐘抵達集合</li>${+x.hours>0&&x.hours<3?'<li>本方案未滿 3 小時，無超時緩衝；超過用車時間即以每 30 分鐘計收超時費用</li>':'<li>超過 15 分鐘內不加收超時費</li><li>超過 16 分鐘起開始計算超時費用<br>(未滿一小時仍以一小時計)</li>'}<li>以上費用含駕駛、油資、過路費</li>
       <li>如有額外超時費用、跨區費用則依本公司規定另計</li><li>尾款請於用車當日結清</li><li>隨車附手把彩 2 個<br>新娘座車另附車頭彩 1 組</li>
       <li>定金請於收到此合約 24 小時內完成匯款</li><li>逾時未匯款，車輛將不保留，請在匯款前先再次確認</li></ul></td></tr>
    <tr><td class="lbl">預付訂金</td><td>${F(money(r.deposit))}</td><td class="lbl">匯款後五碼</td><td>${F(c.last5)}</td></tr>
@@ -1327,7 +1328,7 @@ const SCRIPTS=[
  ['worry','服務疑慮','我們會在婚前確認行程與細節，提前提供司機資訊，並以正裝出勤、車隊對講機及提前集合佈置，協助流程銜接。\n您最在意的是準時抵達、迎娶禮俗，還是現場配合呢？我可以針對您在意的部分說明。'],
  ['fu1','第一次跟進','您好，想跟您確認一下，前面提供的【車款台數】是否符合您預想的方向☺️ 如果希望調整車款或整體預算，告訴我想調整的部分，我再幫您整理。'],
  ['close','收尾','您好，先讓您安心安排婚禮，這邊就不再頻繁打擾🤍 之後需要調整方案，或準備確認用車時，直接回覆這段對話就可以，我們再依當時檔期協助確認。'],
- ['flow','預約流程（文字版）','🤍 好好禮車｜預約流程\n① 確認檔期：提供婚禮日期、用車時段、行程地點、車款與台數。\n② 確認報價：客服確認車款與金額，提供報價單。\n③ 支付訂金：確認報價後匯款支付訂金，保留車輛並完成預約。\n④ 婚前確認：婚前一週確認最終行程；婚前三天確認司機資訊。\n婚禮當天，尾款與司機紅包可交給主禮車司機，或由親友於禮車服務結束後交付。']];
+ ['flow','預約流程（文字版）','🤍 好好禮車｜預約流程\n① 確認檔期：提供婚禮日期、用車時段、行程地點、車款與台數。\n② 確認報價：客服確認車款與金額，提供報價單。\n③ 支付訂金：確認報價後匯款支付訂金，保留車輛並完成預約。\n④ 婚前確認：婚前一週確認最終行程；婚前三天確認司機資訊；用車前一天司機會再與您聯繫。\n婚禮當天，尾款與司機紅包可交給主禮車司機，或由親友於禮車服務結束後交付。']];
 const MATS=[
  ['p_tesla','特斯拉優惠方案（價目表）','初次報價｜偏好特斯拉或婚紗上下車'],
  ['p_benz','賓士優惠方案（價目表）','初次報價｜偏好賓士或經典風格'],
@@ -1345,6 +1346,7 @@ function needMiss(){const n=o.need,c=o.c,miss=[];
   if(!o.cityA&&!c.meet)miss.push(['area','男方出發地']);if(!o.cityB&&!c.wed)miss.push(['area','女方迎娶地']);
   if(!c.o1)miss.push(['after','後續目的地']);if(!c.start)miss.push(['time','用車時段']);
   if(!MODELS.some(m=>num(o.cars[m])>0)||!n.brand)miss.push(['cars','車款／台數']);if(!n.pax)miss.push(['pax','乘車人數']);
+  {const k=carKind(o);if((k.lux||o.colorRare)&&n.avail!=='已確認有車')miss.push(['',n.avail?'特殊車款：'+n.avail:'特殊車款：接案前先確認有車'])}
   return miss}
 function renderNeed(){if(!$('needMiss'))return;const miss=needMiss();
   $('needMiss').innerHTML=miss.length?'<div class="hint" style="margin:0 0 6px">還沒掌握：</div>'+miss.map(([k,l])=>k?`<button class="btn sm" data-scpick="${k}">${esc(l)} → 話術</button>`:`<span class="chip">${esc(l)}</span>`).join(' '):'<span class="chip ok">需求都掌握了，可以報價</span>';
@@ -1384,7 +1386,7 @@ function headNeed(x,d){const k=carKind(x),R=[],ago=t=>(Date.now()-(+t||0))/DAY,b
 function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];const now=Date.now(),d=daysTo(x),T=[],ago=t=>(now-(+t||0))/DAY;
   if(x.c&&x.c.photoReq==='要'&&!x.photoSentAt)T.push({k:'photo',late:d!==null&&d<=-3});
   if(st==='done'){if(d>=-30&&x.paid){if(!x.revAskAt&&!x.revSkip)T.push({k:'rev',late:d<=-2});else if(x.revAskAt&&!x.revLinkAt&&!x.revSkip)T.push({k:'revlink',late:false})}return T}
-  if(st==='inq'){const nx=x.need&&x.need.next;if(nx){const dn=daysTo({date:nx});if(dn!==null&&dn<=0)T.push({k:'inq',late:true})}else T.push({k:'inq',late:ago(x.followAt||x.inqAt||x.updated)>=3})}
+  if(st==='inq'){const nx=x.need&&x.need.next;if(nx){const dn=daysTo({date:nx});if(dn!==null&&dn<=0)T.push({k:'inq',late:true})}else{const fn=+x.followN||0;if(fn<2)T.push({k:'inq',late:ago(x.followAt||x.inqAt||x.updated)>=(fn?7:3),why:fn?'收尾':''})}}
   if(st==='unpaid')T.push({k:'unpaid',late:ago(x.orderedAt||x.updated)>=2});
   if(st==='noform')T.push({k:'noform',late:ago(x.paidTs||x.updated)>=3});
   if(st==='nocontract')T.push({k:'nocontract',late:ago(x.formAt)>=2});
@@ -1433,7 +1435,7 @@ function todoBatch(id){const rows=todoRows(),sel=rows.filter(r=>todoSel.has(r.x.
   if(!sel.length)return;
   if(id==='tsNames'){clip(sel.map(x=>x.c.chatName||orderNo(x)).join('\n'));return}
   if(id==='tsCfCopy')clip(CONFIRM_TPL);if(id==='tsRevCopy')clip(REV_ASK);if(id==='tsRevLinkCopy')clip(REV_LINK);
-  const f={tsFollow:x=>x.followAt=now,tsOrdered:x=>x.orderedAt=now,tsLost:x=>x.lost=true,tsRevive:x=>x.lost=false,tsCfCopy:x=>x.cfSentAt=now,tsCfSent:x=>x.cfSentAt=now,tsCfDone:x=>x.cfDoneAt=now,tsRevCopy:x=>x.revAskAt=now,tsRevAsked:x=>x.revAskAt=now,tsRevLinkCopy:x=>x.revLinkAt=now,tsRevSkip:x=>x.revSkip=true,tsPhotoSent:x=>x.photoSentAt=now,tsPhotoReq:x=>x.c.photoReq='要',tsPaid:x=>{const d=new Date();x.paid=true;x.paidTs=now;x.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`},tsForm:x=>x.formAt=now,tsContract:x=>x.contractDone=true,tsDrv:x=>x.drvDone=true,tsMemo:x=>x.memoDone=true}[id];if(!f)return;
+  const f={tsFollow:x=>{x.followAt=now;x.followN=(+x.followN||0)+1},tsOrdered:x=>x.orderedAt=now,tsLost:x=>x.lost=true,tsRevive:x=>x.lost=false,tsCfCopy:x=>x.cfSentAt=now,tsCfSent:x=>x.cfSentAt=now,tsCfDone:x=>x.cfDoneAt=now,tsRevCopy:x=>x.revAskAt=now,tsRevAsked:x=>x.revAskAt=now,tsRevLinkCopy:x=>x.revLinkAt=now,tsRevSkip:x=>x.revSkip=true,tsPhotoSent:x=>x.photoSentAt=now,tsPhotoReq:x=>x.c.photoReq='要',tsPaid:x=>{const d=new Date();x.paid=true;x.paidTs=now;x.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`},tsForm:x=>x.formAt=now,tsContract:x=>x.contractDone=true,tsDrv:x=>x.drvDone=true,tsMemo:x=>x.memoDone=true}[id];if(!f)return;
   sel.forEach(x=>{f(x);x.updated=now;DB.orders[x.id]=x});todoSel.clear();store('nwcw_orders',DB);pushSync();renderOrderSel();renderAll();if(!/Copy$/.test(id))toast(`已更新 ${sel.length} 張訂單`)}
 document.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.tsel){t.checked?todoSel.add(t.dataset.tsel):todoSel.delete(t.dataset.tsel);renderTodo()}else if(t.id==='todoLate')renderTodo()});
 document.addEventListener('input',e=>{if(e.target.id==='todoQ')renderTodo()});
