@@ -1290,8 +1290,8 @@ function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];c
   if(x.paid&&d!==null){
     if(d<=7&&!x.cfSentAt&&!x.cfDoneAt)T.push({k:'cfsend',late:d<=5});
     if(x.cfSentAt&&!x.cfDoneAt)T.push({k:'cfwait',late:d<=5});
-    if(!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim()))T.push({k:'nodrv',late:d<=14});
-    else if(d<=7&&!(x.memoLinks&&x.memoLinks.cust))T.push({k:'nomemo',late:d<=3});}
+    if(!x.drvDone&&(!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim())))T.push({k:'nodrv',late:d<=14});
+    else if(d<=7&&!x.memoDone&&!(x.memoLinks&&x.memoLinks.cust))T.push({k:'nomemo',late:d<=3});}
   return T}
 let todoF='all';const todoSel=new Set();
 function todoRows(){const q=normNo($('todoQ').value),late=$('todoLate').checked;
@@ -1314,6 +1314,8 @@ function renderTodo(){const all=Object.values(DB.orders).filter(x=>!x.sample).ma
   if(todoF==='nocontract')B.push(['tsContract','標記已出合約']);
   if(todoF==='cfsend')B.push(['tsCfCopy','複製行前確認訊息＋標記已傳'],['tsCfSent','標記已傳']);
   if(todoF==='cfwait')B.push(['tsCfDone','標記已回填']);
+  if(todoF==='nodrv')B.push(['tsDrv','標記已派車']);
+  if(todoF==='nomemo')B.push(['tsMemo','標記已給 memo']);
   if(todoF==='lost')B.push(['tsRevive','恢復']);
   if(todoF==='rev')B.push(['tsRevCopy','複製評價詢問＋標記已問'],['tsRevAsked','標記已問']);
   if(todoF==='revlink')B.push(['tsRevLinkCopy','複製評價連結訊息＋標記已傳'],['tsRevSkip','不需要傳']);
@@ -1329,7 +1331,7 @@ function todoBatch(id){const rows=todoRows(),sel=rows.filter(r=>todoSel.has(r.x.
   if(!sel.length)return;
   if(id==='tsNames'){clip(sel.map(x=>x.c.chatName||orderNo(x)).join('\n'));return}
   if(id==='tsCfCopy')clip(CONFIRM_TPL);if(id==='tsRevCopy')clip(REV_ASK);if(id==='tsRevLinkCopy')clip(REV_LINK);
-  const f={tsFollow:x=>x.followAt=now,tsOrdered:x=>x.orderedAt=now,tsLost:x=>x.lost=true,tsRevive:x=>x.lost=false,tsCfCopy:x=>x.cfSentAt=now,tsCfSent:x=>x.cfSentAt=now,tsCfDone:x=>x.cfDoneAt=now,tsRevCopy:x=>x.revAskAt=now,tsRevAsked:x=>x.revAskAt=now,tsRevLinkCopy:x=>x.revLinkAt=now,tsRevSkip:x=>x.revSkip=true,tsPhotoSent:x=>x.photoSentAt=now,tsPhotoReq:x=>x.c.photoReq='要',tsPaid:x=>{const d=new Date();x.paid=true;x.paidTs=now;x.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`},tsForm:x=>x.formAt=now,tsContract:x=>x.contractDone=true}[id];if(!f)return;
+  const f={tsFollow:x=>x.followAt=now,tsOrdered:x=>x.orderedAt=now,tsLost:x=>x.lost=true,tsRevive:x=>x.lost=false,tsCfCopy:x=>x.cfSentAt=now,tsCfSent:x=>x.cfSentAt=now,tsCfDone:x=>x.cfDoneAt=now,tsRevCopy:x=>x.revAskAt=now,tsRevAsked:x=>x.revAskAt=now,tsRevLinkCopy:x=>x.revLinkAt=now,tsRevSkip:x=>x.revSkip=true,tsPhotoSent:x=>x.photoSentAt=now,tsPhotoReq:x=>x.c.photoReq='要',tsPaid:x=>{const d=new Date();x.paid=true;x.paidTs=now;x.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`},tsForm:x=>x.formAt=now,tsContract:x=>x.contractDone=true,tsDrv:x=>x.drvDone=true,tsMemo:x=>x.memoDone=true}[id];if(!f)return;
   sel.forEach(x=>{f(x);x.updated=now;DB.orders[x.id]=x});todoSel.clear();store('nwcw_orders',DB);pushSync();renderOrderSel();renderAll();if(!/Copy$/.test(id))toast(`已更新 ${sel.length} 張訂單`)}
 document.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.tsel){t.checked?todoSel.add(t.dataset.tsel):todoSel.delete(t.dataset.tsel);renderTodo()}else if(t.id==='todoLate')renderTodo()});
 document.addEventListener('input',e=>{if(e.target.id==='todoQ')renderTodo()});
