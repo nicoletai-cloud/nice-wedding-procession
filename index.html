@@ -373,7 +373,7 @@ nav.tabs button{scroll-snap-align:start}
       <div id="ctStep1"><p class="hint">請先檢查上面的合約：日期、時間、車款、金額、地址都正確後，再按下一步。</p><button class="btn pri" id="btnCtOk">合約內容確認無誤，下一步</button></div>
       <div id="ctStep2" hidden>
         <label class="f wide" style="margin-bottom:8px">合約連結（按上方「存到 Google Drive」後自動帶入，也可以自己貼）<input id="c_contractUrl" data-b="contractUrl" placeholder="https://drive.google.com/..."></label>
-        <p class="hint" id="ctLinkHint" style="margin:0 0 8px"></p>
+        <p class="hint" id="ctLinkHint" style="margin:0 0 8px"></p><p class="hint" id="ctSignHint" style="margin:0 0 8px"></p>
         <div class="row" style="justify-content:flex-end;gap:8px;margin-bottom:8px"><button class="btn sm" id="btnCtBack">回上一步</button><button class="btn sm pri" id="btnCtCopy">複製訊息（標記已傳合約）</button></div>
         <pre class="out" id="outPaid"></pre>
       </div>
@@ -1079,7 +1079,7 @@ function contractHTML(x){const r=calc(x),c=x.c,rin=!!x.ctRedIn&&r.red>0,rent=rin
   <table class="cl">${CLAUSES.map((s,i)=>`<tr><td class="c2n">${String(i+1).padStart(2,'0')}</td><td>${E(s)}${i===5?'<div class="c2sub">a. 付訂金當日起取消用車，則不退回</div><div class="c2sub">b. 因個人因素婚期延期用車時，訂金可保留，但不接受轉讓和改變用途</div>':''}</td></tr>`).join('')}</table>
   <table style="margin-top:150pt"><tr><td class="mu" style="width:272pt">禮車公司</td><td class="mu">租車人簽署</td></tr>
    <tr><td style="padding-top:8pt"><table style="width:auto"><tr><td class="sf gold" style="font-size:16pt;width:128pt;vertical-align:middle">好好禮車</td><td style="width:66pt"><div class="seal"><div><table><tr><td class="sf">禮</td><td class="sf">好</td></tr><tr><td class="sf">車</td><td class="sf">好</td></tr></table></div></div></td></tr></table></td>
-   <td style="vertical-align:bottom"><div style="border-bottom:.5pt solid #DDD6CA;height:44pt"></div></td></tr></table>
+   <td style="vertical-align:bottom"><div class="sgn" style="border-bottom:.5pt solid #DDD6CA;min-height:44pt"><!--SIGN--></div></td></tr></table>
   ${ft('02 / 02')}</div></div>`}
 
 function contractPdfDoc(x){
@@ -1121,11 +1121,17 @@ function renderMemoLinks(){const L=o.memoLinks||{};const row=(k,label)=>L[k]?`<d
   const cu=L.cust?String(L.cust).replace(/\?.*$/,''):'';
   $('memoLinks').innerHTML=(row('cust','客人 memo')+row('drv','司機派車單')||'<div class="sub">還沒有產生連結。</div>')+(cu?`<div class="row" style="justify-content:space-between;margin:12px 0 6px"><span class="hint" style="margin:0">傳給客人的訊息</span><button class="btn sm pri" data-copy="custLinkMsg">複製</button></div><pre class="out" id="custLinkMsg">提供司機資訊及注意事項：
 ${esc(cu)}${esc(upText(o))}</pre>`:'')+(L.drv?`<div class="row" style="justify-content:space-between;margin:12px 0 6px"><span class="hint" style="margin:0">傳給司機的訊息</span><button class="btn sm pri" data-copy="drvLinkMsg">複製</button></div><pre class="out" id="drvLinkMsg">${esc(drvLinkText(String(L.drv).replace(/\?.*$/,'')+'?usp=sharing'))}</pre>`:'');if($('lgMsg'))$('lgMsg').textContent=lgMsg(o)}
+async function gasCall(body){if(!S.driveUrl||!S.driveKey)throw new Error('未設定同步');const r=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({token:S.driveKey},body))});const j=await r.json();if(!j.ok)throw new Error(j.error||'失敗');return j}
+function signLink(k){const id=(String(S.driveUrl).match(/\/s\/([^/]+)\/exec/)||[])[1]||'';return location.origin+location.pathname.replace(/[^/]*$/,'')+'sign.html?s='+encodeURIComponent(id)+'&k='+encodeURIComponent(k)}
+async function loadSigned(){try{const j=await gasCall({action:'signStatus'}),m=j.signed||{};let ch=false;
+  Object.keys(m).forEach(id=>{const x=DB.orders[id];if(!x||x.signedAt===m[id].at)return;x.signedAt=m[id].at;x.signedPdf=m[id].pdf;x.contractDone=true;x.updated=Date.now();ch=true});
+  if(ch){store('nwcw_orders',DB);pushSync();renderAll()}}catch(e){}}
 async function saveToDrive(){const btn=$('btnDrive');if(!S.driveUrl||!S.driveKey){toast('請先到「價目設定」填 Drive 網址和金鑰');showTab('settings');return}
   btn.disabled=true;btn.textContent='上傳中…';
   try{const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,orderNo:orderNo(o),html:contractPdfDoc(o),couple:coupleName(o)})});
     const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');
-    o.driveFolder=j.folder;if(j.file)o.contractUrl=j.file;save();fillInputs();renderAll();$('driveLink').innerHTML=`<a href="${esc(j.folder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`;toast('合約 PDF 已存到 Drive')}
+    o.driveFolder=j.folder;if(j.file)o.contractUrl=j.file;save();
+    try{const k=await gasCall({action:'signReg',id:o.id,orderNo:orderNo(o),couple:coupleName(o),html:contractPdfDoc(o)});o.signKey=k.sign;o.signUrl=signLink(k.sign);o.signedAt=null;o.signedPdf='';save()}catch(e){toast('簽署連結建立失敗：'+e.message)}fillInputs();renderAll();$('driveLink').innerHTML=`<a href="${esc(j.folder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`;toast('合約 PDF 已存到 Drive')}
   catch(e){toast('存檔失敗：'+e.message)}finally{btn.disabled=false;btn.textContent='存到 Google Drive'}}
 
 /* ---------- form paste parser ---------- */
@@ -1286,10 +1292,11 @@ function payState(x){const r=calc(x),c=x.c;const amt=num(String(c.payAmt||'').re
 function paidText(x){const tips=['禮車會提早大約20分鐘抵達集合地點，並佈置完車彩，如不先綁彩可提前告知。','如需要綁甘蔗豬肉，請提前告知準備專業工具架設。(甘蔗豬肉是新人自備，司機準備專用工具架設)','禮車行駛路線，請新人安排熟悉路線親友乘坐前導車引路，如無安排將依導航or司機熟悉路線行駛。','服務當天如有不能拍攝清晰人像照片之情況，請務必提前告知『客服』。','用車前三日會提供司機資訊，一天前司機會再次聯絡確認細節。','尾款、甘蔗固定費及司機禮請於用車日交給司機，可交由親友轉交。'];
   if(!x.colorReq)tips.push('車色無法指定，一般為黑色或白色由派車人員安排。');
   const hi=typeof rmHi==='function'?rmHi(x):'您好';
-  return [(hi==='您好'?'':hi+'🤍 ')+'已經收到訂金，合約提供您留存：',(x.contractUrl||'').trim()||'（請貼上合約連結）','',...tips.map((t,i)=>`${i+1}.${t}`)].join('\n')}
+  return [(hi==='您好'?'':hi+'🤍 ')+(x.signUrl?'已經收到訂金，請點開以下連結確認合約內容，並按下方「簽名完成合約」完成線上簽署：':'已經收到訂金，合約提供您留存：'),x.signUrl||(x.contractUrl||'').trim()||'（請貼上合約連結）','',...tips.map((t,i)=>`${i+1}.${t}`)].join('\n')}
 const ctOk={};
-function renderCtSend(){if(!$('ctStep1'))return;const ok=!!(ctOk[o.id]||o.ctSentAt),url=(o.contractUrl||'').trim();$('ctStep1').hidden=ok;$('ctStep2').hidden=!ok;
-  $('ctLinkHint').textContent=!url?'還沒有合約連結：先按上方「存到 Google Drive」產生 PDF，或把連結貼進來。':o.ctSentAt?'已於 '+new Date(o.ctSentAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+' 複製傳送過。':'';$('btnCtCopy').disabled=!url}
+function renderCtSend(){if(!$('ctStep1'))return;const ok=!!(ctOk[o.id]||o.ctSentAt),url=(o.signUrl||o.contractUrl||'').trim();$('ctStep1').hidden=ok;$('ctStep2').hidden=!ok;
+  $('ctLinkHint').textContent=!url?'還沒有合約連結：先按上方「存到 Google Drive」產生 PDF，或把連結貼進來。':o.ctSentAt?'已於 '+new Date(o.ctSentAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+' 複製傳送過。':'';$('btnCtCopy').disabled=!url;
+  const sg=$('ctSignHint');if(sg)sg.innerHTML=o.signedAt?`✅ 客人已於 ${esc(new Date(o.signedAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}))} 完成線上簽署　<a href="${esc(o.signedPdf||'')}" target="_blank" rel="noopener">開啟已簽署合約</a>`:o.signUrl?`線上簽署連結：<a href="${esc(o.signUrl)}" target="_blank" rel="noopener">預覽客人看到的頁面</a>（客人尚未簽署）`:'按上方「存到 Google Drive」後會自動產生線上簽署連結。'}
 function paidTextOld(x){const r=calc(x),c=x.c,ps=payState(x);const p=dparts(x.date);
   return [`您好，已收到您的訂金匯款，謝謝！`,`訂單編號：${orderNo(x)}`,`匯款日期：${c.payDate?fmtDate(c.payDate):'—'}｜金額：${ps.amt?money(ps.amt):money(r.deposit)}｜後五碼：${c.last5||'—'}`,'',
    `用車日期：${x.date?fmtDate(x.date)+'（'+WD.zh[p.w]+'）':'未定'} ${c.start||''}${c.end?'-'+c.end:''}`,`預約車款：${carsText(x,'zh')}`,`尾款金額：${money(r.balance)}${r.red?'（含司機禮）':''}`,'',
@@ -1614,7 +1621,7 @@ showTab(startTab);
 syncReady=true;doSync();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')doSync()});
 setInterval(()=>{if(document.visibilityState==='visible')doSync()},60000);
-loadInbox();setInterval(()=>{if(document.visibilityState==='visible')loadInbox()},60000);
+loadInbox();loadSigned();setInterval(()=>{if(document.visibilityState==='visible'){loadInbox();loadSigned()}},60000);
 {const ib=new URLSearchParams(location.search).get('ib');if(ib){$('inboxModal').hidden=false;renderInbox();history.replaceState(null,'',location.pathname);toast('機器人問答結果在這裡，按「建立報價」')}}
 })();
 </script>
