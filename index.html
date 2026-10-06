@@ -71,7 +71,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .todo-row .m{flex:1;min-width:0}.todo-row .m b{margin-right:6px}.todo-row .sub{font-size:12px;color:var(--muted);margin-top:2px}
 .todo-row .tg{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:45%}
 @media(max-width:640px){.todo-row{flex-wrap:wrap}.todo-row .m{flex:1 1 calc(100% - 100px)}.todo-row .tg{order:3;flex:1 1 100%;max-width:none;justify-content:flex-start;padding-left:26px}}
-#btnTodo b{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:999px;background:var(--warn);color:#fff;font-size:11px;line-height:18px}
+#btnInbox b,#btnTodo b{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:999px;background:var(--warn);color:#fff;font-size:11px;line-height:18px}
 .sum{display:grid;gap:4px;font-variant-numeric:tabular-nums}
 .sum div{display:flex;justify-content:space-between;gap:12px}
 .sum .tot{border-top:1px solid var(--line);margin-top:6px;padding-top:8px;font-weight:700;font-size:17px}
@@ -196,6 +196,7 @@ nav.tabs button{scroll-snap-align:start}
     <div class="orderbar">
       <select id="orderSel" aria-label="切換訂單"></select>
       <button class="btn sm" id="btnSync" title="手機／電腦同步">同步</button>
+      <button class="btn" id="btnInbox">訊息</button>
       <button class="btn" id="btnTodo">待辦</button>
       <button class="btn" id="btnCouple">新人資料</button>
       <button class="btn" id="btnNew">＋ 新訂單</button>
@@ -249,6 +250,29 @@ nav.tabs button{scroll-snap-align:start}
           <div class="row" style="margin-top:8px;gap:10px"><button class="btn sm pri" id="btnKm" type="button">計算總里程</button><span class="hint" id="kmMsg" style="margin:0"></span></div>
         </div>
         <div class="card">
+          <h3>客人需求 <small>已填的不用再問；暫定、未知分開記</small></h3>
+          <div class="fields">
+            <label class="f">婚期狀態<select id="n_dateSt" data-b="need.dateSt"><option value="">—</option><option>已確定</option><option>暫定</option><option>未定</option></select></label>
+            <label class="f">預計月份（日期未定時）<input id="n_month" data-b="need.month" placeholder="例：2027 年 6 月"></label>
+            <label class="f">偏好品牌<select id="n_brand" data-b="need.brand"><option value="">未表示</option><option>特斯拉</option><option>賓士</option><option>其他</option><option>都可以</option></select></label>
+            <label class="f">在意的重點<select id="n_care" data-b="need.care"><option value="">未表示</option><option>婚紗上下車／拍照</option><option>經典正式</option><option>預算</option><option>準時與流程</option></select></label>
+            <label class="f">乘車人數<input id="n_pax" data-b="need.pax" placeholder="新人＋親友，兒童另註"></label>
+            <label class="f">預算<input id="n_budget" data-b="need.budget" placeholder="客人說了才填"></label>
+            <label class="f">約定再聯繫日<input type="date" id="n_next" data-b="need.next"></label>
+            <label class="f wide">其他需求／備註<input id="n_note" data-b="need.note" placeholder="行李、禮俗、特殊要求…"></label>
+          </div>
+          <div id="needMiss" style="margin-top:10px"></div>
+        </div>
+        <div class="card">
+          <h3>話術 <small>選情境 → 可修改 → 複製傳給客人</small></h3>
+          <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:8px"><select id="scKey" style="flex:1;min-width:200px"></select><button class="btn sm pri" id="btnScCopy">複製並記錄</button></div>
+          <textarea id="scText" rows="7" style="width:100%;box-sizing:border-box"></textarea>
+          <p class="hint" id="scWarn" style="margin:6px 0 0"></p>
+          <h3 style="margin-top:16px">素材 <small>依階段建議，標記已傳避免重複</small></h3>
+          <div id="matList"></div>
+          <p class="hint" id="sentLog" style="margin:8px 0 0"></p>
+        </div>
+        <div class="card">
           <h3>車款 <span id="bundleChip"></span></h3>
           <div class="cars" id="carList"></div>
         </div>
@@ -295,6 +319,7 @@ nav.tabs button{scroll-snap-align:start}
             <button class="btn sm pri" data-copy="outQuote">複製</button>
           </div>
           <pre class="out" id="outQuote"></pre>
+          <div id="quoteVers" style="margin-top:10px"></div>
         </div>
         <div class="card">
           <h3>下單訊息 <small>含匯款資訊與新人表單</small></h3>
@@ -524,6 +549,14 @@ nav.tabs button{scroll-snap-align:start}
 </div>
 <div class="toast" id="toast" role="status"></div>
 
+<div id="inboxModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
+  <div style="max-width:980px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px">
+    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">LINE 訊息 <small>回完客人按「已回覆」，就不會再提醒</small></h3><div class="row" style="gap:8px"><button class="btn sm" id="btnInboxReload">重新整理</button><button class="btn" id="btnInboxClose">關閉</button></div></div>
+    <div id="ibChips" class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
+    <div id="ibBatch" class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
+    <div id="ibList"><p class="hint">載入中…</p></div>
+  </div>
+</div>
 <div id="todoModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
   <div style="max-width:980px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px">
     <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">待辦 <small>選進度篩選，勾選後可一起處理</small></h3><button class="btn" id="btnTodoClose">關閉</button></div>
@@ -669,6 +702,7 @@ function newOrder(){return{
      meet:'',meetL:'男方家',meetS:'',wed:'',wedL:'女方家',wedS:'',o1:'',o1L:'',o1S:'',o2:'',o2L:'',o2S:'',meetMap:'',wedMap:'',o1Map:'',o2Map:'',route:'',rel:'',contact2:'',rel2:'',phone2:'',
      caneAns:'',decoAns:'',payDate:'',payAmt:'',last5:'',photoReq:'',photoUrl:''},
   fleet:[],path:'',flow:[],lang:{q:'zh',o:'zh',m:'zh'},memoWho:'cust',mapLinks:true,
+  need:{dateSt:'',month:'',brand:'',care:'',pax:'',budget:'',next:'',note:''},sent:[],quotes:[],
   inqAt:Date.now(),orderedAt:'',followAt:'',lost:false,formAt:'',paidTs:'',cfSentAt:'',cfDoneAt:'',revAskAt:'',revLinkAt:'',revSkip:false,photoSentAt:'',carHead:'',
   updated:Date.now()}}
 function sampleOrder(){const o=newOrder();Object.assign(o,{sample:true,cityA:'彰化',cityB:'台中',date:'2026-10-06',hours:3,
@@ -684,7 +718,7 @@ function sampleOrder(){const o=newOrder();Object.assign(o,{sample:true,cityA:'�
 let DB=store('nwcw_orders');
 if(!DB||!DB.orders||!Object.keys(DB.orders).length){const s=sampleOrder();DB={cur:s.id,orders:{[s.id]:s}}}
 let o=DB.orders[DB.cur]||Object.values(DB.orders)[0];
-function migrate(x){const d=newOrder();if(x.paid===undefined)x.paid=false;if(x.orderedAt===undefined)x.orderedAt=x.updated||Date.now();if(!x.src)x.src={vendor:'',ref:'',rate:''};for(const k in d){if(x[k]===undefined)x[k]=clone(d[k])}for(const k in d.c){if(x.c[k]===undefined)x.c[k]=d.c[k]}for(const k in d.lang){if(!x.lang[k])x.lang[k]='zh'}
+function migrate(x){const d=newOrder();if(!x.need)x.need=clone(d.need);else for(const k in d.need)if(x.need[k]===undefined)x.need[k]='';if(x.paid===undefined)x.paid=false;if(x.orderedAt===undefined)x.orderedAt=x.updated||Date.now();if(!x.src)x.src={vendor:'',ref:'',rate:''};for(const k in d){if(x[k]===undefined)x[k]=clone(d[k])}for(const k in d.c){if(x.c[k]===undefined)x.c[k]=d.c[k]}for(const k in d.lang){if(!x.lang[k])x.lang[k]='zh'}
   (x.fleet||[]).forEach(f=>{if(f.emg===undefined)f.emg='';const m=(f.phone||'').match(/^(.*?)\s*[（(]\s*緊急聯絡人?\s*[:：]?\s*([^）)]*)[）)]\s*$/);if(m){f.phone=m[1].trim();if(!f.emg)f.emg=m[2].trim()}});return x}
 Object.values(DB.orders).forEach(migrate);
 function save(){o.updated=Date.now();DB.cur=o.id;DB.orders[o.id]=o;store('nwcw_orders',DB);pushSync()}
@@ -1261,7 +1295,7 @@ function renderRefs(){renderSettle();const mEl=$('refMonth');if(!mEl.value){cons
   $('billVendorName').textContent=mv.map(v=>v.name).join('、');$('outBill').textContent=bills.join('\n\n')||'這個月沒有月結廠商的訂單。'}
 function renderOrderSel(){const list=Object.values(DB.orders).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.updated-a.updated);
   $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(orderNo(x))}${x.c.groom||x.c.bride?'・'+esc([x.c.groom,x.c.bride].filter(Boolean).join('&')):''}${x.sample?'（範例）':'・'+STAGE_LABEL[stageOf(x)]}</option>`).join('');renderTodoBadge();if(!$('todoModal').hidden)renderTodo()}
-function renderAll(){{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派':'',k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就指派':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月指派':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月指派':'白色特斯拉：用車前一週指派'):''].filter(Boolean);$('headHint').textContent=rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):'本單沒有提前指派車頭的需求。'}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=CONFIRM_TPL;renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
+function renderAll(){renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派':'',k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就指派':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月指派':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月指派':'白色特斯拉：用車前一週指派'):''].filter(Boolean);$('headHint').textContent=rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):'本單沒有提前指派車頭的需求。'}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=CONFIRM_TPL;renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
   $('outQuote').textContent=quoteText(o,'zh');$('outOrder').textContent=orderText(o,'zh');
   renderFind();$('contractPaper').innerHTML=contractHTML(o);renderMemo();
   ['meet','wed','o1','o2'].forEach(k=>{$('c_'+k+'S').placeholder=shortArea(o.c[k])||'自動'});
@@ -1274,6 +1308,58 @@ function renderPriceSettings(){const ip=(g,m,k)=>{const v=k?S[g][m][k]:S[g][m];r
     ${['price','p2','short','p1','ptrip','ot'].map(k=>ip(k,m)).join('')}${DK.map(k=>ip('dp',m,k)).join('')}<td><button class="btn sm danger" data-mdel="${i}">刪除</button></td></tr>`}).join('');
   $('bundleBody').innerHTML=S.bundles.map((b,i)=>`<tr><td><input data-bd="${i}.name" id="bd_n${i}" value="${esc(b.name)}"></td><td><input data-bd="${i}.combo" id="bd_c${i}" value="${esc(comboText(b.cars))}" placeholder="MX+M3*2"></td>
   <td><input type="number" data-bd="${i}.price" id="bd_p${i}" value="${b.price}"></td><td><button class="btn sm danger" data-bdel="${i}">刪除</button></td></tr>`).join('')}
+
+/* ---------- 客人需求・話術・素材・報價版本 ---------- */
+const SCRIPTS=[
+ ['date','問婚期','您好，歡迎詢問好好禮車 🤍\n請問婚禮預計是哪一年、幾月幾日呢？還沒確定日期也沒關係，可以先告訴我預計的月份☺️'],
+ ['area','已知婚期／問地區','收到，先幫您記下婚期是【婚期】🤍\n請問當天男方出發地、女方迎娶地，分別在哪個縣市／行政區呢？'],
+ ['after','問後續行程','接到新人後，預計會回男方家，還是直接到宴客場地呢？先提供大概地區就可以。'],
+ ['cars','問車款台數','請問目前有喜歡的車款嗎？另外，您想安排一台主禮車，還是也需要搭配親友乘坐的車隊呢？'],
+ ['pax','不確定台數','除了新人以外，大約還有幾位親友需要搭車呢？若有兒童或較多行李，也請一併告訴我。'],
+ ['time','問時段','請問預計幾點開始用車、幾點完成最後一站呢？如果時間還沒排定，先告訴我迎娶或宴客的時間也可以。'],
+ ['care','無車款方向','您比較在意婚紗上下車方便、經典正式的外型，還是整體預算呢？我可以先挑一至兩個組合給您。'],
+ ['budget','預算','如果方便，也可以告訴我整組婚車希望控制在多少預算內，我會連同可能的附加費一起評估。'],
+ ['mx','Model X 推薦','如果您比較在意婚紗上下車與拍照的感覺，我會先推薦 Tesla Model X 當主禮車🤍\n向上開啟的鷹翼門，方便上下車時整理裙襬，也能拍到新人與車身同框的畫面。'],
+ ['benz','賓士推薦','如果您喜歡經典、比較內斂的婚車風格，可以先看賓士 S-Class☺️ 我會依台數與預算，搭配適合的組合給您比較。'],
+ ['family','跟家人討論','好的，沒問題☺️ 目前建議的是【車款台數】，依這次行程預估共 NT$【預估合計】，您可以直接把這份報價轉給家人參考。\n如果討論後想調整台數或預算，把想法告訴我，我再幫您比較。'],
+ ['think','再想想','可以的☺️ 您目前主要是在考慮車款、台數，還是整體預算呢？我可以針對那一部分幫您整理。'],
+ ['over','超出預算','了解，謝謝您直接告訴我☺️ 請問希望整組用車費用大約控制在多少呢？我可以先評估車款搭配，再依乘車人數確認台數是否有調整空間。'],
+ ['worry','服務疑慮','我們會在婚前確認行程與細節，提前提供司機資訊，並以正裝出勤、車隊對講機及提前集合佈置，協助流程銜接。\n您最在意的是準時抵達、迎娶禮俗，還是現場配合呢？我可以針對您在意的部分說明。'],
+ ['fu1','第一次跟進','您好，想跟您確認一下，前面提供的【車款台數】是否符合您預想的方向☺️ 如果希望調整車款或整體預算，告訴我想調整的部分，我再幫您整理。'],
+ ['close','收尾','您好，先讓您安心安排婚禮，這邊就不再頻繁打擾🤍 之後需要調整方案，或準備確認用車時，直接回覆這段對話就可以，我們再依當時檔期協助確認。'],
+ ['flow','預約流程（文字版）','🤍 好好禮車｜預約流程\n① 確認檔期：提供婚禮日期、用車時段、行程地點、車款與台數。\n② 確認報價：客服確認車款與金額，提供報價單。\n③ 支付訂金：確認報價後匯款支付訂金，保留車輛並完成預約。\n④ 婚前確認：婚前一週確認最終行程；婚前三天確認司機資訊。\n婚禮當天，尾款與司機紅包可交給主禮車司機，或由親友於禮車服務結束後交付。']];
+const MATS=[
+ ['p_tesla','特斯拉優惠方案（價目表）','初次報價｜偏好特斯拉或婚紗上下車'],
+ ['p_benz','賓士優惠方案（價目表）','初次報價｜偏好賓士或經典風格'],
+ ['m_summary','詢價服務摘要','初次報價時搭配價目表一起傳'],
+ ['m_service','五大服務標準','客人問服務細節時才補傳'],
+ ['m_flow','訂車流程圖','備用；平常用文字版預約流程'],
+ ['c_mx','Model X 案例照 1–2 張','對 Model X 有興趣時'],
+ ['c_couple','新人同框案例照','在意拍照效果時'],
+ ['l_all','全車款目錄＋IG','想看其他車款時，IG 只給一次']];
+function scFill(t){const r=calc(o),p=dparts(o.date);const cars=MODELS.filter(m=>num(o.cars[m])>0).map(m=>`${MNAME[m]}${num(o.cars[m])>1?' ×'+num(o.cars[m]):''}`).join(' + ');
+  const map={'婚期':p?`${p.y}/${p.m}/${p.d}`:(o.need.month||''),'車款台數':cars,'預估合計':r&&r.total?num(r.total).toLocaleString('en-US'):''};
+  return t.replace(/【(.+?)】/g,(m,k)=>map[k]?map[k]:m)}
+function needMiss(){const n=o.need,c=o.c,miss=[];
+  if(!o.date&&!n.month)miss.push(['date','婚期']);else if(!o.date&&n.month)miss.push(['','婚期暫定（'+n.month+'）']);
+  if(!o.cityA&&!c.meet)miss.push(['area','男方出發地']);if(!o.cityB&&!c.wed)miss.push(['area','女方迎娶地']);
+  if(!c.o1)miss.push(['after','後續目的地']);if(!c.start)miss.push(['time','用車時段']);
+  if(!MODELS.some(m=>num(o.cars[m])>0)||!n.brand)miss.push(['cars','車款／台數']);if(!n.pax)miss.push(['pax','乘車人數']);
+  return miss}
+function renderNeed(){if(!$('needMiss'))return;const miss=needMiss();
+  $('needMiss').innerHTML=miss.length?'<div class="hint" style="margin:0 0 6px">還沒掌握：</div>'+miss.map(([k,l])=>k?`<button class="btn sm" data-scpick="${k}">${esc(l)} → 話術</button>`:`<span class="chip">${esc(l)}</span>`).join(' '):'<span class="chip ok">需求都掌握了，可以報價</span>';
+  const sel=$('scKey');if(!sel.options.length){sel.innerHTML=SCRIPTS.map(([k,l])=>`<option value="${k}">${l}</option>`).join('');scLoad()}
+  const sent=o.sent||[],had=k=>sent.some(x=>x.k===k);
+  $('matList').innerHTML=MATS.map(([k,l,w])=>`<div class="row" style="justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)"><div><b style="font-size:14px">${l}</b><div class="sub" style="font-size:12px;color:var(--muted)">${w}</div></div>${had(k)?`<span class="chip ok">已傳 ${new Date(sent.filter(x=>x.k===k).pop().at).toLocaleDateString('zh-TW')}</span>`:`<button class="btn sm" data-matsent="${k}">標記已傳</button>`}</div>`).join('');
+  const sl=sent.filter(x=>SCRIPTS.some(s=>s[0]===x.k)).slice(-6).map(x=>`${(SCRIPTS.find(s=>s[0]===x.k)||[])[1]}（${new Date(x.at).toLocaleDateString('zh-TW')}）`);
+  $('sentLog').textContent=sl.length?'已傳話術：'+sl.join('、'):'';
+  const Q=o.quotes||[];$('quoteVers').innerHTML=(Q.length?`<div class="hint" style="margin:0 0 6px">報價版本（複製時自動存）：</div>`+Q.map((q,i)=>`<details style="margin-bottom:4px"><summary style="cursor:pointer;font-size:13px">第 ${i+1} 版｜${new Date(q.at).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}｜NT$${num(q.total).toLocaleString('en-US')}</summary><pre class="out" style="margin-top:6px">${esc(q.text)}</pre></details>`).join(''):'')}
+function scLoad(){const k=$('scKey').value,s=SCRIPTS.find(x=>x[0]===k);const t=scFill(s?s[2]:'');$('scText').value=t;scWarn()}
+function scWarn(){const m=$('scText').value.match(/【.+?】/g);$('scWarn').textContent=m?'⚠️ 還有沒填的：'+[...new Set(m)].join('、')+'（不知道的請寫「待確認」）':''}
+function logSent(k){o.sent=(o.sent||[]).concat({k,at:Date.now()});save();renderNeed()}
+function snapQuote(){const t=$('outQuote').textContent,Q=o.quotes||(o.quotes=[]);if(!Q.length||Q[Q.length-1].text!==t){Q.push({at:Date.now(),text:t,total:calc(o).total});if(Q.length>20)Q.shift();save()}renderNeed()}
+document.addEventListener('change',e=>{if(e.target.id==='scKey')scLoad()});
+document.addEventListener('input',e=>{if(e.target.id==='scText')scWarn()});
 
 /* ---------- 進度與待辦 ---------- */
 const DAY=864e5;
@@ -1298,7 +1384,7 @@ function headNeed(x,d){const k=carKind(x),R=[],ago=t=>(Date.now()-(+t||0))/DAY,b
 function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];const now=Date.now(),d=daysTo(x),T=[],ago=t=>(now-(+t||0))/DAY;
   if(x.c&&x.c.photoReq==='要'&&!x.photoSentAt)T.push({k:'photo',late:d!==null&&d<=-3});
   if(st==='done'){if(d>=-30&&x.paid){if(!x.revAskAt&&!x.revSkip)T.push({k:'rev',late:d<=-2});else if(x.revAskAt&&!x.revLinkAt&&!x.revSkip)T.push({k:'revlink',late:false})}return T}
-  if(st==='inq')T.push({k:'inq',late:ago(x.followAt||x.inqAt||x.updated)>=3});
+  if(st==='inq'){const nx=x.need&&x.need.next;if(nx){const dn=daysTo({date:nx});if(dn!==null&&dn<=0)T.push({k:'inq',late:true})}else T.push({k:'inq',late:ago(x.followAt||x.inqAt||x.updated)>=3})}
   if(st==='unpaid')T.push({k:'unpaid',late:ago(x.orderedAt||x.updated)>=2});
   if(st==='noform')T.push({k:'noform',late:ago(x.paidTs||x.updated)>=3});
   if(st==='nocontract')T.push({k:'nocontract',late:ago(x.formAt)>=2});
@@ -1352,6 +1438,23 @@ function todoBatch(id){const rows=todoRows(),sel=rows.filter(r=>todoSel.has(r.x.
 document.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.tsel){t.checked?todoSel.add(t.dataset.tsel):todoSel.delete(t.dataset.tsel);renderTodo()}else if(t.id==='todoLate')renderTodo()});
 document.addEventListener('input',e=>{if(e.target.id==='todoQ')renderTodo()});
 
+/* ---------- LINE 訊息收件匣 ---------- */
+let IB=[],ibF='pending';const ibSel=new Set();
+async function ibCall(body){if(!S.driveUrl||!S.driveKey)throw new Error('未設定同步');const ac=new AbortController(),to=setTimeout(()=>ac.abort(),60000);
+  const r=await fetch(S.driveUrl,{signal:ac.signal,method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({token:S.driveKey},body))});const j=await r.json();clearTimeout(to);if(!j.ok)throw new Error(j.error||'失敗');return j.inbox||[]}
+async function loadInbox(){try{IB=await ibCall({action:'inbox'});renderInbox()}catch(e){if(!$('inboxModal').hidden)$('ibList').innerHTML='<p class="hint">讀取失敗，請按重新整理</p>'}}
+function ibAgo(t){const m=Math.round((Date.now()-t)/60000);return m<60?m+' 分鐘前':m<1440?Math.round(m/60)+' 小時前':Math.round(m/1440)+' 天前'}
+function renderInbox(){const n=IB.filter(u=>u.pending).length;$('btnInbox').innerHTML='訊息'+(n?`<b>${n}</b>`:'');if($('inboxModal').hidden)return;
+  const cats=['禮車','接送機','應徵','其他',''],cn=c=>c||'未分類';
+  const rows=IB.filter(u=>ibF==='done'?!u.pending:ibF==='pending'?u.pending:u.pending&&(u.cat||'')===ibF.slice(4));
+  [...ibSel].forEach(id=>{if(!rows.some(u=>u.uid===id))ibSel.delete(id)});
+  const chip=(k,l,c)=>`<button class="btn sm${ibF===k?' pri':''}" data-ibf="${k}">${l} ${c}</button>`;
+  $('ibChips').innerHTML=chip('pending','待回覆',n)+cats.map(c=>chip('cat:'+c,cn(c),IB.filter(u=>u.pending&&(u.cat||'')===c).length)).join('')+chip('done','已回覆（3 天內）',IB.length-n);
+  $('ibBatch').innerHTML=`<button class="btn sm" data-ibb="all">${ibSel.size&&ibSel.size===rows.length?'取消全選':'全選'}</button>`+(ibF==='done'?`<button class="btn sm pri" data-ibb="reopen"${ibSel.size?'':' disabled'}>改回待回覆</button>`:`<button class="btn sm pri" data-ibb="done"${ibSel.size?'':' disabled'}>已回覆</button>`)+`<span class="hint" style="margin:0 0 0 4px">已選 ${ibSel.size} / ${rows.length}</span>`;
+  $('ibList').innerHTML=rows.length?rows.map(u=>`<label class="todo-row"><input type="checkbox" data-ibsel="${esc(u.uid)}" style="width:auto"${ibSel.has(u.uid)?' checked':''}><div class="m"><div><b>${esc(u.name||'（讀不到名字）')}</b><span class="sub">${ibAgo(u.pending?u.since:u.doneAt)}</span></div><div class="sub" style="white-space:pre-line">${esc((u.texts||[]).slice(-3).join('\n'))}</div></div><div class="tg"><select data-ibcat="${esc(u.uid)}" style="width:auto">${cats.map(c=>`<option value="${c}"${(u.cat||'')===c?' selected':''}>${cn(c)}</option>`).join('')}</select></div>${u.pending?`<button class="btn sm pri" data-ibdone="${esc(u.uid)}">已回覆</button>`:''}</label>`).join(''):'<p class="hint">沒有訊息。</p>'}
+async function ibSet(uids,set){try{IB=await ibCall({action:'inboxSet',uids,set});ibSel.clear();renderInbox();toast(set.done?'已標記已回覆':'已更新')}catch(e){toast('更新失敗，請再試一次')}}
+document.addEventListener('change',e=>{const t=e.target;if(!t.dataset)return;if(t.dataset.ibsel){t.checked?ibSel.add(t.dataset.ibsel):ibSel.delete(t.dataset.ibsel);renderInbox()}else if(t.dataset.ibcat!==undefined&&t.dataset.ibcat){ibSet([t.dataset.ibcat],{cat:t.value||'其他'})}});
+
 /* ---------- clicks ---------- */
 let delArm=0;
 document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
@@ -1359,10 +1462,15 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.step){const m=t.dataset.step;o.cars[m]=Math.max(0,num(o.cars[m])+(+t.dataset.d));o.sample=false;syncFleet();save();renderCars();renderFleet();renderAll();return}
   if(t.dataset.setlang){const [k,v]=t.dataset.setlang.split(':');o.lang[k]=v;save();renderLangs();renderAll();return}
   if(t.dataset.who){o.memoWho=t.dataset.who;save();renderMemo();return}
+  if(t.dataset.ibf){ibF=t.dataset.ibf;ibSel.clear();renderInbox();return}
+  if(t.dataset.ibdone){e.preventDefault();ibSet([t.dataset.ibdone],{done:true});return}
+  if(t.dataset.ibb){const rows=[...document.querySelectorAll('[data-ibsel]')].map(c=>c.dataset.ibsel);if(t.dataset.ibb==='all'){if(ibSel.size===rows.length)ibSel.clear();else rows.forEach(id=>ibSel.add(id));renderInbox()}else if(ibSel.size)ibSet([...ibSel],t.dataset.ibb==='done'?{done:true}:{reopen:true});return}
+  if(t.dataset.scpick){$('scKey').value=t.dataset.scpick;scLoad();$('scText').focus();return}
+  if(t.dataset.matsent){logSent(t.dataset.matsent);toast('已記錄');return}
   if(t.dataset.tf){todoF=t.dataset.tf;todoSel.clear();renderTodo();return}
   if(t.dataset.tb){todoBatch(t.dataset.tb);return}
   if(t.dataset.topen){e.preventDefault();const x=DB.orders[t.dataset.topen];if(x){const k=(tasksOf(x)[0]||{}).k;o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();$('todoModal').hidden=true;if(k==='cfsend'||k==='cfwait'||k==='photo')$('coupleModal').hidden=false;else if(ST_TAB[k])showTab(ST_TAB[k])}return}
-  if(t.dataset.copy){copy($(t.dataset.copy).textContent,$(t.dataset.copy));if(t.dataset.copy==='outOrder'&&!o.orderedAt){o.orderedAt=Date.now();save();renderOrderSel()}if(t.dataset.copy==='outConfirm'&&!o.cfSentAt){o.cfSentAt=Date.now();save();renderOrderSel()}return}
+  if(t.dataset.copy){copy($(t.dataset.copy).textContent,$(t.dataset.copy));if(t.dataset.copy==='outQuote')snapQuote();if(t.dataset.copy==='outOrder'&&!o.orderedAt){o.orderedAt=Date.now();save();renderOrderSel()}if(t.dataset.copy==='outConfirm'&&!o.cfSentAt){o.cfSentAt=Date.now();save();renderOrderSel()}return}
   if(t.dataset.copytext){const v=t.dataset.copytext;if(navigator.clipboard)navigator.clipboard.writeText(v).then(()=>toast('已複製'),()=>toast('複製失敗，請點開啟後從網址列複製'));return}
   if(t.dataset.copyv){const el=$(t.dataset.copyv);if(navigator.clipboard)navigator.clipboard.writeText(el.value).then(()=>toast('已複製'),()=>{el.select();toast('已選取文字，請按複製')});else{el.select()}return}
   if(t.dataset.fdel){o.flow.splice(+t.dataset.fdel,1);save();renderFlow();renderAll();return}
@@ -1382,12 +1490,16 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnSync':{if(!S.driveKey){const k=(prompt('輸入同步金鑰（在電腦「價目設定」的 Drive 金鑰）')||'').trim();if(!k)break;S.driveKey=k;if(!S.driveUrl)S.driveUrl=DEF_S.driveUrl;store('nwcw_settings',S);toast('已設定同步，正在下載訂單…')}doSync();break}
    case 'btnSetupLink':{if(!S.driveUrl||!S.driveKey){toast('請先填 Drive 網址和金鑰');break}const u=`${location.origin}${location.pathname}#setup=${encodeURIComponent(JSON.stringify({u:S.driveUrl,k:S.driveKey}))}`;if(navigator.clipboard)navigator.clipboard.writeText(u).then(()=>toast('已複製手機設定連結，傳給自己後用手機打開一次即可'),()=>toast('複製失敗'));break}
    case 'btnPhotoCopy':{if(!o.c.photoUrl){toast('先貼上照片資料夾連結');break}copy($('outPhoto').textContent,$('outPhoto'));o.photoSentAt=Date.now();save();renderAll();renderOrderSel();break}
+   case 'btnInbox':$('inboxModal').hidden=false;renderInbox();loadInbox();break;
+   case 'btnInboxClose':$('inboxModal').hidden=true;break;
+   case 'btnInboxReload':loadInbox();break;
+   case 'btnScCopy':{const v=$('scText').value;if(!v.trim())break;copy(v,$('scText'));logSent($('scKey').value);break}
    case 'btnTodo':$('todoModal').hidden=false;renderTodo();break;
    case 'btnTodoClose':$('todoModal').hidden=true;break;
    case 'btnCouple':$('coupleModal').hidden=false;break;
    case 'btnCoupleClose':$('coupleModal').hidden=true;break;
    case 'btnNew':{o=newOrder();DB.orders[o.id]=o;syncFleet();save();loadOrder();toast('已建立新訂單');break}
-   case 'btnDup':{const n=clone(o);n.id=newOrder().id;n.sample=false;n.seq='';n._seqKey='';n._seq='';n.c=Object.assign(newOrder().c,{});n.fleet=n.fleet.map(f=>Object.assign(f,{plate:'',driver:'',phone:''}));Object.assign(n,{paid:false,paidAt:'',paidTs:'',contractUrl:'',memoLinks:null,driveFolder:'',inqAt:Date.now(),orderedAt:'',followAt:'',lost:false,formAt:'',cfSentAt:'',cfDoneAt:'',revAskAt:'',revLinkAt:'',revSkip:false,photoSentAt:'',carHead:'',balPaid:false,settled:false});o=n;DB.orders[o.id]=o;save();loadOrder();toast('已複製車款與價格到新訂單');break}
+   case 'btnDup':{const n=clone(o);n.id=newOrder().id;n.sample=false;n.seq='';n._seqKey='';n._seq='';n.c=Object.assign(newOrder().c,{});n.fleet=n.fleet.map(f=>Object.assign(f,{plate:'',driver:'',phone:''}));Object.assign(n,{paid:false,paidAt:'',paidTs:'',contractUrl:'',memoLinks:null,driveFolder:'',inqAt:Date.now(),orderedAt:'',followAt:'',lost:false,formAt:'',cfSentAt:'',cfDoneAt:'',revAskAt:'',revLinkAt:'',revSkip:false,photoSentAt:'',carHead:'',balPaid:false,settled:false,sent:[],quotes:[],need:clone(newOrder().need)});o=n;DB.orders[o.id]=o;save();loadOrder();toast('已複製車款與價格到新訂單');break}
    case 'btnDel':{if(Date.now()-delArm>3000){delArm=Date.now();t.textContent='再按一次確認刪除';setTimeout(()=>{t.textContent='刪除'},3000);break}
      DB.deleted=DB.deleted||{};DB.deleted[o.id]=Date.now();delete DB.orders[o.id];t.textContent='刪除';const rest=Object.values(DB.orders);o=rest[0]||newOrder();DB.orders[o.id]=o;save();loadOrder();toast('已刪除');break}
    case 'btnPrint':window.print();break;
@@ -1418,6 +1530,7 @@ showTab(startTab);
 syncReady=true;doSync();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')doSync()});
 setInterval(()=>{if(document.visibilityState==='visible')doSync()},60000);
+loadInbox();setInterval(()=>{if(document.visibilityState==='visible')loadInbox()},60000);
 })();
 </script>
 
