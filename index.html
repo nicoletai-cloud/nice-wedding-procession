@@ -700,8 +700,10 @@ async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl
     if(!Object.keys(DB.orders).length){const s=sampleOrder();DB.orders[s.id]=s}
     if(!DB.orders[o.id]){o=real[0]||Object.values(DB.orders)[0];cur=true}else o=DB.orders[o.id];
     if(j.settings&&(+j.settings._ts||0)>(+S._ts||0)){const keep={driveUrl:S.driveUrl,driveKey:S.driveKey};S=Object.assign(clone(DEF_S),j.settings,keep);store('nwcw_settings',S);rebuildModels();renderPriceSettings();cur=true}
-    {const F=j.forms||{};Object.values(DB.orders).forEach(x=>{const t=F[normNo(orderNo(x))];if(t&&!x.formAt){x.formAt=t;if(x.id===o.id)cur=true}})}
+    let upN=false;{const F=j.forms||{},N=j.formNames||{};Object.values(DB.orders).forEach(x=>{const k=normNo(orderNo(x)),t=F[k],nm=N[k];if(t&&!x.formAt){x.formAt=t;if(x.id===o.id)cur=true}
+      if(nm&&(nm.groom||nm.bride)&&!x.c.groom&&!x.c.bride){x.c.groom=nm.groom||'';x.c.bride=nm.bride||'';x.updated=Date.now();upN=true;if(x.id===o.id)cur=true}})}
     DB.cur=o.id;store('nwcw_orders',DB);if(cur)loadOrder();else renderOrderSel();
+    if(upN)syncAgain=true;
     const d=new Date();syncStat(`已同步 ${p2(d.getHours())}:${p2(d.getMinutes())}`)}
   catch(e){syncStat('同步失敗，點我重試');console.warn(e)}finally{syncBusy=false;if(syncAgain){syncAgain=false;pushSync()}}}
 
