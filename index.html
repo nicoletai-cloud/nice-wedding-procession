@@ -1035,13 +1035,13 @@ function contractHTML(x){const r=calc(x),c=x.c;const F=v=>`<span class="fill">${
    <tr><td class="lbl">路線說明</td><td colspan="5">${F(c.route||x.path)}</td></tr>
    </tbody>
    <tr><th class="sec" colspan="6">費用明細</th></tr>
-   <tr><td class="lbl">租金總計</td><td style="text-align:right">${F(money(r.rent))}</td><td class="lbl">匯款日期</td><td style="text-align:center">${F(pd)}</td>
+   <tr><td class="lbl">租金總計</td><td style="text-align:center">${F(money(r.rent))}</td><td class="lbl">匯款日期</td><td style="text-align:center">${F(pd)}</td>
      <td colspan="2" rowspan="5" style="vertical-align:top"><b>付款與用車說明</b><ul style="margin-top:4px">
       <li>用車時間自禮車出發起算；司機於出發前 20 分鐘抵達集合</li>${+x.hours>0&&x.hours<3?'<li>本方案未滿 3 小時，無超時緩衝；超過用車時間即以每 30 分鐘計收超時費用</li>':'<li>超過 15 分鐘內不加收超時費；超過 16 分鐘起計算超時費用（未滿一小時以一小時計）</li>'}
       <li>以上費用含駕駛、油資、過路費</li><li>尾款請於用車當日結清</li><li>隨車附手把彩 2 個，新娘座車另附車頭彩 1 組</li>
       <li>訂金請於收到此合約 24 小時內完成匯款；逾時未匯款，車輛將不保留</li></ul></td></tr>
-   <tr><td class="lbl">預付訂金</td><td style="text-align:right">${F(money(r.deposit))}</td><td class="lbl">匯款後五碼</td><td style="text-align:center">${F(c.last5)}</td></tr>
-   <tr><td class="lbl">尾款金額</td><td style="text-align:right">${F(money(r.rent-r.deposit))}</td><td class="lbl">匯款金額</td><td style="text-align:center">${F(c.payAmt?money(num(String(c.payAmt).replace(/[^\d.]/g,''))):'')}</td></tr>
+   <tr><td class="lbl">預付訂金</td><td style="text-align:center">${F(money(r.deposit))}</td><td class="lbl">匯款後五碼</td><td style="text-align:center">${F(c.last5)}</td></tr>
+   <tr><td class="lbl">尾款金額</td><td style="text-align:center">${F(money(r.rent-r.deposit))}</td><td class="lbl">匯款金額</td><td style="text-align:center">${F(c.payAmt?money(num(String(c.payAmt).replace(/[^\d.]/g,''))):'')}</td></tr>
    <tr><td class="lbl">超時費用</td><td colspan="3">${otRows.join('　')}</td></tr>
    <tr><td class="lbl">另付項目</td><td colspan="3">司機紅包 ${money(S.red)}/人、甘蔗固定 ${money(S.cane)}/車，於用車當日與尾款一併支付<br>是否需要甘蔗：${F(caneTxt||'否')}</td></tr>
    <tr><th class="sec" colspan="6">注意事項</th></tr>
