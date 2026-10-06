@@ -8,7 +8,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23B8323A'/%3E%3Ctext x='32' y='48' font-size='46' text-anchor='middle' fill='%23F6D9A8' font-family='PingFang TC,Noto Sans TC,sans-serif'%3E%E5%9B%8D%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@400&display=swap">
 <style>
 /* Layout: brand bar + order switcher, sticky step tabs, two-column (inputs | outputs) workbench that stacks on phones */
 :root{
@@ -135,6 +135,8 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .paper .fill{color:#5B3F1E;font-weight:500}
 .paper .sign{margin-top:22px;font-size:16px}
 .paper .sign td{padding:0 10px!important}
+.paper:has(.ct2){width:auto;min-height:0;padding:0;background:transparent;font-size:inherit}.paper .ct2 .pg{margin:0 auto 18px;box-shadow:0 4px 24px rgba(0,0,0,.08);min-height:842pt;display:flex;flex-direction:column}.paper .ct2 .ft{margin-top:auto}
+@media print{.paper .ct2 .pg{margin:0;box-shadow:none}}
 .printonly{display:none}
 @media print{
   body{background:#fff}
@@ -1012,53 +1014,76 @@ function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr)
 
 /* ---------- contract ---------- */
 const CLAUSES=['所有車輛皆附司機，著正式服裝，出車前一律洗車、清內裝。','若新人要求趕時辰，而導致車輛行駛違反中華民國交通法規須由訂車人吸收罰款。','此報價單暨合約書為現金價格，不含發票 5%營業稅。','行程異動請於用車前三天電話或 Line 告知。','車隊會在指定時間提早 10~15 分鐘左右到達準備，實際依指定時間計算。','倘若發生以下情形而致無法依約定時間用車者，本公司將向消費者酌收手續費：','預訂車輛如遇不可抗拒因素無法出車時，訂車人同意租車公司免費升級為更高階車款。','若無加價指定車色，則由本公司安排車色，並於用車日三天前提供司機聯絡資訊。','本公司非常重視服務流程與品質，若訂車人未透過本公司窗口直接與司機有任何協議，如產生糾紛或其他衍生相關問題，本公司將不負擔任何賠償責任。'];
-function contractHTML(x){const r=calc(x),c=x.c,rin=!!x.ctRedIn&&r.red>0,rent=rin?r.total:r.rent;const F=v=>`<span class="fill">${esc(v||'')}</span>`;
-  const user=[c.groom,c.bride].filter(Boolean).join('、');
+const CT2_CSS=`.ct2{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;color:#343A35;line-height:1.45;font-size:9pt}
+.ct2 .pg{box-sizing:border-box;width:595pt;padding:26pt 38pt 22pt 30pt;border-left:8pt solid #C5AA82;background:#fff}
+.ct2 .pg2{page-break-before:always}
+.ct2 table{border-collapse:collapse;width:100%;table-layout:fixed}.ct2 td{border:0;padding:0;vertical-align:top;text-align:left;font-weight:400}
+.ct2 .sf{font-family:"Noto Serif TC","Songti TC","PMingLiU",serif}
+.ct2 .gold{color:#A77D4C}.ct2 .mu{color:#75736B}.ct2 b{font-weight:700}
+.ct2 .ring{width:34pt;height:34pt;border:.65pt solid #A77D4C;border-radius:17pt;text-align:center;color:#A77D4C;font-size:10pt;line-height:12pt;padding-top:5pt;box-sizing:border-box}
+.ct2 .c2brand{font-size:22pt;line-height:1.1}.ct2 .en{font-size:6.5pt;letter-spacing:2.6pt}
+.ct2 .c2ttl{font-size:21pt;line-height:1.2}
+.ct2 .no{text-align:right;font-size:9pt;font-weight:700;color:#A77D4C;vertical-align:bottom}
+.ct2 .sec{margin:20pt 0 8pt;font-size:11pt;font-weight:700}.ct2 .sec i{font-style:normal;font-size:8pt;color:#A77D4C;margin-right:8pt}
+.ct2 .box{background:#FBF9F5}.ct2 .box td{padding:9pt 10pt}
+.ct2 .k{font-size:8pt;color:#75736B;display:block;margin-bottom:3pt}.ct2 .v{font-size:11pt;font-weight:700}
+.ct2 .c2row td{padding:5pt 0;border-bottom:.5pt solid #DDD6CA}.ct2 .c2row td.k2{width:68pt;color:#75736B;font-size:8.7pt}
+.ct2 .amt td.c{background:#FBF9F5;padding:8pt 10pt}.ct2 .amt td.gap{width:9pt}
+.ct2 .li td{padding:3pt 0;font-size:9pt}.ct2 .li td.k2{width:64pt;color:#75736B;font-size:8.5pt}
+.ct2 ul{margin:0;padding:0 0 0 11pt;font-size:9.2pt}.ct2 ul li{margin:0 0 5pt}
+.ct2 .cl td{padding:0 0 9pt;font-size:10pt}.ct2 .cl td.c2n{width:27pt;color:#A77D4C;font-weight:700;font-size:9pt}.ct2 .cl .c2sub{margin:6pt 0 0 10pt;font-size:9.5pt}
+.ct2 .ft{margin-top:26pt;border-top:.5pt solid #DDD6CA;padding-top:9pt;font-size:7pt;color:#75736B}.ct2 .ft td.p{text-align:right;color:#A77D4C;font-size:8pt}
+.ct2 .seal{width:66pt;border:1.4pt solid #9E4C43;border-radius:3pt;padding:2.5pt;box-sizing:border-box}.ct2 .seal div{border:.5pt solid #9E4C43;border-radius:1pt;padding:3pt 0}
+.ct2 .seal table td{text-align:center;color:#9E4C43;font-size:21pt;line-height:1.05}`;
+function contractHTML(x){const r=calc(x),c=x.c,rin=!!x.ctRedIn&&r.red>0,rent=rin?r.total:r.rent;const E=v=>esc(v==null?'':String(v));
+  const user=[c.groom,c.bride].filter(Boolean).join('、')||contactName(x);
   const cars=MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MBRAND[m]==='Tesla'?'Tesla ':''}${MNAME[m]} × ${num(x.cars[m])}`);
-  const otRows=MODELS.map(m=>`${MNAME[m]} ${money(S.ot[m])}/${+x.hours>0&&x.hours<3?'每 30 分鐘':'時'}`).filter((s,i)=>num(x.cars[MODELS[i]])>0);
+  const short=+x.hours>0&&x.hours<3;
+  const otRows=MODELS.map(m=>`${MNAME[m]} ${money(S.ot[m])}/${short?'每 30 分鐘':'時'}`).filter((s,i)=>num(x.cars[MODELS[i]])>0);
   const caneTxt=c.caneAns?(c.caneAns+(x.cane?`（${x.cane} 台）`:'')):(x.cane?`是（${x.cane} 台）`:'');
-  const pd=c.payDate?fmtDate(c.payDate):'';
+  const pd=c.payDate?fmtDate(c.payDate):'';const pa=c.payAmt?money(num(String(c.payAmt).replace(/[^\d.]/g,''))):'';
   const noteBits=[x.colorReq?`指定${x.colorReq}`:'',x.colorRare?'稀有車款若無法出車，將協調調度其他車款':''].filter(Boolean);
-  return `<table class="plain"><tr><td style="width:64px"><div class="ring">好<br>好</div></td><td class="logo"><b>好好禮車</b><i>Nice Wedding Car</i></td>
-   <td class="contact">${esc(S.phone)}<br>${esc(S.email)}</td></tr></table>
-  <table class="plain ttl"><tr><td style="width:30%"></td><td style="text-align:center"><h2>禮車預約單暨合約書</h2></td><td class="no" style="width:30%">訂單編號：${F(orderNo(x))}</td></tr></table>
-  <table class="ctg"><colgroup><col style="width:13%"><col style="width:24%"><col style="width:13%"><col style="width:18%"><col style="width:5%"><col style="width:27%"></colgroup>
-   <tr><th class="sec" colspan="2">基本資料</th><th class="sec" colspan="2">使用時間</th><td class="vert" rowspan="4">選<br>用<br>車<br>款</td><td rowspan="4">${cars.map(F).join('<br>')}</td></tr>
-   <tr><td class="lbl">用車人</td><td>${F(user||contactName(x))}</td><td class="lbl">開始時間</td><td style="text-align:center">${F(c.start)}</td></tr>
-   <tr><td class="lbl">電話</td><td>${F(c.phone)}</td><td class="lbl">結束時間</td><td style="text-align:center">${F(c.end)}</td></tr>
-   <tr><td class="lbl">用車日期</td><td>${F(x.date?fmtDate(x.date):'')}</td><td class="lbl">總共使用時數</td><td style="text-align:center">${+x.hours===0?F('單程接送'):F(x.hours)+' 小時'}</td></tr>
-   <tbody class="dot">
-   <tr><td class="lbl">集合地點</td><td class="v" colspan="5">${F(c.meet)}${c.meetL?F(`（${c.meetL}）`):''}</td></tr>
-   <tr><td class="lbl">迎娶地點</td><td class="v" colspan="5">${F(c.wed)}${c.wedL?F(`（${c.wedL}）`):''}</td></tr>
-   ${String(c.o1||'').trim()?`<tr><td class="lbl">其他地點 1</td><td class="v" colspan="5">${F(c.o1)}${c.o1L?F(`（${c.o1L}）`):''}</td></tr>`:''}
-   ${String(c.o2||'').trim()?`<tr><td class="lbl">其他地點 ${String(c.o1||'').trim()?2:1}</td><td class="v" colspan="5">${F(c.o2)}${c.o2L?F(`（${c.o2L}）`):''}</td></tr>`:''}
-   <tr><td class="lbl">路線說明</td><td colspan="5">${F(c.route||x.path)}</td></tr>
-   </tbody>
-   <tr><th class="sec" colspan="6">費用明細</th></tr>
-   <tr><td class="lbl">租金總計</td><td style="text-align:center">${F(money(rent))}</td><td class="lbl">匯款日期</td><td style="text-align:center">${F(pd)}</td>
-     <td colspan="2" rowspan="5" style="vertical-align:top"><b>付款與用車說明</b><ul style="margin-top:4px">
-      <li>用車時間自禮車出發起算；司機於出發前 20 分鐘抵達集合</li>${+x.hours>0&&x.hours<3?'<li>本方案未滿 3 小時，無超時緩衝；超過用車時間即以每 30 分鐘計收超時費用</li>':'<li>超過 15 分鐘內不加收超時費；超過 16 分鐘起計算超時費用（未滿一小時以一小時計）</li>'}
-      <li>以上費用含駕駛、油資、過路費</li><li>尾款請於用車當日結清</li><li>隨車附手把彩 2 個，新娘座車另附車頭彩 1 組</li>
-      <li>訂金請於收到此合約 24 小時內完成匯款；逾時未匯款，車輛將不保留</li></ul></td></tr>
-   <tr><td class="lbl">預付訂金</td><td style="text-align:center">${F(money(r.deposit))}</td><td class="lbl">匯款後五碼</td><td style="text-align:center">${F(c.last5)}</td></tr>
-   <tr><td class="lbl">尾款金額</td><td style="text-align:center">${F(money(rent-r.deposit))}</td><td class="lbl">匯款金額</td><td style="text-align:center">${F(c.payAmt?money(num(String(c.payAmt).replace(/[^\d.]/g,''))):'')}</td></tr>
-   <tr><td class="lbl">超時費用</td><td colspan="3">${otRows.join('　')}</td></tr>
-   <tr><td class="lbl">另付項目</td><td colspan="3">${rin?`司機紅包已含於租金總計；甘蔗固定 ${money(S.cane)}/車，於用車當日與尾款一併支付`:`司機紅包 ${money(S.red)}/人、甘蔗固定 ${money(S.cane)}/車，於用車當日與尾款一併支付`}<br>是否需要甘蔗：${F(caneTxt||'否')}</td></tr>
-   <tr><th class="sec" colspan="6">注意事項</th></tr>
-   <tr><td colspan="6"><ol>${CLAUSES.map((s,i)=>`<li>${esc(s)}${i===5?'<ol type="a"><li>付訂金當日起取消用車, 則不退回</li><li>因個人因素婚期延期用車時, 訂金可保留, 但不接受轉讓和改變用途</li></ol>':''}</li>`).join('')}</ol></td></tr>
-   <tr><td colspan="6" style="height:110px;vertical-align:top">備註：${noteBits.map(s=>F(s)).join('<br>')}</td></tr>
-  </table>
-  <table class="plain sign"><tr><td>禮車公司：好好禮車</td><td style="width:45%">租車人：</td></tr></table>`}
+  const no=E(orderNo(x)),hrs=+x.hours===0?'單程接送':`${E(x.hours)} 小時`,time=[c.start,c.end].filter(Boolean).map(E).join(' – ');
+  const addr=(v,l)=>E(v)+(l?E(`（${l}）`):'');
+  const rows=[['集合地點',addr(c.meet,c.meetL)],['迎娶地點',addr(c.wed,c.wedL)]];
+  if(String(c.o1||'').trim())rows.push(['其他地點 1',addr(c.o1,c.o1L)]);
+  if(String(c.o2||'').trim())rows.push([`其他地點 ${String(c.o1||'').trim()?2:1}`,addr(c.o2,c.o2L)]);
+  rows.push(['路線說明',E(c.route||x.path)]);
+  const B=['用車時間自禮車出發起算；司機於出發前 20 分鐘抵達集合',short?'本方案未滿 3 小時，無超時緩衝；超過用車時間即以每 30 分鐘計收超時費用':'超過 15 分鐘內不加收超時費；超過 16 分鐘起計算超時費用（未滿一小時以一小時計）','以上費用含駕駛、油資、過路費','尾款請於用車當日結清','隨車附手把彩 2 個，新娘座車另附車頭彩 1 組','訂金請於收到此合約 24 小時內完成匯款；逾時未匯款，車輛將不保留'];
+  const ul=a=>`<ul>${a.map(s=>`<li>${E(s)}</li>`).join('')}</ul>`;
+  const ft=p=>`<table class="ft"><tr><td>好好禮車&nbsp;&nbsp;NICE WEDDING CAR</td><td class="p">${p}</td></tr></table>`;
+  const amt=(k,v)=>`<td class="c"><span class="k">${k}</span>NT${E(money(v))}</td>`;
+  return `<style>${CT2_CSS}</style><div class="ct2"><div class="pg">
+  <table><tr><td style="width:44pt"><div class="ring sf">好<br>好</div></td><td><div class="c2brand sf gold">好好禮車</div><div class="en gold">NICE WEDDING CAR</div></td>
+   <td class="mu" style="width:150pt;font-size:8.5pt;padding-top:2pt">${E(S.phone)}<br>${E(S.email)}</td></tr></table>
+  <table style="margin-top:28pt"><tr><td class="c2ttl sf">禮車預約單暨合約書</td><td class="no" style="width:170pt">訂單編號&nbsp;&nbsp;${no}</td></tr></table>
+  <div class="sec"><i>01</i>預約資訊</div>
+  <table class="box"><tr><td><span class="k">用車人</span><span class="v">${E(user)}</span></td><td><span class="k">用車日期</span><span class="v">${E(x.date?fmtDate(x.date):'')}</span></td><td><span class="k">使用時間</span><span class="v">${time}</span></td></tr>
+   <tr><td style="padding-top:0">聯絡電話&nbsp;&nbsp;${E(c.phone)}</td><td style="padding-top:0">總共使用時數&nbsp;&nbsp;${hrs}</td><td style="padding-top:0">${noteBits.length?'備註&nbsp;&nbsp;'+noteBits.map(E).join('、'):''}</td></tr></table>
+  <table style="margin-top:10pt"><tr><td class="mu" style="width:67pt;font-size:8pt;padding-top:2pt">選用車款</td>${cars.map(s=>`<td class="v">${E(s)}</td>`).join('')||'<td></td>'}</tr></table>
+  <div class="sec"><i>02</i>行程安排</div>
+  <table class="c2row">${rows.map(([k,v])=>`<tr><td class="k2">${k}</td><td>${v}</td></tr>`).join('')}</table>
+  <div class="sec"><i>03</i>費用與付款</div>
+  <table class="amt"><tr>${amt('租金總計',rent)}<td class="gap"></td>${amt('預付訂金',r.deposit)}<td class="gap"></td>${amt('尾款金額',rent-r.deposit)}</tr></table>
+  <table class="li" style="margin-top:8pt"><tr><td>匯款日期&nbsp;&nbsp;${E(pd)}</td><td>匯款後五碼&nbsp;&nbsp;${E(c.last5)}</td><td>匯款金額&nbsp;&nbsp;${E(pa)}</td></tr></table>
+  <table class="li" style="margin-top:4pt"><tr><td class="k2">超時費用</td><td>${otRows.map(E).join('&nbsp;&nbsp;&nbsp;')}</td></tr>
+   <tr><td class="k2">另付項目</td><td>${rin?`司機紅包已含於租金總計；甘蔗固定 ${money(S.cane)}/車，於用車當日與尾款一併支付`:`司機紅包 ${money(S.red)}/人、甘蔗固定 ${money(S.cane)}/車，於用車當日與尾款一併支付`}<br>是否需要甘蔗：${E(caneTxt||'否')}</td></tr></table>
+  <div class="sec"><i>04</i>付款與用車說明</div>
+  <table><tr><td style="padding-right:14pt">${ul(B.slice(0,3))}</td><td>${ul(B.slice(3))}</td></tr></table>
+  <div class="mu" style="margin-top:22pt">合約注意事項與簽署欄續於第 2 頁</div>
+  ${ft('01 / 02')}</div>
+  <div class="pg pg2">
+  <table><tr><td class="sf gold" style="font-size:16pt">好好禮車</td><td class="no">訂單編號&nbsp;&nbsp;${no}</td></tr></table>
+  <div class="c2ttl sf" style="margin-top:34pt">合約約定與簽署</div><div class="mu" style="margin-top:4pt">禮車預約單暨合約書</div>
+  <div class="sec" style="margin-top:26pt"><i>05</i>注意事項</div>
+  <table class="cl">${CLAUSES.map((s,i)=>`<tr><td class="c2n">${String(i+1).padStart(2,'0')}</td><td>${E(s)}${i===5?'<div class="c2sub">a. 付訂金當日起取消用車，則不退回</div><div class="c2sub">b. 因個人因素婚期延期用車時，訂金可保留，但不接受轉讓和改變用途</div>':''}</td></tr>`).join('')}</table>
+  <table style="margin-top:150pt"><tr><td class="mu" style="width:272pt">禮車公司</td><td class="mu">租車人簽署</td></tr>
+   <tr><td style="padding-top:8pt"><table style="width:auto"><tr><td class="sf gold" style="font-size:16pt;width:128pt;vertical-align:middle">好好禮車</td><td style="width:66pt"><div class="seal"><div><table><tr><td class="sf">禮</td><td class="sf">好</td></tr><tr><td class="sf">車</td><td class="sf">好</td></tr></table></div></div></td></tr></table></td>
+   <td style="vertical-align:bottom"><div style="border-bottom:.5pt solid #DDD6CA;height:44pt"></div></td></tr></table>
+  ${ft('02 / 02')}</div></div>`}
 
 function contractPdfDoc(x){
-  const css=`@page{size:A4;margin:12mm}body{margin:0;font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-size:11px;color:#1F1B18;line-height:1.4}
-  table{border-collapse:collapse;width:100%}td,th{border:1px solid #1F1B18;padding:4px 6px;text-align:left;vertical-align:middle;font-weight:400}
-  th.sec{text-align:center;font-weight:700}table.plain td{border:0;padding:0}.ring{width:46px;height:46px;border:1px solid #C49A63;border-radius:23px;text-align:center;color:#C49A63;font-size:13px;line-height:1.1;padding-top:9px}
-  .logo{color:#C49A63;padding-left:10px}.logo b{font-size:24px;font-weight:500;display:block}.logo i{font-size:10px;font-style:normal;letter-spacing:1px}
-  .contact{color:#C49A63;text-align:right;font-size:13px}.ttl{margin:10px 0 8px}.ttl h2{margin:0;font-size:17px}.ttl .no{text-align:right;vertical-align:bottom}
-  .lbl{white-space:nowrap}table.ctg{table-layout:fixed}table.ctg td{overflow-wrap:anywhere}.vert{text-align:center;font-weight:700}ul{margin:0;padding-left:14px}ol{margin:3px 0;padding-left:20px}.fill{color:#5B3F1E;font-weight:700}
-  .sign{margin-top:18px;font-size:14px}.sign td{padding:0 8px}`;
-  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(orderNo(x))}</title><style>${css}</style></head><body>${contractHTML(x)}</body></html>`}
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(orderNo(x))}</title><style>@page{size:A4;margin:0}body{margin:0;background:#fff}.ct2 .pg{min-height:841pt}</style></head><body>${contractHTML(x)}</body></html>`}
 function memoBlocks(m){const t=m.t,B=[];B.push({t:'title',text:`好好禮車　　${t.orderNo}:${m.no}`},{t:'p',text:`Wedding Day ${m.wd}`},{t:'p',text:'———————'},{t:'p',text:m.dateLine},
   {t:'p',text:`${t.gather}：${m.gather}`},{t:'p',text:`${t.contact}：${m.contact}`},{t:'p',text:`${t.boss}：${m.boss}`},{t:'h',text:t.plan},{t:'p',text:m.plan},{t:'p',text:m.flags},
   {t:'table',rows:[[t.order,t.plate,t.driver,t.car,t.phone],...m.fleet.map(f=>[f.role||'',f.plate||'',f.driver||'',`${f.car}\n${f.spec}`,f.phone||''])]});
