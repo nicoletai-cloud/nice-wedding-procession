@@ -385,7 +385,7 @@ nav.tabs button{scroll-snap-align:start}
       </div>
       <div class="card">
         <h3>司機車資</h3>
-        <p class="hint" style="margin:0 0 10px">預設＝價目設定的司機酬勞（含紅包）＋超時；總行程超過 35km，每多 35km 每台 +$300。個別車輛可在「車隊與流程」再調。</p>
+        <p class="hint" style="margin:0 0 10px">預設＝價目設定的司機酬勞（含紅包）＋超時；總行程超過 35km 且跨區（不同縣市；台北新北同區、新竹縣市同區），每多 35km 每台 +$300；同區不加。個別車輛可在「車隊與流程」再調。</p>
         <div class="sum" id="payBox"></div>
       </div>
     </div>
@@ -790,8 +790,14 @@ function extraH(x){return x.hours>3?Math.ceil(x.hours-3-1e-9):0}
 function blank(v){return v===''||v==null}
 function cPrice(m,h){const t=+h===0?S.ptrip:h<1.5?S.p1:h<2?S.short:h<3?S.p2:S.price;const v=t[m];return blank(v)?{v:num(S.price[m]),miss:true}:{v:num(v),miss:false}}
 function overKm(x){return Math.max(0,num(x.tripKm)-num(S.zBase||35))}
-function zoneUnit(x){const k=overKm(x);if(!k)return 0;const raw=k/35*num(S.zRate||500);const u=num(S.zRound)||1;return Math.ceil(raw/u-1e-9)*u}
-function dzExtra(x){const k=overKm(x);return k>0?Math.ceil(k/num(S.dzKm||35)-1e-9)*num(S.dzAmt):0}
+function zoneUnitKm(x){const k=overKm(x);if(!k)return 0;const raw=k/35*num(S.zRate||500);const u=num(S.zRound)||1;return Math.ceil(raw/u-1e-9)*u}
+/* 跨區：同縣市算一區（台北新北同區、新竹縣市同區）；跨區費與里程費擇高收，不重複 */
+function zoneStops(x){const c=x.c||{};return [x.cityA||countyOf(c.meet),x.cityB||countyOf(c.wed),countyOf(c.o1),countyOf(c.o2)].filter(Boolean).map(z=>z==='新北'?'台北':z)}
+function zoneCross(x){return Math.max(0,new Set(zoneStops(x)).size-1)}
+function zoneUnit(x){return Math.max(zoneUnitKm(x),zoneCross(x)*num(S.zRate||500))}
+function luxN(x){return MODELS.reduce((a,m)=>a+(num(x.cars[m])>0&&cPrice(m,x.hours).v>=10000?num(x.cars[m]):0),0)}
+function zoneLabel(x){const zc=zoneCross(x),km=zoneUnitKm(x);return zc*num(S.zRate||500)>=km&&zc?`跨區 ${zc} 區`:`里程 ${num(x.tripKm)}km`}
+function dzExtra(x){const k=overKm(x);return k>0&&zoneCross(x)>0?Math.ceil(k/num(S.dzKm||35)-1e-9)*num(S.dzAmt):0}
 function driverBasePay(m,x){const v=driverBasePay0(m,x);return v==null?null:v+dzExtra(x)}
 function driverBasePay0(m,x){const d=S.dp[m];if(!d)return null;const h=+x.hours,g=k=>blank(d[k])?null:num(d[k]);
   if(h===0)return g('trip');
@@ -813,7 +819,7 @@ function calc(x){
   let base=0;const miss=[];MODELS.forEach(m=>{if(!num(x.cars[m]))return;const cp=cPrice(m,x.hours);if(cp.miss)miss.push(blank(S.price[m])?`${MNAME[m]} 客人價未設定`:`${MNAME[m]} ${hrsLabel(x.hours)}價未設定，暫用 3HR 價`);base+=num(x.cars[m])*cp.v});
   const listBase=base;if(b)base=num(b.price);const vb=vendorBase(x);if(vb!=null)base=vb;
   let ot=0;MODELS.forEach(m=>ot+=num(x.cars[m])*num(S.ot[m])*eh);
-  const zone=zoneUnit(x)*n,cane=num(x.cane)*num(S.cane),deco=num(x.deco);
+  const zone=zoneUnit(x)*Math.max(0,n-luxN(x)),cane=num(x.cane)*num(S.cane),deco=num(x.deco);
   const extras=x.extras.reduce((a,e)=>a+num(e.a),0),red=x.red?n*num(S.red):0,disc=num(x.discAmt);
   const colorAdd=x.colorReq&&x.colorMode==='add'?num(x.colorFee)*(num(x.colorQty)||n):0;
   const pre=base+ot+zone+cane+deco+extras+colorAdd-disc;
@@ -850,7 +856,8 @@ function feeLines(x,lang){const t=L[lang],r=calc(x),hl=hrsLabel(x.hours),out=[];
     if(lang==='zh')out.push(a?`指定${x.colorReq} ${money(a)}*${cq}=${money(a*cq)}${x.colorMode==='add'?'':`(${wv}免收)`}`:`指定${x.colorReq}`);else if(r.colorAdd)out.push(`${lang==='ja'?'指定カラー':'Custom color'} ${mult(a,cq,lang)}`)}
   if(lang==='zh')String(x.promoText||'').split('\n').forEach(l=>{const m=l.split(/[=＝]/);const n=(m[0]||'').trim(),a=num(m[1]);if(n&&a)out.push(`${n} ${money(a)}*${r.n}=${money(a*r.n)}(限時優惠免收)`)});
   if(r.eh)MODELS.forEach(m=>{const q=num(x.cars[m]);if(q)out.push(`${MNAME[m]} ${t.ot} ${r.eh}HR ${mult(num(S.ot[m])*r.eh,q,lang)}`)});
-  if(r.zone)out.push(`跨區/里程費 ${mult(zoneUnit(x),r.n,lang)}`);
+  if(r.zone)out.push(`跨區/里程費 ${mult(zoneUnit(x),r.n-luxN(x),lang)}`);
+  if(zoneUnit(x)&&luxN(x)&&lang==='zh')out.push('豪車跨區費另行報價');
   if(r.cane)out.push(`${t.cane} ${mult(num(S.cane),num(x.cane),lang)}`);
   if(r.deco)out.push(`${t.deco} ${money(r.deco,lang)}`);
   x.extras.forEach(e=>{if(num(e.a))out.push(`${e.n||'加項'} ${money(num(e.a),lang)}`)});
@@ -1026,7 +1033,7 @@ function contractHTML(x){const r=calc(x),c=x.c;const F=v=>`<span class="fill">${
       <li>定金請於收到此合約 24 小時內完成匯款</li><li>逾時未匯款，車輛將不保留，請在匯款前先再次確認</li></ul></td></tr>
    <tr><td class="lbl">預付訂金</td><td>${F(money(r.deposit))}</td><td class="lbl">匯款後五碼</td><td>${F(c.last5)}</td></tr>
    <tr><td class="lbl">尾款金額</td><td>${F(money(r.rent-r.deposit))}</td><td class="lbl">匯款金額</td><td>${F(c.payAmt)}</td></tr>
-   <tr><td class="lbl">跨區費用</td><td>超過 ${num(S.zBase)} 公里依里程計${r.zone?`<br>${F(`${money(zoneUnit(x))}/台`)}`:''}</td>
+   <tr><td class="lbl">跨區費用</td><td>跨縣市每區 ${money(S.zRate||500)}/台，或超過 ${num(S.zBase)} 公里依里程計（擇高收）${r.zone?`<br>${F(`${money(zoneUnit(x))}/台`)}`:''}${zoneUnit(x)&&luxN(x)?'<br>豪車另行報價':''}</td>
      <td colspan="2" rowspan="2">以上不含司機紅包 ${money(S.red)}/人<br>甘蔗 ${money(S.cane)}/車，於尾款支付<br>是否需要甘蔗：${F(caneTxt)}</td></tr>
    <tr><td class="lbl">超時費用</td><td>${otRows.join('<br>')}</td></tr>
    <tr><th class="sec" colspan="5">注意事項</th></tr>
@@ -1211,7 +1218,7 @@ function renderCars(){const brands=[];MODELS.forEach(m=>{const b=MBRAND[m]||'其
 document.addEventListener('toggle',e=>{const d=e.target;if(d.classList&&d.classList.contains('brand-grp')){if(d.open)openBrands.add(d.dataset.brand);else openBrands.delete(d.dataset.brand)}},true);
 function renderSum(){const r=calc(o);const rows=[];
   rows.push([r.b?`${r.b.name}方案`:'車資',money(r.base)]);if(r.b&&r.listBase>r.base)rows.push([`<span class="sub">原價 ${money(r.listBase)}，省 ${money(r.listBase-r.base)}</span>`,'']);
-  if(r.ot)rows.push([`超時 ${r.eh}HR`,money(r.ot)]);if(r.zone)rows.push([`跨區/里程費（${num(o.tripKm)}km）`,money(r.zone)]);if(r.cane)rows.push(['甘蔗固定費',money(r.cane)]);if(r.colorAdd)rows.push([`指定${o.colorReq}`,money(r.colorAdd)]);if(r.deco)rows.push(['指定車頭彩',money(r.deco)]);
+  if(r.ot)rows.push([`超時 ${r.eh}HR`,money(r.ot)]);if(r.zone)rows.push([`跨區/里程費（${zoneLabel(o)}）`,money(r.zone)]);if(zoneUnit(o)&&luxN(o))rows.push(['豪車跨區費','另行評估']);if(r.cane)rows.push(['甘蔗固定費',money(r.cane)]);if(r.colorAdd)rows.push([`指定${o.colorReq}`,money(r.colorAdd)]);if(r.deco)rows.push(['指定車頭彩',money(r.deco)]);
   if(r.vb!=null)rows.push([`<span class="sub">${esc(vendorOf(o).name)}配套價</span>`,'']);
   if(r.extras)rows.push(['加項',money(r.extras)]);if(r.disc)rows.push([o.discName||'折扣','-'+money(r.disc)]);if(r.tax)rows.push(['5% 營業稅',money(r.tax)]);if(r.red)rows.push([`司機禮 ×${r.n}`,money(r.red)]);
   $('sumBox').innerHTML=rows.map(([a,b])=>`<div><span>${a}</span><span>${b}</span></div>`).join('')+
