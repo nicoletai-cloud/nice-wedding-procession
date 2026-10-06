@@ -772,7 +772,7 @@ const L={
  ja:{within:(h,k)=>`(${h}・${k}km以内)`,ot:'延長',zone:'配車費',zoneDef:'越境配車費',cane:'サトウキビ固定費',deco:'指定ボンネット飾り',red:'ドライバーご祝儀',disc:'割引',tax:'領収書発行 5%営業税',bundle:'プラン'}};
 function mult(unit,q,lang){return q>1?`${money(unit,lang)}×${q} = ${money(unit*q,lang)}`:money(unit,lang)}
 function feeLines(x,lang){const t=L[lang],r=calc(x),hl=hrsLabel(x.hours),out=[];const short=x.hours<3;
-  const within=t.within(hl,num(x.km));
+  const within=t.within(+x.hours>3?hrsLabel(3):hl,num(x.km));
   if(r.b){const nm=MODELS.filter(m=>num(x.cars[m])>0).map(m=>MNAME[m]+(num(x.cars[m])>1?'*'+num(x.cars[m]):'')).join(' + ');
     out.push(lang==='zh'?`${comboText(x.cars)}=${money(r.b.price,lang)} ${within}`:`${nm} ${t.bundle} ${money(r.b.price,lang)} ${within}`)}
   else MODELS.forEach(m=>{const q=num(x.cars[m]);if(q)out.push(`${MNAME[m]} ${mult(cPrice(m,x.hours).v,q,lang)} ${+x.hours===0?(lang==='en'?'(one-way transfer)':lang==='ja'?'(片道送迎)':'(單程接送)'):within}`)});
