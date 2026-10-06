@@ -1023,29 +1023,28 @@ function contractHTML(x){const r=calc(x),c=x.c;const F=v=>`<span class="fill">${
   <table class="plain ttl"><tr><td style="width:30%"></td><td style="text-align:center"><h2>禮車預約單暨合約書</h2></td><td class="no" style="width:30%">訂單編號：${F(orderNo(x))}</td></tr></table>
   <table>
    <tr><th class="sec" colspan="2">基本資料</th><th class="sec" colspan="2">使用時間</th><td class="vert" rowspan="4">選<br>用<br>車<br>款</td><td rowspan="4" style="width:150px">${cars.map(F).join('<br>')}</td></tr>
-   <tr><td class="lbl">用車人</td><td>${F(user||contactName(x))}</td><td class="lbl">開始時間</td><td>${F(c.start)}</td></tr>
-   <tr><td class="lbl">電話</td><td>${F(c.phone)}</td><td class="lbl">結束時間</td><td>${F(c.end)}</td></tr>
-   <tr><td class="lbl">用車日期</td><td>${F(x.date?fmtDate(x.date):'')}</td><td class="lbl">總共使用時數</td><td style="text-align:right">${+x.hours===0?F('單程接送'):F(x.hours)+' 小時'}</td></tr>
+   <tr><td class="lbl">用車人</td><td>${F(user||contactName(x))}</td><td class="lbl">開始時間</td><td style="text-align:center">${F(c.start)}</td></tr>
+   <tr><td class="lbl">電話</td><td>${F(c.phone)}</td><td class="lbl">結束時間</td><td style="text-align:center">${F(c.end)}</td></tr>
+   <tr><td class="lbl">用車日期</td><td>${F(x.date?fmtDate(x.date):'')}</td><td class="lbl">總共使用時數</td><td style="text-align:center">${+x.hours===0?F('單程接送'):F(x.hours)+' 小時'}</td></tr>
   </table>
   <table style="border-top:0"><tbody class="dot">
    <tr><td class="lbl" style="border-top:0">集合地點</td><td class="v" style="border-top:0">${F(c.meet)}${c.meetL?F(`（${c.meetL}）`):''}</td></tr>
    <tr><td class="lbl">迎娶地點</td><td class="v">${F(c.wed)}${c.wedL?F(`（${c.wedL}）`):''}</td></tr>
-   <tr><td class="lbl">其他地點 1</td><td class="v">${F(c.o1)}${c.o1L?F(`（${c.o1L}）`):''}</td></tr>
-   <tr><td class="lbl">其他地點 2</td><td class="v">${F(c.o2)}${c.o2L?F(`（${c.o2L}）`):''}</td></tr>
+   ${String(c.o1||'').trim()?`<tr><td class="lbl">其他地點 1</td><td class="v">${F(c.o1)}${c.o1L?F(`（${c.o1L}）`):''}</td></tr>`:''}
+   ${String(c.o2||'').trim()?`<tr><td class="lbl">其他地點 ${String(c.o1||'').trim()?2:1}</td><td class="v">${F(c.o2)}${c.o2L?F(`（${c.o2L}）`):''}</td></tr>`:''}
    <tr><td class="lbl">路線說明</td><td>${F(c.route||x.path)}</td></tr>
   </tbody></table>
   <table style="border-top:0">
    <tr><th class="sec" colspan="5" style="border-top:0">費用明細</th></tr>
-   <tr><td class="lbl">租金總計</td><td>${F(money(r.rent))}</td><td class="lbl">匯款日期</td><td>${F(pd)}</td>
-     <td rowspan="5" style="width:265px;vertical-align:top"><ul>
-      <li>用車時間自禮車出發起算；司機於出發前 20 分鐘抵達集合</li>${+x.hours>0&&x.hours<3?'<li>本方案未滿 3 小時，無超時緩衝；超過用車時間即以每 30 分鐘計收超時費用</li>':'<li>超過 15 分鐘內不加收超時費</li><li>超過 16 分鐘起開始計算超時費用<br>(未滿一小時仍以一小時計)</li>'}<li>以上費用含駕駛、油資、過路費</li>
-      <li>如有額外超時費用、跨區費用則依本公司規定另計</li><li>尾款請於用車當日結清</li><li>隨車附手把彩 2 個<br>新娘座車另附車頭彩 1 組</li>
-      <li>定金請於收到此合約 24 小時內完成匯款</li><li>逾時未匯款，車輛將不保留，請在匯款前先再次確認</li></ul></td></tr>
-   <tr><td class="lbl">預付訂金</td><td>${F(money(r.deposit))}</td><td class="lbl">匯款後五碼</td><td>${F(c.last5)}</td></tr>
-   <tr><td class="lbl">尾款金額</td><td>${F(money(r.rent-r.deposit))}</td><td class="lbl">匯款金額</td><td>${F(c.payAmt)}</td></tr>
-   <tr><td class="lbl">跨區費用</td><td>跨縣市每區 ${money(S.zRate||500)}/台，或超過 ${num(S.zBase)} 公里依里程計（擇高收）${r.zone?`<br>${F(`${money(zoneUnit(x))}/台`)}`:''}${zoneUnit(x)&&luxN(x)?'<br>豪車另行報價':''}</td>
-     <td colspan="2" rowspan="2">以上不含司機紅包 ${money(S.red)}/人<br>甘蔗 ${money(S.cane)}/車，於尾款支付<br>是否需要甘蔗：${F(caneTxt)}</td></tr>
-   <tr><td class="lbl">超時費用</td><td>${otRows.join('<br>')}</td></tr>
+   <tr><td class="lbl">租金總計</td><td style="text-align:right">${F(money(r.rent))}</td><td class="lbl">匯款日期</td><td style="text-align:center">${F(pd)}</td>
+     <td rowspan="5" style="width:265px;vertical-align:top"><b>付款與用車說明</b><ul style="margin-top:4px">
+      <li>用車時間自禮車出發起算；司機於出發前 20 分鐘抵達集合</li>${+x.hours>0&&x.hours<3?'<li>本方案未滿 3 小時，無超時緩衝；超過用車時間即以每 30 分鐘計收超時費用</li>':'<li>超過 15 分鐘內不加收超時費；超過 16 分鐘起計算超時費用（未滿一小時以一小時計）</li>'}
+      <li>以上費用含駕駛、油資、過路費</li><li>尾款請於用車當日結清</li><li>隨車附手把彩 2 個，新娘座車另附車頭彩 1 組</li>
+      <li>訂金請於收到此合約 24 小時內完成匯款；逾時未匯款，車輛將不保留</li></ul></td></tr>
+   <tr><td class="lbl">預付訂金</td><td style="text-align:right">${F(money(r.deposit))}</td><td class="lbl">匯款後五碼</td><td style="text-align:center">${F(c.last5)}</td></tr>
+   <tr><td class="lbl">尾款金額</td><td style="text-align:right">${F(money(r.rent-r.deposit))}</td><td class="lbl">匯款金額</td><td style="text-align:center">${F(c.payAmt?money(num(String(c.payAmt).replace(/[^\d.]/g,''))):'')}</td></tr>
+   <tr><td class="lbl">超時費用</td><td colspan="3">${otRows.join('　')}</td></tr>
+   <tr><td class="lbl">另付項目</td><td colspan="3">司機紅包 ${money(S.red)}/人、甘蔗固定 ${money(S.cane)}/車，於用車當日與尾款一併支付<br>是否需要甘蔗：${F(caneTxt||'否')}</td></tr>
    <tr><th class="sec" colspan="5">注意事項</th></tr>
    <tr><td colspan="5"><ol>${CLAUSES.map((s,i)=>`<li>${esc(s)}${i===5?'<ol type="a"><li>付訂金當日起取消用車, 則不退回</li><li>因個人因素婚期延期用車時, 訂金可保留, 但不接受轉讓和改變用途</li></ol>':''}</li>`).join('')}</ol></td></tr>
    <tr><td colspan="5" style="height:110px;vertical-align:top">備註：${noteBits.map(s=>F(s)).join('<br>')}</td></tr>
