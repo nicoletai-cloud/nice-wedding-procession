@@ -661,10 +661,11 @@ function saveS(){if(syncReady)S._ts=Date.now();store('nwcw_settings',S);pushSync
 let syncReady=false,syncBusy=false,syncTimer=null,syncAgain=false;
 function syncStat(t){const el=$('btnSync');if(el)el.textContent=t}
 function pushSync(){if(!syncReady)return;clearTimeout(syncTimer);syncTimer=setTimeout(doSync,1500)}
-async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl;if(!S.driveUrl||!S.driveKey){syncStat('點我設定同步');return}if(syncBusy){syncAgain=true;return}syncBusy=true;syncStat('同步中…');
+async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl;if(!S.driveUrl||!S.driveKey){syncStat('點我設定同步');return}if(syncBusy&&Date.now()-syncBusy<60000){syncAgain=true;return}syncBusy=Date.now();syncStat('同步中…');
   try{const send={};Object.values(DB.orders).forEach(x=>{if(x.sample)return;let k=null;try{const r=calc(x),v=vendorOf(x);k={total:r.total,deposit:r.deposit,balance:r.balance,dsum:r.dsum,dok:r.dok,mon:r.mon,onsite:r.onsite,red:r.red,refAmt:r.refAmt,bill:r.bill,vendor:v?v.name:''}}catch(_){}send[x.id]=Object.assign({},x,{_no:orderNo(x),_calc:k})});
-    const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'sync',orders:send,deleted:DB.deleted||{},settings:S._ts?S:null})});
-    const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');
+    const ac=new AbortController(),to=setTimeout(()=>ac.abort(),40000);
+    const res=await fetch(S.driveUrl,{signal:ac.signal,method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'sync',orders:send,deleted:DB.deleted||{},settings:S._ts?S:null})});
+    const j=await res.json();clearTimeout(to);if(!j.ok)throw new Error(j.error||'失敗');
     let cur=false;DB.deleted=Object.assign({},DB.deleted||{},j.deleted||{});
     Object.keys(j.orders||{}).forEach(id=>{const r=j.orders[id],l=DB.orders[id];if(!l||(+r.updated||0)>(+l.updated||0)){DB.orders[id]=migrate(r);if(id===o.id)cur=true}});
     Object.keys(DB.deleted).forEach(id=>{const l=DB.orders[id];if(l&&(+l.updated||0)<=DB.deleted[id]){delete DB.orders[id];if(id===o.id)cur=true}});
