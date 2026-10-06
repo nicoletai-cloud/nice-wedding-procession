@@ -347,6 +347,11 @@ nav.tabs button{scroll-snap-align:start}
   <section class="tab" id="tab-find" hidden>
     <div class="grid">
       <div class="card">
+        <h3>車頭指派 <small>豪車、指定顏色的特斯拉要提前確認車頭</small></h3>
+        <label class="f wide">車頭 LINE 名字<input id="q_carHead" data-b="carHead" placeholder="多台用 / 分隔，例：MX 小明 / M3 小華"></label>
+        <p class="hint" id="headHint" style="margin:8px 0 0"></p>
+      </div>
+      <div class="card">
         <h3>找司機訊息 <small>貼司機群組；不同車款分開找</small></h3>
         <div class="row" style="gap:12px;margin-bottom:8px;flex-wrap:wrap"><div class="seg" id="findM"></div><label class="row" style="gap:6px;font-size:13px;color:var(--muted)"><input type="checkbox" id="findMain" style="width:auto"> 主禮車（備註車頭彩／門把彩／對講機）</label></div>
         <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm pri" data-copy="outFind">複製</button></div>
@@ -664,7 +669,7 @@ function newOrder(){return{
      meet:'',meetL:'男方家',meetS:'',wed:'',wedL:'女方家',wedS:'',o1:'',o1L:'',o1S:'',o2:'',o2L:'',o2S:'',meetMap:'',wedMap:'',o1Map:'',o2Map:'',route:'',rel:'',contact2:'',rel2:'',phone2:'',
      caneAns:'',decoAns:'',payDate:'',payAmt:'',last5:'',photoReq:'',photoUrl:''},
   fleet:[],path:'',flow:[],lang:{q:'zh',o:'zh',m:'zh'},memoWho:'cust',mapLinks:true,
-  inqAt:Date.now(),orderedAt:'',followAt:'',lost:false,formAt:'',paidTs:'',cfSentAt:'',cfDoneAt:'',revAskAt:'',revLinkAt:'',revSkip:false,photoSentAt:'',
+  inqAt:Date.now(),orderedAt:'',followAt:'',lost:false,formAt:'',paidTs:'',cfSentAt:'',cfDoneAt:'',revAskAt:'',revLinkAt:'',revSkip:false,photoSentAt:'',carHead:'',
   updated:Date.now()}}
 function sampleOrder(){const o=newOrder();Object.assign(o,{sample:true,cityA:'彰化',cityB:'台中',date:'2026-10-06',hours:3,
   cars:{X:1,S:0,Y:0,'3':2},path:'A - B - A'});
@@ -688,7 +693,7 @@ let syncReady=false,syncBusy=false,syncTimer=null,syncAgain=false;
 function syncStat(t){const el=$('btnSync');if(el)el.textContent=t}
 function pushSync(){if(!syncReady)return;clearTimeout(syncTimer);syncTimer=setTimeout(doSync,1500)}
 async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl;if(!S.driveUrl||!S.driveKey){syncStat('點我設定同步');return}if(syncBusy&&Date.now()-syncBusy<120000){syncAgain=true;return}syncBusy=Date.now();syncStat('同步中…');
-  try{const send={};Object.values(DB.orders).forEach(x=>{if(x.sample)return;let k=null;try{const r=calc(x),v=vendorOf(x);k={total:r.total,deposit:r.deposit,balance:r.balance,dsum:r.dsum,dok:r.dok,mon:r.mon,onsite:r.onsite,red:r.red,refAmt:r.refAmt,bill:r.bill,vendor:v?v.name:''}}catch(_){}send[x.id]=Object.assign({},x,{_no:orderNo(x),_calc:k})});
+  try{const send={};Object.values(DB.orders).forEach(x=>{if(x.sample)return;let k=null;try{const r=calc(x),v=vendorOf(x);k={total:r.total,deposit:r.deposit,balance:r.balance,dsum:r.dsum,dok:r.dok,mon:r.mon,onsite:r.onsite,red:r.red,refAmt:r.refAmt,bill:r.bill,vendor:v?v.name:'',lux:carKind(x).lux,tesla:carKind(x).tesla}}catch(_){}send[x.id]=Object.assign({},x,{_no:orderNo(x),_calc:k})});
     const ac=new AbortController(),to=setTimeout(()=>ac.abort(),90000);
     const res=await fetch(S.driveUrl,{signal:ac.signal,method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'sync',orders:send,deleted:DB.deleted||{},settings:S._ts?S:null})});
     const j=await res.json();clearTimeout(to);if(!j.ok)throw new Error(j.error||'失敗');
@@ -1256,7 +1261,7 @@ function renderRefs(){renderSettle();const mEl=$('refMonth');if(!mEl.value){cons
   $('billVendorName').textContent=mv.map(v=>v.name).join('、');$('outBill').textContent=bills.join('\n\n')||'這個月沒有月結廠商的訂單。'}
 function renderOrderSel(){const list=Object.values(DB.orders).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.updated-a.updated);
   $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(orderNo(x))}${x.c.groom||x.c.bride?'・'+esc([x.c.groom,x.c.bride].filter(Boolean).join('&')):''}${x.sample?'（範例）':'・'+STAGE_LABEL[stageOf(x)]}</option>`).join('');renderTodoBadge();if(!$('todoModal').hidden)renderTodo()}
-function renderAll(){$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=CONFIRM_TPL;renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
+function renderAll(){{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派':'',k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就指派':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月指派':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月指派':'白色特斯拉：用車前一週指派'):''].filter(Boolean);$('headHint').textContent=rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):'本單沒有提前指派車頭的需求。'}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=CONFIRM_TPL;renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
   $('outQuote').textContent=quoteText(o,'zh');$('outOrder').textContent=orderText(o,'zh');
   renderFind();$('contractPaper').innerHTML=contractHTML(o);renderMemo();
   ['meet','wed','o1','o2'].forEach(k=>{$('c_'+k+'S').placeholder=shortArea(o.c[k])||'自動'});
@@ -1274,14 +1279,22 @@ function renderPriceSettings(){const ip=(g,m,k)=>{const v=k?S[g][m][k]:S[g][m];r
 const DAY=864e5;
 const normNo=s=>String(s||'').replace(/\s/g,'').toUpperCase();
 function daysTo(x){const p=dparts(x.date);if(!p)return null;const t=new Date();t.setHours(0,0,0,0);return Math.round((new Date(p.y,p.m-1,p.d)-t)/DAY)}
-const ST={inq:'詢價追銷',unpaid:'開單未付款',noform:'付款未填表',nocontract:'填表未出合約',cfsend:'一週前核對行程',cfwait:'行前確認未回',nodrv:'未派司機',nomemo:'未給 memo',rev:'用車後追評價',revlink:'正評待傳評價連結',photo:'待傳照片'};
+const ST={inq:'詢價追銷',unpaid:'開單未付款',noform:'付款未填表',nocontract:'填表未出合約',cfsend:'一週前核對行程',cfwait:'行前確認未回',nodrv:'未派司機',nomemo:'未給 memo',head:'待指派車頭',rev:'用車後追評價',revlink:'正評待傳評價連結',photo:'待傳照片'};
 const REV_ASK='請問司機服務還滿意嗎？\n\n如果您對我們的服務感到滿意，誠摯邀請您抽空寫幾句話留下寶貴評價，或是對司機的鼓勵。這將成為我們成長的最大動力，也能讓更多人了解我們的用心服務。';
 const REV_LINK='感謝您選擇🧡好好禮車🧡，讓我們能有機會在您最重要的這天一起留下美好回憶！ 希望可以幫我們複製上面評價後，貼在下方連結處：\n\n👉 在 Google 本地商家留下評價：https://goo.gl/maps/WsAvwhXy1eQPqk5f6\n\n👉 或者至 Facebook 粉絲專頁評論：https://www.facebook.com/niceweddingcar\n\n非常感謝您的鼓勵與支持，每一句肯定都將讓我們更加努力、持續提升服務品質。\n\n再次祝福您新婚快樂，百年好合💍✨！ 期待未來如果有機場接送或包車旅遊需求， 都能再有機會為您服務！ （＊好好新人享有 95 折優惠）';
 const PHOTO_TPL='提供司機不專業側拍給兩位下載 (連結將在一週後失效)：\n';
 const STAGE_LABEL={sample:'範例',lost:'失單',done:'已完成',inq:'詢價',unpaid:'開單未付款',noform:'已收訂',nocontract:'已填表',ready:'已出合約'};
-const ST_TAB={inq:'quote',unpaid:'couple',noform:'couple',nocontract:'contract',nodrv:'find',nomemo:'memo'};
+const ST_TAB={head:'find',inq:'quote',unpaid:'couple',noform:'couple',nocontract:'contract',nodrv:'find',nomemo:'memo'};
 function stageOf(x){if(x.sample)return'sample';if(x.lost)return'lost';const d=daysTo(x);if(d!==null&&d<0)return'done';
   const ct=x.contractUrl||x.contractDone;if(!x.orderedAt&&!x.paid&&!ct)return'inq';if(!x.paid)return'unpaid';if(!x.formAt&&!ct)return'noform';if(!ct)return'nocontract';return'ready'}
+function carKind(x){const used=MODELS.filter(m=>num(x.cars[m])>0);return{lux:used.some(m=>cPrice(m,x.hours).v>=10000),tesla:used.some(m=>((S.models.find(z=>z.id===m)||{}).brand||'')==='Tesla')}}
+function bigDay(x){return!!x.date&&Object.values(DB.orders).filter(y=>!y.sample&&!y.lost&&y.date===x.date).length>=5}
+function headNeed(x,d){const k=carKind(x),R=[],ago=t=>(Date.now()-(+t||0))/DAY,big=bigDay(x);
+  if(k.lux&&x.paid)R.push({why:'豪車',late:ago(x.paidTs||x.updated)>=2});
+  if(k.tesla&&x.colorReq==='紅色')R.push({why:'紅色',late:ago(x.orderedAt||x.updated)>=2});
+  if(k.tesla&&x.colorReq==='黑色'&&d!==null&&d<=60)R.push({why:'黑色',late:d<=53});
+  if(k.tesla&&x.colorReq==='白色'&&d!==null&&d<=(big?60:7))R.push({why:big?'白色・大日子':'白色',late:d<=(big?53:5)});
+  return R}
 function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];const now=Date.now(),d=daysTo(x),T=[],ago=t=>(now-(+t||0))/DAY;
   if(x.c&&x.c.photoReq==='要'&&!x.photoSentAt)T.push({k:'photo',late:d!==null&&d<=-3});
   if(st==='done'){if(d>=-30&&x.paid){if(!x.revAskAt&&!x.revSkip)T.push({k:'rev',late:d<=-2});else if(x.revAskAt&&!x.revLinkAt&&!x.revSkip)T.push({k:'revlink',late:false})}return T}
@@ -1289,6 +1302,7 @@ function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];c
   if(st==='unpaid')T.push({k:'unpaid',late:ago(x.orderedAt||x.updated)>=2});
   if(st==='noform')T.push({k:'noform',late:ago(x.paidTs||x.updated)>=3});
   if(st==='nocontract')T.push({k:'nocontract',late:ago(x.formAt)>=2});
+  if(st!=='inq'&&!String(x.carHead||'').trim()){const R=headNeed(x,d);if(R.length)T.push({k:'head',late:R.some(r=>r.late),why:R.map(r=>r.why).join('、')})}
   if(x.paid&&d!==null){
     if(d<=7&&!x.cfSentAt&&!x.cfDoneAt)T.push({k:'cfsend',late:d<=5});
     if(x.cfSentAt&&!x.cfDoneAt)T.push({k:'cfwait',late:d<=5});
@@ -1325,7 +1339,7 @@ function renderTodo(){const all=Object.values(DB.orders).filter(x=>!x.sample).ma
   if(todoF==='done')B.push(['tsPhotoReq','標記客人要照片']);
   $('todoBatch').innerHTML=B.map(([id,l],i)=>`<button class="btn sm${i>1?' pri':''}" data-tb="${id}"${i&&!todoSel.size?' disabled':''}>${l}</button>`).join('')+`<span class="hint" style="margin:0 0 0 4px">已選 ${todoSel.size} / ${rows.length}</span>`;
   $('todoList').innerHTML=rows.length?rows.map(({x,T,st})=>{const d=daysTo(x),nm=[x.c.groom,x.c.bride].filter(Boolean).join('&');
-    const tg=(todoF==='lost'||todoF==='done')?`<span class="chip">${STAGE_LABEL[st]}</span>`:T.map(t=>`<span class="chip${t.late?' late':''}">${ST[t.k]}</span>`).join('');
+    const tg=(todoF==='lost'||todoF==='done')?`<span class="chip">${STAGE_LABEL[st]}</span>`:T.map(t=>`<span class="chip${t.late?' late':''}">${ST[t.k]}${t.why?'（'+t.why+'）':''}</span>`).join('');
     return `<label class="todo-row"><input type="checkbox" data-tsel="${x.id}" style="width:auto"${todoSel.has(x.id)?' checked':''}><div class="m"><div><b>${esc(orderNo(x))}</b>${esc(nm)}</div><div class="sub">${esc(x.c.chatName||'（沒填客人顯示名稱）')}${x.date?`｜${esc(x.date.replace(/-/g,'/'))}${d!==null&&d>=0?`（${d?d+' 天後':'今天'}）`:''}`:''}｜${STAGE_LABEL[st]}</div></div><div class="tg">${tg}</div><button class="btn sm" data-topen="${x.id}">開啟</button></label>`}).join(''):'<p class="hint">沒有符合的訂單。</p>'}
 const clip=v=>{if(navigator.clipboard)navigator.clipboard.writeText(v).then(()=>toast('已複製'),()=>toast('複製失敗'))};
 function todoBatch(id){const rows=todoRows(),sel=rows.filter(r=>todoSel.has(r.x.id)).map(r=>r.x),now=Date.now();
@@ -1373,7 +1387,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnCouple':$('coupleModal').hidden=false;break;
    case 'btnCoupleClose':$('coupleModal').hidden=true;break;
    case 'btnNew':{o=newOrder();DB.orders[o.id]=o;syncFleet();save();loadOrder();toast('已建立新訂單');break}
-   case 'btnDup':{const n=clone(o);n.id=newOrder().id;n.sample=false;n.seq='';n._seqKey='';n._seq='';n.c=Object.assign(newOrder().c,{});n.fleet=n.fleet.map(f=>Object.assign(f,{plate:'',driver:'',phone:''}));Object.assign(n,{paid:false,paidAt:'',paidTs:'',contractUrl:'',memoLinks:null,driveFolder:'',inqAt:Date.now(),orderedAt:'',followAt:'',lost:false,formAt:'',cfSentAt:'',cfDoneAt:'',revAskAt:'',revLinkAt:'',revSkip:false,photoSentAt:'',balPaid:false,settled:false});o=n;DB.orders[o.id]=o;save();loadOrder();toast('已複製車款與價格到新訂單');break}
+   case 'btnDup':{const n=clone(o);n.id=newOrder().id;n.sample=false;n.seq='';n._seqKey='';n._seq='';n.c=Object.assign(newOrder().c,{});n.fleet=n.fleet.map(f=>Object.assign(f,{plate:'',driver:'',phone:''}));Object.assign(n,{paid:false,paidAt:'',paidTs:'',contractUrl:'',memoLinks:null,driveFolder:'',inqAt:Date.now(),orderedAt:'',followAt:'',lost:false,formAt:'',cfSentAt:'',cfDoneAt:'',revAskAt:'',revLinkAt:'',revSkip:false,photoSentAt:'',carHead:'',balPaid:false,settled:false});o=n;DB.orders[o.id]=o;save();loadOrder();toast('已複製車款與價格到新訂單');break}
    case 'btnDel':{if(Date.now()-delArm>3000){delArm=Date.now();t.textContent='再按一次確認刪除';setTimeout(()=>{t.textContent='刪除'},3000);break}
      DB.deleted=DB.deleted||{};DB.deleted[o.id]=Date.now();delete DB.orders[o.id];t.textContent='刪除';const rest=Object.values(DB.orders);o=rest[0]||newOrder();DB.orders[o.id]=o;save();loadOrder();toast('已刪除');break}
    case 'btnPrint':window.print();break;
