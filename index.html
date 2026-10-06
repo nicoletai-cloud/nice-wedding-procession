@@ -687,9 +687,9 @@ function saveS(){if(syncReady)S._ts=Date.now();store('nwcw_settings',S);pushSync
 let syncReady=false,syncBusy=false,syncTimer=null,syncAgain=false;
 function syncStat(t){const el=$('btnSync');if(el)el.textContent=t}
 function pushSync(){if(!syncReady)return;clearTimeout(syncTimer);syncTimer=setTimeout(doSync,1500)}
-async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl;if(!S.driveUrl||!S.driveKey){syncStat('點我設定同步');return}if(syncBusy&&Date.now()-syncBusy<60000){syncAgain=true;return}syncBusy=Date.now();syncStat('同步中…');
+async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl;if(!S.driveUrl||!S.driveKey){syncStat('點我設定同步');return}if(syncBusy&&Date.now()-syncBusy<120000){syncAgain=true;return}syncBusy=Date.now();syncStat('同步中…');
   try{const send={};Object.values(DB.orders).forEach(x=>{if(x.sample)return;let k=null;try{const r=calc(x),v=vendorOf(x);k={total:r.total,deposit:r.deposit,balance:r.balance,dsum:r.dsum,dok:r.dok,mon:r.mon,onsite:r.onsite,red:r.red,refAmt:r.refAmt,bill:r.bill,vendor:v?v.name:''}}catch(_){}send[x.id]=Object.assign({},x,{_no:orderNo(x),_calc:k})});
-    const ac=new AbortController(),to=setTimeout(()=>ac.abort(),40000);
+    const ac=new AbortController(),to=setTimeout(()=>ac.abort(),90000);
     const res=await fetch(S.driveUrl,{signal:ac.signal,method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'sync',orders:send,deleted:DB.deleted||{},settings:S._ts?S:null})});
     const j=await res.json();clearTimeout(to);if(!j.ok)throw new Error(j.error||'失敗');
     let cur=false;DB.deleted=Object.assign({},DB.deleted||{},j.deleted||{});
@@ -1279,7 +1279,7 @@ const PHOTO_TPL='提供司機不專業側拍給兩位下載 (連結將在一週�
 const STAGE_LABEL={sample:'範例',lost:'失單',done:'已完成',inq:'詢價',unpaid:'開單未付款',noform:'已收訂',nocontract:'已填表',ready:'已出合約'};
 const ST_TAB={inq:'quote',unpaid:'couple',noform:'couple',nocontract:'contract',nodrv:'find',nomemo:'memo'};
 function stageOf(x){if(x.sample)return'sample';if(x.lost)return'lost';const d=daysTo(x);if(d!==null&&d<0)return'done';
-  if(!x.orderedAt&&!x.paid&&!x.contractUrl)return'inq';if(!x.paid)return'unpaid';if(!x.formAt&&!x.contractUrl)return'noform';if(!x.contractUrl)return'nocontract';return'ready'}
+  const ct=x.contractUrl||x.contractDone;if(!x.orderedAt&&!x.paid&&!ct)return'inq';if(!x.paid)return'unpaid';if(!x.formAt&&!ct)return'noform';if(!ct)return'nocontract';return'ready'}
 function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];const now=Date.now(),d=daysTo(x),T=[],ago=t=>(now-(+t||0))/DAY;
   if(x.c&&x.c.photoReq==='要'&&!x.photoSentAt)T.push({k:'photo',late:d!==null&&d<=-3});
   if(st==='done'){if(d>=-30&&x.paid){if(!x.revAskAt&&!x.revSkip)T.push({k:'rev',late:d<=-2});else if(x.revAskAt&&!x.revLinkAt&&!x.revSkip)T.push({k:'revlink',late:false})}return T}
@@ -1309,7 +1309,9 @@ function renderTodo(){const all=Object.values(DB.orders).filter(x=>!x.sample).ma
   const rows=todoRows();[...todoSel].forEach(id=>{if(!rows.some(r=>r.x.id===id))todoSel.delete(id)});
   const B=[['tsAll',todoSel.size&&todoSel.size===rows.length?'取消全選':'全選'],['tsNames','複製客人名稱']];
   if(todoF==='inq')B.push(['tsFollow','標記已追銷'],['tsOrdered','標記已開單'],['tsLost','標記失單']);
-  if(todoF==='unpaid')B.push(['tsLost','標記失單']);
+  if(todoF==='unpaid')B.push(['tsPaid','標記已收訂金'],['tsLost','標記失單']);
+  if(todoF==='noform')B.push(['tsForm','標記已填表']);
+  if(todoF==='nocontract')B.push(['tsContract','標記已出合約']);
   if(todoF==='cfsend')B.push(['tsCfCopy','複製行前確認訊息＋標記已傳'],['tsCfSent','標記已傳']);
   if(todoF==='cfwait')B.push(['tsCfDone','標記已回填']);
   if(todoF==='lost')B.push(['tsRevive','恢復']);
@@ -1327,7 +1329,7 @@ function todoBatch(id){const rows=todoRows(),sel=rows.filter(r=>todoSel.has(r.x.
   if(!sel.length)return;
   if(id==='tsNames'){clip(sel.map(x=>x.c.chatName||orderNo(x)).join('\n'));return}
   if(id==='tsCfCopy')clip(CONFIRM_TPL);if(id==='tsRevCopy')clip(REV_ASK);if(id==='tsRevLinkCopy')clip(REV_LINK);
-  const f={tsFollow:x=>x.followAt=now,tsOrdered:x=>x.orderedAt=now,tsLost:x=>x.lost=true,tsRevive:x=>x.lost=false,tsCfCopy:x=>x.cfSentAt=now,tsCfSent:x=>x.cfSentAt=now,tsCfDone:x=>x.cfDoneAt=now,tsRevCopy:x=>x.revAskAt=now,tsRevAsked:x=>x.revAskAt=now,tsRevLinkCopy:x=>x.revLinkAt=now,tsRevSkip:x=>x.revSkip=true,tsPhotoSent:x=>x.photoSentAt=now,tsPhotoReq:x=>x.c.photoReq='要'}[id];if(!f)return;
+  const f={tsFollow:x=>x.followAt=now,tsOrdered:x=>x.orderedAt=now,tsLost:x=>x.lost=true,tsRevive:x=>x.lost=false,tsCfCopy:x=>x.cfSentAt=now,tsCfSent:x=>x.cfSentAt=now,tsCfDone:x=>x.cfDoneAt=now,tsRevCopy:x=>x.revAskAt=now,tsRevAsked:x=>x.revAskAt=now,tsRevLinkCopy:x=>x.revLinkAt=now,tsRevSkip:x=>x.revSkip=true,tsPhotoSent:x=>x.photoSentAt=now,tsPhotoReq:x=>x.c.photoReq='要',tsPaid:x=>{const d=new Date();x.paid=true;x.paidTs=now;x.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`},tsForm:x=>x.formAt=now,tsContract:x=>x.contractDone=true}[id];if(!f)return;
   sel.forEach(x=>{f(x);x.updated=now;DB.orders[x.id]=x});todoSel.clear();store('nwcw_orders',DB);pushSync();renderOrderSel();renderAll();if(!/Copy$/.test(id))toast(`已更新 ${sel.length} 張訂單`)}
 document.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.tsel){t.checked?todoSel.add(t.dataset.tsel):todoSel.delete(t.dataset.tsel);renderTodo()}else if(t.id==='todoLate')renderTodo()});
 document.addEventListener('input',e=>{if(e.target.id==='todoQ')renderTodo()});
