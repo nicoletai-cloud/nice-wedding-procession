@@ -662,7 +662,7 @@ let syncReady=false,syncBusy=false,syncTimer=null,syncAgain=false;
 function syncStat(t){const el=$('btnSync');if(el)el.textContent=t}
 function pushSync(){if(!syncReady)return;clearTimeout(syncTimer);syncTimer=setTimeout(doSync,1500)}
 async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl;if(!S.driveUrl||!S.driveKey){syncStat('點我設定同步');return}if(syncBusy){syncAgain=true;return}syncBusy=true;syncStat('同步中…');
-  try{const send={};Object.values(DB.orders).forEach(x=>{if(!x.sample)send[x.id]=x});
+  try{const send={};Object.values(DB.orders).forEach(x=>{if(x.sample)return;let k=null;try{const r=calc(x),v=vendorOf(x);k={total:r.total,deposit:r.deposit,balance:r.balance,dsum:r.dsum,dok:r.dok,mon:r.mon,onsite:r.onsite,red:r.red,refAmt:r.refAmt,bill:r.bill,vendor:v?v.name:''}}catch(_){}send[x.id]=Object.assign({},x,{_no:orderNo(x),_calc:k})});
     const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'sync',orders:send,deleted:DB.deleted||{},settings:S._ts?S:null})});
     const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');
     let cur=false;DB.deleted=Object.assign({},DB.deleted||{},j.deleted||{});
