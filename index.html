@@ -710,7 +710,7 @@ function shortArea(a){if(!a)return '';let s=a.replace(/臺/g,'台').replace(/^\s
   return m2?m2[1]:s.slice(0,8)}
 function areaOf(k){return o.c[k+'S']||shortArea(o.c[k])}
 function mapUrl(a){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(a)}
-function formLink(x){const base=S.formBase.split('?')[0];return `${base}?usp=pp_url&${S.formEntry}=${encodeURIComponent(orderNo(x))}`}
+function formLink(x){const fb=/docs\.google\.com\/forms|forms\.gle/.test(S.formBase||'')?S.formBase:DEF_S.formBase;const base=fb.split('?')[0];return `${base}?usp=pp_url&${S.formEntry}=${encodeURIComponent(orderNo(x))}`}
 function carCount(x){return MODELS.reduce((a,m)=>a+num(x.cars[m]),0)}
 function contactName(x){const c=x.c;return c.role==='新郎'?c.groom:c.role==='新娘'?c.bride:c.contact}
 
