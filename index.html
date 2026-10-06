@@ -353,10 +353,7 @@ nav.tabs button{scroll-snap-align:start}
         <h3>收到訂金回覆</h3>
         <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm pri" data-copy="outPaidAck">複製</button></div>
         <pre class="out" id="outPaidAck">已確認收到訂金，後續提供合約給您</pre>
-        <h3 style="margin-top:16px">提供合約 <small>附注意事項；有指定車色會自動拿掉第 7 點</small></h3>
-        <label class="f wide" style="margin-bottom:8px">合約連結（按「存到 Google Drive」後自動帶入，也可以自己貼）<input id="c_contractUrl" data-b="contractUrl" placeholder="https://drive.google.com/..."></label>
-        <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm pri" data-copy="outPaid">複製</button></div>
-        <pre class="out" id="outPaid"></pre>
+        <p class="hint" style="margin-top:12px">傳合約給客人：到「3 合約」分頁預覽，確認內容後就會出現可複製的訊息。</p>
       </div>
     </div>
   </section>
@@ -368,6 +365,16 @@ nav.tabs button{scroll-snap-align:start}
       <div class="row"><span class="hint" id="driveLink" style="margin:0"></span><button class="btn" id="btnDrive" hidden>存到 Google Drive</button><button class="btn pri" id="btnPrint" hidden>列印／存成 PDF</button></div>
     </div>
     <div class="paperwrap"><div class="paper" id="contractPaper"></div></div>
+    <div class="card" id="ctSendCard" style="max-width:900px;margin:16px auto 0">
+      <h3>傳合約給客人 <small>附注意事項；有指定車色會自動拿掉第 7 點</small></h3>
+      <div id="ctStep1"><p class="hint">請先檢查上面的合約：日期、時間、車款、金額、地址都正確後，再按下一步。</p><button class="btn pri" id="btnCtOk">合約內容確認無誤，下一步</button></div>
+      <div id="ctStep2" hidden>
+        <label class="f wide" style="margin-bottom:8px">合約連結（按上方「存到 Google Drive」後自動帶入，也可以自己貼）<input id="c_contractUrl" data-b="contractUrl" placeholder="https://drive.google.com/..."></label>
+        <p class="hint" id="ctLinkHint" style="margin:0 0 8px"></p>
+        <div class="row" style="justify-content:flex-end;gap:8px;margin-bottom:8px"><button class="btn sm" id="btnCtBack">回上一步</button><button class="btn sm pri" id="btnCtCopy">複製訊息（標記已傳合約）</button></div>
+        <pre class="out" id="outPaid"></pre>
+      </div>
+    </div>
   </section>
 
   <!-- 4 找司機 -->
@@ -1255,7 +1262,11 @@ function renderMemo(){const who=o.memoWho||'cust';renderMemoLinks();if($('routeI
 function payState(x){const r=calc(x),c=x.c;const amt=num(String(c.payAmt||'').replace(/[^\d.]/g,''));return{r,amt,match:amt>0&&amt===r.deposit}}
 function paidText(x){const tips=['禮車會提早大約20分鐘抵達集合地點，並佈置完車彩，如不先綁彩可提前告知。','如需要綁甘蔗豬肉，請提前告知準備專業工具架設。(甘蔗豬肉是新人自備，司機準備專用工具架設)','禮車行駛路線，請新人安排熟悉路線親友乘坐前導車引路，如無安排將依導航or司機熟悉路線行駛。','服務當天如有不能拍攝清晰人像照片之情況，請務必提前告知『客服』。','用車前三日會提供司機資訊，一天前司機會再次聯絡確認細節。','尾款、甘蔗固定費及司機禮請於用車日交給司機，可交由親友轉交。'];
   if(!x.colorReq)tips.push('車色無法指定，一般為黑色或白色由派車人員安排。');
-  return ['已經收到訂金，合約提供您留存：',(x.contractUrl||'').trim()||'（請貼上合約連結）','',...tips.map((t,i)=>`${i+1}.${t}`)].join('\n')}
+  const hi=typeof rmHi==='function'?rmHi(x):'您好';
+  return [(hi==='您好'?'':hi+'🤍 ')+'已經收到訂金，合約提供您留存：',(x.contractUrl||'').trim()||'（請貼上合約連結）','',...tips.map((t,i)=>`${i+1}.${t}`)].join('\n')}
+const ctOk={};
+function renderCtSend(){if(!$('ctStep1'))return;const ok=!!(ctOk[o.id]||o.ctSentAt),url=(o.contractUrl||'').trim();$('ctStep1').hidden=ok;$('ctStep2').hidden=!ok;
+  $('ctLinkHint').textContent=!url?'還沒有合約連結：先按上方「存到 Google Drive」產生 PDF，或把連結貼進來。':o.ctSentAt?'已於 '+new Date(o.ctSentAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+' 複製傳送過。':'';$('btnCtCopy').disabled=!url}
 function paidTextOld(x){const r=calc(x),c=x.c,ps=payState(x);const p=dparts(x.date);
   return [`您好，已收到您的訂金匯款，謝謝！`,`訂單編號：${orderNo(x)}`,`匯款日期：${c.payDate?fmtDate(c.payDate):'—'}｜金額：${ps.amt?money(ps.amt):money(r.deposit)}｜後五碼：${c.last5||'—'}`,'',
    `用車日期：${x.date?fmtDate(x.date)+'（'+WD.zh[p.w]+'）':'未定'} ${c.start||''}${c.end?'-'+c.end:''}`,`預約車款：${carsText(x,'zh')}`,`尾款金額：${money(r.balance)}${r.red?'（含司機禮）':''}`,'',
@@ -1273,7 +1284,7 @@ function renderPay(){const ps=payState(o),r=ps.r,c=o.c;
   $('payCheck').innerHTML=`<div><span>應付訂金</span><span>${money(r.deposit)}</span></div><div><span>新人填的匯款金額</span><span>${ps.amt?money(ps.amt):'未填'}</span></div>
    <div><span>匯款日期／後五碼</span><span>${c.payDate?fmtDate(c.payDate):'—'}／${esc(c.last5||'—')}</span></div>`;
   $('payChip').innerHTML=o.paid?`<span class="chip ok">已確認收款 ${esc(o.paidAt||'')}</span>`:ps.amt?(ps.match?'<span class="chip ok">金額相符，待確認入帳</span>':'<span class="chip" style="color:var(--warn)">金額不符，請核對</span>'):'<span class="chip">尚未填匯款資料</span>';
-  $('btnPaid').hidden=!!o.paid;$('btnUnpaid').hidden=!o.paid;$('outPaid').textContent=paidText(o);
+  $('btnPaid').hidden=!!o.paid;$('btnUnpaid').hidden=!o.paid;$('outPaid').textContent=paidText(o);renderCtSend();
   $('ttTitle').value=ttTitle(o);$('ttWhen').textContent=`日期 ${o.date?fmtDate(o.date):'未定'}　${o.c.start||'--:--'} → ${o.c.end||'--:--'}`;$('ttMemo').textContent=ttMemo(o);$('lgName').value=lgName(o);$('lgMsg').textContent=lgMsg(o)}
 function refRowText(x){const r=calc(x),v=vendorOf(x);const p=dparts(x.date);
   return [p?`${p.y}/${p.m}/${p.d}`:'',orderNo(x),planName(x).replace(/^Tesla /,'').replace(/ \S*禮車方案$/,''),v?v.name:'',x.src.ref||'',money(r.planFee),v?refRate(x)+'%':'',v&&r.refAmt?money(r.refAmt):'','',isMonthly(x)?'月結':''].join('\t')}
@@ -1525,6 +1536,9 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
     S.models.splice(+t.dataset.mdel,1);S.removed=(S.removed||[]).concat(md.id);rebuildModels();saveS();renderPriceSettings();renderCars();renderAll();return}
   if(t.dataset.bdel){S.bundles.splice(+t.dataset.bdel,1);saveS();renderPriceSettings();renderAll();return}
   switch(t.id){
+   case 'btnCtOk':ctOk[o.id]=1;renderCtSend();break;
+   case 'btnCtBack':ctOk[o.id]=0;if(o.ctSentAt){o.ctSentAt='';save()}renderCtSend();break;
+   case 'btnCtCopy':copy($('outPaid').textContent,$('outPaid'));o.ctSentAt=Date.now();o.contractDone=true;save();renderCtSend();renderOrderSel();break;
    case 'btnFlowAdd':o.flow.push({t:'',who:'',seg:''});save();renderFlow();renderAll();break;
    case 'btnFlowAuto':autoFlow(o);save();fillInputs();renderFlow();renderAll();toast('已依地點重排流程');break;
    case 'btnModelAdd':{const id='m'+Date.now().toString(36);S.models.push({id,name:'新車款',brand:'其他',abbr:''});MK.forEach(k=>S[k][id]='');S.dp[id]={h1:'',h15:'',h2:'',h3:'',ot05:'',ot15:'',ot1:'',trip:'',tripOt:''};rebuildModels();saveS();renderPriceSettings();renderCars();break}
