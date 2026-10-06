@@ -198,6 +198,7 @@ nav.tabs button{scroll-snap-align:start}
       <button class="btn sm" id="btnSync" title="手機／電腦同步">同步</button>
       <button class="btn" id="btnInbox">訊息</button>
       <button class="btn" id="btnTodo">待辦</button>
+      <button class="btn" id="btnRemind">提醒文字</button>
       <button class="btn" id="btnCouple">新人資料</button>
       <button class="btn" id="btnNew">＋ 新訂單</button>
       <button class="btn" id="btnDup">複製此單</button>
@@ -1435,7 +1436,21 @@ function renderTodo(){const all=Object.values(DB.orders).filter(x=>!x.sample).ma
   $('todoBatch').innerHTML=B.map(([id,l],i)=>`<button class="btn sm${i>1?' pri':''}" data-tb="${id}"${i&&!todoSel.size?' disabled':''}>${l}</button>`).join('')+`<span class="hint" style="margin:0 0 0 4px">已選 ${todoSel.size} / ${rows.length}</span>`;
   $('todoList').innerHTML=rows.length?rows.map(({x,T,st})=>{const d=daysTo(x),nm=[x.c.groom,x.c.bride].filter(Boolean).join('&');
     const tg=(todoF==='lost'||todoF==='done')?`<span class="chip">${STAGE_LABEL[st]}</span>`:T.map(t=>`<span class="chip${t.late?' late':''}">${ST[t.k]}${t.why?'（'+t.why+'）':''}</span>`).join('');
-    return `<label class="todo-row"><input type="checkbox" data-tsel="${x.id}" style="width:auto"${todoSel.has(x.id)?' checked':''}><div class="m"><div><b>${esc(orderNo(x))}</b>${esc(nm)}</div><div class="sub">${esc(x.c.chatName||'（沒填客人顯示名稱）')}${x.date?`｜${esc(x.date.replace(/-/g,'/'))}${d!==null&&d>=0?`（${d?d+' 天後':'今天'}）`:''}`:''}｜${STAGE_LABEL[st]}</div></div><div class="tg">${tg}</div><button class="btn sm" data-topen="${x.id}">開啟</button></label>`}).join(''):'<p class="hint">沒有符合的訂單。</p>'}
+    return `<label class="todo-row"><input type="checkbox" data-tsel="${x.id}" style="width:auto"${todoSel.has(x.id)?' checked':''}><div class="m"><div><b>${esc(orderNo(x))}</b>${esc(nm)}</div><div class="sub">${esc(x.c.chatName||'（沒填客人顯示名稱）')}${x.date?`｜${esc(x.date.replace(/-/g,'/'))}${d!==null&&d>=0?`（${d?d+' 天後':'今天'}）`:''}`:''}｜${STAGE_LABEL[st]}</div></div><div class="tg">${tg}</div><button class="btn sm" data-topen="${x.id}">開啟</button>${rmTexts(x).length?`<button class="btn sm pri" data-trm="${x.id}">提醒文字</button>`:''}</label>`}).join(''):'<p class="hint">沒有符合的訂單。</p>'}
+const RM_LABEL={inq:'提醒決定方案',unpaid:'提醒匯款',noform:'提醒填訂車表單',cfsend:'行前確認',cfwait:'提醒回覆行前確認',rev:'詢問評價',revlink:'傳評價連結'};
+function rmHi(x){const c=x.c||{},ct=String(c.contact||'').trim();if(ct&&!/^(新郎|新娘|其他)$/.test(ct)&&((x.src&&x.src.vendor)||/婚顧|主持/.test(ct))){const n=ct.split(/[\s\/]/).pop().replace(/^(婚顧|主持人)/,'');if(n)return n+'您好'}return '您好'}
+function rmTexts(x){const T=tasksOf(x),out=[];if(!T.length)return out;const r=calc(x),no=orderNo(x),hi=rmHi(x),dt=x.date?fmtDate(x.date):'（日期未定）',cars=carsText(x),add=(k,t)=>{if(!out.some(z=>z.k===k))out.push({k,l:RM_LABEL[k],t})};
+  T.forEach(t=>{switch(t.k){
+    case 'inq':add('inq',(+x.followN||0)>=1?`${hi}，先讓您安心安排婚禮，這邊就不再頻繁打擾🤍\n之後需要調整方案，或準備確認用車時，直接回覆這段對話就可以，我們再依當時檔期協助確認～`:`${hi}🤍 想跟您確認一下，前面提供的方案（${cars}）是否符合您預想的方向呢？☺️\n如果想調整車款、台數或整體預算，告訴我想調整的部分，我再幫您整理比較～`);break;
+    case 'unpaid':add('unpaid',`${hi}🤍 提醒您，訂單 ${no}（${dt}｜${cars}）的訂金 ${money(r.deposit)} 目前還沒有收到喔～\n完成匯款後才會為您保留車輛：\n${S.bank}\n\n匯款後麻煩填寫訂車表單：\n${formLink(x)}\n\n如果已經匯款了，再麻煩告訴我們匯款帳號後五碼，我們馬上幫您確認☺️`);break;
+    case 'noform':add('noform',`${hi}，已確認收到 ${no} 訂金 ${money(num(String(x.c.payAmt||'').replace(/[^\d.]/g,''))||r.deposit)}，謝謝🤍\n麻煩再幫我們填寫訂車表單（新人資料、行程與時間），填完我們就會提供合約：\n${formLink(x)}`);break;
+    case 'cfsend':add('cfsend',CONFIRM_TPL);break;
+    case 'cfwait':add('cfwait',`${hi}🤍 婚禮快到了，提醒您幫我們回覆前面的行前確認資料（聯絡人、地址、出發時間等），方便司機提前準備，謝謝您！`);break;
+    case 'rev':add('rev',REV_ASK);break;
+    case 'revlink':add('revlink',REV_LINK);break}});
+  return out}
+function showRemind(x){if(!x)return;const L=rmTexts(x);let m=$('rmModal');if(!m){m=document.createElement('div');m.id='rmModal';m.style.cssText='position:fixed;inset:0;z-index:70;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px';document.body.appendChild(m)}
+  m.hidden=false;m.innerHTML=`<div style="max-width:640px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px"><div class="row" style="justify-content:space-between;margin-bottom:12px;gap:8px"><h3 style="margin:0">提醒文字 <small>${esc(orderNo(x))} ${esc(x.c.chatName||[x.c.groom,x.c.bride].filter(Boolean).join('&'))}</small></h3><button class="btn" data-rmclose="1">關閉</button></div>`+(L.length?L.map((z,i)=>`<div class="card" style="margin-bottom:10px"><div class="row" style="justify-content:space-between;margin-bottom:6px"><b>${z.l}</b><button class="btn sm pri" data-rmcopy="${i}">複製</button></div><textarea data-rmt="${i}" rows="8" style="width:100%">${esc(z.t)}</textarea></div>`).join('')+'<p class="hint">可以先在框裡修改再複製；複製後到 LINE 貼上傳送。</p>':'<p class="hint">這張單目前沒有需要傳給客人的提醒（剩下的是內部作業，例如出合約、派司機）。</p>')+'</div>'}
 const clip=v=>{if(navigator.clipboard)navigator.clipboard.writeText(v).then(()=>toast('已複製'),()=>toast('複製失敗'))};
 function todoBatch(id){const rows=todoRows(),sel=rows.filter(r=>todoSel.has(r.x.id)).map(r=>r.x),now=Date.now();
   if(id==='tsAll'){if(todoSel.size===rows.length)todoSel.clear();else rows.forEach(r=>todoSel.add(r.x.id));renderTodo();return}
@@ -1487,6 +1502,9 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.step){const m=t.dataset.step;o.cars[m]=Math.max(0,num(o.cars[m])+(+t.dataset.d));o.sample=false;syncFleet();save();renderCars();renderFleet();renderAll();return}
   if(t.dataset.setlang){const [k,v]=t.dataset.setlang.split(':');o.lang[k]=v;save();renderLangs();renderAll();return}
   if(t.dataset.who){o.memoWho=t.dataset.who;save();renderMemo();return}
+  if(t.dataset.trm){e.preventDefault();showRemind(DB.orders[t.dataset.trm]);return}
+  if(t.dataset.rmcopy!==undefined){const a=document.querySelector(`[data-rmt="${t.dataset.rmcopy}"]`);if(a)clip(a.value);return}
+  if(t.dataset.rmclose){$('rmModal').hidden=true;return}
   if(t.dataset.ibf){ibF=t.dataset.ibf;ibSel.clear();renderInbox();return}
   if(t.dataset.ibq){e.preventDefault();ibQuote(t.dataset.ibq);return}
   if(t.dataset.ibdone){e.preventDefault();ibSet([t.dataset.ibdone],{done:true});return}
@@ -1521,6 +1539,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnInboxReload':loadInbox();break;
    case 'btnScCopy':{const v=$('scText').value;if(!v.trim())break;copy(v,$('scText'));logSent($('scKey').value);break}
    case 'btnTodo':$('todoModal').hidden=false;renderTodo();break;
+   case 'btnRemind':showRemind(o);break;
    case 'btnTodoClose':$('todoModal').hidden=true;break;
    case 'btnCouple':$('coupleModal').hidden=false;break;
    case 'btnCoupleClose':$('coupleModal').hidden=true;break;
