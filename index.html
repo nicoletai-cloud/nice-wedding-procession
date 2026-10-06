@@ -1018,7 +1018,7 @@ function contractHTML(x){const r=calc(x),c=x.c,rin=!!x.ctRedIn&&r.red>0,rent=rin
   const otRows=MODELS.map(m=>`${MNAME[m]} ${money(S.ot[m])}/${+x.hours>0&&x.hours<3?'每 30 分鐘':'時'}`).filter((s,i)=>num(x.cars[MODELS[i]])>0);
   const caneTxt=c.caneAns?(c.caneAns+(x.cane?`（${x.cane} 台）`:'')):(x.cane?`是（${x.cane} 台）`:'');
   const pd=c.payDate?fmtDate(c.payDate):'';
-  const noteBits=[x.note,x.colorReq?`指定${x.colorReq}`:'',x.colorRare?'*稀有車款,若無指定顏色將由其他車色替代':'',c.decoAns==='是'?`指定車頭彩${x.deco?' '+money(x.deco):''}`:'',num(x.tripKm)?`總行程里程 ${num(x.tripKm)} 公里`:'' ,x.invoice?'本單開立發票，金額已含 5% 營業稅':''].filter(Boolean);
+  const noteBits=[x.colorReq?`指定${x.colorReq}`:'',x.colorRare?'稀有車款若無法出車，將協調調度其他車款':''].filter(Boolean);
   return `<table class="plain"><tr><td style="width:64px"><div class="ring">好<br>好</div></td><td class="logo"><b>好好禮車</b><i>Nice Wedding Car</i></td>
    <td class="contact">${esc(S.phone)}<br>${esc(S.email)}</td></tr></table>
   <table class="plain ttl"><tr><td style="width:30%"></td><td style="text-align:center"><h2>禮車預約單暨合約書</h2></td><td class="no" style="width:30%">訂單編號：${F(orderNo(x))}</td></tr></table>
