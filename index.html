@@ -416,12 +416,13 @@ nav.tabs button{scroll-snap-align:start}
       <div class="card">
         <h3>車隊 <small>車序、車號、司機</small></h3>
         <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 8px"><span class="hint" style="margin:0">從司機名單選：</span><select id="drvMode" style="width:auto"><option value="mc">車款＋顏色相符</option><option value="m">只看車款</option><option value="all">全部司機</option></select><button class="btn sm" id="btnDrvReload">更新司機名單</button><button class="btn sm" id="btnDrvAdd">＋新增司機</button><span class="hint" style="margin:0" id="drvSt"></span></div>
+        <div class="row" style="gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 8px" id="zodBar"><span class="hint" style="margin:0">避開生肖（點選後不列出）：</span><button class="btn sm" data-zod="鼠" aria-pressed="false" style="padding:2px 8px">鼠</button><button class="btn sm" data-zod="牛" aria-pressed="false" style="padding:2px 8px">牛</button><button class="btn sm" data-zod="虎" aria-pressed="false" style="padding:2px 8px">虎</button><button class="btn sm" data-zod="兔" aria-pressed="false" style="padding:2px 8px">兔</button><button class="btn sm" data-zod="龍" aria-pressed="false" style="padding:2px 8px">龍</button><button class="btn sm" data-zod="蛇" aria-pressed="false" style="padding:2px 8px">蛇</button><button class="btn sm" data-zod="馬" aria-pressed="false" style="padding:2px 8px">馬</button><button class="btn sm" data-zod="羊" aria-pressed="false" style="padding:2px 8px">羊</button><button class="btn sm" data-zod="猴" aria-pressed="false" style="padding:2px 8px">猴</button><button class="btn sm" data-zod="雞" aria-pressed="false" style="padding:2px 8px">雞</button><button class="btn sm" data-zod="狗" aria-pressed="false" style="padding:2px 8px">狗</button><button class="btn sm" data-zod="豬" aria-pressed="false" style="padding:2px 8px">豬</button><span class="hint" style="margin:0" id="zodSt"></span></div>
         <div id="drvAddBox" hidden style="border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 12px;background:var(--surface-2)">
           <div class="hint" style="margin:0 0 6px">把司機傳來的資料整段貼上（LINE 訊息、表單內容都可以），按「自動辨識」後確認欄位，再存到司機總表。</div>
           <textarea id="drvPaste" rows="4" style="width:100%" placeholder="例：林小明 0912345678 Model X 白色 6人座 REA-1234 LINE: abc123"></textarea>
           <div class="row" style="gap:8px;margin:8px 0"><button class="btn sm pri" id="btnDrvParse">自動辨識</button><span class="hint" style="margin:0" id="drvAddMsg"></span></div>
           <div class="grid" id="drvAddForm" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px">
-            <label class="f">姓名<input id="da_name"></label><label class="f">手機<input id="da_phone" inputmode="tel"></label><label class="f">LINE ID<input id="da_lineId"></label>
+            <label class="f">姓名<input id="da_name"></label><label class="f">生肖<input id="da_zodiac" placeholder="例：兔"></label><label class="f">手機<input id="da_phone" inputmode="tel"></label><label class="f">LINE ID<input id="da_lineId"></label>
             <label class="f">車牌<input id="da_plate"></label><label class="f">廠牌<input id="da_brand" placeholder="Tesla 特斯拉"></label><label class="f">車款<input id="da_model" placeholder="Model X"></label>
             <label class="f">顏色<input id="da_color"></label><label class="f">座位<input id="da_seats" placeholder="6人座"></label><label class="f">緊急聯絡<input id="da_emg"></label>
             <label class="f">居住城市<input id="da_city"></label><label class="f">可服務地區<input id="da_area"></label><label class="f">備註<input id="da_note"></label>
@@ -1795,10 +1796,10 @@ const nz=s=>String(s||'').toLowerCase().replace(/[\s\-_()（）]/g,'');
 function drvModelOk(d,m){const txt=nz(d.brand+' '+d.model+' '+d.spec);const toks=[MNAME[m],MABBR[m]].map(nz).filter(t=>t.length>=2);return toks.some(t=>txt.includes(t)||txt.includes(t.replace(/^benz|^bmw|^tesla/,'')))}
 function drvColorOk(d,c){const w=String(c||'').replace(/色/g,'').trim();if(!w)return true;const dc=String(d.color||'');return dc.includes(w)||dc.includes(w[0])}
 function drvOptions(f){const mode=($('drvMode')&&$('drvMode').value)||'mc';if(!DRV.length)return'<option value="">（載入司機名單中…）</option>';
-  let L=DRV.filter(d=>mode==='all'||drvModelOk(d,f.m)&&(mode==='m'||drvColorOk(d,f.color)));
+  zodSync();const av=o.avoidZ||[];let L=DRV.filter(d=>(mode==='all'||drvModelOk(d,f.m)&&(mode==='m'||drvColorOk(d,f.color)))&&!(av.length&&av.includes(zodOf(d))));
   L=L.sort((a,b)=>(a.src==='司機總表'?0:1)-(b.src==='司機總表'?0:1)||a.name.localeCompare(b.name,'zh-Hant'));
   const busy=new Set();if(o.date)Object.values(DB.orders).forEach(x=>{if(x.id!==o.id&&!x.sample&&!x.lost&&x.date===o.date)(x.fleet||[]).forEach(z=>{if(z.driver)busy.add(String(z.driver).trim())})});
-  const lab=d=>(busy.has(d.name)?'⚠️當天已排 ':'')+[d.name,d.color,d.model||d.brand,d.plate,d.status].filter(Boolean).join('｜');
+  const lab=d=>(busy.has(d.name)?'⚠️當天已排 ':'')+[d.name,zodOf(d)?'屬'+zodOf(d):'',d.color,d.model||d.brand,d.plate,d.status].filter(Boolean).join('｜');
   return `<option value="">▼ 選司機（${L.length} 位）</option>`+L.map(d=>`<option value="${esc(d.name+'|'+d.plate)}">${esc(lab(d))}${d.src==='司機招募'?'（招募）':''}</option>`).join('')}
 async function loadDrivers(force){const st=$('drvSt');if(!S.driveUrl||!S.driveKey)return;let ts=0;try{ts=+localStorage.getItem('nwcw_drivers_ts')||0}catch(_){}
   if(!force&&DRV.length&&Date.now()-ts<6*36e5)return;if(st)st.textContent='讀取司機名單…';
@@ -1810,10 +1811,14 @@ document.addEventListener('change',e=>{const t=e.target;if(t.id==='drvMode'){ren
   if(t.classList&&t.classList.contains('drvPick')&&t.value){const [nm,pl]=t.value.split('|');const d=DRV.find(z=>z.name===nm&&z.plate===pl);const f=o.fleet[+t.dataset.dp];if(!d||!f)return;
     f.driver=d.name;f.phone=fixTel(d.phone)||f.phone;f.plate=d.plate||f.plate;if(!f.emg&&d.emg)f.emg=fixTel(d.emg);if(+d.seats)f.seats=+d.seats;o.sample=false;save();renderFleet();renderAll();toast(`已填入 ${d.name}`)}});
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('#btnDrvReload');if(t)loadDrivers(true)});
+/* 生肖篩選（每張訂單各自記住要避開的生肖） */
+const ZOD='鼠牛虎兔龍蛇馬羊猴雞狗豬';function zodOf(d){const m=String((d&&d.zodiac)||'').replace(/竜/g,'龍').match(/[鼠牛虎兔龍蛇馬羊猴雞狗豬]/);return m?m[0]:''}
+function zodSync(){const av=o.avoidZ||[];document.querySelectorAll('[data-zod]').forEach(b=>{const on=av.includes(b.dataset.zod);b.setAttribute('aria-pressed',on);b.classList.toggle('pri',on);b.style.textDecoration=on?'line-through':''});const st=$('zodSt');if(st)st.textContent=av.length?`已避開 ${av.join('、')}（沒填生肖的司機仍會列出）`:''}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-zod]');if(!b)return;const z=b.dataset.zod,av=(o.avoidZ||[]).slice(),i=av.indexOf(z);if(i>=0)av.splice(i,1);else av.push(z);o.avoidZ=av;save();renderFleet()});
 /* 換司機：清除這台 */
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-drvclr]');if(!b)return;const f=o.fleet[+b.dataset.drvclr];if(!f)return;const nm=f.driver;f.driver='';f.phone='';f.plate='';f.emg='';o.sample=false;save();renderFleet();renderAll();toast(nm?`已清除 ${nm}`:'已清除')});
 /* 新增司機：貼上自動辨識 → 存到司機總表 */
-const DA_F=['name','phone','lineId','plate','brand','model','color','seats','emg','city','area','note'];
+const DA_F=['name','zodiac','phone','lineId','plate','brand','model','color','seats','emg','city','area','note'];
 function parseDriver(raw){const t=String(raw||'').replace(/\r/g,'').replace(/[：]/g,':').replace(/[（]/g,'(').replace(/[）]/g,')'),r={};
   const lab=(re)=>{const m=t.match(re);return m?m[1].trim():''};
   r.name=lab(/(?:姓名|司機|名字|稱呼)\s*:?\s*([^\n,，|｜\d]{1,12})/);
@@ -1830,6 +1835,7 @@ function parseDriver(raw){const t=String(raw||'').replace(/\r/g,'').replace(/[�
   const st=t.match(/(\d)\s*人座/);r.seats=st?st[1]+'人座':'';
   r.city=lab(/(?:居住城市|居住地區|居住地|住在)\s*:?\s*([^\n,，|｜]{2,10})/);r.area=lab(/(?:可服務地區|服務地區|服務區域|可跑)\s*:?\s*([^\n]{2,40})/);
   r.note=lab(/備註\s*:?\s*([^\n]{1,60})/);
+  r.zodiac=(t.replace(/竜/g,'龍').match(/(?:生肖\s*:?\s*|屬)([鼠牛虎兔龍蛇馬羊猴雞狗豬])/)||['',''])[1];
   if(!r.name){const first=t.split(/\n/).map(x=>x.trim()).find(Boolean)||'';const m=first.match(/^([一-龥]{2,4}|[A-Za-z][A-Za-z .]{1,20})(?=[\s,，|｜\d]|$)/);if(m&&!/^(Model|Tesla|特斯拉|白色|黑色)/i.test(m[1]))r.name=m[1].trim()}
   return r}
 function daFill(r){DA_F.forEach(k=>{if(r[k]!==undefined&&$('da_'+k))$('da_'+k).value=r[k]||''})}
