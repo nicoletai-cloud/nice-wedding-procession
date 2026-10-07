@@ -68,6 +68,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .chip.ok{color:var(--ok)}
 .chip.late{background:var(--warn);color:#fff}
 .todo-row{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-bottom:8px;cursor:pointer}
+.decoT{border-collapse:collapse;font-size:12px}.decoT th,.decoT td{border:1px solid var(--line);min-width:22px;height:22px;text-align:center;padding:0}.decoT tbody th{padding:0 6px;background:var(--surface);position:sticky;left:0}
 .todo-row .m{flex:1;min-width:0}.todo-row .m b{margin-right:6px}.todo-row .sub{font-size:12px;color:var(--muted);margin-top:2px}
 .todo-row .tg{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:45%}
 @media(max-width:640px){.todo-row{flex-wrap:wrap}.todo-row .m{flex:1 1 calc(100% - 100px)}.todo-row .tg{order:3;flex:1 1 100%;max-width:none;justify-content:flex-start;padding-left:26px}}
@@ -201,6 +202,7 @@ nav.tabs button{scroll-snap-align:start}
       <button class="btn sm" id="btnSync" title="手機／電腦同步">同步</button>
       <button class="btn" id="btnInbox">訊息</button>
       <button class="btn" id="btnTodo">待辦</button>
+      <button class="btn" id="btnDecoCal">車頭彩檔期</button>
       <button class="btn" id="btnRemind">提醒文字</button>
       <button class="btn" id="btnCouple">新人資料</button>
       <button class="btn" id="btnNew">＋ 新訂單</button>
@@ -303,6 +305,8 @@ nav.tabs button{scroll-snap-align:start}
             <label class="f wide">限時優惠（只顯示、不影響金額；一行一項：名稱=每台金額）<textarea id="q_promo" data-b="promoText" rows="2" placeholder="指定白色=800"></textarea></label>
             <label class="f">實體甘蔗台數<input type="number" id="q_cane" data-b="cane" data-num min="0"></label>
             <label class="f">指定車頭彩費用<input type="number" id="q_deco" data-b="deco" data-num min="0" placeholder="800–1000"></label>
+            <label class="f">指定車頭彩款式<select id="q_decoStyle" data-b="decoStyle"></select></label>
+            <div class="f wide" id="decoHint" style="font-size:13px;line-height:1.6"></div>
             <label class="f">加項名稱<input id="q_x0n" data-b="extras.0.n" placeholder="例：指定路線"></label>
             <label class="f">加項金額<input type="number" id="q_x0a" data-b="extras.0.a" data-num></label>
             <label class="f">折扣名稱<input id="q_dn" data-b="discName" placeholder="例：早鳥"></label>
@@ -569,6 +573,21 @@ nav.tabs button{scroll-snap-align:start}
     <div id="ibChips" class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
     <div id="ibBatch" class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
     <div id="ibList"><p class="hint">載入中…</p></div>
+  </div>
+</div>
+<div id="decoModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
+  <div style="max-width:1100px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px">
+    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">車頭彩檔期 <small>每款只有一組；自己出車（北北基桃竹）佔前後 1 天，寄送／蝦皮佔前後 3 天</small></h3><button class="btn" id="btnDecoClose">關閉</button></div>
+    <div class="card" style="margin-bottom:12px"><h3>查某天可接的款式</h3>
+      <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><input type="date" id="decoQDate" style="width:auto"><select id="decoQWay" style="width:auto"><option value="near">自己出車（北北基桃竹）</option><option value="far">寄送（苗栗以南／宜花東／蝦皮）</option></select></div>
+      <div id="decoQOut" style="margin-top:8px;font-size:14px;line-height:1.6"></div></div>
+    <div class="card" style="margin-bottom:12px"><div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px"><h3 style="margin:0" id="decoMonthLbl"></h3><div class="row" style="gap:6px"><button class="btn sm" id="decoPrev">‹ 上個月</button><button class="btn sm" id="decoNext">下個月 ›</button></div></div>
+      <div style="overflow-x:auto" id="decoGrid"></div>
+      <div class="hint" style="margin:8px 0 0"><span style="color:#3D6FA8">■ 禮車已收訂</span>　<span style="color:#9DB8D6">■ 禮車未收訂（暫定）</span>　<span style="color:#E59A3C">■ 蝦皮</span>　<span style="color:#C0392B">■ 撞期</span>　白框＝使用當天；手指停在色塊上可看是哪一筆</div></div>
+    <div class="card" style="margin-bottom:12px"><h3>登記蝦皮出租 <small>自動佔用使用日前後 3 天</small></h3>
+      <div class="row" style="gap:8px;flex-wrap:wrap"><select id="decoRStyle" style="width:auto"></select><input type="date" id="decoRDate" style="width:auto" title="使用日期"><input id="decoRWho" placeholder="買家名稱／訂單號" style="flex:1;min-width:140px"><input id="decoRNote" placeholder="備註（選填）" style="flex:1;min-width:120px"><button class="btn pri" id="decoRAdd">登記</button></div></div>
+    <div class="card" style="margin-bottom:12px"><h3>接下來的檔期</h3><div id="decoList"></div></div>
+    <div class="card"><h3>款式清單 <small>一行一款：代號 名稱</small></h3><textarea id="decoStyleTxt" rows="8" style="width:100%"></textarea><div class="row" style="margin-top:8px"><button class="btn pri" id="decoStyleSave">儲存款式</button></div></div>
   </div>
 </div>
 <div id="todoModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
@@ -1640,6 +1659,55 @@ function loadOrder(){migrate(o);syncFleet();fillInputs();renderLangs();renderCar
 let top=false;try{top=window.self===window.top}catch(_){top=false}
 if(top){$('btnPrint').hidden=false;$('btnDrive').hidden=false}else{$('contractHint').textContent='資料來自「報價」與「新人資料」。列印／存 PDF 請在 GitHub Pages 版本操作。'}
 
+/* ===== 車頭彩檔期 ===== */
+const DECO_DEF=[['A','40cm 紅玫瑰心環'],['B','40cm 囍字紅金花環'],['C','錦瑟華年熱情款'],['D','艾莉絲藍粉色花彩'],['E','森系紅色仿真車彩'],['F','卡布奇諾浪漫款'],['G','紫戀花語詩韻款'],['H','繁花似錦溫馨款'],['I','花影流光夢幻款'],['J','雲裳花語優雅款'],['K','小清新浪漫女孩車花'],['L','花開如夢繽紛款'],['M','花辰月夕喜慶款'],['N','丹華映日禮讚款'],['O','幽蘭淡雅綺麗款']].map(([code,name])=>({code,name}));
+const DECO_NEAR=['台北','新北','基隆','桃園','新竹'];
+function decoStyles(){if(!Array.isArray(S.decoStyles)||!S.decoStyles.length)S.decoStyles=clone(DECO_DEF);return S.decoStyles.filter(s=>s&&s.code)}
+function decoName(code){const s=decoStyles().find(z=>z.code===code);return s?`${s.code}. ${s.name}`:code}
+function dAdd(d,n){const t=new Date(d+'T00:00:00Z');t.setUTCDate(t.getUTCDate()+n);return t.toISOString().slice(0,10)}
+function dShort(d){return d?(+d.slice(5,7))+'/'+(+d.slice(8,10)):''}
+function decoNear(x){const cs=[x.cityA,x.cityB].filter(Boolean);if(!cs.length&&x.c){const a=countyOf(x.c.meet);if(a)cs.push(a)}return cs.length>0&&cs.every(c=>DECO_NEAR.some(n=>String(c).replace(/臺/g,'台').indexOf(n)===0))}
+function decoBookings(){const B=[];
+  Object.values(DB.orders).forEach(x=>{if(x.sample||x.lost||!x.decoStyle||!x.date)return;const near=decoNear(x),c=x.c||{};
+    B.push({code:x.decoStyle,date:x.date,from:dAdd(x.date,near?-1:-3),to:dAdd(x.date,near?1:3),kind:'car',id:x.id,how:near?'自己出車':'順豐寄送',tent:!x.paid,label:`${orderNo(x)} ${c.chatName||[c.groom,c.bride].filter(Boolean).join('&')}`})});
+  (S.decoRents||[]).forEach(r=>{if(!r||!r.code||!r.date)return;B.push({code:r.code,date:r.date,from:dAdd(r.date,-3),to:dAdd(r.date,3),kind:'shopee',id:r.id,how:'蝦皮寄送',label:`蝦皮 ${r.who||''}${r.note?'（'+r.note+'）':''}`})});
+  return B.sort((a,b)=>a.from.localeCompare(b.from))}
+function decoClash(b,B){return B.filter(y=>y!==b&&y.code===b.code&&!(y.to<b.from||y.from>b.to))}
+function renderDeco(){const sel=$('q_decoStyle');if(sel){const v=o.decoStyle||'';sel.innerHTML='<option value="">— 不指定 —</option>'+decoStyles().map(s=>`<option value="${esc(s.code)}">${esc(s.code)}. ${esc(s.name)}</option>`).join('')+(v&&!decoStyles().some(s=>s.code===v)?`<option value="${esc(v)}">${esc(v)}（已不在清單）</option>`:'');sel.value=v}
+  const h=$('decoHint');if(!h)return;if(!o.decoStyle){h.innerHTML='';return}
+  if(!o.date){h.innerHTML='<span style="color:#A0453A">先填用車日期，才能確認車頭彩檔期</span>';return}
+  const B=decoBookings(),me=B.find(b=>b.kind==='car'&&b.id===o.id);if(!me){h.innerHTML='';return}
+  const cl=decoClash(me,B);
+  h.innerHTML=`佔用 ${dShort(me.from)}～${dShort(me.to)}（${me.how}${me.how==='自己出車'?'，前後 1 天':'，前後 3 天'}）　`+(cl.length?`<b style="color:#A0453A">⚠️ 撞期：${cl.map(c=>esc(c.label.trim())+' '+dShort(c.from)+'～'+dShort(c.to)).join('、')}</b>`:'<span style="color:#2F6B4F">✅ 檔期可用</span>')}
+let decoMonth='';
+function renderDecoModal(){const m=$('decoModal');if(!m||m.hidden)return;const today=new Date().toISOString().slice(0,10);if(!decoMonth)decoMonth=today.slice(0,7);
+  const st=decoStyles(),B=decoBookings();const [y,mo]=decoMonth.split('-').map(Number);const nd=new Date(Date.UTC(y,mo,0)).getUTCDate();
+  const days=[...Array(nd)].map((_,i)=>`${decoMonth}-${String(i+1).padStart(2,'0')}`);
+  const cell=(code,d)=>{const hit=B.filter(b=>b.code===code&&b.from<=d&&b.to>=d);if(!hit.length)return'<td></td>';const clash=hit.length>1,b=hit[0],use=hit.some(z=>z.date===d);
+    const bg=clash?'#C0392B':b.kind==='shopee'?'#E59A3C':b.tent?'#9DB8D6':'#3D6FA8';return `<td title="${esc(hit.map(z=>z.label+'｜'+z.how+'｜使用 '+dShort(z.date)).join('\n'))}" style="background:${bg};${use?'box-shadow:inset 0 0 0 2px #fff':''}"></td>`};
+  $('decoGrid').innerHTML=`<table class="decoT"><thead><tr><th>款式</th>${days.map(d=>{const w=new Date(d+'T00:00:00Z').getUTCDay();return `<th style="${w===0||w===6?'color:#A0453A':''}${d===today?';background:#F3E6CF':''}">${+d.slice(8)}</th>`}).join('')}</tr></thead><tbody>${st.map(s=>`<tr><th title="${esc(s.name)}">${esc(s.code)}</th>${days.map(d=>cell(s.code,d)).join('')}</tr>`).join('')}</tbody></table>`;
+  $('decoMonthLbl').textContent=`${y} 年 ${mo} 月`;
+  const q=$('decoQDate').value,near=$('decoQWay').value==='near';
+  if(q){const f=dAdd(q,near?-1:-3),t=dAdd(q,near?1:3);const free=[],busy=[];st.forEach(s=>{const hit=B.filter(b=>b.code===s.code&&!(b.to<f||b.from>t));(hit.length?busy:free).push(hit.length?`${s.code}（${hit.map(h=>h.label.trim()).join('、')}）`:`${s.code}. ${s.name}`)});
+    $('decoQOut').innerHTML=`<div>需要 ${dShort(f)}～${dShort(t)} 空著</div><div style="color:#2F6B4F;margin-top:4px"><b>可以接（${free.length}）</b>：${free.map(esc).join('、')||'—'}</div><div style="color:#A0453A;margin-top:4px"><b>已被佔用（${busy.length}）</b>：${busy.map(esc).join('、')||'—'}</div>`}else $('decoQOut').innerHTML='<span class="hint" style="margin:0">選日期就會列出哪些款式可以接</span>';
+  const up=B.filter(b=>b.to>=today);
+  $('decoList').innerHTML=up.length?up.map(b=>{const cl=decoClash(b,B);return `<div class="todo-row" style="cursor:default"><div class="m"><div><b>${esc(decoName(b.code))}</b>　使用 ${esc(b.date.replace(/-/g,'/'))}</div><div class="sub">${esc(b.label.trim())}｜${b.how}｜佔用 ${dShort(b.from)}～${dShort(b.to)}${b.tent?'｜尚未收訂（暫定）':''}${cl.length?` <b style="color:#A0453A">⚠️ 撞期：${esc(cl.map(c=>c.label.trim()).join('、'))}</b>`:''}</div></div>${b.kind==='shopee'?`<button class="btn sm" data-decodel="${esc(b.id)}">刪除</button>`:`<button class="btn sm" data-topen="${esc(b.id)}" data-decoopen="1">開啟</button>`}</div>`}).join(''):'<div class="hint">目前沒有任何車頭彩檔期</div>';
+  {const rv=$('decoRStyle').value;$('decoRStyle').innerHTML=st.map(s=>`<option value="${esc(s.code)}">${esc(s.code)}. ${esc(s.name)}</option>`).join('');if(rv)$('decoRStyle').value=rv}
+  if(document.activeElement!==$('decoStyleTxt'))$('decoStyleTxt').value=st.map(s=>`${s.code} ${s.name}`).join('\n')}
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('button');if(!t)return;
+  if(t.id==='btnDecoCal'){$('decoModal').hidden=false;renderDecoModal();return}
+  if(t.id==='btnDecoClose'){$('decoModal').hidden=true;return}
+  if(t.id==='decoPrev'||t.id==='decoNext'){const [y,m]=(decoMonth||new Date().toISOString().slice(0,7)).split('-').map(Number);const d=new Date(Date.UTC(y,m-1+(t.id==='decoNext'?1:-1),1));decoMonth=d.toISOString().slice(0,7);renderDecoModal();return}
+  if(t.id==='decoRAdd'){const code=$('decoRStyle').value,date=$('decoRDate').value,who=$('decoRWho').value.trim(),note=$('decoRNote').value.trim();if(!code||!date){toast('請選款式和使用日期');return}
+    const r={id:'r'+Date.now().toString(36),code,date,who,note};const B=decoBookings();const me={code,from:dAdd(date,-3),to:dAdd(date,3)};const cl=B.filter(y=>y.code===code&&!(y.to<me.from||y.from>me.to));
+    if(cl.length&&!confirm(`${decoName(code)} 在 ${dShort(me.from)}～${dShort(me.to)} 已經有：\n${cl.map(c=>c.label.trim()+'（'+dShort(c.from)+'～'+dShort(c.to)+'）').join('\n')}\n\n確定還是要登記嗎？`))return;
+    S.decoRents=(S.decoRents||[]).concat([r]);saveS();$('decoRDate').value='';$('decoRWho').value='';$('decoRNote').value='';renderDecoModal();renderDeco();toast('已登記蝦皮出租');return}
+  if(t.dataset.decodel){const r=(S.decoRents||[]).find(z=>z.id===t.dataset.decodel);if(!r||!confirm(`刪除蝦皮出租：${decoName(r.code)} ${r.date} ${r.who||''}？`))return;S.decoRents=S.decoRents.filter(z=>z.id!==r.id);saveS();renderDecoModal();renderDeco();return}
+  if(t.dataset.decoopen){$('decoModal').hidden=true;return}
+  if(t.id==='decoStyleSave'){const L=$('decoStyleTxt').value.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>{const m=s.match(/^([A-Za-z0-9]+)[.\s、．]+(.*)$/);return m?{code:m[1].toUpperCase(),name:m[2].trim()}:null}).filter(Boolean);
+    if(!L.length){toast('格式：每行「代號 名稱」');return}S.decoStyles=L;saveS();$('decoStyleTxt').blur();renderDecoModal();renderDeco();toast(`已更新 ${L.length} 款車頭彩`);return}});
+document.addEventListener('change',e=>{if(e.target&&(e.target.id==='decoQDate'||e.target.id==='decoQWay'))renderDecoModal()});
+{const _ra=renderAll;renderAll=function(){_ra.apply(this,arguments);try{renderDeco();renderDecoModal()}catch(err){console.warn(err)}}}
 renderPriceSettings();loadOrder();
 let startTab='quote';try{startTab=sessionStorage.getItem('nwcw_tab')||'quote'}catch(_){}
 showTab(startTab);
