@@ -12,7 +12,7 @@
 <style>
 /* Layout: brand bar + order switcher, sticky step tabs, two-column (inputs | outputs) workbench that stacks on phones */
 :root{
-  --bg:#FBF6F3; --surface:#FFFFFF; --surface-2:#F6ECE6; --fg:#4A3A2E; --muted:#8C7A6B; --line:#E8DACF;
+  --bg:#FBF6F1; --surface:#FFFFFF; --surface-2:#F6ECE1; --fg:#3A2E24; --muted:#75665A; --line:#E8DBCB;
   --accent:#A9793B; --accent-ink:#FFFFFF; --accent-soft:#F3E6D6; --ok:#4F7A4A; --warn:#B5652B;
   --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
   --f-label:"Montserrat","Noto Sans TC","PingFang TC",sans-serif;
@@ -31,6 +31,8 @@ header.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding-
 .brand{display:flex;align-items:baseline;gap:10px;margin-right:auto}
 .brand b{font-size:22px;color:var(--accent);letter-spacing:.06em;font-weight:700}
 .brand span{font-family:var(--f-label);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+.nwc-hub{font:500 13px var(--f-body);color:var(--muted);text-decoration:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 13px;white-space:nowrap}
+.nwc-hub:hover{border-color:var(--accent);color:var(--accent)}
 .orderbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .orderbar select{max-width:260px}
 nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);overflow-x:auto;display:flex;gap:2px;scrollbar-width:none}
@@ -197,6 +199,7 @@ nav.tabs button{scroll-snap-align:start}
 <div class="wrap">
   <header class="top">
     <div class="brand"><b>好好禮車</b><span>Wedding Dispatch</span></div>
+    <a class="nwc-hub" href="https://nicoletai-cloud.github.io/nice-hub/">‹ 入口</a>
     <div class="orderbar">
       <select id="orderSel" aria-label="切換訂單"></select>
       <button class="btn sm" id="btnSync" title="手機／電腦同步">同步</button>
