@@ -588,7 +588,7 @@ nav.tabs button{scroll-snap-align:start}
     <div class="card" style="margin-bottom:12px"><h3>登記蝦皮出租 <small>先收押金 $2,000 保留檔期；佔用使用日前 6 天出貨～後 4 天寄回；客人最晚使用日前 16 天下單</small></h3>
       <div class="row" style="gap:8px;flex-wrap:wrap"><select id="decoRStyle" style="width:auto"></select><input type="date" id="decoRDate" style="width:auto" title="使用日期"><input id="decoRWho" placeholder="買家名稱／訂單號" style="flex:1;min-width:140px"><input id="decoRNote" placeholder="備註（選填）" style="flex:1;min-width:120px"><button class="btn pri" id="decoRAdd">登記</button></div></div>
     <div class="card" style="margin-bottom:12px"><h3>接下來的檔期</h3><div id="decoList"></div></div>
-    <div class="card"><h3>款式清單 <small>一行一款：代號 名稱</small></h3><textarea id="decoStyleTxt" rows="8" style="width:100%"></textarea><div class="row" style="margin-top:8px"><button class="btn pri" id="decoStyleSave">儲存款式</button></div></div>
+    <div class="card"><h3>款式清單 <small>一行一款：「代號 名稱」，或直接寫名稱（例：達菲熊）</small></h3><textarea id="decoStyleTxt" rows="8" style="width:100%"></textarea><div class="row" style="margin-top:8px"><button class="btn pri" id="decoStyleSave">儲存款式</button></div></div>
   </div>
 </div>
 <div id="todoModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
@@ -1664,22 +1664,22 @@ if(top){$('btnPrint').hidden=false;$('btnDrive').hidden=false}else{$('contractHi
 const DECO_DEF=[['A','40cm 紅玫瑰心環'],['B','40cm 囍字紅金花環'],['C','錦瑟華年熱情款'],['D','艾莉絲藍粉色花彩'],['E','森系紅色仿真車彩'],['F','卡布奇諾浪漫款'],['G','紫戀花語詩韻款'],['H','繁花似錦溫馨款'],['I','花影流光夢幻款'],['J','雲裳花語優雅款'],['K','小清新浪漫女孩車花'],['L','花開如夢繽紛款'],['M','花辰月夕喜慶款'],['N','丹華映日禮讚款'],['O','幽蘭淡雅綺麗款']].map(([code,name])=>({code,name}));
 const DECO_NEAR=['台北','新北','基隆','桃園','新竹'];
 function decoStyles(){if(!Array.isArray(S.decoStyles)||!S.decoStyles.length)S.decoStyles=clone(DECO_DEF);return S.decoStyles.filter(s=>s&&s.code)}
-function decoName(code){const s=decoStyles().find(z=>z.code===code);return s?`${s.code}. ${s.name}`:code}
+function decoName(code){const s=decoStyles().find(z=>z.code===code);return s?(s.name&&s.name!==s.code?`${s.code}. ${s.name}`:s.code):code}
 function dAdd(d,n){const t=new Date(d+'T00:00:00Z');t.setUTCDate(t.getUTCDate()+n);return t.toISOString().slice(0,10)}
 function dShort(d){return d?(+d.slice(5,7))+'/'+(+d.slice(8,10)):''}
 function decoNear(x){const cs=[x.cityA,x.cityB].filter(Boolean);if(!cs.length&&x.c){const a=countyOf(x.c.meet);if(a)cs.push(a)}return cs.length>0&&cs.every(c=>DECO_NEAR.some(n=>String(c).replace(/臺/g,'台').indexOf(n)===0))}
 function decoFormCode(x){const a=String((x.c&&x.c.decoAns)||'').trim(),m=a.match(/^#?\s*([A-Za-z])(?:\s*款|\s*$|[.\s])/);if(!m)return'';const k=m[1].toUpperCase();return decoStyles().some(s=>s.code===k)?k:''}
 function decoCodeOf(x){return x.decoStyle||decoFormCode(x)}
 function decoWanted(x){return +x.deco>0||/^是/.test(String((x.c&&x.c.decoAns)||'').trim())||!!decoFormCode(x)}
-function decoMissing(){const today=new Date().toISOString().slice(0,10);return Object.values(DB.orders).filter(x=>!x.sample&&!x.lost&&x.date&&x.date>=today&&decoWanted(x)&&!decoCodeOf(x)).sort((a,b)=>a.date.localeCompare(b.date))}
+function decoMissing(){const today=new Date().toISOString().slice(0,10);return Object.values(DB.orders).filter(x=>!x.sample&&!x.lost&&x.date&&x.date>=today&&decoWanted(x)&&!decoCodeOf(x)&&!(x.decoLater&&today<x.decoLater)).sort((a,b)=>a.date.localeCompare(b.date))}
 function decoBookings(){const B=[];
   Object.values(DB.orders).forEach(x=>{const code=decoCodeOf(x);if(x.sample||x.lost||!code||!x.date)return;const near=decoNear(x),c=x.c||{};
     B.push({code,src:x.decoStyle?'':'form',date:x.date,from:dAdd(x.date,near?-1:-3),to:dAdd(x.date,near?1:3),kind:'car',id:x.id,how:near?'自己出車':'順豐寄送',tent:!x.paid,label:`${orderNo(x)} ${c.chatName||[c.groom,c.bride].filter(Boolean).join('&')}`})});
   (S.decoRents||[]).forEach(r=>{if(!r||!r.code||!r.date)return;B.push({code:r.code,date:r.date,from:dAdd(r.date,-6),to:dAdd(r.date,4),kind:'shopee',id:r.id,how:'蝦皮寄送',r,label:`蝦皮 ${r.who||''}${r.note?'（'+r.note+'）':''}`})});
   return B.sort((a,b)=>a.from.localeCompare(b.from))}
 function decoClash(b,B){return B.filter(y=>y!==b&&y.code===b.code&&!(y.to<b.from||y.from>b.to))}
-function renderDeco(){const sel=$('q_decoStyle');if(sel){const v=o.decoStyle||'';sel.innerHTML='<option value="">— 不指定 —</option>'+decoStyles().map(s=>`<option value="${esc(s.code)}">${esc(s.code)}. ${esc(s.name)}</option>`).join('')+(v&&!decoStyles().some(s=>s.code===v)?`<option value="${esc(v)}">${esc(v)}（已不在清單）</option>`:'');sel.value=v||decoFormCode(o)}
-  const h=$('decoHint');if(!h)return;if(!decoCodeOf(o)){h.innerHTML=decoWanted(o)?'<b style="color:#A0453A">⚠️ 這張單有指定車頭彩（費用或新人表單勾「是」），請在上面選款式，才會記到車頭彩檔期</b>':'';return}
+function renderDeco(){const sel=$('q_decoStyle');if(sel){const v=o.decoStyle||'';sel.innerHTML='<option value="">— 不指定 —</option>'+decoStyles().map(s=>`<option value="${esc(s.code)}">${esc(decoName(s.code))}</option>`).join('')+(v&&!decoStyles().some(s=>s.code===v)?`<option value="${esc(v)}">${esc(v)}（已不在清單）</option>`:'');sel.value=v||decoFormCode(o)}
+  const h=$('decoHint');if(!h)return;if(!decoCodeOf(o)){h.innerHTML=decoWanted(o)?(o.decoLater&&new Date().toISOString().slice(0,10)<o.decoLater?`⏰ 有指定車頭彩，${dShort(o.decoLater)}（用車前一個月）會提醒你跟客人確認款式`:'<b style="color:#A0453A">⚠️ 這張單有指定車頭彩（費用或新人表單勾「是」），請在上面選款式，才會記到車頭彩檔期</b>'):'';return}
   if(!o.date){h.innerHTML='<span style="color:#A0453A">先填用車日期，才能確認車頭彩檔期</span>';return}
   const B=decoBookings(),me=B.find(b=>b.kind==='car'&&b.id===o.id);if(!me){h.innerHTML='';return}
   const cl=decoClash(me,B);
@@ -1707,6 +1707,7 @@ function shopeeAlertN(){const today=new Date().toISOString().slice(0,10);return 
 function renderDecoBtn(){const b=$('btnDecoCal');if(b){const n=shopeeAlertN()+decoMissing().length;b.innerHTML='車頭彩檔期'+(n?`<b>${n}</b>`:'')}}
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('button');if(!t)return;
   if(t.dataset.spst){const [id,k]=t.dataset.spst.split('|');const r=(S.decoRents||[]).find(z=>z.id===id);if(!r)return;r.st=r.st||{};r.st[k]=r.st[k]?0:Date.now();saveS();renderDecoModal();renderDecoBtn();return}
+  if(t.dataset.decolater){const x=DB.orders[t.dataset.decolater];if(!x||!x.date)return;const d=new Date(x.date+'T00:00:00Z');d.setUTCMonth(d.getUTCMonth()-1);x.decoLater=d.toISOString().slice(0,10);x.updated=Date.now();store('nwcw_orders',DB);pushSync();renderDecoModal();renderDecoBtn();renderDeco();toast(`${dShort(x.decoLater)} 會再提醒確認車頭彩款式`);return}
   if(t.dataset.spmsg){const [id,k]=t.dataset.spmsg.split('|');const r=(S.decoRents||[]).find(z=>z.id===id);if(r)clip(shopeeMsg(r,k));return}});
 let decoMonth='';
 function renderDecoModal(){const m=$('decoModal');if(!m||m.hidden)return;const today=new Date().toISOString().slice(0,10);if(!decoMonth)decoMonth=today.slice(0,7);
@@ -1721,14 +1722,14 @@ function renderDecoModal(){const m=$('decoModal');if(!m||m.hidden)return;const t
      const chip=c=>{const hs=hit.filter(b=>b.code===c),cl=hs.length>1,b=hs[0];return `<i style="background:${cl?'#C0392B':b.kind==='shopee'?'#E59A3C':b.tent?'#9DB8D6':'#3D6FA8'}" title="${esc(hs.map(z=>decoName(z.code)+'｜'+z.label.trim()+'｜'+z.how).join('\n'))}">${esc(c)}</i>`};
      h+=`<div class="d${d<today?' x':''}${d===today?' t':''}${d===qd?' sel':''}" data-decoday="${d}"><b>${+d.slice(8)}</b> <span class="ok">可接 ${free}</span><div>${codes.map(chip).join('')}</div></div>`});
    $('decoCal').innerHTML=`<div class="decoCal">${h}</div><div class="hint" style="margin:6px 0 0">格子裡的字母＝那天被佔用的款式；點日期可在上方查看能接哪幾款</div>`}
-  {const M=decoMissing();$('decoMissCard').hidden=!M.length;$('decoMiss').innerHTML=M.map(x=>`<div class="todo-row" style="cursor:default"><div class="m" style="flex:1"><div><b>${esc(orderNo(x))}</b> ${esc(x.c.chatName||[x.c.groom,x.c.bride].filter(Boolean).join('&'))}</div><div class="sub">用車 ${esc(x.date.replace(/-/g,'/'))}｜新人表單：${esc(x.c.decoAns||'—')}${+x.deco>0?'｜指定費 '+money(x.deco):''}${x.paid?'':'｜尚未收訂'}</div></div><button class="btn sm pri" data-topen="${esc(x.id)}" data-decoopen="1">開啟選款式</button></div>`).join('')}
+  {const M=decoMissing();$('decoMissCard').hidden=!M.length;$('decoMiss').innerHTML=M.map(x=>`<div class="todo-row" style="cursor:default"><div class="m" style="flex:1"><div><b>${esc(orderNo(x))}</b> ${esc(x.c.chatName||[x.c.groom,x.c.bride].filter(Boolean).join('&'))}</div><div class="sub">用車 ${esc(x.date.replace(/-/g,'/'))}｜新人表單：${esc(x.c.decoAns||'—')}${+x.deco>0?'｜指定費 '+money(x.deco):''}${x.paid?'':'｜尚未收訂'}</div></div><button class="btn sm" data-decolater="${esc(x.id)}">一個月前再提醒</button><button class="btn sm pri" data-topen="${esc(x.id)}" data-decoopen="1">開啟選款式</button></div>`).join('')}
   const q=$('decoQDate').value,way=$('decoQWay').value,near=way==='near';
-  if(q){const f=dAdd(q,near?-1:way==='shopee'?-6:-3),t=dAdd(q,near?1:way==='shopee'?4:3);const free=[],busy=[];st.forEach(s=>{const hit=B.filter(b=>b.code===s.code&&!(b.to<f||b.from>t));(hit.length?busy:free).push(hit.length?`${s.code}（${hit.map(h=>h.label.trim()).join('、')}）`:`${s.code}. ${s.name}`)});
+  if(q){const f=dAdd(q,near?-1:way==='shopee'?-6:-3),t=dAdd(q,near?1:way==='shopee'?4:3);const free=[],busy=[];st.forEach(s=>{const hit=B.filter(b=>b.code===s.code&&!(b.to<f||b.from>t));(hit.length?busy:free).push(hit.length?`${s.code}（${hit.map(h=>h.label.trim()).join('、')}）`:decoName(s.code))});
     $('decoQOut').innerHTML=`<div>需要 ${dShort(f)}～${dShort(t)} 空著</div><div style="color:#2F6B4F;margin-top:4px"><b>可以接（${free.length}）</b>：${free.map(esc).join('、')||'—'}</div><div style="color:#A0453A;margin-top:4px"><b>已被佔用（${busy.length}）</b>：${busy.map(esc).join('、')||'—'}</div>`}else $('decoQOut').innerHTML='<span class="hint" style="margin:0">選日期就會列出哪些款式可以接</span>';
   const up=B.filter(b=>b.to>=today);
   $('decoList').innerHTML=up.length?up.map(b=>{const cl=decoClash(b,B);return `<div class="todo-row" style="cursor:default;flex-wrap:wrap"><div class="m" style="flex:1;min-width:220px"><div><b>${esc(decoName(b.code))}</b>　使用 ${esc(b.date.replace(/-/g,'/'))}</div><div class="sub">${esc(b.label.trim())}｜${b.how}｜佔用 ${dShort(b.from)}～${dShort(b.to)}${b.tent?'｜尚未收訂（暫定）':''}${cl.length?` <b style="color:#A0453A">⚠️ 撞期：${esc(cl.map(c=>c.label.trim()).join('、'))}</b>`:''}</div></div>${b.kind==='shopee'?shopeeCtl(b.r,today):`<button class="btn sm" data-topen="${esc(b.id)}" data-decoopen="1">開啟</button>`}</div>`}).join(''):'<div class="hint">目前沒有任何車頭彩檔期</div>';
-  {const rv=$('decoRStyle').value;$('decoRStyle').innerHTML=st.map(s=>`<option value="${esc(s.code)}">${esc(s.code)}. ${esc(s.name)}</option>`).join('');if(rv)$('decoRStyle').value=rv}
-  if(document.activeElement!==$('decoStyleTxt'))$('decoStyleTxt').value=st.map(s=>`${s.code} ${s.name}`).join('\n')}
+  {const rv=$('decoRStyle').value;$('decoRStyle').innerHTML=st.map(s=>`<option value="${esc(s.code)}">${esc(decoName(s.code))}</option>`).join('');if(rv)$('decoRStyle').value=rv}
+  if(document.activeElement!==$('decoStyleTxt'))$('decoStyleTxt').value=st.map(s=>s.name&&s.name!==s.code?`${s.code} ${s.name}`:s.code).join('\n')}
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('button');if(!t)return;
   if(t.id==='btnDecoCal'){$('decoModal').hidden=false;renderDecoModal();return}
   if(t.id==='btnDecoClose'){$('decoModal').hidden=true;return}
@@ -1739,7 +1740,7 @@ document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest
     S.decoRents=(S.decoRents||[]).concat([r]);saveS();$('decoRDate').value='';$('decoRWho').value='';$('decoRNote').value='';renderDecoModal();renderDeco();renderDecoBtn();toast('已登記蝦皮出租，收到押金後按「押金已收」');return}
   if(t.dataset.decodel){const r=(S.decoRents||[]).find(z=>z.id===t.dataset.decodel);if(!r||!confirm(`刪除蝦皮出租：${decoName(r.code)} ${r.date} ${r.who||''}？`))return;S.decoRents=S.decoRents.filter(z=>z.id!==r.id);saveS();renderDecoModal();renderDeco();return}
   if(t.dataset.decoopen){$('decoModal').hidden=true;return}
-  if(t.id==='decoStyleSave'){const L=$('decoStyleTxt').value.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>{const m=s.match(/^([A-Za-z0-9]+)[.\s、．]+(.*)$/);return m?{code:m[1].toUpperCase(),name:m[2].trim()}:null}).filter(Boolean);
+  if(t.id==='decoStyleSave'){const L=$('decoStyleTxt').value.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>{const m=s.match(/^([A-Za-z0-9]+)[.\s、．]+(.*)$/);return m?{code:m[1].toUpperCase(),name:m[2].trim()}:{code:s,name:s}}).filter(Boolean);
     if(!L.length){toast('格式：每行「代號 名稱」');return}S.decoStyles=L;saveS();$('decoStyleTxt').blur();renderDecoModal();renderDeco();toast(`已更新 ${L.length} 款車頭彩`);return}});
 document.addEventListener('change',e=>{if(e.target&&(e.target.id==='decoQDate'||e.target.id==='decoQWay'))renderDecoModal()});
 document.addEventListener('click',e=>{const d=e.target.closest&&e.target.closest('[data-decoday]');if(!d)return;$('decoQDate').value=d.dataset.decoday;renderDecoModal();$('decoQDate').scrollIntoView({behavior:'smooth',block:'center'})});
