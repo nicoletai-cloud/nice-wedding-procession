@@ -1820,7 +1820,7 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 /* 新增司機：貼上自動辨識 → 存到司機總表 */
 const DA_F=['name','zodiac','phone','lineId','plate','brand','model','color','seats','emg','city','area','note'];
 function parseDriver(raw){const t=String(raw||'').replace(/\r/g,'').replace(/[：]/g,':').replace(/[（]/g,'(').replace(/[）]/g,')'),r={};
-  const lab=(re)=>{const m=t.match(re);return m?m[1].trim():''};
+  const lab=(re)=>{const m=t.match(new RegExp(re.source.replace(/\\s\*/g,'[ \\t]*'),re.flags));return m?m[1].trim():''};
   r.name=lab(/(?:姓名|司機|名字|稱呼)\s*:?\s*([^\n,，|｜\d]{1,12})/);
   r.lineId=lab(/(?:line\s*id|LINE\s*ID|line|LINE|賴)\s*:?\s*([A-Za-z0-9_.\-@]{3,30})/);
   const emgL=lab(/緊急聯絡[人]?(?:電話)?\s*:?\s*([^\n]{4,40})/);
