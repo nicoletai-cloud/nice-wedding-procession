@@ -770,7 +770,7 @@ let DB=store('nwcw_orders');
 if(!DB||!DB.orders||!Object.keys(DB.orders).length){const s=sampleOrder();DB={cur:s.id,orders:{[s.id]:s}}}
 let o=DB.orders[DB.cur]||Object.values(DB.orders)[0];
 function migrate(x){const d=newOrder();if(!x.need)x.need=clone(d.need);else for(const k in d.need)if(x.need[k]===undefined)x.need[k]='';if(x.paid===undefined)x.paid=false;if(x.orderedAt===undefined)x.orderedAt=x.updated||Date.now();if(!x.src)x.src={vendor:'',ref:'',rate:''};for(const k in d){if(x[k]===undefined)x[k]=clone(d[k])}for(const k in d.c){if(x.c[k]===undefined)x.c[k]=d.c[k]}for(const k in d.lang){if(!x.lang[k])x.lang[k]='zh'}
-  (x.fleet||[]).forEach(f=>{if(f.emg===undefined)f.emg='';const m=(f.phone||'').match(/^(.*?)\s*[（(]\s*緊急聯絡人?\s*[:：]?\s*([^）)]*)[）)]\s*$/);if(m){f.phone=m[1].trim();if(!f.emg)f.emg=m[2].trim()}f.phone=fixTel(f.phone);f.emg=fixTel(f.emg)});return x}
+  (x.fleet||[]).forEach(f=>{if(f.emg===undefined)f.emg='';const m=(f.phone||'').match(/^(.*?)\s*[（(]\s*緊急聯絡人?\s*[:：]?\s*([^）)]*)[）)]\s*$/);if(m){f.phone=m[1].trim();if(!f.emg)f.emg=m[2].trim()}f.phone=fixTel(f.phone);f.emg=fixTel(f.emg)});if(x.c&&/^\d{1,2}:\d{2}$/.test(x.c.start||'')&&!x.c.gather){const [h,mi]=x.c.start.split(':').map(Number),t=(h*60+mi-20+1440)%1440;x.c.gather=String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');x._autoG=x.c.gather}return x}
 /* 手機號碼被試算表吃掉開頭 0（例 933339130）→ 自動補 0 */
 function fixTel(v){const t=String(v==null?'':v).trim();return /^9\d{2}[-\s]?\d{3}[-\s]?\d{3}$/.test(t)?'0'+t:(v==null?'':v)}
 Object.values(DB.orders).forEach(migrate);
@@ -1019,7 +1019,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
     else pay.push(x.hours<3?'未滿 3 小時方案無緩衝，超過即以每 0.5 小時計超時':'超時 15 分鐘內不計 ; 第 16 分鐘起收超時費用',`加時：${otl}`);
     const back=r.balance-r.dsum;if(r.mon){if(r.dok&&r.dsum>r.onsite)pay.push('',`差額 ${money(r.dsum-r.onsite)} 由公司匯款`)}else if(x.balPaid)pay.push('','酬勞由公司匯款');else if(!r.mon&&r.dok&&back>0)pay.push('',`匯回 ${money(back)}`);else if(!r.mon&&r.dok&&back<0)pay.push('',`差額 ${money(-back)} 由公司匯款`);
   }
-  return{no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(c.end)}`,gather:ap(c.gather),
+  return{no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(c.end)}`,gather:ap(c.gather||addMin(c.start,-20)),
     contact:(c.contact2||'').trim()?`\n${cname||''}${crole}  ${ph(c.phone)} / ${c.contact2.trim()}${(c.rel2||'').trim()?`(${c.rel2.trim()})`:''} ${ph(c.phone2)}`.trimEnd():`${cname||''}${crole}  ${ph(c.phone)}`.trim(),boss:`${ld.driver||''} ${ph(ld.phone)}`.trim(),plan:planName(x),
     flags:`${t.deco}：${yn(c.decoAns,lang)} / ${t.cane}：${yn(c.caneAns||(x.cane?'是':'否'),lang)}`+((x.flagNote||'').trim()?`\n*${x.flagNote.trim()}`:''),fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',
     tips:who==='cust'?tipsC(x,lang):TIPS_D,tipsTitle:who==='cust'?t.tipsC:t.tipsD,pay,t}}
@@ -1060,7 +1060,7 @@ function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr)
   const payL=pk.length===1?payOne(pk[0]):pk.map(v=>`${[...pg[v]].join('、')} ${payOne(v)}`).join('；');
   const cane=c.caneAns||(x.cane?'是':'否'),deco=(c.decoAns||'').trim();
   const note=(x.note||'').trim(),noteShow=note&&!/^指定.{0,4}色$/.test(note);
-  return [`${fmtMDW(x.date,'zh')} ${ap(c.start)||'--:--'}-${ap(c.end)||'--:--'}`,`集合時間：${ap(c.gather)||'待定'}`,'地點：',...pts.map(p=>`${p.k}. ${areaOf(p.f)}${p.label?`(${p.label})`:''}`),
+  return [`${fmtMDW(x.date,'zh')} ${ap(c.start)||'--:--'}-${ap(c.end)||'--:--'}`,`集合時間：${ap(c.gather||addMin(c.start,-20))||'待定'}`,'地點：',...pts.map(p=>`${p.k}. ${areaOf(p.f)}${p.label?`(${p.label})`:''}`),
    `禮車流程：${x.path||'待定'}`,`需求：${Object.keys(ng).map(k=>`${k} ${n2(ng[k])}台`).join('、')||'—'}`,`酬勞：${payL}`,
    cane==='是'?'甘蔗：需固定':'',deco&&!/^(否|無|不)/.test(deco)?`指定車頭彩：${deco}`:'',noteShow?`備註：${note}`:'',x.findMain?'主禮車請預備：車頭彩／門把彩／對講機':''].filter(Boolean).join('\n')}
 
@@ -1369,7 +1369,7 @@ function ttTitle(x){const c=x.c;const nm=c.chatName||[c.groom,c.bride].filter(Bo
 function lgName(x){const c=x.c,p=dparts(x.date);const nm=[c.groom,c.bride].filter(Boolean).join('&')||c.chatName||'客人';return `${p?p.m+'/'+p.d+' ':''}${nm} 禮車`}
 function lgMsg(x){const c=x.c,p=dparts(x.date),L=x.memoLinks||{},ld=lead(x)||{};
   const cars=x.fleet.map(f=>[`${f.role}｜${MNAME[f.m]} ${f.color||''}｜${f.plate||'—'}`,`　${f.driver||'（未派）'}${f.lead?'（負責人）':''} ${ph(f.phone)}`.trimEnd(),f.emg?`　緊急聯絡：${ph(f.emg)}`:''].filter(Boolean).join('\n'));
-  return ['各位司機好，這是本次禮車任務群組',`訂單編號：${orderNo(x)}`,`日期：${x.date?fmtDate(x.date)+'（'+WD.zh[p.w]+'）':'未定'}`,`司機集合：${c.gather||'—'}　${c.meetL?c.meetL+'：':''}${c.meet||''}`.trimEnd(),`用車時間：${c.start||'--:--'} - ${c.end||'--:--'}`,
+  return ['各位司機好，這是本次禮車任務群組',`訂單編號：${orderNo(x)}`,`日期：${x.date?fmtDate(x.date)+'（'+WD.zh[p.w]+'）':'未定'}`,`司機集合：${c.gather||addMin(c.start,-20)||'—'}　${c.meetL?c.meetL+'：':''}${c.meet||''}`.trimEnd(),`用車時間：${c.start||'--:--'} - ${c.end||'--:--'}`,
     `派車單：${L.drv||'（請先到「司機／客人 memo」產生連結）'}`,'','車隊',...cars,'',`負責人：${ld.driver||'—'}`,'請大家看完派車單回覆「收到」，當天出發前在群組報到，謝謝！'].join('\n')}
 function ttMemo(x){return [quoteText(x,'zh'),'',`訂單編號：${orderNo(x)}`,`合約：${x.driveFolder||'（合約尚未存到 Drive，存檔後會自動帶入連結）'}`].join('\n')}
 function ttPromptText(pick){const sv=o,L=[],now=new Date();
