@@ -1847,7 +1847,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.c
     const dup=DRV.filter(d=>(r.phone&&String(d.phone||'').replace(/\D/g,'').endsWith(r.phone.slice(1)))||(r.plate&&String(d.plate||'').toUpperCase().replace(/[^A-Z0-9]/g,'')===r.plate.replace(/[^A-Z0-9]/g,'')));if(dup.length)msg.textContent+=`　⚠️ 名單裡已有：${dup.map(d=>d.name+' '+(d.plate||'')).join('、')}`;return}
   if(b.id==='btnDrvSave'){const r=daRead();if(!r.name||!r.phone){msg.textContent='姓名和手機一定要填';return}
     const force=b.dataset.force==='1';b.disabled=true;msg.textContent='存檔中…';
-    try{await gasCall(Object.assign({action:'addDriver',force},r));msg.textContent=`✅ 已存到司機總表：${r.name}`;b.dataset.force='';$('drvPaste').value='';daFill(Object.fromEntries(DA_F.map(k=>[k,''])));loadDrivers(true)}
+    try{await gasCall(Object.assign({action:'addDriver',force},r));msg.textContent=`✅ 已存到司機總表：${r.name}，已加進下拉選單`;b.dataset.force='';DRV=DRV.filter(d=>!(d.name===r.name&&String(d.phone||'').replace(/\D/g,'')===r.phone)).concat([Object.assign({src:'司機總表',status:''},r)]);try{localStorage.setItem('nwcw_drivers',JSON.stringify(DRV))}catch(_){}if($('drvSt'))$('drvSt').textContent=`司機名單 ${DRV.length} 位`;renderFleet();$('drvPaste').value='';daFill(Object.fromEntries(DA_F.map(k=>[k,''])));setTimeout(()=>loadDrivers(true),8000)}
     catch(err){const m=String(err.message||err);if(/已有/.test(m)){msg.textContent=`⚠️ ${m}　再按一次「存到司機總表」會仍然新增`;b.dataset.force='1'}else msg.textContent='存檔失敗：'+(/action|未知|unknown|引數|null|undefined/i.test(m)?'後台還沒部署新版本（請到 Apps Script 按部署 → 建立新版本）':m)}
     finally{b.disabled=false}}});
 setTimeout(()=>{loadDrivers(false);if($('drvSt')&&DRV.length)$('drvSt').textContent=`司機名單 ${DRV.length} 位`},1500);
