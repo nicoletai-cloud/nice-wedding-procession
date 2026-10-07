@@ -209,6 +209,8 @@ nav.tabs button{scroll-snap-align:start}
       <button class="btn" id="btnRemind">提醒文字</button>
       <button class="btn" id="btnCouple">新人資料</button>
       <button class="btn" id="btnNew">＋ 新訂單</button>
+      <button class="btn" id="btnPartner">＋ 同業單</button>
+      <button class="btn" id="btnPtSettle">同業結算</button>
       <button class="btn" id="btnDup">複製此單</button>
       <button class="btn danger" id="btnDel">刪除</button>
     </div>
@@ -413,6 +415,7 @@ nav.tabs button{scroll-snap-align:start}
   <!-- 5 車隊與流程 -->
   <section class="tab" id="tab-dispatch" hidden>
     <div class="stack">
+      <div class="card" id="ptCard" hidden style="border-color:#A77D4C"><h3>同業單 <small>只要選司機；不用出合約、memo、派車單</small></h3><datalist id="ptCoList"></datalist><div id="ptCardBody"></div></div>
       <div class="card">
         <h3>車隊 <small>車序、車號、司機</small></h3>
         <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 8px"><span class="hint" style="margin:0">從司機名單選：</span><select id="drvMode" style="width:auto"><option value="mc">車款＋顏色相符</option><option value="m">只看車款</option><option value="all">全部司機</option></select><button class="btn sm" id="btnDrvReload">更新司機名單</button><button class="btn sm" id="btnDrvAdd">＋新增司機</button><span class="hint" style="margin:0" id="drvSt"></span></div>
@@ -590,6 +593,31 @@ nav.tabs button{scroll-snap-align:start}
     <div id="ibChips" class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
     <div id="ibBatch" class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
     <div id="ibList"><p class="hint">載入中…</p></div>
+  </div>
+</div>
+<div id="ptModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
+  <div style="max-width:820px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px">
+    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">新增同業單 <small>貼上其他禮車公司傳來的派單，自動辨識日期、地址、車款和實拿金額</small></h3><button class="btn" id="btnPtClose">關閉</button></div>
+    <div class="card">
+      <label class="f">同業公司名稱<input id="ptCo" list="ptCoList2" placeholder="例：○○禮車"><datalist id="ptCoList2"></datalist></label>
+      <label class="f" style="margin-top:8px">貼上派單內容<textarea id="ptRaw" rows="10" style="width:100%"></textarea></label>
+      <div class="row" style="gap:8px;margin:8px 0"><button class="btn sm" id="btnPtParse">自動辨識</button></div>
+      <div id="ptPrev" style="font-size:0.9rem;line-height:1.7"></div>
+      <div class="row" style="gap:12px;flex-wrap:wrap;margin-top:10px;align-items:flex-end">
+        <label class="f" style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" id="ptPrepaid" style="width:auto">客人已先匯款給同業（改成同業付我）</label>
+        <label class="f" id="ptCollectWrap">司機現場收（尾款＋司機禮）<input type="number" id="ptCollect" style="width:130px"></label>
+        <label class="f" id="ptOweWrap" hidden>同業應付我<input type="number" id="ptOwe" style="width:130px"></label>
+        <label class="f">我要匯回同業<input type="number" id="ptRemit" style="width:130px"></label>
+      </div>
+      <div class="row" style="margin-top:12px"><button class="btn pri" id="btnPtCreate">建立同業單</button></div>
+    </div>
+  </div>
+</div>
+<div id="ptSettleModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
+  <div style="max-width:900px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px">
+    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">同業結算 <small>依公司加總當天要匯回／要收的金額</small></h3><button class="btn" id="btnPtSettleClose">關閉</button></div>
+    <div class="row" style="gap:10px;align-items:center;margin-bottom:12px"><input type="date" id="ptDate" style="width:auto"><label class="row" style="gap:6px"><input type="checkbox" id="ptMonth" style="width:auto">看整個月</label></div>
+    <div id="ptSettleOut"></div>
   </div>
 </div>
 <div id="decoModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
@@ -1363,7 +1391,7 @@ function paidTextOld(x){const r=calc(x),c=x.c,ps=payState(x);const p=dparts(x.da
   return [`您好，已收到您的訂金匯款，謝謝！`,`訂單編號：${orderNo(x)}`,`匯款日期：${c.payDate?fmtDate(c.payDate):'—'}｜金額：${ps.amt?money(ps.amt):money(r.deposit)}｜後五碼：${c.last5||'—'}`,'',
    `用車日期：${x.date?fmtDate(x.date)+'（'+WD.zh[p.w]+'）':'未定'} ${c.start||''}${c.end?'-'+c.end:''}`,`預約車款：${carsText(x,'zh')}`,`尾款金額：${money(r.balance)}${r.red?'（含司機禮）':''}`,'',
    `附上「禮車預約單暨合約書」，請確認內容無誤後簽名回傳。`,x.driveFolder?`合約檔案：${x.driveFolder}`:'',`司機資訊將於用車日三天前提供，有任何問題歡迎隨時與我們聯繫。`].filter((s,i,a)=>s!==''||a[i-1]!=='').join('\n').replace(/\n+$/,'')}
-function ttTitle(x){const c=x.c;const nm=c.chatName||[c.groom,c.bride].filter(Boolean).join('&')||'（未填客人名稱）';const ch=c.channel&&c.channel!=='LINE'?`(${c.channel.toLowerCase()})`:'';
+function ttTitle(x){if(x.partner){const p=dparts(x.date),cities=[...new Set([x.cityA,x.cityB].filter(Boolean))].join('/');return `【${x.partner.co||'同業'}】${x.c.groom||''}-禮車${cities?'-'+cities:''}${p?'-'+p.m+'/'+p.d:''}`}const c=x.c;const nm=c.chatName||[c.groom,c.bride].filter(Boolean).join('&')||'（未填客人名稱）';const ch=c.channel&&c.channel!=='LINE'?`(${c.channel.toLowerCase()})`:'';
   const ref=x.src&&x.src.ref?'x'+x.src.ref:'';const cities=[...new Set([x.cityA,x.cityB].filter(Boolean))].join('/')||areaOf('meet')||'';const p=dparts(x.date);
   return `${ch}${nm}${ref}-禮車${cities?'-'+cities:''}${p?'-'+p.m+'/'+p.d:''}`}
 function lgName(x){const c=x.c,p=dparts(x.date);const nm=[c.groom,c.bride].filter(Boolean).join('&')||c.chatName||'客人';return `${p?p.m+'/'+p.d+' ':''}${nm} 禮車`}
@@ -1371,7 +1399,7 @@ function lgMsg(x){const c=x.c,p=dparts(x.date),L=x.memoLinks||{},ld=lead(x)||{};
   const cars=x.fleet.map(f=>[`${f.role}｜${MNAME[f.m]} ${f.color||''}｜${f.plate||'—'}`,`　${f.driver||'（未派）'}${f.lead?'（負責人）':''} ${ph(f.phone)}`.trimEnd(),f.emg?`　緊急聯絡：${ph(f.emg)}`:''].filter(Boolean).join('\n'));
   return ['各位司機好，這是本次禮車任務群組',`訂單編號：${orderNo(x)}`,`日期：${x.date?fmtDate(x.date)+'（'+WD.zh[p.w]+'）':'未定'}`,`司機集合：${c.gather||addMin(c.start,-20)||'—'}　${c.meetL?c.meetL+'：':''}${c.meet||''}`.trimEnd(),`用車時間：${c.start||'--:--'} - ${c.end||'--:--'}`,
     `派車單：${L.drv||'（請先到「司機／客人 memo」產生連結）'}`,'','車隊',...cars,'',`負責人：${ld.driver||'—'}`,'請大家看完派車單回覆「收到」，當天出發前在群組報到，謝謝！'].join('\n')}
-function ttMemo(x){return [quoteText(x,'zh'),'',`訂單編號：${orderNo(x)}`,`合約：${x.driveFolder||'（合約尚未存到 Drive，存檔後會自動帶入連結）'}`].join('\n')}
+function ttMemo(x){if(x.partner)return [`同業單：${x.partner.co||''}`,`訂單編號：${orderNo(x)}`,'',x.partner.raw||''].join('\n');return [quoteText(x,'zh'),'',`訂單編號：${orderNo(x)}`,`合約：${x.driveFolder||'（合約尚未存到 Drive，存檔後會自動帶入連結）'}`].join('\n')}
 function ttPromptText(pick){const sv=o,L=[],now=new Date();
   const list=(pick||Object.values(DB.orders)).filter(x=>x.paid&&!x.sample&&!x.lost&&x.date&&daysTo(x)!==null&&daysTo(x)>=0).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:String(a.c.start||'').localeCompare(String(b.c.start||'')));
   try{list.forEach((x,i)=>{o=x;const p=dparts(x.date),c=x.c;
@@ -1417,7 +1445,7 @@ function renderRefs(){renderSettle();const mEl=$('refMonth');if(!mEl.value){cons
     return [`【好好禮車】${ym.replace('-','年')}月 請款明細｜${v.name}`,...os.map(x=>`${x.date.slice(5).replace('-','/')} ${orderNo(x)} ${[x.c.groom,x.c.bride].filter(Boolean).join('&')} ${planName(x).replace(/^Tesla /,'').replace(/ \S*禮車方案$/,'')} ${money(calc(x).bill)}`),`合計：${money(tot)}`,`（司機紅包、甘蔗固定費由司機現場收取，不列入請款）`,'',`匯款資訊：`,S.bank].join('\n')}).filter(Boolean);
   $('billVendorName').textContent=mv.map(v=>v.name).join('、');$('outBill').textContent=bills.join('\n\n')||'這個月沒有月結廠商的訂單。'}
 function renderOrderSel(){const list=Object.values(DB.orders).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.updated-a.updated);
-  $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(orderNo(x))}${x.c.groom||x.c.bride||vLabel(x)?'・'+esc(coupleName(x)):''}${x.sample?'（範例）':'・'+STAGE_LABEL[stageOf(x)]}</option>`).join('');renderTodoBadge();if(!$('todoModal').hidden)renderTodo()}
+  $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(orderNo(x))}${x.c.groom||x.c.bride||vLabel(x)?'・'+esc(coupleName(x)):''}${x.sample?'（範例）':x.partner?'・【同業 '+esc(x.partner.co||'')+'】':'・'+STAGE_LABEL[stageOf(x)]}</option>`).join('');renderTodoBadge();if(!$('todoModal').hidden)renderTodo()}
 function renderAll(){renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派車頭':''].filter(Boolean),tr=[k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就派司機':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月派司機':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月派司機':'白色特斯拉：用車前一週派司機'):''].filter(Boolean);$('headHint').textContent=(rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):k.tesla&&!k.lux?'特斯拉由你擔任車頭，不用指派車頭。':'本單沒有提前指派車頭的需求。')+(tr.length?'　'+tr.join('；'):'')+(String(o.carHead||'').trim()?'　✅ 已找車頭：司機由車頭安排，用車前 3 天再確認司機資料即可。':'')}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=CONFIRM_TPL;renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
   $('outQuote').textContent=quoteText(o,'zh');$('outOrder').textContent=orderText(o,'zh');
   renderFind();$('contractPaper').innerHTML=contractHTML(o);renderMemo();
@@ -1521,6 +1549,7 @@ function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];c
     if(x.cfSentAt&&!x.cfDoneAt)T.push({k:'cfwait',late:d<=5});
     if(!x.drvDone&&(!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim()))){const hd=String(x.carHead||'').trim();if(hd){if(d!==null&&d<=3)T.push({k:'nodrv',late:true,why:'車頭已安排，確認司機資料'})}else{const tr=teslaDrvRule(x,d);T.push(tr?{k:'nodrv',late:d<=14||tr.late,why:tr.why}:{k:'nodrv',late:d<=14})}}
     else if(d<=7&&!x.memoDone&&!(x.memoLinks&&x.memoLinks.cust))T.push({k:'nomemo',late:d<=3});}
+  if(x.partner)return T.filter(t=>t.k==='tt'||t.k==='nodrv');
   return T}
 let todoF='all';const todoSel=new Set();
 function todoRows(){const q=normNo($('todoQ').value),late=$('todoLate').checked;
@@ -1811,6 +1840,66 @@ document.addEventListener('change',e=>{const t=e.target;if(t.id==='drvMode'){ren
   if(t.classList&&t.classList.contains('drvPick')&&t.value){const [nm,pl]=t.value.split('|');const d=DRV.find(z=>z.name===nm&&z.plate===pl);const f=o.fleet[+t.dataset.dp];if(!d||!f)return;
     f.driver=d.name;f.phone=fixTel(d.phone)||f.phone;f.plate=d.plate||f.plate;if(!f.emg&&d.emg)f.emg=fixTel(d.emg);if(+d.seats)f.seats=+d.seats;o.sample=false;save();renderFleet();renderAll();toast(`已填入 ${d.name}`)}});
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('#btnDrvReload');if(t)loadDrivers(true)});
+/* ===== 同業單（幫其他禮車公司派車：只選司機，不出合約／memo） ===== */
+const isPt=x=>!!(x&&x.partner);
+const ptCN={'一':1,'二':2,'兩':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8};
+function ptNum(s){return +(String(s||'').replace(/[^\d]/g,''))||0}
+function parsePartner(raw){const t=String(raw||'').replace(/\r/g,'').replace(/：/g,':').replace(/～|〜/g,'~').replace(/＄/g,'$'),r={raw:String(raw||'')};
+  const dm=t.match(/(\d{2,4})\s*[.\/年-]\s*(\d{1,2})\s*[.\/月-]\s*(\d{1,2})/);if(dm){let y=+dm[1];if(y<1911)y+=1911;r.date=`${y}-${String(dm[2]).padStart(2,'0')}-${String(dm[3]).padStart(2,'0')}`}
+  const tm=t.match(/(\d{1,2}:\d{2})\s*[~\-－至]\s*(\d{1,2}:\d{2})/);if(tm){const f=s=>s.padStart(5,'0');r.start=f(tm[1]);r.end=f(tm[2]);const mi=s=>+s.split(':')[0]*60+ +s.split(':')[1];let h=(mi(r.end)-mi(r.start))/60;if(h<0)h+=24;r.hours=h}
+  if(dm){const line=t.slice(t.indexOf(dm[0])).split('\n')[1]||'';const ph=line.match(/0?9\d{2}[-\s]?\d{3}[-\s]?\d{3}/);if(ph){r.phone=ph[0].replace(/\D/g,'');if(r.phone.length===9)r.phone='0'+r.phone;const before=line.slice(0,line.indexOf(ph[0])).trim().split(/\s+/);r.name=before.pop()||'';r.area=before.join(' ')}}
+  const ad=k=>{const m=t.match(new RegExp('^\\s*'+k+'[^:\\n]{0,6}:[ \\t]*(.*)$','m'));return m?m[1].trim():''};r.A=ad('A');r.B=ad('B');r.C=ad('C');r.D=ad('D');
+  const fl=t.match(/流程\s*:[ \t]*(.*)/);r.route=fl?fl[1].trim():'';const nt=t.match(/備註\s*:[ \t]*(.*)/);r.note=nt?nt[1].trim():'';
+  const rm=t.match(/匯回\s*\$?\s*([\d,]+)/);r.remit=rm?ptNum(rm[1]):0;
+  const tot=t.match(/尾款[^\n]*?=\s*\$?\s*([\d,]+)/)||t.match(/尾款\s*\$?\s*([\d,]+)/);r.collect=tot?ptNum(tot[1]):0;
+  r.cars=[];t.split('\n').forEach(L=>{const m=L.match(/(?:\((\S{1,3}色)\))?\s*Model\s*([X3YS])\b(?:\s*[*×xX]\s*([一二兩三四五六七八\d])\s*部)?[^\n]*?實拿\s*([^如\n]*)/i);if(!m)return;
+    const n=m[3]?(ptCN[m[3]]||+m[3]):1;const amts=[];(m[4].match(/\$?\s*[\d,]+(?:\s*\*\s*\d)?/g)||[]).forEach(s=>{const k=s.match(/\*\s*(\d)/);const v=ptNum(s.split('*')[0]);for(let i=0;i<(k?+k[1]:1);i++)amts.push(v)});
+    const ot=L.match(/超時\s*\$?([\d,]+)/);for(let i=0;i<n;i++)r.cars.push({m:m[2].toUpperCase(),color:m[1]||'',amt:amts[i]!=null?amts[i]:(amts[amts.length-1]||0),ot:ot?ptNum(ot[1]):0})});
+  return r}
+function ptCos(){return [...new Set(Object.values(DB.orders).filter(isPt).map(x=>x.partner.co).filter(Boolean))].sort()}
+function ptPreview(){const r=parsePartner($('ptRaw').value);$('ptRaw')._r=r;const cars=r.cars.map(c=>`${c.color||''}${MNAME[c.m]||c.m} 實拿 ${money(c.amt)}`).join('、')||'⚠️ 沒抓到車款，請確認內容有「Model X 實拿$…」';
+  $('ptPrev').innerHTML=[['日期',r.date||'⚠️ 未抓到'],['時間',r.start?`${r.start}～${r.end}（${r.hours} 小時）`:'⚠️ 未抓到'],['新人',`${r.area||''} ${r.name||''} ${r.phone||''}`],['A',r.A],['B',r.B],['C',r.C],['D',r.D],['流程',r.route],['車款',cars],['現場收（尾款＋司機禮）',r.collect?money(r.collect):'⚠️ 未抓到'],['匯回同業',r.remit?money(r.remit):'0'],['備註',r.note]].filter(z=>z[1]).map(([k,v])=>`<div><b>${esc(k)}</b>：${esc(String(v))}</div>`).join('');
+  if(!$('ptCollect').value&&r.collect)$('ptCollect').value=r.collect;if(!$('ptRemit').value&&r.remit)$('ptRemit').value=r.remit}
+function ptCreate(){const r=$('ptRaw')._r||parsePartner($('ptRaw').value),co=$('ptCo').value.trim();if(!co){toast('請填同業公司名稱');$('ptCo').focus();return}if(!r.date){toast('沒抓到日期，請確認貼上的內容');return}if(!r.cars.length){toast('沒抓到車款');return}
+  const x=newOrder(),c=x.c;x.date=r.date;x.hours=r.hours||3;x.cars={X:0,S:0,Y:0,'3':0};r.cars.forEach(k=>{x.cars[k.m]=(x.cars[k.m]||0)+1});
+  const col=(r.cars.find(k=>k.color)||{}).color||'';if(['白色','黑色','紅色'].includes(col))x.colorReq=col;
+  c.start=r.start||'';c.end=r.end||'';c.groom=r.name||'';c.phone=r.phone||'';c.chatName=`【${co}】${r.name||''}`;c.channel='同業';
+  c.meet=r.A;c.wed=r.B;c.o1=r.C;c.o2=r.D;c.meetL='集合';c.wedL='目的地';c.o1L=r.C?'宴客':'';c.o2L=r.D?'其他':'';c.route=r.route;x.path=r.route.replace(/[＞>]/g,' - ');
+  x.cityA=countyOf(r.A)||'';x.cityB=countyOf(r.B)||'';x.note=r.note;
+  const prepaid=$('ptPrepaid').checked;x.partner={co,raw:r.raw,remit:num($('ptRemit').value),collect:prepaid?0:num($('ptCollect').value),prepaid,owe:prepaid?num($('ptOwe').value):0};
+  const now=Date.now(),d=new Date();Object.assign(x,{paid:true,paidTs:now,paidAt:`${d.getMonth()+1}/${d.getDate()} 同業`,orderedAt:now,ttDone:false,contractDone:true,formAt:now,cfDoneAt:now,memoDone:true,revSkip:true});
+  o=x;DB.orders[o.id]=o;syncFleet();const pool={};r.cars.forEach(k=>{(pool[k.m]=pool[k.m]||[]).push(k)});o.fleet.forEach(f=>{const k=(pool[f.m]||[]).shift();if(k){f.ptAmt=k.amt;f.ptOt=k.ot;if(k.color)f.color=k.color}});
+  save();loadOrder();$('ptModal').hidden=true;$('ptRaw').value='';$('ptPrev').innerHTML='';['ptCollect','ptRemit','ptOwe'].forEach(i=>$(i).value='');$('ptPrepaid').checked=false;showTab('dispatch');toast(`已建立同業單：${co} ${r.name||''}`)}
+function ptCalc(x){const p=x.partner||{},pay=(x.fleet||[]).reduce((s,f)=>s+num(payOf(f)),0),got=p.prepaid?num(p.owe):num(p.collect);
+  return{pay,got,back:p.prepaid?0:num(p.collect)-pay,remit:num(p.remit),owe:p.prepaid?num(p.owe):0,profit:got-pay-num(p.remit)}}
+function renderPtCard(){const el=$('ptCard');if(!el)return;if(!isPt(o)){el.hidden=true;return}el.hidden=false;const p=o.partner,k=ptCalc(o);
+  $('ptCardBody').innerHTML=`<div class="row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
+   <label class="f">同業公司<input data-pt="co" value="${esc(p.co||'')}" list="ptCoList" style="width:160px"></label>
+   <label class="f" style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" data-pt="prepaid" ${p.prepaid?'checked':''} style="width:auto">客人已先匯款給同業（同業要付我）</label>
+   ${p.prepaid?`<label class="f">同業應付我<input type="number" data-pt="owe" value="${num(p.owe)||''}" style="width:110px"></label>`:`<label class="f">司機現場收（尾款＋司機禮）<input type="number" data-pt="collect" value="${num(p.collect)||''}" style="width:120px"></label>`}
+   <label class="f">我要匯回同業<input type="number" data-pt="remit" value="${num(p.remit)||''}" style="width:110px"></label></div>
+   <div style="margin-top:10px;line-height:1.9">${o.fleet.map(f=>`${esc(f.role||'')}｜${esc(MNAME[f.m]||f.m)} ${esc(f.color||'')}｜同業實拿 ${f.ptAmt!=null?money(f.ptAmt):'—'}｜司機酬勞 ${money(num(payOf(f)))}｜${esc(f.driver||'（未派）')}`).join('<br>')}</div>
+   <div style="margin-top:8px;font-weight:700">司機酬勞合計 ${money(k.pay)}　${p.prepaid?`同業應付我 ${money(k.owe)}`:`司機現場收 ${money(num(p.collect))} → 扣酬勞後交回我 ${money(k.back)}`}　匯回同業 ${money(k.remit)}　<span style="color:#2F6B4F">我的回佣 ${money(k.profit)}</span></div>
+   <details style="margin-top:8px"><summary class="hint" style="cursor:pointer;margin:0">同業原始派單內容</summary><pre class="out" style="margin-top:6px">${esc(p.raw||'')}</pre></details>`;
+  $('ptCoList').innerHTML=ptCos().map(c=>`<option value="${esc(c)}">`).join('')}
+document.addEventListener('input',e=>{const t=e.target;if(!t.dataset||!t.dataset.pt||!isPt(o))return;const k=t.dataset.pt;o.partner[k]=t.type==='checkbox'?t.checked:t.type==='number'?num(t.value):t.value;if(k==='co'){o.c.chatName=`【${t.value.trim()}】${o.c.groom||''}`}save();if(k!=='co')renderPtCard();renderOrderSel()});
+document.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.pt==='prepaid'&&isPt(o)){o.partner.prepaid=t.checked;save();renderPtCard()}});
+function ptTabs(){const pt=isPt(o);['couple','contract','memo','refs'].forEach(k=>{const b=document.querySelector(`#tabs button[data-tab="${k}"]`);if(b)b.hidden=pt});const cur=document.querySelector('#tabs button[aria-selected="true"]');if(pt&&cur&&cur.hidden)showTab('dispatch')}
+function renderPtSettle(){const d=$('ptDate').value,mon=$('ptMonth').checked;const L=Object.values(DB.orders).filter(x=>isPt(x)&&!x.lost&&x.date&&(mon?x.date.slice(0,7)===d.slice(0,7):x.date===d)).sort((a,b)=>a.date.localeCompare(b.date));
+  const G={};L.forEach(x=>{(G[x.partner.co||'（未填公司）']=G[x.partner.co||'（未填公司）']||[]).push(x)});
+  $('ptSettleOut').innerHTML=Object.keys(G).length?Object.entries(G).map(([co,xs])=>{const s={pay:0,back:0,remit:0,owe:0,profit:0};xs.forEach(x=>{const k=ptCalc(x);for(const z in s)s[z]+=k[z]});const net=s.owe-s.remit;
+    const txt=[`${co} ${mon?d.slice(0,7)+' 月':d.replace(/-/g,'/')} 結算`,...xs.map(x=>{const k=ptCalc(x);return `${x.date.slice(5).replace('-','/')} ${x.c.groom||''}：${x.partner.prepaid?'同業應付 '+money(k.owe):'現場收 '+money(num(x.partner.collect))}，匯回 ${money(k.remit)}`}),net>=0?`合計：同業應付我 ${money(s.owe)}，我應匯回 ${money(s.remit)} → 同業需付我 ${money(net)}`:`合計：我應匯回 ${money(s.remit)}${s.owe?`，同業應付我 ${money(s.owe)}`:''} → 我需匯給同業 ${money(-net)}`].join('\n');
+    return `<div class="card" style="margin-bottom:10px"><h3>${esc(co)} <small>${xs.length} 單</small></h3>${xs.map(x=>{const k=ptCalc(x);return `<div class="todo-row" style="cursor:default"><div class="m" style="flex:1"><div><b>${esc(orderNo(x))}</b> ${esc(x.c.groom||'')}　${esc(x.date)}</div><div class="sub">${x.partner.prepaid?'客人已匯同業｜同業應付我 '+money(k.owe):'司機現場收 '+money(num(x.partner.collect))+'｜司機交回我 '+money(k.back)}｜司機酬勞 ${money(k.pay)}｜匯回同業 ${money(k.remit)}｜回佣 ${money(k.profit)}${(x.fleet||[]).some(f=>!String(f.driver||'').trim())?'｜⚠️ 還有車沒派司機':''}</div></div><button class="btn sm" data-topen="${esc(x.id)}">開啟</button></div>`}).join('')}
+      <div style="margin-top:8px;font-weight:700">${net>=0?`同業需付我 ${money(net)}`:`我需匯給同業 ${money(-net)}`}　<span style="color:#2F6B4F">回佣合計 ${money(s.profit)}</span>　<span class="hint" style="margin:0">司機要交回我 ${money(s.back)}</span></div>
+      <div class="row" style="margin-top:6px"><button class="btn sm" data-ptcopy="${esc(txt)}">複製結算文字</button></div></div>`}).join(''):'<div class="hint">這天沒有同業單</div>'}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#btnPartner,#btnPtClose,#btnPtParse,#btnPtCreate,#btnPtSettle,#btnPtSettleClose,[data-ptcopy]');if(!b)return;
+  if(b.id==='btnPartner'){$('ptModal').hidden=false;$('ptCoList2').innerHTML=ptCos().map(c=>`<option value="${esc(c)}">`).join('');$('ptRaw').focus();return}
+  if(b.id==='btnPtClose'){$('ptModal').hidden=true;return}if(b.id==='btnPtParse'){ptPreview();return}if(b.id==='btnPtCreate'){ptPreview();ptCreate();return}
+  if(b.id==='btnPtSettle'){if(!$('ptDate').value)$('ptDate').value=new Date(Date.now()+8*36e5).toISOString().slice(0,10);$('ptSettleModal').hidden=false;renderPtSettle();return}
+  if(b.id==='btnPtSettleClose'){$('ptSettleModal').hidden=true;return}if(b.dataset.ptcopy){clip(b.dataset.ptcopy);return}});
+document.addEventListener('change',e=>{if(e.target&&(e.target.id==='ptDate'||e.target.id==='ptMonth'))renderPtSettle();if(e.target&&e.target.id==='ptPrepaid'){$('ptOweWrap').hidden=!e.target.checked;$('ptCollectWrap').hidden=e.target.checked}});
+{const _ra2=renderAll;renderAll=function(){_ra2.apply(this,arguments);try{renderPtCard();ptTabs()}catch(err){console.warn(err)}}}
+
 /* 生肖篩選（每張訂單各自記住要避開的生肖） */
 const ZOD='鼠牛虎兔龍蛇馬羊猴雞狗豬';function zodOf(d){const m=String((d&&d.zodiac)||'').replace(/竜/g,'龍').match(/[鼠牛虎兔龍蛇馬羊猴雞狗豬]/);return m?m[0]:''}
 function zodSync(){const av=o.avoidZ||[];document.querySelectorAll('[data-zod]').forEach(b=>{const on=av.includes(b.dataset.zod);b.setAttribute('aria-pressed',on);b.classList.toggle('pri',on);b.style.textDecoration=on?'line-through':''});const st=$('zodSt');if(st)st.textContent=av.length?`已避開 ${av.join('、')}（沒填生肖的司機仍會列出）`:''}
