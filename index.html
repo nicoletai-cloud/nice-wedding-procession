@@ -415,6 +415,7 @@ nav.tabs button{scroll-snap-align:start}
     <div class="stack">
       <div class="card">
         <h3>車隊 <small>車序、車號、司機</small></h3>
+        <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 8px"><span class="hint" style="margin:0">從司機名單選：</span><select id="drvMode" style="width:auto"><option value="mc">車款＋顏色相符</option><option value="m">只看車款</option><option value="all">全部司機</option></select><button class="btn sm" id="btnDrvReload">更新司機名單</button><span class="hint" style="margin:0" id="drvSt"></span></div>
         <div class="tbl"><table>
           <thead><tr><th>車款</th><th>車序</th><th>車號</th><th>司機</th><th>電話</th><th>緊急聯絡 <small>只放 LINE 群組</small></th><th>升等為 <small>沒升等留空</small></th><th>顏色</th><th>座位</th><th>司機車資</th><th>負責人</th></tr></thead>
           <tbody id="fleetBody"></tbody>
@@ -580,7 +581,7 @@ nav.tabs button{scroll-snap-align:start}
 </div>
 <div id="decoModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
   <div style="max-width:1100px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px">
-    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">車頭彩檔期 <small>每款只有一組；自己出車（北北基桃竹）佔前後 1 天、順豐寄送佔前後 3 天、蝦皮佔使用日前 6 天～後 4 天</small></h3><button class="btn" id="btnDecoClose">關閉</button></div>
+    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">車頭彩檔期 <small>每款只有一組；自己出車（北北基桃竹）佔前後 1 天、順豐寄送佔前後 3 天、蝦皮佔使用日前 6 天～後 4 天；車牌 REA-2768／EAB-0029（自己的車）一律直接帶去</small></h3><button class="btn" id="btnDecoClose">關閉</button></div>
     <div class="card" style="margin-bottom:12px"><h3>查某天可接的款式</h3>
       <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><input type="date" id="decoQDate" style="width:auto"><select id="decoQWay" style="width:auto"><option value="near">自己出車（北北基桃竹）</option><option value="far">順豐寄送（苗栗以南／宜花東）</option><option value="shopee">蝦皮出租</option></select></div>
       <div id="decoQOut" style="margin-top:8px;font-size:0.933rem;line-height:1.6"></div></div>
@@ -1298,7 +1299,7 @@ function renderSum(){const r=calc(o);const rows=[];
 function renderFleet(){$('fleetBody').innerHTML=o.fleet.map((f,i)=>{const dp=driverBasePay(f.m,o);return `<tr><td><b>${MNAME[f.m]}</b></td>
   <td><select data-fl="${i}.role" id="fl_r${i}">${ROLES.map(r=>`<option${r===f.role?' selected':''}>${r}</option>`).join('')}</select></td>
   <td><input data-fl="${i}.plate" id="fl_p${i}" value="${esc(f.plate)}" placeholder="ABC-1234"></td>
-  <td><input data-fl="${i}.driver" id="fl_d${i}" value="${esc(f.driver)}"></td>
+  <td><input data-fl="${i}.driver" id="fl_d${i}" value="${esc(f.driver)}"><select class="drvPick" data-dp="${i}" style="margin-top:4px;font-size:0.8rem;max-width:180px">${drvOptions(f)}</select></td>
   <td><input data-fl="${i}.phone" id="fl_t${i}" value="${esc(f.phone)}" inputmode="tel"></td>
   <td><input data-fl="${i}.emg" id="fl_e${i}" value="${esc(f.emg||'')}" inputmode="tel" placeholder="不會出現在 memo"></td>
   <td><input data-fl="${i}.up" id="fl_u${i}" value="${esc(f.up||'')}" placeholder="例：Model Y" style="width:96px"></td>
@@ -1389,7 +1390,7 @@ function renderRefs(){renderSettle();const mEl=$('refMonth');if(!mEl.value){cons
   $('billVendorName').textContent=mv.map(v=>v.name).join('、');$('outBill').textContent=bills.join('\n\n')||'這個月沒有月結廠商的訂單。'}
 function renderOrderSel(){const list=Object.values(DB.orders).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.updated-a.updated);
   $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(orderNo(x))}${x.c.groom||x.c.bride||vLabel(x)?'・'+esc(coupleName(x)):''}${x.sample?'（範例）':'・'+STAGE_LABEL[stageOf(x)]}</option>`).join('');renderTodoBadge();if(!$('todoModal').hidden)renderTodo()}
-function renderAll(){renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派':'',k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就指派':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月指派':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月指派':'白色特斯拉：用車前一週指派'):''].filter(Boolean);$('headHint').textContent=rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):'本單沒有提前指派車頭的需求。'}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=CONFIRM_TPL;renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
+function renderAll(){renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派車頭':''].filter(Boolean),tr=[k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就派司機':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月派司機':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月派司機':'白色特斯拉：用車前一週派司機'):''].filter(Boolean);$('headHint').textContent=(rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):k.tesla&&!k.lux?'特斯拉由你擔任車頭，不用指派車頭。':'本單沒有提前指派車頭的需求。')+(tr.length?'　'+tr.join('；'):'')}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=CONFIRM_TPL;renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
   $('outQuote').textContent=quoteText(o,'zh');$('outOrder').textContent=orderText(o,'zh');
   renderFind();$('contractPaper').innerHTML=contractHTML(o);renderMemo();
   ['meet','wed','o1','o2'].forEach(k=>{$('c_'+k+'S').placeholder=shortArea(o.c[k])||'自動'});
@@ -1472,10 +1473,11 @@ function carKind(x){const used=MODELS.filter(m=>num(x.cars[m])>0);return{lux:use
 function bigDay(x){return!!x.date&&Object.values(DB.orders).filter(y=>!y.sample&&!y.lost&&y.date===x.date).length>=5}
 function headNeed(x,d){const k=carKind(x),R=[],ago=t=>(Date.now()-(+t||0))/DAY,big=bigDay(x);
   if(k.lux&&x.paid)R.push({why:'豪車',late:ago(x.paidTs||x.updated)>=2});
-  if(k.tesla&&x.colorReq==='紅色')R.push({why:'紅色',late:ago(x.orderedAt||x.updated)>=2});
-  if(k.tesla&&x.colorReq==='黑色'&&d!==null&&d<=60)R.push({why:'黑色',late:d<=53});
-  if(k.tesla&&x.colorReq==='白色'&&d!==null&&d<=(big?60:7))R.push({why:big?'白色・大日子':'白色',late:d<=(big?53:5)});
   return R}
+function teslaDrvRule(x,d){const k=carKind(x),big=bigDay(x),ago=t=>(Date.now()-(+t||0))/DAY;if(!k.tesla)return null;
+  if(x.colorReq==='紅色')return{why:'紅色特斯拉',late:ago(x.orderedAt||x.updated)>=2};
+  if(x.colorReq==='黑色'&&d!==null&&d<=60)return{why:'黑色特斯拉',late:d<=53};
+  if(x.colorReq==='白色'&&d!==null&&d<=(big?60:7))return{why:big?'白色特斯拉・大日子':'白色特斯拉',late:d<=(big?53:5)};return null}
 function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];const now=Date.now(),d=daysTo(x),T=[],ago=t=>(now-(+t||0))/DAY;
   if(x.quiet&&st!=='done'){const nd=!x.drvDone&&(!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim()));return d!==null&&d<=30&&nd?[{k:'nodrv',late:true,why:'一個月前安排車子'}]:[]}
   if(x.c&&x.c.photoReq==='要'&&!x.photoSentAt)T.push({k:'photo',late:d!==null&&d<=-3});
@@ -1489,7 +1491,7 @@ function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];c
   if(x.paid&&d!==null){
     if(d<=7&&!x.cfSentAt&&!x.cfDoneAt)T.push({k:'cfsend',late:d<=5});
     if(x.cfSentAt&&!x.cfDoneAt)T.push({k:'cfwait',late:d<=5});
-    if(!x.drvDone&&(!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim())))T.push({k:'nodrv',late:d<=14});
+    if(!x.drvDone&&(!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim()))){const tr=teslaDrvRule(x,d);T.push(tr?{k:'nodrv',late:d<=14||tr.late,why:tr.why}:{k:'nodrv',late:d<=14})}
     else if(d<=7&&!x.memoDone&&!(x.memoLinks&&x.memoLinks.cust))T.push({k:'nomemo',late:d<=3});}
   return T}
 let todoF='all';const todoSel=new Set();
@@ -1676,18 +1678,19 @@ if(top){$('btnPrint').hidden=false;$('btnDrive').hidden=false}else{$('contractHi
 /* ===== 車頭彩檔期 ===== */
 const DECO_DEF=[['A','40cm 紅玫瑰心環'],['B','40cm 囍字紅金花環'],['C','錦瑟華年熱情款'],['D','艾莉絲藍粉色花彩'],['E','森系紅色仿真車彩'],['F','卡布奇諾浪漫款'],['G','紫戀花語詩韻款'],['H','繁花似錦溫馨款'],['I','花影流光夢幻款'],['J','雲裳花語優雅款'],['K','小清新浪漫女孩車花'],['L','花開如夢繽紛款'],['M','花辰月夕喜慶款'],['N','丹華映日禮讚款'],['O','幽蘭淡雅綺麗款']].map(([code,name])=>({code,name}));
 const DECO_NEAR=['台北','新北','基隆','桃園','新竹'];
+const OWN_PLATES=['REA2768','EAB0029'];function ownCar(x){return (x.fleet||[]).some(f=>OWN_PLATES.includes(String(f.plate||'').toUpperCase().replace(/[^A-Z0-9]/g,'')))}
 function decoStyles(){if(!Array.isArray(S.decoStyles)||!S.decoStyles.length)S.decoStyles=clone(DECO_DEF);return S.decoStyles.filter(s=>s&&s.code)}
 function decoName(code){const s=decoStyles().find(z=>z.code===code);return s?(s.name&&s.name!==s.code?`${s.code}. ${s.name}`:s.code):code}
 function dAdd(d,n){const t=new Date(d+'T00:00:00Z');t.setUTCDate(t.getUTCDate()+n);return t.toISOString().slice(0,10)}
 function dShort(d){return d?(+d.slice(5,7))+'/'+(+d.slice(8,10)):''}
-function decoNear(x){const cs=[x.cityA,x.cityB].filter(Boolean);if(!cs.length&&x.c){['meet','wed','o1','o2'].forEach(k=>{const t=String(x.c[k]||'').replace(/臺/g,'台'),m=t.match(/(台北|新北|基隆|桃園|新竹|苗栗|台中|彰化|南投|雲林|嘉義|台南|高雄|屏東|宜蘭|花蓮|台東|澎湖|金門|連江)/);if(m)cs.push(m[1])})}return cs.length>0&&cs.every(c=>DECO_NEAR.some(n=>String(c).replace(/臺/g,'台').indexOf(n)===0))}
+function decoNear(x){if(ownCar(x))return true;const cs=[x.cityA,x.cityB].filter(Boolean);if(!cs.length&&x.c){['meet','wed','o1','o2'].forEach(k=>{const t=String(x.c[k]||'').replace(/臺/g,'台'),m=t.match(/(台北|新北|基隆|桃園|新竹|苗栗|台中|彰化|南投|雲林|嘉義|台南|高雄|屏東|宜蘭|花蓮|台東|澎湖|金門|連江)/);if(m)cs.push(m[1])})}return cs.length>0&&cs.every(c=>DECO_NEAR.some(n=>String(c).replace(/臺/g,'台').indexOf(n)===0))}
 function decoFormCode(x){const a=String((x.c&&x.c.decoAns)||'').trim(),m=a.match(/^#?\s*([A-Za-z])(?:\s*款|\s*$|[.\s])/);if(!m)return'';const k=m[1].toUpperCase();return decoStyles().some(s=>s.code===k)?k:''}
 function decoCodeOf(x){return x.decoStyle||decoFormCode(x)}
 function decoWanted(x){return +x.deco>0||/^是/.test(String((x.c&&x.c.decoAns)||'').trim())||!!decoFormCode(x)}
 function decoMissing(){const today=new Date().toISOString().slice(0,10);return Object.values(DB.orders).filter(x=>!x.sample&&!x.lost&&x.date&&x.date>=today&&decoWanted(x)&&!decoCodeOf(x)&&!(x.decoLater&&today<x.decoLater)).sort((a,b)=>a.date.localeCompare(b.date))}
 function decoBookings(){const B=[];
   Object.values(DB.orders).forEach(x=>{const code=decoCodeOf(x);if(x.sample||x.lost||!code||!x.date)return;const near=decoNear(x),c=x.c||{};
-    B.push({code,src:x.decoStyle?'':'form',date:x.date,from:dAdd(x.date,near?-1:-3),to:dAdd(x.date,near?1:3),kind:'car',id:x.id,how:near?'自己出車':'順豐寄送',tent:!x.paid,label:`${orderNo(x)} ${c.chatName||[c.groom,c.bride].filter(Boolean).join('&')}`})});
+    B.push({code,src:x.decoStyle?'':'form',date:x.date,from:dAdd(x.date,near?-1:-3),to:dAdd(x.date,near?1:3),kind:'car',id:x.id,how:ownCar(x)?'自己的車直接帶':near?'自己出車':'順豐寄送',tent:!x.paid,label:`${orderNo(x)} ${c.chatName||[c.groom,c.bride].filter(Boolean).join('&')}`})});
   (S.decoRents||[]).forEach(r=>{if(!r||!r.code||!r.date)return;B.push({code:r.code,date:r.date,from:dAdd(r.date,-6),to:dAdd(r.date,4),kind:'shopee',id:r.id,how:'蝦皮寄送',r,label:`蝦皮 ${r.who||''}${r.note?'（'+r.note+'）':''}`})});
   return B.sort((a,b)=>a.from.localeCompare(b.from))}
 function decoClash(b,B){return B.filter(y=>y!==b&&y.code===b.code&&!(y.to<b.from||y.from>b.to))}
@@ -1696,7 +1699,7 @@ function renderDeco(){const sel=$('q_decoStyle');if(sel){const v=o.decoStyle||''
   if(!o.date){h.innerHTML='<span style="color:#A0453A">先填用車日期，才能確認車頭彩檔期</span>';return}
   const B=decoBookings(),me=B.find(b=>b.kind==='car'&&b.id===o.id);if(!me){h.innerHTML='';return}
   const cl=decoClash(me,B);
-  h.innerHTML=(me.src==='form'?`新人表單選了 ${esc(decoName(me.code))}（已自動記入檔期）　`:'')+`佔用 ${dShort(me.from)}～${dShort(me.to)}（${me.how}${me.how==='自己出車'?'，前後 1 天':'，前後 3 天'}）　`+(cl.length?`<b style="color:#A0453A">⚠️ 撞期：${cl.map(c=>esc(c.label.trim())+' '+dShort(c.from)+'～'+dShort(c.to)).join('、')}</b>`:'<span style="color:#2F6B4F">✅ 檔期可用</span>')}
+  h.innerHTML=(me.src==='form'?`新人表單選了 ${esc(decoName(me.code))}（已自動記入檔期）　`:'')+`佔用 ${dShort(me.from)}～${dShort(me.to)}（${me.how}${me.how!=='順豐寄送'?'，前後 1 天':'，前後 3 天'}）　`+(cl.length?`<b style="color:#A0453A">⚠️ 撞期：${cl.map(c=>esc(c.label.trim())+' '+dShort(c.from)+'～'+dShort(c.to)).join('、')}</b>`:'<span style="color:#2F6B4F">✅ 檔期可用</span>')}
 
 const SP_STEP=[['dep','押金已收'],['ord','客人已下單'],['ship','已出貨'],['back','已寄回'],['refund','押金已退']];
 function shopeeDates(r){const u=r.date;return{orderBy:dAdd(u,-16),ship:dAdd(u,-6),arrive:dAdd(u,-2),sendBack:dAdd(u,2),free:dAdd(u,5)}}
@@ -1758,6 +1761,28 @@ document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest
 document.addEventListener('change',e=>{if(e.target&&(e.target.id==='decoQDate'||e.target.id==='decoQWay'))renderDecoModal()});
 document.addEventListener('click',e=>{const d=e.target.closest&&e.target.closest('[data-decoday]');if(!d)return;$('decoQDate').value=d.dataset.decoday;renderDecoModal();$('decoQDate').scrollIntoView({behavior:'smooth',block:'center'})});
 {const _ra=renderAll;renderAll=function(){_ra.apply(this,arguments);try{renderDeco();renderDecoModal();renderDecoBtn()}catch(err){console.warn(err)}}}
+
+/* ===== 司機名單下拉 ===== */
+let DRV=[];try{DRV=JSON.parse(localStorage.getItem('nwcw_drivers')||'[]')}catch(_){DRV=[]}
+const nz=s=>String(s||'').toLowerCase().replace(/[\s\-_()（）]/g,'');
+function drvModelOk(d,m){const txt=nz(d.brand+' '+d.model+' '+d.spec);const toks=[MNAME[m],MABBR[m]].map(nz).filter(t=>t.length>=2);return toks.some(t=>txt.includes(t)||txt.includes(t.replace(/^benz|^bmw|^tesla/,'')))}
+function drvColorOk(d,c){const w=String(c||'').replace(/色/g,'').trim();if(!w)return true;const dc=String(d.color||'');return dc.includes(w)||dc.includes(w[0])}
+function drvOptions(f){const mode=($('drvMode')&&$('drvMode').value)||'mc';if(!DRV.length)return'<option value="">（載入司機名單中…）</option>';
+  let L=DRV.filter(d=>mode==='all'||drvModelOk(d,f.m)&&(mode==='m'||drvColorOk(d,f.color)));
+  L=L.sort((a,b)=>(a.src==='司機總表'?0:1)-(b.src==='司機總表'?0:1)||a.name.localeCompare(b.name,'zh-Hant'));
+  const busy=new Set();if(o.date)Object.values(DB.orders).forEach(x=>{if(x.id!==o.id&&!x.sample&&!x.lost&&x.date===o.date)(x.fleet||[]).forEach(z=>{if(z.driver)busy.add(String(z.driver).trim())})});
+  const lab=d=>(busy.has(d.name)?'⚠️當天已排 ':'')+[d.name,d.color,d.model||d.brand,d.plate,d.status].filter(Boolean).join('｜');
+  return `<option value="">▼ 選司機（${L.length} 位）</option>`+L.map(d=>`<option value="${esc(d.name+'|'+d.plate)}">${esc(lab(d))}${d.src==='司機招募'?'（招募）':''}</option>`).join('')}
+async function loadDrivers(force){const st=$('drvSt');if(!S.driveUrl||!S.driveKey)return;let ts=0;try{ts=+localStorage.getItem('nwcw_drivers_ts')||0}catch(_){}
+  if(!force&&DRV.length&&Date.now()-ts<6*36e5)return;if(st)st.textContent='讀取司機名單…';
+  try{const u=new URL(S.driveUrl);u.searchParams.set('action','drivers');u.searchParams.set('token',S.driveKey);const j=await (await fetch(u)).json();if(!j.ok)throw new Error(j.error||'失敗');
+    DRV=j.drivers||[];try{localStorage.setItem('nwcw_drivers',JSON.stringify(DRV));localStorage.setItem('nwcw_drivers_ts',String(Date.now()))}catch(_){}
+    if(st)st.textContent=`司機名單 ${DRV.length} 位`;renderFleet()}catch(e){if(st)st.textContent='司機名單讀取失敗：'+e.message}}
+document.addEventListener('change',e=>{const t=e.target;if(t.id==='drvMode'){renderFleet();return}
+  if(t.classList&&t.classList.contains('drvPick')&&t.value){const [nm,pl]=t.value.split('|');const d=DRV.find(z=>z.name===nm&&z.plate===pl);const f=o.fleet[+t.dataset.dp];if(!d||!f)return;
+    f.driver=d.name;f.phone=d.phone||f.phone;f.plate=d.plate||f.plate;if(!f.emg&&d.emg)f.emg=d.emg;if(+d.seats)f.seats=+d.seats;o.sample=false;save();renderFleet();renderAll();toast(`已填入 ${d.name}`)}});
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('#btnDrvReload');if(t)loadDrivers(true)});
+setTimeout(()=>{loadDrivers(false);if($('drvSt')&&DRV.length)$('drvSt').textContent=`司機名單 ${DRV.length} 位`},1500);
 renderPriceSettings();loadOrder();
 let startTab='quote';try{startTab=sessionStorage.getItem('nwcw_tab')||'quote'}catch(_){}
 showTab(startTab);
