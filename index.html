@@ -1437,6 +1437,7 @@ function headNeed(x,d){const k=carKind(x),R=[],ago=t=>(Date.now()-(+t||0))/DAY,b
   if(k.tesla&&x.colorReq==='白色'&&d!==null&&d<=(big?60:7))R.push({why:big?'白色・大日子':'白色',late:d<=(big?53:5)});
   return R}
 function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];const now=Date.now(),d=daysTo(x),T=[],ago=t=>(now-(+t||0))/DAY;
+  if(x.quiet&&st!=='done'){const nd=!x.drvDone&&(!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim()));return d!==null&&d<=30&&nd?[{k:'nodrv',late:true,why:'一個月前安排車子'}]:[]}
   if(x.c&&x.c.photoReq==='要'&&!x.photoSentAt)T.push({k:'photo',late:d!==null&&d<=-3});
   if(st==='done'){if(d>=-30&&x.paid){if(!x.revAskAt&&!x.revSkip)T.push({k:'rev',late:d<=-2});else if(x.revAskAt&&!x.revLinkAt&&!x.revSkip)T.push({k:'revlink',late:false})}return T}
   if(st==='inq'){const nx=x.need&&x.need.next;if(nx){const dn=daysTo({date:nx});if(dn!==null&&dn<=0)T.push({k:'inq',late:true})}else{const fn=+x.followN||0;if(fn<2)T.push({k:'inq',late:ago(x.followAt||x.inqAt||x.updated)>=(fn?7:3),why:fn?'收尾':''})}}
