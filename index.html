@@ -1087,7 +1087,8 @@ function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr)
   const payOne=v=>v==='?'?'（待定）':+x.hours===0?`實拿 ${money(+v)}（單程接送・綁彩）`:`${money(+v)}/${hl}${r.red?'（含紅包）':''}`;
   const payL=pk.length===1?payOne(pk[0]):pk.map(v=>`${[...pg[v]].join('、')} ${payOne(v)}`).join('；');
   const cane=c.caneAns||(x.cane?'是':'否'),deco=(c.decoAns||'').trim();
-  const note=(x.note||'').trim(),noteShow=note&&!/^指定.{0,4}色$/.test(note);
+  /* 找司機訊息只放司機需要知道的：方案備註（同業單才帶同業的備註）；內部備註（婚顧、回金、報價、訂金…）不給司機看 */
+  const note=(x.partner?(x.note||''):(x.flagNote||'')).trim(),noteShow=note&&!/^指定.{0,4}色$/.test(note);
   return [`${fmtMDW(x.date,'zh')} ${ap(c.start)||'--:--'}-${ap(c.end)||'--:--'}`,`集合時間：${ap(c.gather||addMin(c.start,-20))||'待定'}`,'地點：',...pts.map(p=>`${p.k}. ${areaOf(p.f)}${p.label?`(${p.label})`:''}`),
    `禮車流程：${x.path||'待定'}`,`需求：${Object.keys(ng).map(k=>`${k} ${n2(ng[k])}台`).join('、')||'—'}`,`酬勞：${payL}`,
    cane==='是'?'甘蔗：需固定':'',deco&&!/^(否|無|不)/.test(deco)?`指定車頭彩：${deco}`:'',noteShow?`備註：${note}`:'',x.findMain?'主禮車請預備：車頭彩／門把彩／對講機':''].filter(Boolean).join('\n')}
