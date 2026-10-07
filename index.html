@@ -573,7 +573,7 @@ nav.tabs button{scroll-snap-align:start}
 </div>
 <div id="todoModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
   <div style="max-width:980px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px">
-    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">待辦 <small>選進度篩選，勾選後可一起處理</small></h3><button class="btn" id="btnTodoClose">關閉</button></div>
+    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">待辦 <small>選進度篩選，勾選後可一起處理</small></h3><div class="row" style="gap:6px"><button class="btn pri" id="btnTTPrompt" title="把所有已收訂、還沒出車的訂單整理成指令，貼給 Claude 比對 TimeTree">🔍 產生 TimeTree 檢查指令</button><button class="btn" id="btnTodoClose">關閉</button></div></div>
     <div id="todoChips" class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
     <div class="row" style="gap:10px;margin-bottom:10px;flex-wrap:wrap"><input id="todoQ" placeholder="搜尋單號、客人名稱、新人姓名" style="flex:1;min-width:180px"><label class="row" style="gap:4px;font-size:13px;flex-wrap:nowrap"><input type="checkbox" id="todoLate" style="width:auto"> 只看逾期</label></div>
     <div id="todoBatch" class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
@@ -1320,6 +1320,14 @@ function lgMsg(x){const c=x.c,p=dparts(x.date),L=x.memoLinks||{},ld=lead(x)||{};
   return ['各位司機好，這是本次禮車任務群組',`訂單編號：${orderNo(x)}`,`日期：${x.date?fmtDate(x.date)+'（'+WD.zh[p.w]+'）':'未定'}`,`司機集合：${c.gather||'—'}　${c.meetL?c.meetL+'：':''}${c.meet||''}`.trimEnd(),`用車時間：${c.start||'--:--'} - ${c.end||'--:--'}`,
     `派車單：${L.drv||'（請先到「司機／客人 memo」產生連結）'}`,'','車隊',...cars,'',`負責人：${ld.driver||'—'}`,'請大家看完派車單回覆「收到」，當天出發前在群組報到，謝謝！'].join('\n')}
 function ttMemo(x){return [quoteText(x,'zh'),'',`訂單編號：${orderNo(x)}`,`合約：${x.driveFolder||'（合約尚未存到 Drive，存檔後會自動帶入連結）'}`].join('\n')}
+function ttPromptText(){const sv=o,L=[],now=new Date();
+  const list=Object.values(DB.orders).filter(x=>x.paid&&!x.sample&&!x.lost&&x.date&&daysTo(x)!==null&&daysTo(x)>=0).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:String(a.c.start||'').localeCompare(String(b.c.start||'')));
+  try{list.forEach((x,i)=>{o=x;const p=dparts(x.date),c=x.c;
+    L.push(`${i+1}. ${orderNo(x)}（系統：${x.ttDone===false?'⚠️ 未填 TimeTree':'已標記填過'}）`,`日期：${x.date.replace(/-/g,'/')}（${WD.zh[p.w]}）　時間：${c.start?c.start+(c.end?'-'+c.end:''):'未定（建全天行程）'}`,`客人：${[c.groom,c.bride].filter(Boolean).join('&')||'—'}`,`標題：${ttTitle(x)}`,'備註：',ttMemo(x),'')})}finally{o=sv}
+  return [`請幫我檢查 TimeTree「好好禮車」行事曆，有沒有漏掉以下已收訂、還沒出車的訂單（${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${p2(now.getHours())}:${p2(now.getMinutes())} 產生，共 ${list.length} 筆）。`,'',
+    '比對方式：同一天、標題或備註裡有同一位客人的名字或訂單編號，就算已經填了。',
+    '沒有的話，請用下面的標題、時間、備註新增，標籤選「好好禮車」。名字相近但不確定是不是同一場的，先列出來問我，不要新增。',
+    '完成後請回報：已存在幾筆、新增了哪幾筆、哪幾筆需要我確認；並在派車系統把已經在 TimeTree 的訂單標記為「已填 TimeTree」。','','──────────',...L].join('\n').trim()}
 function renderPay(){const ps=payState(o),r=ps.r,c=o.c;
   $('payCheck').innerHTML=`<div><span>應付訂金</span><span>${money(r.deposit)}</span></div><div><span>新人填的匯款金額</span><span>${ps.amt?money(ps.amt):'未填'}</span></div>
    <div><span>匯款日期／後五碼</span><span>${c.payDate?fmtDate(c.payDate):'—'}／${esc(c.last5||'—')}</span></div>`;
@@ -1611,6 +1619,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnMemoDocs':makeMemoDocs();break;
    case 'btnKm':calcKm();break;
    case 'btnPaid':{const d=new Date();o.paid=true;if(!o.ttDone)o.ttDone=false;o.paidTs=Date.now();o.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`;o.sample=false;save();renderAll();toast('已標記收到訂金，記得填入 TimeTree');break}
+   case 'btnTTPrompt':{const t=ttPromptText();clip(t);toast('已複製 TimeTree 檢查指令，貼給 Claude 即可');break}
    case 'btnTTDone':case 'btnTTDone2':o.ttDone=true;o.ttAt=Date.now();save();renderAll();toast('已標記填入 TimeTree');break;
    case 'btnTTUndo':case 'btnTTUndo2':o.ttDone=false;save();renderAll();break;
    case 'btnUnpaid':o.paid=false;o.paidAt='';o.paidTs='';save();renderAll();renderOrderSel();break;
