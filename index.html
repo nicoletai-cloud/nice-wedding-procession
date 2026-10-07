@@ -392,6 +392,19 @@ nav.tabs button{scroll-snap-align:start}
 
   <!-- 4 找司機 -->
   <section class="tab" id="tab-find" hidden>
+    <div class="card" style="margin-bottom:18px">
+      <h3>多張單一起找司機 <small>先選日期，再選同車款、同顏色，勾選要一起派的單，產生一則訊息貼到司機群組</small></h3>
+      <div class="row" style="gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+        <input type="date" id="bfDate" style="width:auto">
+        <select id="bfModel" style="width:auto"></select>
+        <select id="bfColor" style="width:auto"></select>
+        <select id="bfArea" style="width:auto"><option value="">全部地區</option><option value="北部">北部（基北北桃竹宜）</option><option value="中部">中部（苗中彰投雲）</option><option value="南部">南部（嘉南高屏）</option><option value="東部">東部（花東）</option></select>
+        <label class="row" style="gap:6px"><input type="checkbox" id="bfOpen" checked style="width:auto">只找還沒派司機的車</label>
+      </div>
+      <div id="bfList"></div>
+      <div class="row" style="justify-content:space-between;margin:12px 0 8px"><b>找司機訊息（多張）</b><button class="btn sm pri" data-copy="bfOut">複製</button></div>
+      <pre class="out" id="bfOut"></pre>
+    </div>
     <div class="grid">
       <div class="card">
         <h3>車頭指派 <small>豪車、指定顏色的特斯拉要提前確認車頭</small></h3>
@@ -401,7 +414,7 @@ nav.tabs button{scroll-snap-align:start}
       <div class="card">
         <h3>找司機訊息 <small>貼司機群組；不同車款分開找</small></h3>
         <div class="row" style="gap:12px;margin-bottom:8px;flex-wrap:wrap"><div class="seg" id="findM"></div><label class="row" style="gap:6px;font-size:0.867rem;color:var(--muted)"><input type="checkbox" id="findMain" style="width:auto"> 主禮車（備註車頭彩／門把彩／對講機）</label></div>
-        <div class="row" style="justify-content:space-between;margin-bottom:8px"><button class="btn sm" id="btnBatchFind">批次找司機（多張單一起）</button><button class="btn sm pri" data-copy="outFind">複製</button></div>
+        <div class="row" style="justify-content:space-between;margin-bottom:8px"><span></span><button class="btn sm pri" data-copy="outFind">複製</button></div>
         <pre class="out" id="outFind"></pre>
       </div>
       <div class="card">
@@ -595,20 +608,6 @@ nav.tabs button{scroll-snap-align:start}
     <div id="ibChips" class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
     <div id="ibBatch" class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
     <div id="ibList"><p class="hint">載入中…</p></div>
-  </div>
-</div>
-<div id="bfModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
-  <div style="max-width:900px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px">
-    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">批次找司機 <small>選日期、地區、車款，勾選要一起找的單，產生一則訊息貼到司機群組</small></h3><button class="btn" id="btnBfClose">關閉</button></div>
-    <div class="row" style="gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
-      <input type="date" id="bfDate" style="width:auto">
-      <select id="bfArea" style="width:auto"><option value="">全部地區</option><option value="北部">北部（基北北桃竹宜）</option><option value="中部">中部（苗中彰投雲）</option><option value="南部">南部（嘉南高屏）</option><option value="東部">東部（花東）</option></select>
-      <select id="bfModel" style="width:auto"></select>
-      <label class="row" style="gap:6px"><input type="checkbox" id="bfOpen" checked style="width:auto">只找還沒派司機的車</label>
-    </div>
-    <div id="bfList"></div>
-    <div class="row" style="justify-content:space-between;margin:12px 0 8px"><b>找司機訊息</b><button class="btn sm pri" data-copy="bfOut">複製</button></div>
-    <pre class="out" id="bfOut"></pre>
   </div>
 </div>
 <div id="ptModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
@@ -1107,7 +1106,7 @@ function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr)
   const note=(x.partner?(x.note||''):(x.flagNote||'')).trim(),noteShow=note&&!/^指定.{0,4}色$/.test(note);
   return [`${fmtMDW(x.date,'zh')} ${ap(c.start)||'--:--'}-${ap(c.end)||'--:--'}`,`集合時間：${ap(c.gather||addMin(c.start,-20))||'待定'}`,'地點：',...pts.map(p=>`${p.k}. ${areaOf(p.f)}${p.label?`(${p.label})`:''}`),
    `禮車流程：${x.path||'待定'}`,`需求：${Object.keys(ng).map(k=>`${k} ${n2(ng[k])}台`).join('、')||'—'}`,`酬勞：${payL}`,
-   cane==='是'?'甘蔗：需固定':'',deco&&!/^(否|無|不)/.test(deco)?`指定車頭彩：${deco}`:'',noteShow?`備註：${note}`:'',x.findMain?'主禮車請預備：車頭彩／門把彩／對講機':''].filter(Boolean).join('\n')}
+   cane==='是'?'甘蔗：需固定':'',deco&&!/^(否|無|不)/.test(deco)?`指定車頭彩：${deco}`:'',noteShow?`備註：${note}`:'',x.findMain?'主禮車請預備：車頭彩／門把彩／對講機':'','','請問能支援嗎？'].filter((l,i,a)=>l!==''||i===a.length-2).join('\n')}
 
 /* ---------- contract ---------- */
 const CLAUSES=['所有車輛皆附司機，著正式服裝，出車前一律洗車、清內裝。','若新人要求趕時辰，而導致車輛行駛違反中華民國交通法規須由訂車人吸收罰款。','此報價單暨合約書為現金價格，不含發票 5%營業稅。','行程異動請於用車前三天電話或 Line 告知。','車隊會在指定時間提早 10~15 分鐘左右到達準備，實際依指定時間計算。','倘若發生以下情形而致無法依約定時間用車者，本公司將向消費者酌收手續費：','預訂車輛如遇不可抗拒因素無法出車時，訂車人同意租車公司免費升級為更高階車款。','若無加價指定車色，則由本公司安排車色，並於用車日三天前提供司機聯絡資訊。','本公司非常重視服務流程與品質，若訂車人未透過本公司窗口直接與司機有任何協議，如產生糾紛或其他衍生相關問題，本公司將不負擔任何賠償責任。'];
@@ -1935,27 +1934,29 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   if(b.id==='btnPtSettle'){if(!$('ptDate').value)$('ptDate').value=new Date(Date.now()+8*36e5).toISOString().slice(0,10);$('ptSettleModal').hidden=false;renderPtSettle();return}
   if(b.id==='btnPtSettleClose'){$('ptSettleModal').hidden=true;return}if(b.dataset.ptcopy){clip(b.dataset.ptcopy);return}});
 document.addEventListener('change',e=>{if(e.target&&(e.target.id==='ptDate'||e.target.id==='ptMonth'))renderPtSettle();if(e.target&&e.target.id==='ptPrepaid'){$('ptOweWrap').hidden=!e.target.checked;$('ptCollectWrap').hidden=e.target.checked}});
-{const _ra2=renderAll;renderAll=function(){_ra2.apply(this,arguments);try{renderPtCard();ptTabs()}catch(err){console.warn(err)}}}
+{const _ra2=renderAll;renderAll=function(){_ra2.apply(this,arguments);try{renderPtCard();ptTabs()}catch(err){console.warn(err)}try{if($('bfDate')&&!$('bfDate').value&&o.date)$('bfDate').value=o.date;if($('bfDate')&&$('bfDate').value)renderBatchFind()}catch(err){console.warn(err)}}}
 
 {let a='';try{a=localStorage.getItem('nwcw_drvArea')||''}catch(_){}if($('drvArea'))$('drvArea').value=a}
 /* ===== 批次找司機：同一天、同地區、同車款的多張單一起產生找司機訊息 ===== */
 const BF_AREA={'北部':['基隆','台北','新北','桃園','新竹','宜蘭'],'中部':['苗栗','台中','彰化','南投','雲林'],'南部':['嘉義','台南','高雄','屏東'],'東部':['花蓮','台東']};
 function bfCity(x){return [x.cityA,x.cityB,countyOf(x.c.meet),countyOf(x.c.wed)].filter(Boolean).map(c=>String(c).replace(/臺/g,'台'))}
 function bfRegion(x){const cs=bfCity(x);for(const k in BF_AREA)if(cs.some(c=>BF_AREA[k].some(n=>c.indexOf(n)===0)))return k;return''}
-function bfFleet(x){const m=$('bfModel').value,op=$('bfOpen').checked;return (x.fleet||[]).filter(f=>(!m||f.m===m)&&(!op||!String(f.driver||'').trim()))}
+const bfCol=c=>String(c||'').trim().replace(/色$/,'')||'未指定';
+function bfFleet(x){const m=$('bfModel').value,cl=$('bfColor').value,op=$('bfOpen').checked;return (x.fleet||[]).filter(f=>(!m||f.m===m)&&(!cl||bfCol(f.color)===cl)&&(!op||!String(f.driver||'').trim()))}
 function bfOrders(){const d=$('bfDate').value,a=$('bfArea').value;return Object.values(DB.orders).filter(x=>!x.sample&&!x.lost&&x.date===d&&(!a||bfRegion(x)===a)&&bfFleet(x).length).sort((p,q)=>(p.c.start||'').localeCompare(q.c.start||''))}
 const bfSel=new Set();let bfKey='';
 function renderBatchFind(){const used=new Set();Object.values(DB.orders).forEach(x=>{if(x.date===$('bfDate').value)(x.fleet||[]).forEach(f=>used.add(f.m))});
   const mv=$('bfModel').value;$('bfModel').innerHTML='<option value="">全部車款</option>'+MODELS.filter(m=>used.has(m)).map(m=>`<option value="${m}">${esc(MNAME[m])}</option>`).join('');$('bfModel').value=used.has(mv)?mv:'';
-  const L=bfOrders(),key=[$('bfDate').value,$('bfArea').value,$('bfModel').value,$('bfOpen').checked].join('|');if(key!==bfKey){bfKey=key;bfSel.clear();L.forEach(x=>bfSel.add(x.id))}
+  {const cs=new Set();Object.values(DB.orders).forEach(x=>{if(x.date===$('bfDate').value&&!x.sample&&!x.lost)(x.fleet||[]).forEach(f=>{if(!$('bfModel').value||f.m===$('bfModel').value)cs.add(bfCol(f.color))})});const cv=$('bfColor').value;$('bfColor').innerHTML='<option value="">全部顏色</option>'+[...cs].sort().map(c=>`<option value="${esc(c)}">${esc(c==='未指定'?c:c+'色')}</option>`).join('');$('bfColor').value=cs.has(cv)?cv:''}
+  const L=bfOrders(),key=[$('bfDate').value,$('bfArea').value,$('bfModel').value,$('bfColor').value,$('bfOpen').checked].join('|');if(key!==bfKey){bfKey=key;bfSel.clear();L.forEach(x=>bfSel.add(x.id))}
   $('bfList').innerHTML=L.length?L.map(x=>{const F=bfFleet(x),cnt={};F.forEach(f=>{const k=`${f.color||''}${MNAME[f.m]}`;cnt[k]=(cnt[k]||0)+1});return `<label class="todo-row" style="cursor:pointer"><input type="checkbox" data-bf="${esc(x.id)}" ${bfSel.has(x.id)?'checked':''} style="width:auto;margin-right:8px"><div class="m" style="flex:1"><div><b>${esc(orderNo(x))}</b> ${esc(x.c.groom||x.c.chatName||'')}${x.partner?'　【同業 '+esc(x.partner.co||'')+'】':''}</div><div class="sub">${esc(x.c.start||'--:--')}～${esc(x.c.end||'--:--')}｜${esc(bfCity(x).filter((c,i,a)=>a.indexOf(c)===i).join('→')||'地區未填')}｜要找：${esc(Object.entries(cnt).map(([k,n])=>k+'×'+n).join('、'))}</div></div></label>`}).join(''):'<div class="hint">這天沒有符合條件、還要找司機的車</div>';
   const pick=L.filter(x=>bfSel.has(x.id));const sv=o,CN='①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳';let parts=[];
-  try{parts=pick.map((x,i)=>{const cp=Object.assign({},x,{fleet:bfFleet(x),findM:'',findMain:false});o=cp;return `${CN[i]||(i+1)+'.'} ${findText(cp)}`})}finally{o=sv}
-  const p=dparts($('bfDate').value),mname=$('bfModel').value?MNAME[$('bfModel').value]:'';
-  $('bfOut').textContent=parts.length?[`【${p?p.m+'/'+p.d:''}${$('bfArea').value?' '+$('bfArea').value:''}${mname?' '+mname:''} 找司機】共 ${parts.length} 場，可以接的請回覆編號🙏`,'',parts.join('\n\n———————\n\n')].join('\n'):''}
+  try{parts=pick.map((x,i)=>{const cp=Object.assign({},x,{fleet:bfFleet(x),findM:'',findMain:false});o=cp;return `${CN[i]||(i+1)+'.'} ${findText(cp).replace(/\n*請問能支援嗎？$/,'')}`})}finally{o=sv}
+  const p=dparts($('bfDate').value),cl=$('bfColor').value,mname=(cl&&cl!=='未指定'?cl+'色 ':'')+($('bfModel').value?MNAME[$('bfModel').value]:'');
+  $('bfOut').textContent=parts.length?[`【${p?p.m+'/'+p.d:''}${$('bfArea').value?' '+$('bfArea').value:''}${mname?' '+mname:''} 找司機】共 ${parts.length} 場`,'',parts.join('\n\n———————\n\n'),'','請問能支援嗎？可以接的請回覆編號🙏'].join('\n'):''}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#btnBatchFind,#btnBfClose');if(!b)return;if(b.id==='btnBfClose'){$('bfModal').hidden=true;return}
   if(!$('bfDate').value)$('bfDate').value=o.date||new Date(Date.now()+8*36e5).toISOString().slice(0,10);$('bfModal').hidden=false;bfKey='';renderBatchFind()});
-document.addEventListener('change',e=>{const t=e.target;if(!t)return;if(t.dataset&&t.dataset.bf){t.checked?bfSel.add(t.dataset.bf):bfSel.delete(t.dataset.bf);renderBatchFind();return}if(['bfDate','bfArea','bfModel','bfOpen'].includes(t.id))renderBatchFind()});
+document.addEventListener('change',e=>{const t=e.target;if(!t)return;if(t.dataset&&t.dataset.bf){t.checked?bfSel.add(t.dataset.bf):bfSel.delete(t.dataset.bf);renderBatchFind();return}if(['bfDate','bfArea','bfModel','bfColor','bfOpen'].includes(t.id))renderBatchFind()});
 /* 生肖篩選（每張訂單各自記住要避開的生肖） */
 const ZOD='鼠牛虎兔龍蛇馬羊猴雞狗豬';function zodOf(d){const m=String((d&&d.zodiac)||'').replace(/竜/g,'龍').match(/[鼠牛虎兔龍蛇馬羊猴雞狗豬]/);return m?m[0]:''}
 function zodSync(){const av=o.avoidZ||[];document.querySelectorAll('[data-zod]').forEach(b=>{const on=av.includes(b.dataset.zod);b.setAttribute('aria-pressed',on);b.classList.toggle('pri',on);b.style.textDecoration=on?'line-through':''});const st=$('zodSt');if(st)st.textContent=av.length?`已避開 ${av.join('、')}（沒填生肖的司機仍會列出）`:''}
