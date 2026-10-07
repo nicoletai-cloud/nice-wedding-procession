@@ -1828,7 +1828,7 @@ function parseDriver(raw){const t=String(raw||'').replace(/\r/g,'').replace(/[�
   if(/特斯拉|tesla/i.test(t))r.brand='Tesla 特斯拉';
   r.color=lab(/(?:車色|顏色|車輛顏色)\s*:?\s*([^\n,，|｜\s]{1,8})/)||((t.match(/(珍珠白|消光黑|午夜銀|深海藍|白色|黑色|紅色|灰色|藍色|銀色)/)||[''])[0]);
   const st=t.match(/(\d)\s*人座/);r.seats=st?st[1]+'人座':'';
-  r.city=lab(/(?:居住城市|住在|居住地)\s*:?\s*([^\n,，|｜]{2,10})/);r.area=lab(/(?:可服務地區|服務地區|服務區域|可跑)\s*:?\s*([^\n]{2,40})/);
+  r.city=lab(/(?:居住城市|居住地區|居住地|住在)\s*:?\s*([^\n,，|｜]{2,10})/);r.area=lab(/(?:可服務地區|服務地區|服務區域|可跑)\s*:?\s*([^\n]{2,40})/);
   r.note=lab(/備註\s*:?\s*([^\n]{1,60})/);
   if(!r.name){const first=t.split(/\n/).map(x=>x.trim()).find(Boolean)||'';const m=first.match(/^([一-龥]{2,4}|[A-Za-z][A-Za-z .]{1,20})(?=[\s,，|｜\d]|$)/);if(m&&!/^(Model|Tesla|特斯拉|白色|黑色)/i.test(m[1]))r.name=m[1].trim()}
   return r}
@@ -1842,7 +1842,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.c
   if(b.id==='btnDrvSave'){const r=daRead();if(!r.name||!r.phone){msg.textContent='姓名和手機一定要填';return}
     const force=b.dataset.force==='1';b.disabled=true;msg.textContent='存檔中…';
     try{await gasCall(Object.assign({action:'addDriver',force},r));msg.textContent=`✅ 已存到司機總表：${r.name}`;b.dataset.force='';$('drvPaste').value='';daFill(Object.fromEntries(DA_F.map(k=>[k,''])));loadDrivers(true)}
-    catch(err){const m=String(err.message||err);if(/已有/.test(m)){msg.textContent=`⚠️ ${m}　再按一次「存到司機總表」會仍然新增`;b.dataset.force='1'}else msg.textContent='存檔失敗：'+(/action|未知|unknown/i.test(m)?'後台還沒部署新版本':m)}
+    catch(err){const m=String(err.message||err);if(/已有/.test(m)){msg.textContent=`⚠️ ${m}　再按一次「存到司機總表」會仍然新增`;b.dataset.force='1'}else msg.textContent='存檔失敗：'+(/action|未知|unknown|引數|null|undefined/i.test(m)?'後台還沒部署新版本（請到 Apps Script 按部署 → 建立新版本）':m)}
     finally{b.disabled=false}}});
 setTimeout(()=>{loadDrivers(false);if($('drvSt')&&DRV.length)$('drvSt').textContent=`司機名單 ${DRV.length} 位`},1500);
 renderPriceSettings();loadOrder();
