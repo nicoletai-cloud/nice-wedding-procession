@@ -202,6 +202,7 @@ nav.tabs button{scroll-snap-align:start}
     <a class="nwc-hub" href="https://nicoletai-cloud.github.io/nice-hub/">‹ 入口</a>
     <div class="orderbar">
       <select id="orderSel" aria-label="切換訂單"></select>
+      <input id="codeQ" placeholder="司機回的代碼" maxlength="12" autocomplete="off" style="width:120px" title="輸入找司機訊息裡的 4 碼代碼，直接開啟那一場">
       <button class="btn sm" id="btnSync" title="手機／電腦同步">同步</button>
       <button class="btn" id="btnInbox">訊息</button>
       <button class="btn" id="btnTodo">待辦</button>
@@ -1094,6 +1095,15 @@ function renderFind(){const ms=[...new Set(o.fleet.map(f=>f.m))];if(o.findM&&!ms
   $('findMain').checked=!!o.findMain;$('outFind').textContent=findText(o)}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-findm]');if(!b)return;o.findM=b.dataset.findm;o.findMain=!!o.findM&&o.fleet.some(f=>f.m===o.findM&&f.role==='主禮車');save();renderFind()});
 document.addEventListener('change',e=>{if(e.target.id==='findMain'){o.findMain=e.target.checked;save();renderFind()}});
+/* 找司機代碼：每張單一組 4 碼亂碼（由單號雜湊而來，看不出日期地區），司機回代碼後可直接搜尋開單 */
+const FC_ABC='ACDEFGHJKMNPQRTUVWXY34679';
+function fcHash(s){let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)>>>0}return h}
+function findCode(x){if(!x)return'';if(x.findCode)return x.findCode;const used=new Set(Object.values(DB.orders).filter(y=>y!==x&&y.id!==x.id&&y.findCode).map(y=>y.findCode));
+  for(let i=0;i<50;i++){let h=fcHash('nwc~'+x.id+'~'+i),c='';for(let k=0;k<4;k++){c+=FC_ABC[h%FC_ABC.length];h=Math.floor(h/FC_ABC.length)}if(!used.has(c)){x.findCode=c;if(DB.orders[x.id]&&DB.orders[x.id]!==x)DB.orders[x.id].findCode=c;return c}}return''}
+function codeFind(q){q=normNo(q).replace(/[^A-Z0-9]/g,'');if(!q)return null;const L=Object.values(DB.orders).filter(x=>!x.sample);return L.find(x=>findCode(x)===q)||L.find(x=>normNo(orderNo(x))===q)||null}
+document.addEventListener('keydown',e=>{if(e.target.id!=='codeQ'||e.key!=='Enter')return;e.preventDefault();const x=codeFind(e.target.value);if(!x){toast('找不到這個代碼');return}
+  o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();showTab('find');e.target.value='';toast(`已開啟 ${orderNo(x)}（代碼 ${findCode(x)}）`)});
+document.addEventListener('input',e=>{if(e.target.id!=='codeQ')return;const v=normNo(e.target.value).replace(/[^A-Z0-9]/g,'');if(v.length!==4)return;const x=Object.values(DB.orders).find(y=>!y.sample&&findCode(y)===v);if(x){o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();showTab('find');e.target.value='';toast(`已開啟 ${orderNo(x)}（代碼 ${v}）`)}});
 function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr);const fl=x.findM?x.fleet.filter(f=>f.m===x.findM):x.fleet;
   const CNN=['零','一','兩','三','四','五','六','七','八','九','十'];const n2=n=>CNN[n]||String(n);
   const ng={};fl.forEach(f=>{const k=`${(f.color||'').trim()} ${MNAME[f.m]}`.trim();ng[k]=(ng[k]||0)+1});
@@ -1104,7 +1114,7 @@ function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr)
   const cane=c.caneAns||(x.cane?'是':'否'),deco=(c.decoAns||'').trim();
   /* 找司機訊息只放司機需要知道的：方案備註（同業單才帶同業的備註）；內部備註（婚顧、回金、報價、訂金…）不給司機看 */
   const note=(x.partner?(x.note||''):(x.flagNote||'')).trim(),noteShow=note&&!/^指定.{0,4}色$/.test(note);
-  return [`${fmtMDW(x.date,'zh')} ${ap(c.start)||'--:--'}-${ap(c.end)||'--:--'}`,`集合時間：${ap(c.gather||addMin(c.start,-20))||'待定'}`,'地點：',...pts.map(p=>`${p.k}. ${areaOf(p.f)}${p.label?`(${p.label})`:''}`),
+  return [`代碼：${findCode(x)}`,`${fmtMDW(x.date,'zh')} ${ap(c.start)||'--:--'}-${ap(c.end)||'--:--'}`,`集合時間：${ap(c.gather||addMin(c.start,-20))||'待定'}`,'地點：',...pts.map(p=>`${p.k}. ${areaOf(p.f)}${p.label?`(${p.label})`:''}`),
    `禮車流程：${x.path||'待定'}`,`需求：${Object.keys(ng).map(k=>`${k} ${n2(ng[k])}台`).join('、')||'—'}`,`酬勞：${payL}`,
    cane==='是'?'甘蔗：需固定':'',deco&&!/^(否|無|不)/.test(deco)?`指定車頭彩：${deco}`:'',noteShow?`備註：${note}`:'',x.findMain?'主禮車請預備：車頭彩／門把彩／對講機':'','','請問能支援嗎？'].filter((l,i,a)=>l!==''||i===a.length-2).join('\n')}
 
@@ -1590,7 +1600,7 @@ function todoRows(){const q=normNo($('todoQ').value),late=$('todoLate').checked;
   return Object.values(DB.orders).filter(x=>!x.sample).map(x=>({x,T:tasksOf(x),st:stageOf(x)})).filter(r=>{
     if(todoF==='lost'||todoF==='done'){if(r.st!==todoF)return false}else if(todoF==='all'){if(!r.T.length)return false}else if(!r.T.some(t=>t.k===todoF))return false;
     if(late&&!r.T.some(t=>t.late&&(todoF==='all'||t.k===todoF)))return false;
-    if(q&&!normNo([orderNo(r.x),r.x.c.chatName,r.x.c.groom,r.x.c.bride].join(' ')).includes(q))return false;return true})
+    if(q&&!normNo([findCode(r.x),orderNo(r.x),r.x.c.chatName,r.x.c.groom,r.x.c.bride].join(' ')).includes(q))return false;return true})
   .sort((a,b)=>(a.x.date||'9').localeCompare(b.x.date||'9'))}
 function renderTodoBadge(){let n=0;Object.values(DB.orders).forEach(x=>{if(tasksOf(x).some(t=>t.late))n++});$('btnTodo').innerHTML='待辦'+(n?`<b>${n}</b>`:'')}
 function renderTodo(){const all=Object.values(DB.orders).filter(x=>!x.sample).map(x=>({T:tasksOf(x),st:stageOf(x)}));
@@ -1960,11 +1970,11 @@ function renderBatchFind(){const used=new Set();Object.values(DB.orders).forEach
   const mv=$('bfModel').value;$('bfModel').innerHTML='<option value="">全部車款</option>'+MODELS.filter(m=>used.has(m)).map(m=>`<option value="${m}">${esc(MNAME[m])}</option>`).join('');$('bfModel').value=used.has(mv)?mv:'';
   {const cs=new Set();Object.values(DB.orders).forEach(x=>{if(x.date===$('bfDate').value&&!x.sample&&!x.lost)(x.fleet||[]).forEach(f=>{if(!$('bfModel').value||f.m===$('bfModel').value)cs.add(bfCol(f.color))})});const cv=$('bfColor').value;$('bfColor').innerHTML='<option value="">全部顏色</option>'+[...cs].sort().map(c=>`<option value="${esc(c)}">${esc(c==='未指定'?c:c+'色')}</option>`).join('');$('bfColor').value=cs.has(cv)?cv:''}
   const L=bfOrders(),key=[$('bfDate').value,$('bfArea').value,$('bfModel').value,$('bfColor').value,$('bfOpen').checked].join('|');if(key!==bfKey){bfKey=key;bfSel.clear();L.forEach(x=>bfSel.add(x.id))}
-  $('bfList').innerHTML=L.length?L.map(x=>{const F=bfFleet(x),cnt={};F.forEach(f=>{const k=`${f.color||''}${MNAME[f.m]}`;cnt[k]=(cnt[k]||0)+1});return `<label class="todo-row" style="cursor:pointer"><input type="checkbox" data-bf="${esc(x.id)}" ${bfSel.has(x.id)?'checked':''} style="width:auto;margin-right:8px"><div class="m" style="flex:1"><div><b>${esc(orderNo(x))}</b> ${esc(x.c.groom||x.c.chatName||'')}${x.partner?'　【同業 '+esc(x.partner.co||'')+'】':''}</div><div class="sub">${esc(x.c.start||'--:--')}～${esc(x.c.end||'--:--')}｜${esc(bfCity(x).filter((c,i,a)=>a.indexOf(c)===i).join('→')||'地區未填')}｜要找：${esc(Object.entries(cnt).map(([k,n])=>k+'×'+n).join('、'))}</div></div></label>`}).join(''):'<div class="hint">這天沒有符合條件、還要找司機的車</div>';
+  $('bfList').innerHTML=L.length?L.map(x=>{const F=bfFleet(x),cnt={};F.forEach(f=>{const k=`${f.color||''}${MNAME[f.m]}`;cnt[k]=(cnt[k]||0)+1});return `<label class="todo-row" style="cursor:pointer"><input type="checkbox" data-bf="${esc(x.id)}" ${bfSel.has(x.id)?'checked':''} style="width:auto;margin-right:8px"><div class="m" style="flex:1"><div><b>${esc(orderNo(x))}</b> <span class="chip">${esc(findCode(x))}</span> ${esc(x.c.groom||x.c.chatName||'')}${x.partner?'　【同業 '+esc(x.partner.co||'')+'】':''}</div><div class="sub">${esc(x.c.start||'--:--')}～${esc(x.c.end||'--:--')}｜${esc(bfCity(x).filter((c,i,a)=>a.indexOf(c)===i).join('→')||'地區未填')}｜要找：${esc(Object.entries(cnt).map(([k,n])=>k+'×'+n).join('、'))}</div></div></label>`}).join(''):'<div class="hint">這天沒有符合條件、還要找司機的車</div>';
   const pick=L.filter(x=>bfSel.has(x.id));const sv=o,CN='①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳';let parts=[];
   try{parts=pick.map((x,i)=>{const cp=Object.assign({},x,{fleet:bfFleet(x),findM:'',findMain:false});o=cp;return `${CN[i]||(i+1)+'.'} ${findText(cp).replace(/\n*請問能支援嗎？$/,'')}`})}finally{o=sv}
   const p=dparts($('bfDate').value),cl=$('bfColor').value,mname=(cl&&cl!=='未指定'?cl+'色 ':'')+($('bfModel').value?MNAME[$('bfModel').value]:'');
-  $('bfOut').textContent=parts.length?[`【${p?p.m+'/'+p.d:''}${$('bfArea').value?' '+$('bfArea').value:''}${mname?' '+mname:''} 找司機】共 ${parts.length} 場`,'',parts.join('\n\n———————\n\n'),'','請問能支援嗎？可以接的請回覆編號🙏'].join('\n'):''}
+  $('bfOut').textContent=parts.length?[`【${p?p.m+'/'+p.d:''}${$('bfArea').value?' '+$('bfArea').value:''}${mname?' '+mname:''} 找司機】共 ${parts.length} 場`,'',parts.join('\n\n———————\n\n'),'','請問能支援嗎？可以接的請回覆代碼🙏'].join('\n'):''}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#btnBatchFind,#btnBfClose');if(!b)return;if(b.id==='btnBfClose'){$('bfModal').hidden=true;return}
   if(!$('bfDate').value)$('bfDate').value=o.date||new Date(Date.now()+8*36e5).toISOString().slice(0,10);$('bfModal').hidden=false;bfKey='';renderBatchFind()});
 document.addEventListener('change',e=>{const t=e.target;if(!t)return;if(t.dataset&&t.dataset.bf){t.checked?bfSel.add(t.dataset.bf):bfSel.delete(t.dataset.bf);renderBatchFind();return}if(['bfDate','bfArea','bfModel','bfColor','bfOpen'].includes(t.id))renderBatchFind()});
