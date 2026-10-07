@@ -1827,10 +1827,11 @@ function shopeeCtl(r,today){const z=r.st||{},td=shopeeTodo(r,today),D=shopeeDate
    (td&&td.msg?`<button class="btn sm" data-spmsg="${esc(r.id)}|${td.msg}">複製給客人的訊息</button>`:'')+`<button class="btn sm" data-decodel="${esc(r.id)}">刪除</button></div></div>`}
 function shopeeAlertN(){const today=new Date().toISOString().slice(0,10);return (S.decoRents||[]).filter(r=>{if(r&&r.sp&&(!r.date||!r.code))return true;const t=r&&r.date&&shopeeTodo(r,today);return t&&t.late}).length}
 /* ===== 蝦皮付款確認信 → 自動登記（待補使用日期） ===== */
-function spMerge(list){if(!Array.isArray(list)||!list.length)return 0;S.decoRents=S.decoRents||[];S.spGone=S.spGone||{};const codes=decoStyles().map(z=>z.code);let n=0;
-  list.forEach(r=>{if(!r||!r.no)return;const op=(r.opts&&r.opts.length?r.opts:['']);op.forEach((t,i)=>{const key=r.no+(op.length>1?'#'+(i+1):'');if(S.spGone[key]||S.decoRents.some(z=>z.sp===key||String(z.who||'').includes(r.no)))return;
+function spMerge(list){if(!Array.isArray(list)||!list.length)return 0;S.decoRents=S.decoRents||[];S.spGone=S.spGone||{};const codes=decoStyles().map(z=>z.code);let n=0,n2=0;
+  list.forEach(r=>{if(!r||!r.no)return;const op=(r.opts&&r.opts.length?r.opts:['']);op.forEach((t,i)=>{const key=r.no+(op.length>1?'#'+(i+1):'');if(S.spGone[key]||S.decoRents.some(z=>z.sp===key||String(z.who||'').includes(r.no)||String(z.note||'').includes(r.no)))return;{const bu=String(r.buyer||'').trim().toLowerCase(),man=bu&&S.decoRents.find(z=>!z.sp&&String(z.who||'').trim().toLowerCase().includes(bu));if(man){man.sp=key;man.spNo=r.no;if(r.arrive)man.spArrive=r.arrive;n2++;return}}
     const m=String(t).match(/^\s*([A-Za-z])[.．、\s]/),code=m&&codes.includes(m[1].toUpperCase())?m[1].toUpperCase():'';
     S.decoRents.push({id:'sp'+key.replace(/[^A-Za-z0-9]/g,''),sp:key,code,date:'',who:r.buyer||'',note:`蝦皮 #${r.no}`,spNo:r.no,spOpt:String(t).replace(/,?\s*請勿直接下單/,''),spArrive:r.arrive||'',spTotal:r.total||'',spAt:r.at||Date.now()});n++})});
+  if(n2&&!n)saveS();
   if(n){saveS();try{renderDecoBtn();renderDecoModal()}catch(_){}toast(`收到 ${n} 筆新的蝦皮訂單，請到「車頭彩檔期」補使用日期`)}return n}
 function renderSpPend(){const c=$('spPendCard');if(!c)return;const P=(S.decoRents||[]).filter(r=>r.sp&&(!r.date||!r.code));c.hidden=!P.length;if(!P.length)return;
   const st=decoStyles();$('spPend').innerHTML=P.map(r=>`<div class="todo-row" style="cursor:default;flex-wrap:wrap"><div class="m" style="flex:1;min-width:220px"><div><b>${esc(r.who||'買家')}</b>　蝦皮 #${esc(r.spNo||'')}</div><div class="sub">${esc(r.spOpt||'（信裡沒有款式）')}${r.spTotal?'｜NT$ '+esc(r.spTotal):''}${r.spArrive?`｜<b style="color:#A0453A">蝦皮要求 ${esc(dShort(r.spArrive))} 前送達，記得出貨</b>`:''}</div></div>
