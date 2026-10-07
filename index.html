@@ -874,11 +874,13 @@ function autoSeq(x){const key=dstr(x)+codeOf(x);if(x._seqKey===key&&x._seq)retur
   x._seqKey=key;x._seq=p2(mx+1);return x._seq}
 function seqOf(x){return x.seq?p2(num(x.seq)||x.seq):autoSeq(x)}
 function orderNo(x){return dstr(x)+codeOf(x)+seqOf(x)}
-function countyOf(a){if(!a)return '';const m=a.replace(/臺/g,'台').replace(/^\s*\d{3,6}\s*/,'').match(/^(台北|新北|桃園|台中|台南|高雄|基隆|新竹|嘉義|苗栗|彰化|南投|雲林|屏東|宜蘭|花蓮|台東|澎湖|金門|連江)/);return m?m[1]:''}
+/* 地址前面常夾時間或說明（例：「8:30新郎家 屏東縣屏東市…」），縣市不一定在開頭，所以整段搜尋 */
+const CTY_RE='(台北|新北|桃園|台中|台南|高雄|基隆|新竹|嘉義|苗栗|彰化|南投|雲林|屏東|宜蘭|花蓮|台東|澎湖|金門|連江)';
+function countyOf(a){if(!a)return '';const s=a.replace(/臺/g,'台').replace(/^\s*\d{3,6}\s*/,'');const m=s.match(new RegExp(CTY_RE+'[縣市]'))||s.match(new RegExp('^'+CTY_RE))||s.match(new RegExp(CTY_RE));return m?m[1]:''}
 function shortArea(a){if(!a)return '';let s=a.replace(/臺/g,'台').replace(/^\s*\d{3,6}\s*/,'').trim();
-  const m=s.match(/^(台北|新北|桃園|台中|台南|高雄|基隆|新竹|嘉義|苗栗|彰化|南投|雲林|屏東|宜蘭|花蓮|台東|澎湖|金門|連江)[縣市]?(.{1,3}?)[區鎮鄉市]/);
-  if(m)return m[1]+m[2];const m2=s.match(/^(台北|新北|桃園|台中|台南|高雄|基隆|新竹|嘉義|苗栗|彰化|南投|雲林|屏東|宜蘭|花蓮|台東|澎湖|金門|連江)/);
-  return m2?m2[1]:s.slice(0,8)}
+  let m=s.match(new RegExp(CTY_RE+'[縣市](.{1,3}?)[區鎮鄉市]'))||s.match(new RegExp('^'+CTY_RE+'(.{1,3}?)[區鎮鄉市]'));
+  if(m)return m[2]===m[1]?m[1]+'市':m[1]+m[2];const m2=s.match(new RegExp(CTY_RE+'[縣市]'))||s.match(new RegExp('^'+CTY_RE));
+  return m2?m2[1]:''}
 function areaOf(k){return o.c[k+'S']||shortArea(o.c[k])}
 function mapUrl(a){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(a)}
 function formLink(x){const fb=/docs\.google\.com\/forms|forms\.gle/.test(S.formBase||'')?S.formBase:DEF_S.formBase;const base=fb.split('?')[0];return `${base}?usp=pp_url&${S.formEntry}=${encodeURIComponent(orderNo(x))}`}
@@ -1119,7 +1121,7 @@ function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr)
   const cane=c.caneAns||(x.cane?'是':'否'),deco=(c.decoAns||'').trim();
   /* 找司機訊息只放司機需要知道的：方案備註（同業單才帶同業的備註）；內部備註（婚顧、回金、報價、訂金…）不給司機看 */
   const note=(x.partner?(x.note||''):(x.flagNote||'')).trim(),noteShow=note&&!/^指定.{0,4}色$/.test(note);
-  return [`代碼：${findCode(x)}`,`${fmtMDW(x.date,'zh')} ${ap(c.start)||'--:--'}-${ap(c.end)||'--:--'}`,`集合時間：${ap(c.gather||addMin(c.start,-20))||'待定'}`,'地點：',...pts.map(p=>`${p.k}. ${areaOf(p.f)}${p.label?`(${p.label})`:''}`),
+  return [`代碼：${findCode(x)}`,`${fmtMDW(x.date,'zh')} ${ap(c.start)||'--:--'}-${ap(c.end)||'--:--'}`,`集合時間：${ap(c.gather||addMin(c.start,-20))||'待定'}`,'地點：',...pts.map(p=>`${p.k}. ${areaOf(p.f)||'（地區待確認）'}`),
    `禮車流程：${x.path||'待定'}`,`需求：${Object.keys(ng).map(k=>`${k} ${n2(ng[k])}台`).join('、')||'—'}`,`酬勞：${payL}`,
    cane==='是'?'甘蔗：需固定':'',deco&&!/^(否|無|不)/.test(deco)?`指定車頭彩：${deco}`:'',noteShow?`備註：${note}`:'',x.findMain?'主禮車請預備：車頭彩／門把彩／對講機':'','','請問能支援嗎？'].filter((l,i,a)=>l!==''||i===a.length-2).join('\n')}
 
@@ -1997,7 +1999,7 @@ function renderBatchFind(){const used=new Set();Object.values(DB.orders).forEach
   const pick=L.filter(x=>bfSel.has(x.id));const sv=o,CN='①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳';let parts=[];
   try{parts=pick.map((x,i)=>{const cp=Object.assign({},x,{fleet:bfFleet(x),findM:'',findMain:false});o=cp;return `${CN[i]||(i+1)+'.'} ${findText(cp).replace(/\n*請問能支援嗎？$/,'')}`})}finally{o=sv}
   const p=dparts($('bfDate').value),cl=$('bfColor').value,mname=(cl&&cl!=='未指定'?cl+'色 ':'')+($('bfModel').value?MNAME[$('bfModel').value]:'');
-  $('bfOut').textContent=parts.length?[`【${p?p.m+'/'+p.d:''}${$('bfArea').value?' '+$('bfArea').value:''}${mname?' '+mname:''} 找司機】共 ${parts.length} 場`,'',parts.join('\n\n———————\n\n'),'','請問能支援嗎？可以接的請回覆代碼🙏'].join('\n'):''}
+  $('bfOut').textContent=parts.length?[`【${p?p.m+'/'+p.d:''}${$('bfArea').value?' '+$('bfArea').value:''}${mname?' '+mname:''} 找司機】共 ${parts.length} 場`,'',parts.join('\n\n———————\n\n'),'','請問能支援嗎？'].join('\n'):''}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#btnBatchFind,#btnBfClose');if(!b)return;if(b.id==='btnBfClose'){$('bfModal').hidden=true;return}
   if(!$('bfDate').value)$('bfDate').value=o.date||new Date(Date.now()+8*36e5).toISOString().slice(0,10);$('bfModal').hidden=false;bfKey='';renderBatchFind()});
 document.addEventListener('change',e=>{const t=e.target;if(!t)return;if(t.dataset&&t.dataset.bf){t.checked?bfSel.add(t.dataset.bf):bfSel.delete(t.dataset.bf);renderBatchFind();return}if(['bfDate','bfArea','bfModel','bfColor','bfOpen'].includes(t.id))renderBatchFind()});
