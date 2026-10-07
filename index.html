@@ -356,7 +356,7 @@ nav.tabs button{scroll-snap-align:start}
         <h3>收到訂金回覆</h3>
         <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm pri" data-copy="outPaidAck">複製</button></div>
         <pre class="out" id="outPaidAck">已確認收到訂金，後續提供合約給您</pre>
-        <p class="hint" style="margin-top:12px">傳合約給客人：到「3 合約」分頁預覽，確認內容後就會出現可複製的訊息。</p>
+        <p class="hint" id="paidAckHint" style="margin-top:12px">傳合約給客人：到「3 合約」分頁預覽，確認內容後就會出現可複製的訊息。</p>
       </div>
     </div>
   </section>
@@ -1295,6 +1295,10 @@ function paidText(x){const tips=['禮車會提早大約20分鐘抵達集合地�
   if(!x.colorReq)tips.push('車色無法指定，一般為黑色或白色由派車人員安排。');
   const hi=typeof rmHi==='function'?rmHi(x):'您好';
   return [(hi==='您好'?'':hi+'🤍 ')+(signUrlOf(x)?'已經收到訂金，請點開以下連結確認合約內容，並按下方「簽名完成合約」完成線上簽署：':'已經收到訂金，合約提供您留存：'),signUrlOf(x)||(x.contractUrl||'').trim()||'（請貼上合約連結）','',...tips.map((t,i)=>`${i+1}.${t}`)].join('\n')}
+function renderPaidAck(){const el=$('outPaidAck'),h=$('paidAckHint');if(!el)return;const nf=o.paid&&stageOf(o)==='noform';
+  if(nf){const t=(rmTexts(o).find(z=>z.k==='noform')||{}).t;el.textContent=t||'已確認收到訂金，謝謝🤍\n麻煩再幫我們填寫訂車表單，填完我們就會提供合約：\n'+formLink(o);
+    h.innerHTML='<b style="color:#A0453A">⚠️ 客人還沒填訂車表單</b>：上面這則已附表單連結，複製傳給客人。客人填完表單後，再到「3 合約」產生合約。'}
+  else{el.textContent='已確認收到訂金，後續提供合約給您';h.textContent='傳合約給客人：到「3 合約」分頁預覽，確認內容後就會出現可複製的訊息。'}}
 const ctOk={};
 function renderCtSend(){if(!$('ctStep1'))return;const ok=!!(ctOk[o.id]||o.ctSentAt),url=(signUrlOf(o)||o.contractUrl||'').trim();$('ctStep1').hidden=ok;$('ctStep2').hidden=!ok;
   $('ctLinkHint').textContent=!url?'還沒有合約連結：先按上方「存到 Google Drive」產生 PDF，或把連結貼進來。':o.ctSentAt?'已於 '+new Date(o.ctSentAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+' 複製傳送過。':'';$('btnCtCopy').disabled=!url;
@@ -1316,7 +1320,7 @@ function renderPay(){const ps=payState(o),r=ps.r,c=o.c;
   $('payCheck').innerHTML=`<div><span>應付訂金</span><span>${money(r.deposit)}</span></div><div><span>新人填的匯款金額</span><span>${ps.amt?money(ps.amt):'未填'}</span></div>
    <div><span>匯款日期／後五碼</span><span>${c.payDate?fmtDate(c.payDate):'—'}／${esc(c.last5||'—')}</span></div>`;
   $('payChip').innerHTML=o.paid?`<span class="chip ok">已確認收款 ${esc(o.paidAt||'')}</span>`:ps.amt?(ps.match?'<span class="chip ok">金額相符，待確認入帳</span>':'<span class="chip" style="color:var(--warn)">金額不符，請核對</span>'):'<span class="chip">尚未填匯款資料</span>';
-  $('btnPaid').hidden=!!o.paid;$('btnUnpaid').hidden=!o.paid;$('outPaid').textContent=paidText(o);renderCtSend();
+  $('btnPaid').hidden=!!o.paid;$('btnUnpaid').hidden=!o.paid;$('outPaid').textContent=paidText(o);renderCtSend();renderPaidAck();
   $('ttTitle').value=ttTitle(o);$('ttWhen').textContent=`日期 ${o.date?fmtDate(o.date):'未定'}　${o.c.start||'--:--'} → ${o.c.end||'--:--'}`;$('ttMemo').textContent=ttMemo(o);$('lgName').value=lgName(o);$('lgMsg').textContent=lgMsg(o)}
 function refRowText(x){const r=calc(x),v=vendorOf(x);const p=dparts(x.date);
   return [p?`${p.y}/${p.m}/${p.d}`:'',orderNo(x),planName(x).replace(/^Tesla /,'').replace(/ \S*禮車方案$/,''),v?v.name:'',x.src.ref||'',money(r.planFee),v?refRate(x)+'%':'',v&&r.refAmt?money(r.refAmt):'','',isMonthly(x)?'月結':''].join('\t')}
