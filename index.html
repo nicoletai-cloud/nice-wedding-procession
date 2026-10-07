@@ -1320,10 +1320,11 @@ function lgMsg(x){const c=x.c,p=dparts(x.date),L=x.memoLinks||{},ld=lead(x)||{};
   return ['各位司機好，這是本次禮車任務群組',`訂單編號：${orderNo(x)}`,`日期：${x.date?fmtDate(x.date)+'（'+WD.zh[p.w]+'）':'未定'}`,`司機集合：${c.gather||'—'}　${c.meetL?c.meetL+'：':''}${c.meet||''}`.trimEnd(),`用車時間：${c.start||'--:--'} - ${c.end||'--:--'}`,
     `派車單：${L.drv||'（請先到「司機／客人 memo」產生連結）'}`,'','車隊',...cars,'',`負責人：${ld.driver||'—'}`,'請大家看完派車單回覆「收到」，當天出發前在群組報到，謝謝！'].join('\n')}
 function ttMemo(x){return [quoteText(x,'zh'),'',`訂單編號：${orderNo(x)}`,`合約：${x.driveFolder||'（合約尚未存到 Drive，存檔後會自動帶入連結）'}`].join('\n')}
-function ttPromptText(){const sv=o,L=[],now=new Date();
-  const list=Object.values(DB.orders).filter(x=>x.paid&&!x.sample&&!x.lost&&x.date&&daysTo(x)!==null&&daysTo(x)>=0).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:String(a.c.start||'').localeCompare(String(b.c.start||'')));
+function ttPromptText(pick){const sv=o,L=[],now=new Date();
+  const list=(pick||Object.values(DB.orders)).filter(x=>x.paid&&!x.sample&&!x.lost&&x.date&&daysTo(x)!==null&&daysTo(x)>=0).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:String(a.c.start||'').localeCompare(String(b.c.start||'')));
   try{list.forEach((x,i)=>{o=x;const p=dparts(x.date),c=x.c;
     L.push(`${i+1}. ${orderNo(x)}（系統：${x.ttDone===false?'⚠️ 未填 TimeTree':'已標記填過'}）`,`日期：${x.date.replace(/-/g,'/')}（${WD.zh[p.w]}）　時間：${c.start?c.start+(c.end?'-'+c.end:''):'未定（建全天行程）'}`,`客人：${[c.groom,c.bride].filter(Boolean).join('&')||'—'}`,`標題：${ttTitle(x)}`,'備註：',ttMemo(x),'')})}finally{o=sv}
+  if(pick)return [`請幫我把以下 ${list.length} 筆訂單補登到 TimeTree「好好禮車」行事曆（標籤選「好好禮車」）。`,'新增前先確認同一天沒有同一位客人的行程，已經有的就跳過；名字相近但不確定的先問我。','完成後請回報新增了哪幾筆，並在派車系統把這些訂單標記為「已填 TimeTree」。','','──────────',...L].join('\n').trim();
   return [`請幫我檢查 TimeTree「好好禮車」行事曆，有沒有漏掉以下已收訂、還沒出車的訂單（${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${p2(now.getHours())}:${p2(now.getMinutes())} 產生，共 ${list.length} 筆）。`,'',
     '比對方式：同一天、標題或備註裡有同一位客人的名字或訂單編號，就算已經填了。',
     '沒有的話，請用下面的標題、時間、備註新增，標籤選「好好禮車」。名字相近但不確定是不是同一場的，先列出來問我，不要新增。',
@@ -1486,7 +1487,7 @@ function renderTodo(){const all=Object.values(DB.orders).filter(x=>!x.sample).ma
   if(todoF==='inq')B.push(['tsFollow','標記已追銷'],['tsOrdered','標記已開單'],['tsLost','標記失單']);
   if(todoF==='unpaid')B.push(['tsPaid','標記已收訂金'],['tsLost','標記失單']);
   if(todoF==='noform')B.push(['tsForm','標記已填表']);
-  if(todoF==='tt')B.push(['tsTT','標記已填 TimeTree']);
+  if(todoF==='tt')B.push(['tsTTAdd','複製補登指令'],['tsTT','標記已填 TimeTree']);
   if(todoF==='nocontract')B.push(['tsContract','標記已出合約']);
   if(todoF==='cfsend')B.push(['tsCfCopy','複製行前確認訊息＋標記已傳'],['tsCfSent','標記已傳']);
   if(todoF==='cfwait')B.push(['tsCfDone','標記已回填']);
@@ -1520,6 +1521,7 @@ function todoBatch(id){const rows=todoRows(),sel=rows.filter(r=>todoSel.has(r.x.
   if(id==='tsAll'){if(todoSel.size===rows.length)todoSel.clear();else rows.forEach(r=>todoSel.add(r.x.id));renderTodo();return}
   if(!sel.length)return;
   if(id==='tsNames'){clip(sel.map(x=>x.c.chatName||orderNo(x)).join('\n'));return}
+  if(id==='tsTTAdd'){clip(ttPromptText(sel));toast(`已複製 ${sel.length} 筆補登指令，貼給 Claude 即可`);return}
   if(id==='tsCfCopy')clip(CONFIRM_TPL);if(id==='tsRevCopy')clip(REV_ASK);if(id==='tsRevLinkCopy')clip(REV_LINK);
   const f={tsFollow:x=>{x.followAt=now;x.followN=(+x.followN||0)+1},tsOrdered:x=>x.orderedAt=now,tsLost:x=>x.lost=true,tsRevive:x=>x.lost=false,tsCfCopy:x=>x.cfSentAt=now,tsCfSent:x=>x.cfSentAt=now,tsCfDone:x=>x.cfDoneAt=now,tsRevCopy:x=>x.revAskAt=now,tsRevAsked:x=>x.revAskAt=now,tsRevLinkCopy:x=>x.revLinkAt=now,tsRevSkip:x=>x.revSkip=true,tsPhotoSent:x=>x.photoSentAt=now,tsPhotoReq:x=>x.c.photoReq='要',tsPaid:x=>{const d=new Date();x.paid=true;if(!x.ttDone)x.ttDone=false;x.paidTs=now;x.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`},tsForm:x=>x.formAt=now,tsTT:x=>{x.ttDone=true;x.ttAt=now},tsContract:x=>x.contractDone=true,tsDrv:x=>x.drvDone=true,tsMemo:x=>x.memoDone=true}[id];if(!f)return;
   sel.forEach(x=>{f(x);x.updated=now;DB.orders[x.id]=x});todoSel.clear();store('nwcw_orders',DB);pushSync();renderOrderSel();renderAll();if(!/Copy$/.test(id))toast(`已更新 ${sel.length} 張訂單`)}
