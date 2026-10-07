@@ -1667,7 +1667,7 @@ function decoStyles(){if(!Array.isArray(S.decoStyles)||!S.decoStyles.length)S.de
 function decoName(code){const s=decoStyles().find(z=>z.code===code);return s?(s.name&&s.name!==s.code?`${s.code}. ${s.name}`:s.code):code}
 function dAdd(d,n){const t=new Date(d+'T00:00:00Z');t.setUTCDate(t.getUTCDate()+n);return t.toISOString().slice(0,10)}
 function dShort(d){return d?(+d.slice(5,7))+'/'+(+d.slice(8,10)):''}
-function decoNear(x){const cs=[x.cityA,x.cityB].filter(Boolean);if(!cs.length&&x.c){const a=countyOf(x.c.meet);if(a)cs.push(a)}return cs.length>0&&cs.every(c=>DECO_NEAR.some(n=>String(c).replace(/臺/g,'台').indexOf(n)===0))}
+function decoNear(x){const cs=[x.cityA,x.cityB].filter(Boolean);if(!cs.length&&x.c){['meet','wed','o1','o2'].forEach(k=>{const t=String(x.c[k]||'').replace(/臺/g,'台'),m=t.match(/(台北|新北|基隆|桃園|新竹|苗栗|台中|彰化|南投|雲林|嘉義|台南|高雄|屏東|宜蘭|花蓮|台東|澎湖|金門|連江)/);if(m)cs.push(m[1])})}return cs.length>0&&cs.every(c=>DECO_NEAR.some(n=>String(c).replace(/臺/g,'台').indexOf(n)===0))}
 function decoFormCode(x){const a=String((x.c&&x.c.decoAns)||'').trim(),m=a.match(/^#?\s*([A-Za-z])(?:\s*款|\s*$|[.\s])/);if(!m)return'';const k=m[1].toUpperCase();return decoStyles().some(s=>s.code===k)?k:''}
 function decoCodeOf(x){return x.decoStyle||decoFormCode(x)}
 function decoWanted(x){return +x.deco>0||/^是/.test(String((x.c&&x.c.decoAns)||'').trim())||!!decoFormCode(x)}
