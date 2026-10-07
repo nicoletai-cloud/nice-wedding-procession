@@ -1369,7 +1369,7 @@ function renderSum(){const r=calc(o);const rows=[];
 function renderFleet(){$('fleetBody').innerHTML=o.fleet.map((f,i)=>{const dp=driverBasePay(f.m,o);return `<tr><td><b>${MNAME[f.m]}</b></td>
   <td><select data-fl="${i}.role" id="fl_r${i}">${ROLES.map(r=>`<option${r===f.role?' selected':''}>${r}</option>`).join('')}</select></td>
   <td><input data-fl="${i}.plate" id="fl_p${i}" value="${esc(f.plate)}" placeholder="ABC-1234"></td>
-  <td><input data-fl="${i}.driver" id="fl_d${i}" value="${esc(f.driver)}"><div style="display:flex;gap:4px;margin-top:4px;align-items:center"><select class="drvPick" data-dp="${i}" style="font-size:0.8rem;max-width:150px">${drvOptions(f)}</select>${(f.driver||f.phone||f.plate)?`<button class="btn sm" data-drvclr="${i}" title="清除這台的司機、電話、車號、緊急聯絡" style="padding:2px 7px">清除</button>`:''}</div></td>
+  <td><input data-fl="${i}.driver" id="fl_d${i}" value="${esc(f.driver)}"><div style="display:flex;gap:4px;margin-top:4px;align-items:center"><select class="drvPick" data-dp="${i}" style="font-size:0.8rem;max-width:150px">${drvOptions(f)}</select>${(f.driver||f.phone||f.plate)?`<button class="btn sm" data-drvclr="${i}" title="移除這台的司機、電話、車號、緊急聯絡" style="padding:2px 7px;color:#A0453A">✕ 移除</button>`:''}</div></td>
   <td><input data-fl="${i}.phone" id="fl_t${i}" value="${esc(f.phone)}" inputmode="tel"></td>
   <td><input data-fl="${i}.emg" id="fl_e${i}" value="${esc(f.emg||'')}" inputmode="tel" placeholder="不會出現在 memo"></td>
   <td><select data-fl="${i}.up" id="fl_u${i}" style="width:120px">${upOptions(f)}</select></td>
@@ -1865,7 +1865,7 @@ function drvOptions(f){const mode=($('drvMode')&&$('drvMode').value)||'mc';if(!D
   L=L.sort((a,b)=>(a.src==='司機總表'?0:1)-(b.src==='司機總表'?0:1)||a.name.localeCompare(b.name,'zh-Hant'));
   const busy=new Set();if(o.date)Object.values(DB.orders).forEach(x=>{if(x.id!==o.id&&!x.sample&&!x.lost&&x.date===o.date)(x.fleet||[]).forEach(z=>{if(z.driver)busy.add(String(z.driver).trim())})});
   const lab=d=>(busy.has(d.name)?'⚠️當天已排 ':'')+[d.name,zodOf(d)?'屬'+zodOf(d):'',d.color,d.model||d.brand,d.plate,d.status].filter(Boolean).join('｜');
-  return `<option value="">▼ 選司機（${L.length} 位）</option>`+L.map(d=>`<option value="${esc(d.name+'|'+d.plate)}">${esc(lab(d))}${d.src==='司機招募'?'（招募）':''}</option>`).join('')}
+  return `<option value="">▼ 選司機（${L.length} 位）</option>`+(String(f.driver||'').trim()?`<option value="__clear">✕ 移除目前司機（${esc(f.driver)}）</option>`:'')+L.map(d=>`<option value="${esc(d.name+'|'+d.plate)}">${esc(lab(d))}${d.src==='司機招募'?'（招募）':''}</option>`).join('')}
 async function loadDrivers(force){const st=$('drvSt');if(!S.driveUrl||!S.driveKey)return;let ts=0;try{ts=+localStorage.getItem('nwcw_drivers_ts')||0}catch(_){}
   if(!force&&DRV.length&&Date.now()-ts<6*36e5)return;if(st)st.textContent='讀取司機名單…';
   try{const u=new URL(S.driveUrl);u.searchParams.set('action','drivers');u.searchParams.set('token',S.driveKey);const j=await (await fetch(u)).json();if(!j.ok)throw new Error(j.error||'失敗');
@@ -1875,6 +1875,7 @@ document.addEventListener('change',e=>{const t=e.target;if(t.id==='drvMode'){ren
   if(t.dataset&&t.dataset.fl&&/\.up$/.test(t.dataset.fl)){setTimeout(renderFleet,0);return}
   if(t.id==='drvArea'){try{localStorage.setItem('nwcw_drvArea',t.value)}catch(_){}renderFleet();return}
   if(t.dataset&&t.dataset.fl&&/\.(phone|emg)$/.test(t.dataset.fl)){const v=fixTel(t.value);if(v!==t.value){t.value=v;t.dispatchEvent(new Event('input',{bubbles:true}))}return}
+  if(t.classList&&t.classList.contains('drvPick')&&t.value==='__clear'){const f=o.fleet[+t.dataset.dp];if(f){const nm=f.driver;f.driver='';f.phone='';f.plate='';f.emg='';o.sample=false;save();renderFleet();renderAll();toast(`已移除 ${nm}`)}return}
   if(t.classList&&t.classList.contains('drvPick')&&t.value){const [nm,pl]=t.value.split('|');const d=DRV.find(z=>z.name===nm&&z.plate===pl);const f=o.fleet[+t.dataset.dp];if(!d||!f)return;
     f.driver=d.name;f.phone=fixTel(d.phone)||f.phone;f.plate=d.plate||f.plate;if(!f.emg&&d.emg)f.emg=fixTel(d.emg);if(+d.seats)f.seats=+d.seats;o.sample=false;save();renderFleet();renderAll();toast(`已填入 ${d.name}`)}});
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('#btnDrvReload');if(t)loadDrivers(true)});
