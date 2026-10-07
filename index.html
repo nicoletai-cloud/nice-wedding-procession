@@ -415,7 +415,19 @@ nav.tabs button{scroll-snap-align:start}
     <div class="stack">
       <div class="card">
         <h3>車隊 <small>車序、車號、司機</small></h3>
-        <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 8px"><span class="hint" style="margin:0">從司機名單選：</span><select id="drvMode" style="width:auto"><option value="mc">車款＋顏色相符</option><option value="m">只看車款</option><option value="all">全部司機</option></select><button class="btn sm" id="btnDrvReload">更新司機名單</button><span class="hint" style="margin:0" id="drvSt"></span></div>
+        <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 8px"><span class="hint" style="margin:0">從司機名單選：</span><select id="drvMode" style="width:auto"><option value="mc">車款＋顏色相符</option><option value="m">只看車款</option><option value="all">全部司機</option></select><button class="btn sm" id="btnDrvReload">更新司機名單</button><button class="btn sm" id="btnDrvAdd">＋新增司機</button><span class="hint" style="margin:0" id="drvSt"></span></div>
+        <div id="drvAddBox" hidden style="border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 12px;background:var(--surface-2)">
+          <div class="hint" style="margin:0 0 6px">把司機傳來的資料整段貼上（LINE 訊息、表單內容都可以），按「自動辨識」後確認欄位，再存到司機總表。</div>
+          <textarea id="drvPaste" rows="4" style="width:100%" placeholder="例：林小明 0912345678 Model X 白色 6人座 REA-1234 LINE: abc123"></textarea>
+          <div class="row" style="gap:8px;margin:8px 0"><button class="btn sm pri" id="btnDrvParse">自動辨識</button><span class="hint" style="margin:0" id="drvAddMsg"></span></div>
+          <div class="grid" id="drvAddForm" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px">
+            <label class="f">姓名<input id="da_name"></label><label class="f">手機<input id="da_phone" inputmode="tel"></label><label class="f">LINE ID<input id="da_lineId"></label>
+            <label class="f">車牌<input id="da_plate"></label><label class="f">廠牌<input id="da_brand" placeholder="Tesla 特斯拉"></label><label class="f">車款<input id="da_model" placeholder="Model X"></label>
+            <label class="f">顏色<input id="da_color"></label><label class="f">座位<input id="da_seats" placeholder="6人座"></label><label class="f">緊急聯絡<input id="da_emg"></label>
+            <label class="f">居住城市<input id="da_city"></label><label class="f">可服務地區<input id="da_area"></label><label class="f">備註<input id="da_note"></label>
+          </div>
+          <div class="row" style="gap:8px;margin-top:10px"><button class="btn pri" id="btnDrvSave">存到司機總表</button><button class="btn" id="btnDrvAddClose">收起</button></div>
+        </div>
         <div class="tbl"><table>
           <thead><tr><th>車款</th><th>車序</th><th>車號</th><th>司機</th><th>電話</th><th>緊急聯絡 <small>只放 LINE 群組</small></th><th>升等為 <small>沒升等留空</small></th><th>顏色</th><th>座位</th><th>司機車資</th><th>負責人</th></tr></thead>
           <tbody id="fleetBody"></tbody>
@@ -939,6 +951,9 @@ function fleetOf(x){const want=expandCars(x);const cur=x.fleet||[];const pool=cu
   want.forEach((m,i)=>{const k=pool.findIndex(f=>f.m===m);if(k>=0){out.push(pool.splice(k,1)[0])}else out.push({m,role:roles[i],plate:'',driver:'',phone:'',color:'白色',seats:S.seats[m],pay:'',lead:roles[i]==='主禮車'})});
   const ord=r=>{const i=ROLES.indexOf(r);return i<0?9:i};
   return out.sort((a,b)=>ord(a.role)-ord(b.role))}
+/* 升等：只列出比原車款價格高的車款 */
+function upOptions(f){const base=num(S.price[f.m]),cur=String(f.up||'').trim();const L=S.models.filter(m=>m.id!==f.m&&num(S.price[m.id])>base).sort((a,b)=>num(S.price[a.id])-num(S.price[b.id]));
+  return '<option value="">不升等</option>'+L.map(m=>`<option value="${esc(m.name)}"${cur===m.name?' selected':''}>${esc(m.name)}</option>`).join('')+(cur&&!L.some(m=>m.name===cur)?`<option value="${esc(cur)}" selected>${esc(cur)}</option>`:'')}
 function syncFleet(){o.fleet=fleetOf(o);applyColorReq(o)}
 /* 指定車色：自動帶入車隊顏色（主禮車優先；指定台數空白＝全部）；手動改過的那台不再覆蓋 */
 function applyColorReq(x){if(!x||!x.colorReq||!(x.fleet||[]).length)return false;const n=num(x.colorQty)||x.fleet.length;
@@ -1309,10 +1324,10 @@ function renderSum(){const r=calc(o);const rows=[];
 function renderFleet(){$('fleetBody').innerHTML=o.fleet.map((f,i)=>{const dp=driverBasePay(f.m,o);return `<tr><td><b>${MNAME[f.m]}</b></td>
   <td><select data-fl="${i}.role" id="fl_r${i}">${ROLES.map(r=>`<option${r===f.role?' selected':''}>${r}</option>`).join('')}</select></td>
   <td><input data-fl="${i}.plate" id="fl_p${i}" value="${esc(f.plate)}" placeholder="ABC-1234"></td>
-  <td><input data-fl="${i}.driver" id="fl_d${i}" value="${esc(f.driver)}"><select class="drvPick" data-dp="${i}" style="margin-top:4px;font-size:0.8rem;max-width:180px">${drvOptions(f)}</select></td>
+  <td><input data-fl="${i}.driver" id="fl_d${i}" value="${esc(f.driver)}"><div style="display:flex;gap:4px;margin-top:4px;align-items:center"><select class="drvPick" data-dp="${i}" style="font-size:0.8rem;max-width:150px">${drvOptions(f)}</select>${(f.driver||f.phone||f.plate)?`<button class="btn sm" data-drvclr="${i}" title="清除這台的司機、電話、車號、緊急聯絡" style="padding:2px 7px">清除</button>`:''}</div></td>
   <td><input data-fl="${i}.phone" id="fl_t${i}" value="${esc(f.phone)}" inputmode="tel"></td>
   <td><input data-fl="${i}.emg" id="fl_e${i}" value="${esc(f.emg||'')}" inputmode="tel" placeholder="不會出現在 memo"></td>
-  <td><input data-fl="${i}.up" id="fl_u${i}" value="${esc(f.up||'')}" placeholder="例：Model Y" style="width:96px"></td>
+  <td><select data-fl="${i}.up" id="fl_u${i}" style="width:120px">${upOptions(f)}</select></td>
   <td><input data-fl="${i}.color" id="fl_c${i}" value="${esc(f.color)}" style="width:72px"></td>
   <td><input type="number" data-fl="${i}.seats" id="fl_s${i}" value="${esc(f.seats)}" style="width:62px"></td>
   <td><input type="number" data-fl="${i}.pay" id="fl_y${i}" value="${esc(f.pay)}" placeholder="${dp==null?'未設定':dp}" style="width:96px"></td>
@@ -1795,6 +1810,40 @@ document.addEventListener('change',e=>{const t=e.target;if(t.id==='drvMode'){ren
   if(t.classList&&t.classList.contains('drvPick')&&t.value){const [nm,pl]=t.value.split('|');const d=DRV.find(z=>z.name===nm&&z.plate===pl);const f=o.fleet[+t.dataset.dp];if(!d||!f)return;
     f.driver=d.name;f.phone=fixTel(d.phone)||f.phone;f.plate=d.plate||f.plate;if(!f.emg&&d.emg)f.emg=fixTel(d.emg);if(+d.seats)f.seats=+d.seats;o.sample=false;save();renderFleet();renderAll();toast(`已填入 ${d.name}`)}});
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('#btnDrvReload');if(t)loadDrivers(true)});
+/* 換司機：清除這台 */
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-drvclr]');if(!b)return;const f=o.fleet[+b.dataset.drvclr];if(!f)return;const nm=f.driver;f.driver='';f.phone='';f.plate='';f.emg='';o.sample=false;save();renderFleet();renderAll();toast(nm?`已清除 ${nm}`:'已清除')});
+/* 新增司機：貼上自動辨識 → 存到司機總表 */
+const DA_F=['name','phone','lineId','plate','brand','model','color','seats','emg','city','area','note'];
+function parseDriver(raw){const t=String(raw||'').replace(/\r/g,'').replace(/[：]/g,':').replace(/[（]/g,'(').replace(/[）]/g,')'),r={};
+  const lab=(re)=>{const m=t.match(re);return m?m[1].trim():''};
+  r.name=lab(/(?:姓名|司機|名字|稱呼)\s*:?\s*([^\n,，|｜\d]{1,12})/);
+  r.lineId=lab(/(?:line\s*id|LINE\s*ID|line|LINE|賴)\s*:?\s*([A-Za-z0-9_.\-@]{3,30})/);
+  const emgL=lab(/緊急聯絡[人]?(?:電話)?\s*:?\s*([^\n]{4,40})/);
+  const tels=(t.match(/(?:\+?886[-\s]?|0)?9\d{2}[-\s]?\d{3}[-\s]?\d{3}/g)||[]).map(x=>{x=x.replace(/[^\d]/g,'').replace(/^886/,'');return x.length===9?'0'+x:x});
+  const emgTel=(emgL.match(/(?:0)?9\d{2}[-\s]?\d{3}[-\s]?\d{3}/)||[''])[0].replace(/\D/g,'');
+  r.emg=emgL?(emgL.replace(/\s+/g,' ')):'';r.phone=lab(/(?:手機|電話|聯絡電話|phone)\s*:?\s*([\d\-\s+]{9,15})/i).replace(/\D/g,'')||tels.find(x=>!emgTel||!emgTel.endsWith(x.slice(1)))||'';if(r.phone.length===9)r.phone='0'+r.phone;
+  const pl=t.toUpperCase().match(/\b([A-Z]{2,3})\s*-?\s*(\d{3,4})\b|\b(\d{3,4})\s*-?\s*([A-Z]{2,3})\b/);r.plate=pl?(pl[1]?pl[1]+'-'+pl[2]:pl[3]+'-'+pl[4]):lab(/車牌(?:號碼)?\s*:?\s*([A-Za-z0-9\-]{4,10})/).toUpperCase();
+  const mdl=t.match(/Model\s*([3SXY])\b|\b(M3|MY|MX|MS)\b/i);if(mdl){const k=(mdl[1]||mdl[2].slice(1)).toUpperCase();r.model='Model '+k;r.brand='Tesla 特斯拉'}
+  if(!r.model){const m=t.match(/(Benz|賓士|BMW|寶馬|Porsche|保時捷|Lexus|凌志|Rolls|勞斯萊斯|Maserati|瑪莎拉蒂|Bentley|賓利|Alphard|Vito)[^\n,，|｜]{0,20}/i);if(m){r.model=m[0].trim();r.brand=m[1]}}
+  if(/特斯拉|tesla/i.test(t))r.brand='Tesla 特斯拉';
+  r.color=lab(/(?:車色|顏色|車輛顏色)\s*:?\s*([^\n,，|｜\s]{1,8})/)||((t.match(/(珍珠白|消光黑|午夜銀|深海藍|白色|黑色|紅色|灰色|藍色|銀色)/)||[''])[0]);
+  const st=t.match(/(\d)\s*人座/);r.seats=st?st[1]+'人座':'';
+  r.city=lab(/(?:居住城市|住在|居住地)\s*:?\s*([^\n,，|｜]{2,10})/);r.area=lab(/(?:可服務地區|服務地區|服務區域|可跑)\s*:?\s*([^\n]{2,40})/);
+  r.note=lab(/備註\s*:?\s*([^\n]{1,60})/);
+  if(!r.name){const first=t.split(/\n/).map(x=>x.trim()).find(Boolean)||'';const m=first.match(/^([一-龥]{2,4}|[A-Za-z][A-Za-z .]{1,20})(?=[\s,，|｜\d]|$)/);if(m&&!/^(Model|Tesla|特斯拉|白色|黑色)/i.test(m[1]))r.name=m[1].trim()}
+  return r}
+function daFill(r){DA_F.forEach(k=>{if(r[k]!==undefined&&$('da_'+k))$('da_'+k).value=r[k]||''})}
+function daRead(){const r={};DA_F.forEach(k=>r[k]=String($('da_'+k).value||'').trim());r.phone=fixTel(r.phone);r.plate=r.plate.toUpperCase();return r}
+document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.closest('#btnDrvAdd,#btnDrvAddClose,#btnDrvParse,#btnDrvSave');if(!b)return;const msg=$('drvAddMsg');
+  if(b.id==='btnDrvAdd'){$('drvAddBox').hidden=!$('drvAddBox').hidden;if(!$('drvAddBox').hidden)$('drvPaste').focus();return}
+  if(b.id==='btnDrvAddClose'){$('drvAddBox').hidden=true;return}
+  if(b.id==='btnDrvParse'){const r=parseDriver($('drvPaste').value);daFill(r);const miss=['name','phone'].filter(k=>!r[k]).map(k=>({name:'姓名',phone:'手機'})[k]);msg.textContent=miss.length?`請補上：${miss.join('、')}`:'已辨識，請確認後存檔';
+    const dup=DRV.filter(d=>(r.phone&&String(d.phone||'').replace(/\D/g,'').endsWith(r.phone.slice(1)))||(r.plate&&String(d.plate||'').toUpperCase().replace(/[^A-Z0-9]/g,'')===r.plate.replace(/[^A-Z0-9]/g,'')));if(dup.length)msg.textContent+=`　⚠️ 名單裡已有：${dup.map(d=>d.name+' '+(d.plate||'')).join('、')}`;return}
+  if(b.id==='btnDrvSave'){const r=daRead();if(!r.name||!r.phone){msg.textContent='姓名和手機一定要填';return}
+    const force=b.dataset.force==='1';b.disabled=true;msg.textContent='存檔中…';
+    try{await gasCall(Object.assign({action:'addDriver',force},r));msg.textContent=`✅ 已存到司機總表：${r.name}`;b.dataset.force='';$('drvPaste').value='';daFill(Object.fromEntries(DA_F.map(k=>[k,''])));loadDrivers(true)}
+    catch(err){const m=String(err.message||err);if(/已有/.test(m)){msg.textContent=`⚠️ ${m}　再按一次「存到司機總表」會仍然新增`;b.dataset.force='1'}else msg.textContent='存檔失敗：'+(/action|未知|unknown/i.test(m)?'後台還沒部署新版本':m)}
+    finally{b.disabled=false}}});
 setTimeout(()=>{loadDrivers(false);if($('drvSt')&&DRV.length)$('drvSt').textContent=`司機名單 ${DRV.length} 位`},1500);
 renderPriceSettings();loadOrder();
 let startTab='quote';try{startTab=sessionStorage.getItem('nwcw_tab')||'quote'}catch(_){}
