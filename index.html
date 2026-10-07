@@ -679,6 +679,9 @@ nav.tabs button{scroll-snap-align:start}
           <label class="f">第二聯絡人<input id="c_contact2" data-b="c.contact2" placeholder="沒有就留空"></label>
           <label class="f">第二聯絡人關係<input id="c_rel2" data-b="c.rel2" placeholder="例：新郎"></label>
           <label class="f">第二聯絡人電話<input id="c_phone2" data-b="c.phone2" inputmode="tel"></label>
+          <label class="f">第三聯絡人<input id="c_contact3" data-b="c.contact3" placeholder="例：主持人 Wendy；沒有就留空"></label>
+          <label class="f">第三聯絡人關係<input id="c_rel3" data-b="c.rel3" placeholder="例：主持人"></label>
+          <label class="f">第三聯絡人電話<input id="c_phone3" data-b="c.phone3" inputmode="tel"></label>
           <label class="f">開始用車<input type="time" id="c_start" data-b="c.start"></label>
           <label class="f">結束用車<input type="time" id="c_end" data-b="c.end"></label>
           <label class="f">司機集合時間<input type="time" id="c_gather" data-b="c.gather"></label>
@@ -795,7 +798,7 @@ function newOrder(){return{
   cars:{X:1,S:0,Y:0,'3':0},zoneName:'',zones:0,tripKm:0,promoText:'',contractUrl:'',colorReq:'',colorFee:800,colorQty:0,colorMode:'free',colorWaive:'限時優惠',colorRare:false,cane:0,deco:0,
   extras:[{n:'',a:0}],discName:'',discAmt:0,red:true,invoice:false,depOverride:'',note:'',
   src:{vendor:'',ref:'',rate:''},c:{combo:'',caneNote:'',chatName:'',channel:'LINE',groom:'',bride:'',role:'新娘',contact:'',phone:'',start:'',end:'',gather:'',
-     meet:'',meetL:'男方家',meetS:'',wed:'',wedL:'女方家',wedS:'',o1:'',o1L:'',o1S:'',o2:'',o2L:'',o2S:'',meetMap:'',wedMap:'',o1Map:'',o2Map:'',route:'',rel:'',contact2:'',rel2:'',phone2:'',
+     meet:'',meetL:'男方家',meetS:'',wed:'',wedL:'女方家',wedS:'',o1:'',o1L:'',o1S:'',o2:'',o2L:'',o2S:'',meetMap:'',wedMap:'',o1Map:'',o2Map:'',route:'',rel:'',contact2:'',rel2:'',phone2:'',contact3:'',rel3:'',phone3:'',
      caneAns:'',decoAns:'',payDate:'',payAmt:'',last5:'',photoReq:'',photoUrl:''},
   fleet:[],path:'',flow:[],lang:{q:'zh',o:'zh',m:'zh'},memoWho:'cust',mapLinks:true,
   need:{dateSt:'',month:'',brand:'',care:'',pax:'',budget:'',next:'',note:'',avail:''},sent:[],quotes:[],
@@ -1066,7 +1069,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
     const back=r.balance-r.dsum;if(r.mon){if(r.dok&&r.dsum>r.onsite)pay.push('',`差額 ${money(r.dsum-r.onsite)} 由公司匯款`)}else if(x.balPaid)pay.push('',x.balRed&&r.red?'酬勞扣除紅包後由公司匯款':'酬勞由公司匯款');else if(!r.mon&&r.dok&&back>0)pay.push('',`匯回 ${money(back)}`);else if(!r.mon&&r.dok&&back<0)pay.push('',`差額 ${money(-back)} 由公司匯款`);
   }
   return{no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(c.end)}`,gather:ap(c.gather||addMin(c.start,-20)),
-    contact:(c.contact2||'').trim()?`\n${cname||''}${crole}  ${ph(c.phone)} / ${c.contact2.trim()}${(c.rel2||'').trim()?`(${c.rel2.trim()})`:''} ${ph(c.phone2)}`.trimEnd():`${cname||''}${crole}  ${ph(c.phone)}`.trim(),boss:`${ld.driver||''} ${ph(ld.phone)}`.trim(),plan:planName(x),
+    contact:(c.contact2||'').trim()?`\n${cname||''}${crole}  ${ph(c.phone)} / ${c.contact2.trim()}${(c.rel2||'').trim()?`(${c.rel2.trim()})`:''} ${ph(c.phone2)}`.trimEnd()+((c.contact3||'').trim()?`\n${c.contact3.trim()}${(c.rel3||'').trim()?`(${c.rel3.trim()})`:''} ${ph(c.phone3)}`.trimEnd():''):`${cname||''}${crole}  ${ph(c.phone)}`.trim(),boss:`${ld.driver||''} ${ph(ld.phone)}`.trim(),plan:planName(x),
     flags:`${t.deco}：${yn(c.decoAns,lang)} / ${t.cane}：${yn(c.caneAns||(x.cane?'是':'否'),lang)}`+((x.flagNote||'').trim()?`\n*${x.flagNote.trim()}`:''),fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',
     tips:who==='cust'?tipsC(x,lang):TIPS_D,tipsTitle:who==='cust'?t.tipsC:t.tipsD,pay,t}}
 function memoText(m,maps){const t=m.t,L2=[];
