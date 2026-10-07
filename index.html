@@ -1899,7 +1899,7 @@ function drvOptions(f){const mode=($('drvMode')&&$('drvMode').value)||'mc';if(!D
   const lab=d=>(busy.has(d.name)?'⚠️當天已排 ':'')+[d.name,zodOf(d)?'屬'+zodOf(d):'',d.color,d.model||d.brand,d.plate,d.status].filter(Boolean).join('｜');
   return `<option value="">▼ 選司機（${L.length} 位）</option>`+(String(f.driver||'').trim()?`<option value="__clear">✕ 移除目前司機（${esc(f.driver)}）</option>`:'')+L.map(d=>`<option value="${esc(d.name+'|'+d.plate)}">${esc(lab(d))}${d.src==='司機招募'?'（招募）':''}</option>`).join('')}
 async function loadDrivers(force){const st=$('drvSt');if(!S.driveUrl||!S.driveKey)return;let ts=0;try{ts=+localStorage.getItem('nwcw_drivers_ts')||0}catch(_){}
-  if(!force&&DRV.length&&Date.now()-ts<6*36e5)return;if(st)st.textContent='讀取司機名單…';
+  if(!force&&DRV.length&&Date.now()-ts<18e5)return;if(st)st.textContent='讀取司機名單…';
   try{const u=new URL(S.driveUrl);u.searchParams.set('action','drivers');u.searchParams.set('token',S.driveKey);const j=await (await fetch(u)).json();if(!j.ok)throw new Error(j.error||'失敗');
     DRV=j.drivers||[];try{localStorage.setItem('nwcw_drivers',JSON.stringify(DRV));localStorage.setItem('nwcw_drivers_ts',String(Date.now()))}catch(_){}
     if(st)st.textContent=`司機名單 ${DRV.length} 位`;renderFleet()}catch(e){if(st)st.textContent='司機名單讀取失敗：'+e.message}}
