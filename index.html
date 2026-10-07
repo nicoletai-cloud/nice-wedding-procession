@@ -937,7 +937,15 @@ function fleetOf(x){const want=expandCars(x);const cur=x.fleet||[];const pool=cu
   want.forEach((m,i)=>{const k=pool.findIndex(f=>f.m===m);if(k>=0){out.push(pool.splice(k,1)[0])}else out.push({m,role:roles[i],plate:'',driver:'',phone:'',color:'白色',seats:S.seats[m],pay:'',lead:roles[i]==='主禮車'})});
   const ord=r=>{const i=ROLES.indexOf(r);return i<0?9:i};
   return out.sort((a,b)=>ord(a.role)-ord(b.role))}
-function syncFleet(){o.fleet=fleetOf(o)}
+function syncFleet(){o.fleet=fleetOf(o);applyColorReq(o)}
+/* 指定車色：自動帶入車隊顏色（主禮車優先；指定台數空白＝全部）；手動改過的那台不再覆蓋 */
+function applyColorReq(x){if(!x||!x.colorReq||!(x.fleet||[]).length)return false;const n=num(x.colorQty)||x.fleet.length;
+  const ord=[...x.fleet].sort((a,b)=>((b.lead||b.role==='主禮車')?1:0)-((a.lead||a.role==='主禮車')?1:0));let ch=false;
+  ord.slice(0,n).forEach(f=>{if(!f.colorSet&&f.color!==x.colorReq){f.color=x.colorReq;ch=true}});return ch}
+document.addEventListener('input',e=>{const t=e.target;if(!t||!t.dataset)return;
+  if(t.dataset.fl&&/\.color$/.test(t.dataset.fl)){const f=o.fleet[+t.dataset.fl.split('.')[0]];if(f){f.colorSet=true;save()}return}
+  if(t.id==='q_color'||t.id==='q_colorQty')setTimeout(()=>{if(applyColorReq(o)){save();renderFleet()}},0)});
+document.addEventListener('change',e=>{const t=e.target;if(t&&(t.id==='q_color'||t.id==='q_colorQty'))setTimeout(()=>{if(applyColorReq(o)){save();renderFleet()}},0)});
 function payOf(f){return f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,o)}
 function lead(x){return x.fleet.find(f=>f.lead)||x.fleet.find(f=>f.role==='主禮車')||x.fleet[0]}
 
