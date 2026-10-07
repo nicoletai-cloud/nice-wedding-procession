@@ -757,7 +757,9 @@ let DB=store('nwcw_orders');
 if(!DB||!DB.orders||!Object.keys(DB.orders).length){const s=sampleOrder();DB={cur:s.id,orders:{[s.id]:s}}}
 let o=DB.orders[DB.cur]||Object.values(DB.orders)[0];
 function migrate(x){const d=newOrder();if(!x.need)x.need=clone(d.need);else for(const k in d.need)if(x.need[k]===undefined)x.need[k]='';if(x.paid===undefined)x.paid=false;if(x.orderedAt===undefined)x.orderedAt=x.updated||Date.now();if(!x.src)x.src={vendor:'',ref:'',rate:''};for(const k in d){if(x[k]===undefined)x[k]=clone(d[k])}for(const k in d.c){if(x.c[k]===undefined)x.c[k]=d.c[k]}for(const k in d.lang){if(!x.lang[k])x.lang[k]='zh'}
-  (x.fleet||[]).forEach(f=>{if(f.emg===undefined)f.emg='';const m=(f.phone||'').match(/^(.*?)\s*[（(]\s*緊急聯絡人?\s*[:：]?\s*([^）)]*)[）)]\s*$/);if(m){f.phone=m[1].trim();if(!f.emg)f.emg=m[2].trim()}});return x}
+  (x.fleet||[]).forEach(f=>{if(f.emg===undefined)f.emg='';const m=(f.phone||'').match(/^(.*?)\s*[（(]\s*緊急聯絡人?\s*[:：]?\s*([^）)]*)[）)]\s*$/);if(m){f.phone=m[1].trim();if(!f.emg)f.emg=m[2].trim()}f.phone=fixTel(f.phone);f.emg=fixTel(f.emg)});return x}
+/* 手機號碼被試算表吃掉開頭 0（例 933339130）→ 自動補 0 */
+function fixTel(v){const t=String(v==null?'':v).trim();return /^9\d{2}[-\s]?\d{3}[-\s]?\d{3}$/.test(t)?'0'+t:(v==null?'':v)}
 Object.values(DB.orders).forEach(migrate);
 function save(){o.updated=Date.now();DB.cur=o.id;DB.orders[o.id]=o;store('nwcw_orders',DB);pushSync()}
 function saveS(){if(syncReady)S._ts=Date.now();store('nwcw_settings',S);pushSync()}
@@ -1789,8 +1791,9 @@ async function loadDrivers(force){const st=$('drvSt');if(!S.driveUrl||!S.driveKe
     DRV=j.drivers||[];try{localStorage.setItem('nwcw_drivers',JSON.stringify(DRV));localStorage.setItem('nwcw_drivers_ts',String(Date.now()))}catch(_){}
     if(st)st.textContent=`司機名單 ${DRV.length} 位`;renderFleet()}catch(e){if(st)st.textContent='司機名單讀取失敗：'+e.message}}
 document.addEventListener('change',e=>{const t=e.target;if(t.id==='drvMode'){renderFleet();return}
+  if(t.dataset&&t.dataset.fl&&/\.(phone|emg)$/.test(t.dataset.fl)){const v=fixTel(t.value);if(v!==t.value){t.value=v;t.dispatchEvent(new Event('input',{bubbles:true}))}return}
   if(t.classList&&t.classList.contains('drvPick')&&t.value){const [nm,pl]=t.value.split('|');const d=DRV.find(z=>z.name===nm&&z.plate===pl);const f=o.fleet[+t.dataset.dp];if(!d||!f)return;
-    f.driver=d.name;f.phone=d.phone||f.phone;f.plate=d.plate||f.plate;if(!f.emg&&d.emg)f.emg=d.emg;if(+d.seats)f.seats=+d.seats;o.sample=false;save();renderFleet();renderAll();toast(`已填入 ${d.name}`)}});
+    f.driver=d.name;f.phone=fixTel(d.phone)||f.phone;f.plate=d.plate||f.plate;if(!f.emg&&d.emg)f.emg=fixTel(d.emg);if(+d.seats)f.seats=+d.seats;o.sample=false;save();renderFleet();renderAll();toast(`已填入 ${d.name}`)}});
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('#btnDrvReload');if(t)loadDrivers(true)});
 setTimeout(()=>{loadDrivers(false);if($('drvSt')&&DRV.length)$('drvSt').textContent=`司機名單 ${DRV.length} 位`},1500);
 renderPriceSettings();loadOrder();
