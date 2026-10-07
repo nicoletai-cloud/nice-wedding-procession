@@ -1329,6 +1329,8 @@ function paidText(x){const tips=['禮車會提早大約20分鐘抵達集合地�
   if(!x.colorReq)tips.push('車色無法指定，一般為黑色或白色由派車人員安排。');
   const hi=typeof rmHi==='function'?rmHi(x):'您好';
   return [(hi==='您好'?'':hi+'🤍 ')+(signUrlOf(x)?'已經收到訂金，請點開以下連結確認合約內容，並按下方「簽名完成合約」完成線上簽署：':'已經收到訂金，合約提供您留存：'),signUrlOf(x)||(x.contractUrl||'').trim()||'（請貼上合約連結）','',...tips.map((t,i)=>`${i+1}.${t}`)].join('\n')}
+/* 後台入帳（paidAt=已入帳）等路徑不會設 ttDone；10/5 之後收訂的單一律當作還沒填 TimeTree */
+const TT_SINCE=Date.UTC(2026,9,5);function ttPending(x){return !!x.paid&&(x.ttDone===false||(x.ttDone===undefined&&+x.paidTs>=TT_SINCE))}
 function renderTTCheck(){const html=!o.paid?'':o.ttDone?`<span class="chip">✅ 已填入 TimeTree</span><button class="btn sm" id="btnTTUndo">改回未填</button>`:`<b style="color:#A0453A">⚠️ 已收訂，還沒填入 TimeTree</b><span class="hint" style="margin:0">到「5 車隊與流程」複製 TimeTree 標題與備註，填好後按 →</span><button class="btn sm pri" id="btnTTDone">已填入 TimeTree</button>`;
   const a=$('ttCheck');if(a){a.innerHTML=html;a.hidden=!html}const b=$('ttCheck2');if(b)b.innerHTML=html.replace('id="btnTTUndo"','data-x="1" id="btnTTUndo2"').replace('id="btnTTDone"','id="btnTTDone2"').replace(/<span class="hint"[^<]*<\/span>/,'')}
 function renderPaidAck(){renderTTCheck();const el=$('outPaidAck'),h=$('paidAckHint');if(!el)return;const nf=o.paid&&stageOf(o)==='noform';
@@ -1355,7 +1357,7 @@ function ttMemo(x){return [quoteText(x,'zh'),'',`訂單編號：${orderNo(x)}`,`
 function ttPromptText(pick){const sv=o,L=[],now=new Date();
   const list=(pick||Object.values(DB.orders)).filter(x=>x.paid&&!x.sample&&!x.lost&&x.date&&daysTo(x)!==null&&daysTo(x)>=0).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:String(a.c.start||'').localeCompare(String(b.c.start||'')));
   try{list.forEach((x,i)=>{o=x;const p=dparts(x.date),c=x.c;
-    L.push(`${i+1}. ${orderNo(x)}（系統：${x.ttDone===false?'⚠️ 未填 TimeTree':'已標記填過'}）`,`日期：${x.date.replace(/-/g,'/')}（${WD.zh[p.w]}）　時間：${c.start?c.start+(c.end?'-'+c.end:''):'未定（建全天行程）'}`,`客人：${[c.groom,c.bride].filter(Boolean).join('&')||'—'}`,`標題：${ttTitle(x)}`,'備註：',ttMemo(x),'')})}finally{o=sv}
+    L.push(`${i+1}. ${orderNo(x)}（系統：${ttPending(x)?'⚠️ 未填 TimeTree':'已標記填過'}）`,`日期：${x.date.replace(/-/g,'/')}（${WD.zh[p.w]}）　時間：${c.start?c.start+(c.end?'-'+c.end:''):'未定（建全天行程）'}`,`客人：${[c.groom,c.bride].filter(Boolean).join('&')||'—'}`,`標題：${ttTitle(x)}`,'備註：',ttMemo(x),'')})}finally{o=sv}
   if(pick)return [`請幫我把以下 ${list.length} 筆訂單補登到 TimeTree「好好禮車」行事曆（標籤選「好好禮車」）。`,'新增前先確認同一天沒有同一位客人的行程，已經有的就跳過；名字相近但不確定的先問我。','完成後請回報新增了哪幾筆，並在派車系統把這些訂單標記為「已填 TimeTree」。','','──────────',...L].join('\n').trim();
   return [`請幫我檢查 TimeTree「好好禮車」行事曆，有沒有漏掉以下已收訂、還沒出車的訂單（${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${p2(now.getHours())}:${p2(now.getMinutes())} 產生，共 ${list.length} 筆）。`,'',
     '比對方式：同一天、標題或備註裡有同一位客人的名字或訂單編號，就算已經填了。',
@@ -1492,7 +1494,7 @@ function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];c
   if(st==='done'){if(d>=-30&&x.paid){if(!x.revAskAt&&!x.revSkip)T.push({k:'rev',late:d<=-2});else if(x.revAskAt&&!x.revLinkAt&&!x.revSkip)T.push({k:'revlink',late:false})}return T}
   if(st==='inq'){const nx=x.need&&x.need.next;if(nx){const dn=daysTo({date:nx});if(dn!==null&&dn<=0)T.push({k:'inq',late:true})}else{const fn=+x.followN||0;if(fn<2)T.push({k:'inq',late:ago(x.followAt||x.inqAt||x.updated)>=(fn?7:3),why:fn?'收尾':''})}}
   if(st==='unpaid')T.push({k:'unpaid',late:ago(x.orderedAt||x.updated)>=2});
-  if(x.paid&&x.ttDone===false&&st!=='done')T.push({k:'tt',late:true});
+  if(ttPending(x)&&st!=='done')T.push({k:'tt',late:true});
   if(st==='noform')T.push({k:'noform',late:ago(x.paidTs||x.updated)>=3});
   if(st==='nocontract')T.push({k:'nocontract',late:ago(x.formAt)>=2});
   if(st!=='inq'&&!String(x.carHead||'').trim()){const R=headNeed(x,d);if(R.length)T.push({k:'head',late:R.some(r=>r.late),why:R.map(r=>r.why).join('、')})}
