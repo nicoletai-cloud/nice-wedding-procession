@@ -25,93 +25,93 @@
   --bg:#1D1916; --surface:#26211D; --surface-2:#2F2823; --fg:#EFE4DA; --muted:#A8988A; --line:#3D342D;
   --accent:#CFA163; --accent-ink:#1D1916; --accent-soft:#3A2E22; --ok:#8DB886; --warn:#E09A62; color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:1rem;line-height:1.55}
 .wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:0 48px}
 header.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding-block:18px 12px}
 .brand{display:flex;align-items:baseline;gap:10px;margin-right:auto}
-.brand b{font-size:22px;color:var(--accent);letter-spacing:.06em;font-weight:700}
-.brand span{font-family:var(--f-label);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
-.nwc-hub{font:500 13px var(--f-body);color:var(--muted);text-decoration:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 13px;white-space:nowrap}
+.brand b{font-size:1.45rem;color:var(--accent);letter-spacing:.06em;font-weight:700}
+.brand span{font-family:var(--f-label);font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+.nwc-hub{font:500 .8rem var(--f-body);color:var(--muted);text-decoration:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 13px;white-space:nowrap}
 .nwc-hub:hover{border-color:var(--accent);color:var(--accent)}
 .orderbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .orderbar select{max-width:260px}
 nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);overflow-x:auto;display:flex;gap:2px;scrollbar-width:none}
-nav.tabs button{flex:0 0 auto;border:0;background:none;color:var(--muted);font:500 14px var(--f-body);padding:12px 14px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
-nav.tabs button .n{font-family:var(--f-label);font-size:11px;margin-right:6px;opacity:.7}
+nav.tabs button{flex:0 0 auto;border:0;background:none;color:var(--muted);font:500 0.933rem var(--f-body);padding:12px 14px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+nav.tabs button .n{font-family:var(--f-label);font-size:0.733rem;margin-right:6px;opacity:.7}
 nav.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
-.sample{margin-top:14px;padding:10px 14px;border-radius:var(--r);background:var(--accent-soft);font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.sample{margin-top:14px;padding:10px 14px;border-radius:var(--r);background:var(--accent-soft);font-size:0.867rem;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 section.tab{padding-top:18px}
 .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
 @media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
-.card h3{margin:0 0 12px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.card h3 small{font-weight:400;color:var(--muted);font-size:12px}
+.card h3{margin:0 0 12px;font-size:1rem;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card h3 small{font-weight:400;color:var(--muted);font-size:0.8rem}
 .stack{display:grid;gap:14px}
 .fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 12px}
 .fields .wide{grid-column:1/-1}
-label.f{display:grid;gap:4px;font-size:12px;color:var(--muted);min-width:0}
-input,select,textarea{font:inherit;font-size:15px;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+label.f{display:grid;gap:4px;font-size:0.8rem;color:var(--muted);min-width:0}
+input,select,textarea{font:inherit;font-size:1rem;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
 textarea{resize:vertical;min-height:70px}
 input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-.btn{font:500 14px var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:7px 12px;cursor:pointer;white-space:nowrap}
+.btn{font:500 0.933rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:7px 12px;cursor:pointer;white-space:nowrap}
 .btn:hover{border-color:var(--accent)}
 .btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.btn.sm{padding:4px 9px;font-size:13px}
+.btn.sm{padding:4px 9px;font-size:0.867rem}
 .btn.danger{color:var(--warn)}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .cars{display:grid;gap:8px}
 .car{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}
-.car .nm{font-family:var(--f-label);font-weight:700;letter-spacing:.08em;font-size:13px}
-.car .pr{font-size:12px;color:var(--muted)}
+.car .nm{font-family:var(--f-label);font-weight:700;letter-spacing:.08em;font-size:0.867rem}
+.car .pr{font-size:0.8rem;color:var(--muted)}
 .step{display:flex;align-items:center;gap:6px}
-.step button{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:16px;cursor:pointer;line-height:1}
+.step button{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:1.067rem;cursor:pointer;line-height:1}
 .step output{min-width:22px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
-.chip{display:inline-block;font-size:12px;padding:2px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:500}
+.chip{display:inline-block;font-size:0.8rem;padding:2px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:500}
 .chip.ok{color:var(--ok)}
 .chip.late{background:var(--warn);color:#fff}
 .todo-row{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-bottom:8px;cursor:pointer}
-.decoCal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.decoCal .h{font-size:12px;text-align:center;color:var(--mu,#75736B)}.decoCal .d{border:1px solid var(--line);border-radius:8px;min-height:74px;padding:4px;background:var(--surface);cursor:pointer;font-size:11px;line-height:1.3;overflow:hidden}.decoCal .d.x{opacity:.35}.decoCal .d.t{outline:2px solid #A77D4C}.decoCal .d b{font-size:13px}.decoCal .d .ok{color:#2F6B4F;font-weight:700}.decoCal .d i{display:inline-block;font-style:normal;color:#fff;border-radius:4px;padding:0 3px;margin:1px 1px 0 0;font-size:10px}.decoCal .d.sel{background:#F3E6CF}@media(max-width:640px){.decoCal .d{min-height:60px;font-size:10px}}.decoT{border-collapse:collapse;font-size:12px}.decoT th,.decoT td{border:1px solid var(--line);min-width:22px;height:22px;text-align:center;padding:0}.decoT tbody th{padding:0 6px;background:var(--surface);position:sticky;left:0}
-.todo-row .m{flex:1;min-width:0}.todo-row .m b{margin-right:6px}.todo-row .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.decoCal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.decoCal .h{font-size:0.8rem;text-align:center;color:var(--mu,#75736B)}.decoCal .d{border:1px solid var(--line);border-radius:8px;min-height:74px;padding:4px;background:var(--surface);cursor:pointer;font-size:0.733rem;line-height:1.3;overflow:hidden}.decoCal .d.x{opacity:.35}.decoCal .d.t{outline:2px solid #A77D4C}.decoCal .d b{font-size:0.867rem}.decoCal .d .ok{color:#2F6B4F;font-weight:700}.decoCal .d i{display:inline-block;font-style:normal;color:#fff;border-radius:4px;padding:0 3px;margin:1px 1px 0 0;font-size:0.667rem}.decoCal .d.sel{background:#F3E6CF}@media(max-width:640px){.decoCal .d{min-height:60px;font-size:0.667rem}}.decoT{border-collapse:collapse;font-size:0.8rem}.decoT th,.decoT td{border:1px solid var(--line);min-width:22px;height:22px;text-align:center;padding:0}.decoT tbody th{padding:0 6px;background:var(--surface);position:sticky;left:0}
+.todo-row .m{flex:1;min-width:0}.todo-row .m b{margin-right:6px}.todo-row .sub{font-size:0.8rem;color:var(--muted);margin-top:2px}
 .todo-row .tg{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:45%}
 @media(max-width:640px){.todo-row{flex-wrap:wrap}.todo-row .m{flex:1 1 calc(100% - 100px)}.todo-row .tg{order:3;flex:1 1 100%;max-width:none;justify-content:flex-start;padding-left:26px}}
-#btnInbox b,#btnTodo b,#btnDecoCal b{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:999px;background:var(--warn);color:#fff;font-size:11px;line-height:18px}
+#btnInbox b,#btnTodo b,#btnDecoCal b{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:999px;background:var(--warn);color:#fff;font-size:0.733rem;line-height:18px}
 .sum{display:grid;gap:4px;font-variant-numeric:tabular-nums}
 .sum div{display:flex;justify-content:space-between;gap:12px}
-.sum .tot{border-top:1px solid var(--line);margin-top:6px;padding-top:8px;font-weight:700;font-size:17px}
-.sum .sub{color:var(--muted);font-size:13px}
-.out{white-space:pre-wrap;word-break:break-word;background:var(--surface-2);border-radius:8px;padding:12px 14px;margin:0;font:14px/1.65 var(--f-body);max-height:560px;overflow:auto}
+.sum .tot{border-top:1px solid var(--line);margin-top:6px;padding-top:8px;font-weight:700;font-size:1.133rem}
+.sum .sub{color:var(--muted);font-size:0.867rem}
+.out{white-space:pre-wrap;word-break:break-word;background:var(--surface-2);border-radius:8px;padding:12px 14px;margin:0;font:0.933rem/1.65 var(--f-body);max-height:560px;overflow:auto}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.seg button{border:0;background:var(--surface);color:var(--muted);padding:5px 10px;font:13px var(--f-body);cursor:pointer}
+.seg button{border:0;background:var(--surface);color:var(--muted);padding:5px 10px;font:0.867rem var(--f-body);cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
-.hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+.hint{font-size:0.8rem;color:var(--muted);margin:6px 0 0}
 .tbl{overflow-x:auto}
-.tbl table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+.tbl table{border-collapse:collapse;width:100%;min-width:640px;font-size:0.933rem}
 .tbl th,.tbl td{border-bottom:1px solid var(--line);padding:6px;text-align:left;vertical-align:middle}
-.tbl th{font-size:12px;color:var(--muted);font-weight:500}
-.tbl input,.tbl select{padding:6px 8px;font-size:14px}
+.tbl th{font-size:0.8rem;color:var(--muted);font-weight:500}
+.tbl input,.tbl select{padding:6px 8px;font-size:0.933rem}
 .ptbl th.grp{text-align:center;border-bottom:1px solid var(--line);color:var(--accent)}
 .ptbl td:first-child,.ptbl thead tr:first-child th:first-child{position:sticky;left:0;background:var(--surface);z-index:1}
 .ptbl input{min-width:80px}
 .ptbl td:first-child input{min-width:150px}
 .brand-grp{border:1px solid var(--line);border-radius:8px;padding:6px 10px}
-.brand-grp summary{cursor:pointer;font-weight:700;font-size:13px;padding:4px 0;color:var(--muted)}
+.brand-grp summary{cursor:pointer;font-weight:700;font-size:0.867rem;padding:4px 0;color:var(--muted)}
 .brand-grp[open] summary{margin-bottom:6px}
 .brand-grp .cars{margin-bottom:4px}
 .flow{display:grid;gap:6px}
 .flow .fr{display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,1fr) auto;gap:6px}
 @media (max-width:520px){.flow .fr{grid-template-columns:96px minmax(0,1fr) auto}.flow .fr .who{grid-column:2/3}.flow .fr .sg{grid-column:1/3}}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:0.933rem;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
 .toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 /* memo doc preview */
-.doc{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;font-size:14px}
+.doc{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;font-size:0.933rem}
 .doc .dh{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline;border-bottom:1px solid var(--accent);padding-bottom:8px}
-.doc .dh b{color:var(--accent);font-size:20px;letter-spacing:.08em}
-.doc .wd{font-family:var(--f-label);letter-spacing:.2em;text-transform:uppercase;color:var(--accent);font-size:12px;margin:12px 0 4px}
-.doc h4{margin:16px 0 6px;font-size:13px;color:var(--accent);letter-spacing:.06em}
+.doc .dh b{color:var(--accent);font-size:1.333rem;letter-spacing:.08em}
+.doc .wd{font-family:var(--f-label);letter-spacing:.2em;text-transform:uppercase;color:var(--accent);font-size:0.8rem;margin:12px 0 4px}
+.doc h4{margin:16px 0 6px;font-size:0.867rem;color:var(--accent);letter-spacing:.06em}
 .doc table{border-collapse:collapse;width:100%;min-width:520px}
 .doc td,.doc th{border:1px solid var(--line);padding:6px 8px;vertical-align:top;text-align:left}
-.doc th{background:var(--surface-2);font-weight:500;font-size:12px}
+.doc th{background:var(--surface-2);font-weight:500;font-size:0.8rem}
 .doc ol,.doc ul{margin:4px 0;padding-left:22px}
 .doc a{color:var(--accent)}
 /* contract: paper document, fixed light palette by design */
@@ -149,16 +149,16 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
   @page{size:A4;margin:0}
 }
 /* ===== 裝置適配：iPhone Duo 外螢幕(~466pt)、內螢幕(~626pt 直向／~890pt 橫向)、MacBook Air ===== */
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;font-size:21px}
 .wrap{padding-inline:max(16px,env(safe-area-inset-left)) max(16px,env(safe-area-inset-right));padding-bottom:calc(48px + env(safe-area-inset-bottom,0px))}
 @media (min-width:1280px){.wrap{max-width:1240px}}
 nav.tabs{scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
 nav.tabs button{scroll-snap-align:start}
 /* 觸控裝置：放大點擊區、輸入框 16px 避免 iPhone 點了就自動放大 */
 @media (pointer:coarse){
-  input,select,textarea{font-size:16px;min-height:44px}
+  input,select,textarea{font-size:1.067rem;min-height:44px}
   textarea{min-height:88px}
-  .tbl input,.tbl select{font-size:16px;min-height:40px}
+  .tbl input,.tbl select{font-size:1.067rem;min-height:40px}
   .btn{min-height:40px;padding:8px 14px}
   .btn.sm{min-height:34px;padding:6px 11px}
   nav.tabs button{padding:13px 14px}
@@ -175,17 +175,17 @@ nav.tabs button{scroll-snap-align:start}
 /* 外螢幕（合起來）與一般手機 */
 @media screen and (max-width:520px){
   header.top{padding-block:12px 8px;gap:8px}
-  .brand b{font-size:20px}
+  .brand b{font-size:1.2rem}
   .brand span{display:none}
   header.top .orderbar{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
   .orderbar select{grid-column:1/-1;max-width:none}
   .orderbar .btn{width:100%;text-align:center;padding-inline:6px}
-  nav.tabs button{padding-inline:11px;font-size:14px}
+  nav.tabs button{padding-inline:11px;font-size:0.933rem}
   section.tab{padding-top:12px}
   .grid{gap:12px}
   .card{padding:13px}
   .fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px}
-  .out{font-size:14px;max-height:none}
+  .out{font-size:0.933rem;max-height:none}
   .doc{padding:12px}
   .paper{zoom:.53}
   #coupleModal{padding:10px 8px!important}
@@ -309,7 +309,7 @@ nav.tabs button{scroll-snap-align:start}
             <label class="f">實體甘蔗台數<input type="number" id="q_cane" data-b="cane" data-num min="0"></label>
             <label class="f">指定車頭彩費用<input type="number" id="q_deco" data-b="deco" data-num min="0" placeholder="800–1000"></label>
             <label class="f">指定車頭彩款式<select id="q_decoStyle" data-b="decoStyle"></select></label>
-            <div class="f wide" id="decoHint" style="font-size:13px;line-height:1.6"></div>
+            <div class="f wide" id="decoHint" style="font-size:0.867rem;line-height:1.6"></div>
             <label class="f">加項名稱<input id="q_x0n" data-b="extras.0.n" placeholder="例：指定路線"></label>
             <label class="f">加項金額<input type="number" id="q_x0a" data-b="extras.0.a" data-num></label>
             <label class="f">折扣名稱<input id="q_dn" data-b="discName" placeholder="例：早鳥"></label>
@@ -398,7 +398,7 @@ nav.tabs button{scroll-snap-align:start}
       </div>
       <div class="card">
         <h3>找司機訊息 <small>貼司機群組；不同車款分開找</small></h3>
-        <div class="row" style="gap:12px;margin-bottom:8px;flex-wrap:wrap"><div class="seg" id="findM"></div><label class="row" style="gap:6px;font-size:13px;color:var(--muted)"><input type="checkbox" id="findMain" style="width:auto"> 主禮車（備註車頭彩／門把彩／對講機）</label></div>
+        <div class="row" style="gap:12px;margin-bottom:8px;flex-wrap:wrap"><div class="seg" id="findM"></div><label class="row" style="gap:6px;font-size:0.867rem;color:var(--muted)"><input type="checkbox" id="findMain" style="width:auto"> 主禮車（備註車頭彩／門把彩／對講機）</label></div>
         <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm pri" data-copy="outFind">複製</button></div>
         <pre class="out" id="outFind"></pre>
       </div>
@@ -455,11 +455,11 @@ nav.tabs button{scroll-snap-align:start}
       <div class="seg" id="memoWho">
         <button data-who="cust" aria-pressed="true">客人用</button><button data-who="drv" aria-pressed="false">司機端</button>
       </div>
-      <label class="row" style="font-size:13px;color:var(--muted);gap:6px">方案備註（顯示在車頭彩下一行）<input id="flagNote" data-b="flagNote" placeholder="例：多預備三組門把彩" style="width:220px"></label>
-      <label class="row" style="font-size:13px;color:var(--muted);gap:6px">加時寫法（空白＝依價目表）<input id="otText" data-b="otText" placeholder="例：M3 $800/0.5HR ; MX $1,200/0.5HR" style="width:260px"></label>
-      <label class="row" style="font-size:13px;color:var(--muted);gap:6px"><input type="checkbox" id="routeInMemo" style="width:auto"> 加入「行程說明」列（路線說明）</label>
-      <label class="row" style="font-size:13px;color:var(--muted);gap:6px"><input type="checkbox" id="balPaid" style="width:auto"> 客人已匯清尾款（司機現場不收，酬勞由公司匯）<span id="balPaidAt"></span></label>
-      <label class="row" hidden style="font-size:13px;color:var(--muted);gap:6px"><input type="checkbox" id="mapLinks" style="width:auto"> 地址附 Google Map 連結</label>
+      <label class="row" style="font-size:0.867rem;color:var(--muted);gap:6px">方案備註（顯示在車頭彩下一行）<input id="flagNote" data-b="flagNote" placeholder="例：多預備三組門把彩" style="width:220px"></label>
+      <label class="row" style="font-size:0.867rem;color:var(--muted);gap:6px">加時寫法（空白＝依價目表）<input id="otText" data-b="otText" placeholder="例：M3 $800/0.5HR ; MX $1,200/0.5HR" style="width:260px"></label>
+      <label class="row" style="font-size:0.867rem;color:var(--muted);gap:6px"><input type="checkbox" id="routeInMemo" style="width:auto"> 加入「行程說明」列（路線說明）</label>
+      <label class="row" style="font-size:0.867rem;color:var(--muted);gap:6px"><input type="checkbox" id="balPaid" style="width:auto"> 客人已匯清尾款（司機現場不收，酬勞由公司匯）<span id="balPaidAt"></span></label>
+      <label class="row" hidden style="font-size:0.867rem;color:var(--muted);gap:6px"><input type="checkbox" id="mapLinks" style="width:auto"> 地址附 Google Map 連結</label>
     </div>
     <div class="card" style="margin-bottom:18px">
       <h3>memo 連結 <small>Google 文件，知道連結的人可檢視；資料改了再按一次，連結不變</small></h3>
@@ -583,7 +583,7 @@ nav.tabs button{scroll-snap-align:start}
     <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">車頭彩檔期 <small>每款只有一組；自己出車（北北基桃竹）佔前後 1 天、順豐寄送佔前後 3 天、蝦皮佔使用日前 6 天～後 4 天</small></h3><button class="btn" id="btnDecoClose">關閉</button></div>
     <div class="card" style="margin-bottom:12px"><h3>查某天可接的款式</h3>
       <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><input type="date" id="decoQDate" style="width:auto"><select id="decoQWay" style="width:auto"><option value="near">自己出車（北北基桃竹）</option><option value="far">順豐寄送（苗栗以南／宜花東）</option><option value="shopee">蝦皮出租</option></select></div>
-      <div id="decoQOut" style="margin-top:8px;font-size:14px;line-height:1.6"></div></div>
+      <div id="decoQOut" style="margin-top:8px;font-size:0.933rem;line-height:1.6"></div></div>
     <div class="card" style="margin-bottom:12px" id="decoMissCard" hidden><h3 style="color:#A0453A">⚠️ 合約有指定車頭彩，但還沒選款式</h3><div id="decoMiss"></div></div>
     <div class="card" style="margin-bottom:12px"><div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px"><h3 style="margin:0" id="decoMonthLbl"></h3><div class="row" style="gap:6px"><button class="btn sm" id="decoPrev">‹ 上個月</button><button class="btn sm" id="decoNext">下個月 ›</button></div></div>
       <div id="decoCal"></div><details style="margin-top:10px"><summary class="hint" style="cursor:pointer;margin:0">看各款逐日佔用表</summary><div style="overflow-x:auto;margin-top:8px" id="decoGrid"></div></details>
@@ -598,7 +598,7 @@ nav.tabs button{scroll-snap-align:start}
   <div style="max-width:980px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px">
     <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">待辦 <small>選進度篩選，勾選後可一起處理</small></h3><div class="row" style="gap:6px"><button class="btn pri" id="btnTTPrompt" title="把所有已收訂、還沒出車的訂單整理成指令，貼給 Claude 比對 TimeTree">🔍 產生 TimeTree 檢查指令</button><button class="btn" id="btnTodoClose">關閉</button></div></div>
     <div id="todoChips" class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
-    <div class="row" style="gap:10px;margin-bottom:10px;flex-wrap:wrap"><input id="todoQ" placeholder="搜尋單號、客人名稱、新人姓名" style="flex:1;min-width:180px"><label class="row" style="gap:4px;font-size:13px;flex-wrap:nowrap"><input type="checkbox" id="todoLate" style="width:auto"> 只看逾期</label></div>
+    <div class="row" style="gap:10px;margin-bottom:10px;flex-wrap:wrap"><input id="todoQ" placeholder="搜尋單號、客人名稱、新人姓名" style="flex:1;min-width:180px"><label class="row" style="gap:4px;font-size:0.867rem;flex-wrap:nowrap"><input type="checkbox" id="todoLate" style="width:auto"> 只看逾期</label></div>
     <div id="todoBatch" class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
     <div id="todoList"></div>
   </div>
@@ -1445,10 +1445,10 @@ function renderNeed(){if(!$('needMiss'))return;const miss=needMiss();
   $('needMiss').innerHTML=miss.length?'<div class="hint" style="margin:0 0 6px">還沒掌握：</div>'+miss.map(([k,l])=>k?`<button class="btn sm" data-scpick="${k}">${esc(l)} → 話術</button>`:`<span class="chip">${esc(l)}</span>`).join(' '):'<span class="chip ok">需求都掌握了，可以報價</span>';
   const sel=$('scKey');if(!sel.options.length){sel.innerHTML=SCRIPTS.map(([k,l])=>`<option value="${k}">${l}</option>`).join('');scLoad()}
   const sent=o.sent||[],had=k=>sent.some(x=>x.k===k);
-  $('matList').innerHTML=MATS.map(([k,l,w])=>`<div class="row" style="justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)"><div><b style="font-size:14px">${l}</b><div class="sub" style="font-size:12px;color:var(--muted)">${w}</div></div>${had(k)?`<span class="chip ok">已傳 ${new Date(sent.filter(x=>x.k===k).pop().at).toLocaleDateString('zh-TW')}</span>`:`<button class="btn sm" data-matsent="${k}">標記已傳</button>`}</div>`).join('');
+  $('matList').innerHTML=MATS.map(([k,l,w])=>`<div class="row" style="justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)"><div><b style="font-size:0.933rem">${l}</b><div class="sub" style="font-size:0.8rem;color:var(--muted)">${w}</div></div>${had(k)?`<span class="chip ok">已傳 ${new Date(sent.filter(x=>x.k===k).pop().at).toLocaleDateString('zh-TW')}</span>`:`<button class="btn sm" data-matsent="${k}">標記已傳</button>`}</div>`).join('');
   const sl=sent.filter(x=>SCRIPTS.some(s=>s[0]===x.k)).slice(-6).map(x=>`${(SCRIPTS.find(s=>s[0]===x.k)||[])[1]}（${new Date(x.at).toLocaleDateString('zh-TW')}）`);
   $('sentLog').textContent=sl.length?'已傳話術：'+sl.join('、'):'';
-  const Q=o.quotes||[];$('quoteVers').innerHTML=(Q.length?`<div class="hint" style="margin:0 0 6px">報價版本（複製時自動存）：</div>`+Q.map((q,i)=>`<details style="margin-bottom:4px"><summary style="cursor:pointer;font-size:13px">第 ${i+1} 版｜${new Date(q.at).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}｜NT$${num(q.total).toLocaleString('en-US')}</summary><pre class="out" style="margin-top:6px">${esc(q.text)}</pre></details>`).join(''):'')}
+  const Q=o.quotes||[];$('quoteVers').innerHTML=(Q.length?`<div class="hint" style="margin:0 0 6px">報價版本（複製時自動存）：</div>`+Q.map((q,i)=>`<details style="margin-bottom:4px"><summary style="cursor:pointer;font-size:0.867rem">第 ${i+1} 版｜${new Date(q.at).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}｜NT$${num(q.total).toLocaleString('en-US')}</summary><pre class="out" style="margin-top:6px">${esc(q.text)}</pre></details>`).join(''):'')}
 function scLoad(){const k=$('scKey').value,s=SCRIPTS.find(x=>x[0]===k);const t=scFill(s?s[2]:'');$('scText').value=t;scWarn()}
 function scWarn(){const m=$('scText').value.match(/【.+?】/g);$('scWarn').textContent=m?'⚠️ 還有沒填的：'+[...new Set(m)].join('、')+'（不知道的請寫「待確認」）':''}
 function logSent(k){o.sent=(o.sent||[]).concat({k,at:Date.now()});save();renderNeed()}
@@ -1702,7 +1702,7 @@ function shopeeMsg(r,k){const D=shopeeDates(r),nm=decoName(r.code),u=dShort(r.da
   if(k==='back')return `您好～提醒您，${nm} 使用完畢請於 ${dShort(D.sendBack)} 前寄回喔，收到確認後會立即退還押金 $2,000，謝謝🤍`;
   return ''}
 function shopeeCtl(r,today){const z=r.st||{},td=shopeeTodo(r,today),D=shopeeDates(r);
-  return `<div style="width:100%;font-size:13px;margin-top:6px;line-height:1.7"><div>下單期限 ${dShort(D.orderBy)}｜出貨 ${dShort(D.ship)}｜送達 ${dShort(D.arrive)} 前｜寄回 ${dShort(D.sendBack)} 前</div>`+
+  return `<div style="width:100%;font-size:0.867rem;margin-top:6px;line-height:1.7"><div>下單期限 ${dShort(D.orderBy)}｜出貨 ${dShort(D.ship)}｜送達 ${dShort(D.arrive)} 前｜寄回 ${dShort(D.sendBack)} 前</div>`+
    (td?`<div style="color:${td.late?'#A0453A':'#8A6D3B'};font-weight:700">${td.late?'⚠️ ':'⏰ '}${esc(td.t)}</div>`:'')+
    `<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:4px">${SP_STEP.map(([k,l])=>`<button class="btn sm${z[k]?' pri':''}" data-spst="${esc(r.id)}|${k}">${z[k]?'✓ ':''}${l}</button>`).join('')}`+
    (td&&td.msg?`<button class="btn sm" data-spmsg="${esc(r.id)}|${td.msg}">複製給客人的訊息</button>`:'')+`<button class="btn sm" data-decodel="${esc(r.id)}">刪除</button></div></div>`}
