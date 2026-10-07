@@ -338,7 +338,9 @@ nav.tabs button{scroll-snap-align:start}
         </div>
         <div class="card">
           <h3>下單訊息 <small>含匯款資訊與新人表單</small></h3>
-          <div class="row" style="justify-content:flex-end;margin-bottom:8px">
+          <div class="row" style="justify-content:flex-end;margin-bottom:8px;gap:8px;flex-wrap:wrap">
+            <span class="hint" id="ecpSt" style="margin:0 auto 0 0"></span>
+            <button class="btn sm" id="btnBankAlt" title="客人無法用綠界轉帳時，複製備用匯款帳戶訊息">複製匯款帳號訊息</button>
             <button class="btn sm pri" data-copy="outOrder">複製</button>
           </div>
           <pre class="out" id="outOrder"></pre>
@@ -588,6 +590,9 @@ nav.tabs button{scroll-snap-align:start}
             <label class="f">電話<input data-s="phone" id="s_phone"></label>
             <label class="f">Email<input data-s="email" id="s_email"></label>
             <label class="f wide">匯款資訊<textarea data-s="bank" id="s_bank" rows="3"></textarea></label>
+            <label class="f wide row" style="gap:8px;align-items:center;flex-direction:row"><input type="checkbox" id="s_ecpayOn" style="width:auto"> 訂金改用綠界 ATM 付款連結（報價、催訂金訊息不再放銀行帳號）</label>
+            <label class="f wide">綠界付款連結網址（選填，轉接站架好後填）<input data-s="payBase" id="s_payBase" placeholder="例：https://nwc-pay.xxx.workers.dev"></label>
+            <label class="f wide">備用匯款帳戶（快捷按鈕用）<textarea data-s="bankAlt" id="s_bankAlt" rows="3"></textarea></label>
             <label class="f wide">新人表單網址<input data-s="formBase" id="s_form"></label>
             <label class="f">訂單編號欄位 entry<input data-s="formEntry" id="s_entry"></label>
             <label class="f wide">Google Drive 存檔網址（Apps Script）<input data-s="driveUrl" id="s_driveUrl" placeholder="https://script.google.com/macros/s/…/exec"></label>
@@ -776,7 +781,9 @@ const DEF_S={
   phone:'0981-836-668',email:'love@niceweddingcar.com',
   bank:'將來銀行(823)  | 營業部(1688)\n帳號：8865-36668-36668',
   formBase:'https://docs.google.com/forms/d/e/1FAIpQLSd0D0W-WIzil0gGTuESCXCBMzMCnLObm6dwGMC_8WA5ehtqgA/viewform',
-  formEntry:'entry.1145960587'
+  formEntry:'entry.1145960587',
+  ecpayOn:false,payBase:'',
+  bankAlt:'中國信託 822 城北分行\n帳號 200-54023678-1\n戶名 金大春有限公司'
 };
 const clone=x=>JSON.parse(JSON.stringify(x));
 function store(k,v){try{if(v===undefined){const s=localStorage.getItem(k);return s?JSON.parse(s):null}localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
@@ -987,15 +994,22 @@ function quoteText(x,lang){const r=calc(x),f=feeLines(x,lang);const d=x.date?fmt
    x.invoice?'＊以上含發票 5% 營業稅':'＊以上為現金價，不含發票 5% 營業稅',
    r.red?'':`＊不含司機紅包 ${money(S.red)}/台`].filter(s=>s!=='').join('\n')}
 
+/* 綠界：訂金付款連結 */
+function payLink(x){const b=String(S.payBase||'').trim().replace(/\/$/,'');return b?`${b}/p/${x.id}`:`${S.driveUrl}?action=pay&id=${encodeURIComponent(x.id)}`}
+function useEcpay(x){return !!S.ecpayOn&&!x.partner&&!isMonthly(x)}
+function bankAltText(x){const r=calc(x);return [`若轉帳連結無法使用，也可以匯款至以下帳戶：`,S.bankAlt||S.bank,`金額：${money(r.deposit)}（訂單 ${orderNo(x)} 訂金）`,'',`匯款後請告訴我們匯款帳號後五碼，我們確認後馬上為您保留車輛🙏`].join('\n')}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#btnBankAlt');if(!b)return;clip(bankAltText(o));toast('已複製匯款帳號訊息')});
+{const _raE=renderAll;renderAll=function(){_raE.apply(this,arguments);try{const cb=$('s_ecpayOn');if(cb)cb.checked=!!S.ecpayOn;const st=$('ecpSt');if(st){const p=o.ecpayPaid;st.textContent=p?`✅ 綠界已入帳 ${money(p.amt)}（${p.at||''}）${p.stage?'［測試］':''}`:(useEcpay(o)&&!o.paid?'訂金走綠界連結，入帳後自動標記已收訂':'');}}catch(err){console.warn(err)}}}
+document.addEventListener('change',e=>{if(e.target.id!=='s_ecpayOn')return;S.ecpayOn=e.target.checked;saveS();renderAll();toast(S.ecpayOn?'訂金改用綠界付款連結':'訂金改回銀行帳號')});
 function orderText(x,lang){const r=calc(x),f=feeLines(x,lang),no=orderNo(x),link=formLink(x);
  if(lang==='en')return [`Your booking (Order No.: ${no}) details:`,`Date: ${fmtDate(x.date)}`,`Vehicle(s): ${carsText(x,lang)}`,`Charges: ${f[0]||''}`,...f.slice(1),`Total = ${money(r.total,lang)}`,`Package amount: ${money(r.total,lang)}`,`Deposit due: ${money(r.deposit,lang)}`,
-   r.red?`[ Please hand the driver red envelope (${money(S.red,lang)}/car) together with the balance directly to the main bridal car driver ]`:'','','',`Bank transfer details:`,S.bank,'',`Please transfer the deposit to the account above within 2 days, then fill out the form below to complete your booking:`,link,`( Enter N/A for any field that doesn't apply )`].join('\n');
+   r.red?`[ Please hand the driver red envelope (${money(S.red,lang)}/car) together with the balance directly to the main bridal car driver ]`:'','','',...(useEcpay(x)?[`Deposit payment (bank transfer, Taiwan ATM / online banking):`,payLink(x),`(Open the link to get your own transfer account; please transfer within 2 days. Payment is confirmed automatically.)`,'',`After paying, please fill out the form below to complete your booking:`]:[`Bank transfer details:`,S.bank,'',`Please transfer the deposit to the account above within 2 days, then fill out the form below to complete your booking:`]),link,`( Enter N/A for any field that doesn't apply )`].join('\n');
  if(lang==='ja')return [`今回のご予約（ご予約番号：${no}）の内容は以下の通りです：`,`ご利用日：${fmtDate(x.date)}`,`ご予約車種：${carsText(x,lang)}`,`料金明細：${f[0]||''}`,...f.slice(1),`合計 = ${money(r.total,lang)}`,`プラン金額：${money(r.total,lang)}`,`お支払い手付金：${money(r.deposit,lang)}`,
-   r.red?`[ ご祝儀 ${money(S.red,lang)}/台 は残金と一緒にメインカーのドライバーへ直接お渡しください ]`:'','','',`お振込先：`,S.bank,'',`2日以内に上記口座へ手付金をお振込みの上、下記フォームにご記入いただくとご予約完了となります：`,link,`（該当しない項目は N/A とご記入ください）`].join('\n');
+   r.red?`[ ご祝儀 ${money(S.red,lang)}/台 は残金と一緒にメインカーのドライバーへ直接お渡しください ]`:'','','',...(useEcpay(x)?[`手付金のお支払い（台湾のATM／ネットバンキング振込）：`,payLink(x),`（リンクを開くと専用の振込口座が発行されます。2日以内にお振込みください。入金は自動で確認されます）`,'',`お支払い後、下記フォームにご記入いただくとご予約完了となります：`]:[`お振込先：`,S.bank,'',`2日以内に上記口座へ手付金をお振込みの上、下記フォームにご記入いただくとご予約完了となります：`]),link,`（該当しない項目は N/A とご記入ください）`].join('\n');
  if(isMonthly(x))return [`您本次的訂單 (訂單編號：${no} ) 內容如下：`,`用車日期：${fmtDate(x.date)} `,`預約車款：${carsText(x,lang)}`,`車資由${vendorOf(x).name}統一結算，無需匯款訂金。`,'',
    (r.red||r.cane)?`用車當天請準備以下費用交給主禮車司機：`:'',r.red?`司機紅包 ${money(S.red)}×${r.n} = ${money(r.red)}`:'',r.cane?`甘蔗固定費 ${money(S.cane)}×${num(x.cane)} = ${money(r.cane)}`:'','',`請填寫以下表單以完成訂車流程：`,link,'',`＊填寫完表單後，請回覆訊息通知客服，我們確認後會提供合約給您。`,`＊表單中的行程與用車時間可先填寫大致內容，方便我們製作合約；用車前一週會再與您核對確切時間與行程。`].filter((t,i,a)=>t!==''||a[i-1]!=='').join('\n');
  return [`您本次的訂單 (訂單編號：${no} ) 內容如下：`,`用車日期：${fmtDate(x.date)} `,`預約車款：${carsText(x,lang)}`,`費用明細：`,...f,`合計=${money(r.total)}`,`方案金額：${money(r.total)} `,`應付訂金：${money(r.deposit)} `,
-   `[ 尾款${r.red?'(含司機禮)':''} ${money(r.balance)} 整包於用車當日交給司機即可 ]`,'','',`匯款資訊：`,S.bank,'',`請於兩日內將訂金匯款至上列帳戶後填寫以下表單以完成訂車流程：`,link,'',`＊匯款並填寫完表單後，請回覆訊息通知客服，我們確認入帳後會提供合約給您。`,`＊表單中的行程與用車時間可先填寫大致內容，方便我們製作合約；用車前一週會再與您核對確切時間與行程。`].join('\n')}
+   `[ 尾款${r.red?'(含司機禮)':''} ${money(r.balance)} 整包於用車當日交給司機即可 ]`,'','',...(useEcpay(x)?[`訂金付款（ATM／網路銀行轉帳）：`,payLink(x),`（點開連結選擇銀行，會產生您專屬的轉帳帳號，請於兩日內轉帳剛好的金額，系統會自動確認入帳）`,'',`付款後請填寫以下表單以完成訂車流程：`,link,'',`＊付款並填寫完表單後，我們會提供合約給您。`]:[`匯款資訊：`,S.bank,'',`請於兩日內將訂金匯款至上列帳戶後填寫以下表單以完成訂車流程：`,link,'',`＊匯款並填寫完表單後，請回覆訊息通知客服，我們確認入帳後會提供合約給您。`]),`＊表單中的行程與用車時間可先填寫大致內容，方便我們製作合約；用車前一週會再與您核對確切時間與行程。`].join('\n')}
 
 /* ---------- fleet ---------- */
 function expandCars(x){const a=[];MODELS.forEach(m=>{for(let i=0;i<num(x.cars[m]);i++)a.push(m)});return a}
@@ -1643,7 +1657,7 @@ function rmHi(x){const c=x.c||{},ct=String(c.contact||'').trim();if(ct&&!/^(新�
 function rmTexts(x){const T=tasksOf(x),out=[];if(!T.length)return out;const r=calc(x),no=orderNo(x),hi=rmHi(x),dt=x.date?fmtDate(x.date):'（日期未定）',cars=carsText(x),add=(k,t)=>{if(!out.some(z=>z.k===k))out.push({k,l:RM_LABEL[k],t})};
   T.forEach(t=>{switch(t.k){
     case 'inq':add('inq',(+x.followN||0)>=1?`${hi}，先讓您安心安排婚禮，這邊就不再頻繁打擾🤍\n之後需要調整方案，或準備確認用車時，直接回覆這段對話就可以，我們再依當時檔期協助確認～`:`${hi}🤍 想跟您確認一下，前面提供的方案（${cars}）是否符合您預想的方向呢？☺️\n如果想調整車款、台數或整體預算，告訴我想調整的部分，我再幫您整理比較～`);break;
-    case 'unpaid':add('unpaid',`${hi}🤍 提醒您，訂單 ${no}（${dt}｜${cars}）的訂金 ${money(r.deposit)} 目前還沒有收到喔～\n完成匯款後才會為您保留車輛：\n${S.bank}\n\n匯款後麻煩填寫訂車表單：\n${formLink(x)}\n\n如果已經匯款了，再麻煩告訴我們匯款帳號後五碼，我們馬上幫您確認☺️`);break;
+    case 'unpaid':add('unpaid',`${hi}🤍 提醒您，訂單 ${no}（${dt}｜${cars}）的訂金 ${money(r.deposit)} 目前還沒有收到喔～\n${useEcpay(x)?`完成付款後才會為您保留車輛，請點以下連結轉帳（會產生您專屬的轉帳帳號）：\n${payLink(x)}\n\n付款後麻煩填寫訂車表單：\n${formLink(x)}`:`完成匯款後才會為您保留車輛：\n${S.bank}\n\n匯款後麻煩填寫訂車表單：\n${formLink(x)}\n\n如果已經匯款了，再麻煩告訴我們匯款帳號後五碼，我們馬上幫您確認☺️`}`);break;
     case 'noform':add('noform',`${hi}，已確認收到 ${no} 訂金 ${money(num(String(x.c.payAmt||'').replace(/[^\d.]/g,''))||r.deposit)}，謝謝🤍\n麻煩再幫我們填寫訂車表單（新人資料、行程與時間），填完我們就會提供合約：\n${formLink(x)}`);break;
     case 'cfsend':add('cfsend',CONFIRM_TPL);break;
     case 'cfwait':add('cfwait',`${hi}🤍 婚禮快到了，提醒您幫我們回覆前面的行前確認資料（聯絡人、地址、出發時間等），方便司機提前準備，謝謝您！`);break;
