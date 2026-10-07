@@ -415,6 +415,7 @@ nav.tabs button{scroll-snap-align:start}
   <!-- 5 車隊與流程 -->
   <section class="tab" id="tab-dispatch" hidden>
     <div class="stack">
+      <div class="card" id="balCard"><div class="row" style="gap:10px;align-items:center;flex-wrap:wrap"><b>尾款收款方式</b><select class="balMode" style="width:auto"><option value="">司機現場收尾款＋紅包</option><option value="all">客人已匯尾款＋紅包（司機只收超時）</option><option value="nored">客人已匯尾款，紅包現場給司機</option></select><span class="hint" style="margin:0" id="balHint"></span></div></div>
       <div class="card" id="ptCard" hidden style="border-color:#A77D4C"><h3>同業單 <small>只要選司機；不用出合約、memo、派車單</small></h3><datalist id="ptCoList"></datalist><div id="ptCardBody"></div></div>
       <div class="card">
         <h3>車隊 <small>車序、車號、司機</small></h3>
@@ -475,7 +476,7 @@ nav.tabs button{scroll-snap-align:start}
       <label class="row" style="font-size:0.867rem;color:var(--muted);gap:6px">方案備註（顯示在車頭彩下一行）<input id="flagNote" data-b="flagNote" placeholder="例：多預備三組門把彩" style="width:220px"></label>
       <label class="row" style="font-size:0.867rem;color:var(--muted);gap:6px">加時寫法（空白＝依價目表）<input id="otText" data-b="otText" placeholder="例：M3 $800/0.5HR ; MX $1,200/0.5HR" style="width:260px"></label>
       <label class="row" style="font-size:0.867rem;color:var(--muted);gap:6px"><input type="checkbox" id="routeInMemo" style="width:auto"> 加入「行程說明」列（路線說明）</label>
-      <label class="row" style="font-size:0.867rem;color:var(--muted);gap:6px"><input type="checkbox" id="balPaid" style="width:auto"> 客人已匯清尾款（司機現場不收，酬勞由公司匯）<span id="balPaidAt"></span></label>
+      <label class="row" style="font-size:0.867rem;color:var(--muted);gap:6px">尾款收款方式<select class="balMode" style="width:auto"><option value="">司機現場收尾款＋紅包</option><option value="all">客人已匯尾款＋紅包（司機只收超時）</option><option value="nored">客人已匯尾款，紅包現場給司機</option></select><span id="balPaidAt"></span></label>
       <label class="row" hidden style="font-size:0.867rem;color:var(--muted);gap:6px"><input type="checkbox" id="mapLinks" style="width:auto"> 地址附 Google Map 連結</label>
     </div>
     <div class="card" style="margin-bottom:18px">
@@ -499,6 +500,7 @@ nav.tabs button{scroll-snap-align:start}
       <h3>任務結束帳款 <small>選日期看當天要處理的款項；之前沒處理完的也會列出來，處理好打勾</small></h3>
       <div class="row" style="margin-bottom:8px"><label class="f" style="max-width:200px">日期<input type="date" id="setDate"></label></div>
       <div class="tbl"><table style="min-width:680px"><thead><tr><th>日期</th><th>訂單</th><th>尾款</th><th>要處理的款項</th><th>完成</th></tr></thead><tbody id="setBody"></tbody></table></div>
+      <div id="setDrv" style="margin-top:14px"></div>
     </div>
     <div class="row" style="margin-bottom:12px"><label class="f" style="max-width:200px">月份<input type="month" id="refMonth"></label></div>
     <div class="grid">
@@ -1040,12 +1042,12 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
     else pay=[`尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`,`(請勿當天用車結束才匯款，假日會計無法即時查帳)`,`❤️匯款資訊：`,S.bank,`加時：${otl}`];
   }else{
     const groups={};x.fleet.forEach(f=>{const v=payOf(f);const key=v==null?'?':v;(groups[key]=groups[key]||[]).push(f.role)});
-    pay=[r.mon?(r.onsite?`收取${[r.red?`紅包 ${money(S.red)}/台`:'',r.cane?`甘蔗固定費 ${money(r.cane)}`:''].filter(Boolean).join('、')}`:'現場不用收款'):x.balPaid?`尾款 ${money(r.balance)} 客人已匯款，現場不用收款`:`收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`];
+    pay=[r.mon?(r.onsite?`收取${[r.red?`紅包 ${money(S.red)}/台`:'',r.cane?`甘蔗固定費 ${money(r.cane)}`:''].filter(Boolean).join('、')}`:'現場不用收款'):x.balPaid?(x.balRed&&r.red?`尾款客人已匯款，現場只收司機紅包 ${money(S.red)}/台（共 ${money(r.red)}）`:`尾款 ${money(r.balance)} 客人已匯款，現場不用收款`):`收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`];
     Object.keys(groups).forEach(v=>{const roles=[...new Set(groups[v])].join('＋');pay.push(+x.hours===0?`${roles} 實拿${v==='?'?'（未設定）':money(+v)}（單程接送・綁彩）`:`${roles} ${v==='?'?'（未設定）':money(+v)}/${hrsLabel(x.hours)}${r.red?'(含紅包)':''}`)});
     const ms=MODELS.filter(m=>num(x.cars[m])>0);
     if(+x.hours===0)pay.push(`等候 15 分鐘未出發，每半小時：${ms.map(m=>driverOtText(m,x).replace(' 等候每 0.5HR','')).join(' ; ')}`);
     else pay.push(x.hours<3?'未滿 3 小時方案無緩衝，超過即以每 0.5 小時計超時':'超時 15 分鐘內不計 ; 第 16 分鐘起收超時費用',`加時：${otl}`);
-    const back=r.balance-r.dsum;if(r.mon){if(r.dok&&r.dsum>r.onsite)pay.push('',`差額 ${money(r.dsum-r.onsite)} 由公司匯款`)}else if(x.balPaid)pay.push('','酬勞由公司匯款');else if(!r.mon&&r.dok&&back>0)pay.push('',`匯回 ${money(back)}`);else if(!r.mon&&r.dok&&back<0)pay.push('',`差額 ${money(-back)} 由公司匯款`);
+    const back=r.balance-r.dsum;if(r.mon){if(r.dok&&r.dsum>r.onsite)pay.push('',`差額 ${money(r.dsum-r.onsite)} 由公司匯款`)}else if(x.balPaid)pay.push('',x.balRed&&r.red?'酬勞扣除紅包後由公司匯款':'酬勞由公司匯款');else if(!r.mon&&r.dok&&back>0)pay.push('',`匯回 ${money(back)}`);else if(!r.mon&&r.dok&&back<0)pay.push('',`差額 ${money(-back)} 由公司匯款`);
   }
   return{no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(c.end)}`,gather:ap(c.gather||addMin(c.start,-20)),
     contact:(c.contact2||'').trim()?`\n${cname||''}${crole}  ${ph(c.phone)} / ${c.contact2.trim()}${(c.rel2||'').trim()?`(${c.rel2.trim()})`:''} ${ph(c.phone2)}`.trimEnd():`${cname||''}${crole}  ${ph(c.phone)}`.trim(),boss:`${ld.driver||''} ${ph(ld.phone)}`.trim(),plan:planName(x),
@@ -1326,7 +1328,7 @@ document.addEventListener('input',e=>{const el=e.target;
 document.addEventListener('change',e=>{if(e.target.dataset.fl&&e.target.dataset.fl.endsWith('.role')){o.fleet.sort((a,b)=>{const r=x=>{const i=ROLES.indexOf(x.role);return i<0?9:i};return r(a)-r(b)});save();renderFleet();renderAll()}
   if(e.target.id==='mapLinks'){o.mapLinks=e.target.checked;save();renderMemo()}
   if(e.target.id==='routeInMemo'){o.routeInMemo=e.target.checked;save();renderMemo()}
-  if(e.target.id==='balPaid'){const d=new Date();o.balPaid=e.target.checked;o.balPaidAt=o.balPaid?`${d.getMonth()+1}/${d.getDate()}`:'';save();renderMemo()}
+  if(e.target.classList&&e.target.classList.contains('balMode')){const d=new Date(),v=e.target.value;o.balPaid=!!v;o.balRed=v==='nored';o.balPaidAt=o.balPaid?`${d.getMonth()+1}/${d.getDate()}`:'';document.querySelectorAll('.balMode').forEach(s=>s.value=v);save();renderMemo();renderAll();toast(v==='all'?'已標記：客人已匯尾款＋紅包，司機只收超時':v==='nored'?'已標記：客人已匯尾款，司機現場收紅包':'已改回：司機現場收尾款')}
   if(e.target.dataset&&e.target.dataset.settle){const x=DB.orders[e.target.dataset.settle];if(x){x.settled=e.target.checked;if(o.id===x.id)o.settled=x.settled;store('nwcw_orders',DB);renderSettle()}}});
 
 /* ---------- renderers ---------- */
@@ -1368,7 +1370,7 @@ function renderFlow(){$('flowList').innerHTML=o.flow.map((f,i)=>`<div class="fr"
   <button class="btn sm" data-fdel="${i}" aria-label="刪除這段">✕</button></div>`).join('')}
 function renderLangs(){document.querySelectorAll('.seg[data-lang]').forEach(s=>{const k=s.dataset.lang;
   s.innerHTML=[['zh','繁中'],['en','English'],['ja','日本語']].map(([v,t])=>`<button type="button" data-setlang="${k}:${v}" aria-pressed="${o.lang[k]===v}">${t}</button>`).join('')})}
-function renderMemo(){const who=o.memoWho||'cust';renderMemoLinks();if($('routeInMemo'))$('routeInMemo').checked=!!o.routeInMemo;if($('balPaid')){$('balPaid').checked=!!o.balPaid;$('balPaidAt').textContent=o.balPaid&&o.balPaidAt?`（${o.balPaidAt} 標記）`:''}document.querySelectorAll('#memoWho button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.who===who));
+function renderMemo(){const who=o.memoWho||'cust';renderMemoLinks();if($('routeInMemo'))$('routeInMemo').checked=!!o.routeInMemo;document.querySelectorAll('.balMode').forEach(s=>s.value=o.balPaid?(o.balRed?'nored':'all'):'');if($('balPaidAt'))$('balPaidAt').textContent=o.balPaid&&o.balPaidAt?`（${o.balPaidAt} 標記）`:'';document.querySelectorAll('#memoWho button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.who===who));
   const lang='zh';const m=memoModel(o,who,lang);
   $('outMemo').textContent=memoText(m,false);$('memoDoc').innerHTML=memoHTML(m,false)}
 function payState(x){const r=calc(x),c=x.c;const amt=num(String(c.payAmt||'').replace(/[^\d.]/g,''));return{r,amt,match:amt>0&&amt===r.deposit}}
@@ -1429,14 +1431,32 @@ function settleInfo(x){const r=calc(x),ld=lead(x)||{},who=ld.driver||'負責人'
   if(!r.dok)return{st:r.mon?'月結':'',act:'司機酬勞還沒設定'};
   if(r.mon){const rp=x.red?num(S.red):0,dd=(x.fleet||[]).map(f=>{const v=f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x);return `${f.driver||f.role} ${money(v-rp)}`}).join('、'),gap=r.dsum-r.onsite;
     return{st:`月結・司機收紅包 ${money(r.red)}${r.cane?`＋甘蔗 ${money(r.cane)}`:''}`,act:gap>0?`公司匯差額給司機：${r.cane?'':dd+'（'}共 ${money(gap)}${r.cane?'':'）'}`:''}}
-  if(x.balPaid)return{st:`${money(r.balance)} 客人已匯款`,act:`公司匯酬勞給司機：${ds}（共 ${money(r.dsum)}）`};
+  if(x.partner){const k=ptCalc(x),co=x.partner.co||'同業';if(x.partner.prepaid)return{st:`同業單（${co}）客人已匯同業`,act:`公司匯酬勞給司機：${ds}（共 ${money(r.dsum)}）；${co} 應付我 ${money(k.owe)}${k.remit?`、我匯回 ${money(k.remit)}`:''}`};
+    return{st:`同業單（${co}）司機現場收 ${money(num(x.partner.collect))}`,act:[k.back>0?`${who} 交回 ${money(k.back)}`:k.back<0?`公司匯差額 ${money(-k.back)} 給 ${who}`:'',k.remit?`匯回 ${co} ${money(k.remit)}`:''].filter(Boolean).join('；')}}
+  if(x.balPaid&&x.balRed&&r.red){const rp=num(S.red),dd=(x.fleet||[]).map(f=>{const v=f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x);return `${f.driver||f.role} ${money(v-rp)}`}).join('、');return{st:`客人已匯尾款，司機收紅包 ${money(r.red)}`,act:`公司匯酬勞（已扣紅包）給司機：${dd}（共 ${money(r.dsum-r.red)}）`}}
+  if(x.balPaid)return{st:`${money(r.balance)} 客人已匯款（含紅包）`,act:`公司匯酬勞給司機：${ds}（共 ${money(r.dsum)}）`};
   const back=r.balance-r.dsum;
   if(back>0)return{st:`${money(r.balance)} 司機現場收`,act:`${who} 匯回 ${money(back)}`};
   if(back<0)return{st:`${money(r.balance)} 司機現場收`,act:`公司匯差額 ${money(-back)} 給 ${who}`};
   return{st:`${money(r.balance)} 司機現場收`,act:''}}
+/* 當天要轉帳給哪些司機／哪些司機要交回（自己的單＋同業單一起算） */
+function drvTransfers(day){const pay={},back={},add=(M,f,amt,no)=>{if(!amt)return;const k=(f.driver||'').trim()||`（${no} ${f.role||''} 未派司機）`;const z=M[k]=M[k]||{amt:0,phone:f.phone||'',items:[]};z.amt+=amt;if(!z.phone&&f.phone)z.phone=f.phone;z.items.push(`${no} ${money(amt)}`)};
+  Object.values(DB.orders).filter(x=>!x.sample&&!x.lost&&x.date===day&&!x.settled).forEach(x=>{const r=calc(x),no=orderNo(x),F=x.fleet||[],ld=lead(x)||{},pv=f=>f.pay!==''&&f.pay!=null?num(f.pay):num(driverBasePay(f.m,x));
+    if(x.partner){if(x.partner.prepaid)F.forEach(f=>add(pay,f,pv(f),no));else{const k=ptCalc(x);if(k.back>0)add(back,ld,k.back,no);else if(k.back<0)add(pay,ld,-k.back,no)}return}
+    if(!r.dok)return;
+    if(r.mon){const rp=x.red?num(S.red):0;if(r.dsum>r.onsite)F.forEach(f=>add(pay,f,pv(f)-rp,no));return}
+    if(x.balPaid){const rp=x.balRed&&r.red?num(S.red):0;F.forEach(f=>add(pay,f,pv(f)-rp,no));return}
+    const b=r.balance-r.dsum;if(b>0)add(back,ld,b,no);else if(b<0)add(pay,ld,-b,no)});
+  return{pay,back}}
+function renderDrvTransfers(day){const el=$('setDrv');if(!el)return;const {pay,back}=drvTransfers(day);const row=(k,z)=>`<div class="todo-row" style="cursor:default"><div class="m" style="flex:1"><div><b>${esc(k)}</b> ${esc(ph(z.phone)||'')}　<b>${money(z.amt)}</b></div><div class="sub">${esc(z.items.join('、'))}</div></div></div>`;
+  const P=Object.entries(pay),B=Object.entries(back),tp=P.reduce((a,[,z])=>a+z.amt,0),tb=B.reduce((a,[,z])=>a+z.amt,0);
+  const txt=[`${day.replace(/-/g,'/')} 司機轉帳`,...P.map(([k,z])=>`${k} ${money(z.amt)}（${z.items.join('、')}）`),`合計 ${money(tp)}`,...(B.length?['',`要交回給我：`,...B.map(([k,z])=>`${k} ${money(z.amt)}（${z.items.join('、')}）`)]:[])].join('\n');
+  el.innerHTML=`<h3 style="margin:0 0 6px">今天要轉帳給司機 <small>自己的單＋同業單一起算；打勾「完成」的單不列入</small></h3>${P.length?P.map(([k,z])=>row(k,z)).join('')+`<div style="font-weight:700;margin-top:6px">合計轉帳 ${money(tp)}</div>`:'<div class="hint">今天沒有要轉帳給司機</div>'}
+   ${B.length?`<h3 style="margin:12px 0 6px">司機要交回給我</h3>${B.map(([k,z])=>row(k,z)).join('')}<div style="font-weight:700;margin-top:6px">合計交回 ${money(tb)}</div>`:''}
+   ${P.length||B.length?`<div class="row" style="margin-top:8px"><button class="btn sm" data-ptcopy="${esc(txt)}">複製轉帳清單</button></div>`:''}`}
 function renderSettle(){const el=$('setDate');if(!el)return;if(!el.value){const d=new Date();el.value=`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`}const day=el.value;
   const list=Object.values(DB.orders).filter(x=>!x.sample&&x.date&&(x.date===day||x.date<day&&!x.settled&&settleInfo(x).act)).sort((a,b)=>a.date.localeCompare(b.date));
-  $('setBody').innerHTML=list.map(x=>{const s=settleInfo(x);return `<tr${x.settled?' style="opacity:.55"':''}><td>${esc(x.date.slice(5).replace('-','/'))}${x.date<day?' <span class="chip" style="color:var(--warn)">未處理</span>':''}</td><td>${esc(orderNo(x))}<br><small>${esc([x.c.groom,x.c.bride].filter(Boolean).join('&'))}</small></td><td>${esc(s.st)}</td><td>${s.act?esc(s.act):'<span class="hint" style="margin:0">不用處理</span>'}</td><td style="text-align:center"><input type="checkbox" data-settle="${x.id}" id="st_${x.id}" ${x.settled?'checked':''} style="width:auto" aria-label="已處理"></td></tr>`}).join('')||'<tr><td colspan="5" class="hint">這天沒有任務。</td></tr>'}
+  $('setBody').innerHTML=list.map(x=>{const s=settleInfo(x);return `<tr${x.settled?' style="opacity:.55"':''}><td>${esc(x.date.slice(5).replace('-','/'))}${x.date<day?' <span class="chip" style="color:var(--warn)">未處理</span>':''}</td><td>${esc(orderNo(x))}<br><small>${esc([x.c.groom,x.c.bride].filter(Boolean).join('&'))}</small></td><td>${esc(s.st)}</td><td>${s.act?esc(s.act):'<span class="hint" style="margin:0">不用處理</span>'}</td><td style="text-align:center"><input type="checkbox" data-settle="${x.id}" id="st_${x.id}" ${x.settled?'checked':''} style="width:auto" aria-label="已處理"></td></tr>`}).join('')||'<tr><td colspan="5" class="hint">這天沒有任務。</td></tr>';try{renderDrvTransfers(day)}catch(err){console.warn(err)}}
 function renderRefs(){renderSettle();const mEl=$('refMonth');if(!mEl.value){const d=new Date();mEl.value=`${d.getFullYear()}-${p2(d.getMonth()+1)}`}const ym=mEl.value;
   const list=Object.values(DB.orders).filter(x=>!x.sample&&x.date&&x.date.slice(0,7)===ym&&vendorOf(x)).sort((a,b)=>a.date.localeCompare(b.date));
   $('refBody').innerHTML=list.map(x=>{const r=calc(x),v=vendorOf(x);return `<tr><td>${esc(x.date.slice(5).replace('-','/'))}</td><td>${esc(orderNo(x))}</td><td>${esc(v.name)}</td><td>${esc(x.src.ref||'')}</td><td>${money(r.planFee)}</td><td>${isMonthly(x)?'月結':money(r.refAmt)}</td></tr>`}).join('')||'<tr><td colspan="6" class="hint">這個月沒有廠商推薦的訂單。</td></tr>';
@@ -1874,7 +1894,8 @@ function ptCreate(){const r=$('ptRaw')._r||parsePartner($('ptRaw').value),co=$('
   save();loadOrder();$('ptModal').hidden=true;$('ptRaw').value='';$('ptPrev').innerHTML='';['ptCollect','ptRemit','ptOwe'].forEach(i=>$(i).value='');$('ptPrepaid').checked=false;showTab('dispatch');toast(`已建立同業單：${co} ${r.name||''}`)}
 function ptCalc(x){const p=x.partner||{},pay=(x.fleet||[]).reduce((s,f)=>s+num(payOf(f)),0),got=p.prepaid?num(p.owe):num(p.collect);
   return{pay,got,back:p.prepaid?0:num(p.collect)-pay,remit:num(p.remit),owe:p.prepaid?num(p.owe):0,profit:got-pay-num(p.remit)}}
-function renderPtCard(){const el=$('ptCard');if(!el)return;if(!isPt(o)){el.hidden=true;return}el.hidden=false;const p=o.partner,k=ptCalc(o);
+function renderBalHint(){const h=$('balHint');if(!h)return;const bc=$('balCard');if(bc)bc.hidden=isPt(o);const r=calc(o);h.textContent=o.balPaid?(o.balRed&&r.red?`司機現場只收紅包 ${money(r.red)}（＋超時），酬勞扣紅包後由你轉帳`:'司機現場只收超時費，酬勞由你轉帳'):`司機現場收尾款 ${money(r.balance)}`}
+function renderPtCard(){try{renderBalHint()}catch(_){}const el=$('ptCard');if(!el)return;if(!isPt(o)){el.hidden=true;return}el.hidden=false;const p=o.partner,k=ptCalc(o);
   $('ptCardBody').innerHTML=`<div class="row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
    <label class="f">同業公司<input data-pt="co" value="${esc(p.co||'')}" list="ptCoList" style="width:160px"></label>
    <label class="f" style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" data-pt="prepaid" ${p.prepaid?'checked':''} style="width:auto">客人已先匯款給同業（同業要付我）</label>
@@ -1886,7 +1907,7 @@ function renderPtCard(){const el=$('ptCard');if(!el)return;if(!isPt(o)){el.hidde
   $('ptCoList').innerHTML=ptCos().map(c=>`<option value="${esc(c)}">`).join('')}
 document.addEventListener('input',e=>{const t=e.target;if(!t.dataset||!t.dataset.pt||!isPt(o))return;const k=t.dataset.pt;o.partner[k]=t.type==='checkbox'?t.checked:t.type==='number'?num(t.value):t.value;if(k==='co'){o.c.chatName=`【${t.value.trim()}】${o.c.groom||''}`}save();if(k!=='co')renderPtCard();renderOrderSel()});
 document.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.pt==='prepaid'&&isPt(o)){o.partner.prepaid=t.checked;save();renderPtCard()}});
-function ptTabs(){const pt=isPt(o);['couple','contract','memo','refs'].forEach(k=>{const b=document.querySelector(`#tabs button[data-tab="${k}"]`);if(b)b.hidden=pt});const cur=document.querySelector('#tabs button[aria-selected="true"]');if(pt&&cur&&cur.hidden)showTab('dispatch')}
+function ptTabs(){const pt=isPt(o);['couple','contract','memo'].forEach(k=>{const b=document.querySelector(`#tabs button[data-tab="${k}"]`);if(b)b.hidden=pt});const cur=document.querySelector('#tabs button[aria-selected="true"]');if(pt&&cur&&cur.hidden)showTab('dispatch')}
 function renderPtSettle(){const d=$('ptDate').value,mon=$('ptMonth').checked;const L=Object.values(DB.orders).filter(x=>isPt(x)&&!x.lost&&x.date&&(mon?x.date.slice(0,7)===d.slice(0,7):x.date===d)).sort((a,b)=>a.date.localeCompare(b.date));
   const G={};L.forEach(x=>{(G[x.partner.co||'（未填公司）']=G[x.partner.co||'（未填公司）']||[]).push(x)});
   $('ptSettleOut').innerHTML=Object.keys(G).length?Object.entries(G).map(([co,xs])=>{const s={pay:0,back:0,remit:0,owe:0,profit:0};xs.forEach(x=>{const k=ptCalc(x);for(const z in s)s[z]+=k[z]});const net=s.owe-s.remit;
