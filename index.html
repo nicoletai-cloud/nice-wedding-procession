@@ -1138,7 +1138,7 @@ function codeFind(q){q=normNo(q).replace(/[^A-Z0-9]/g,'');if(!q)return null;cons
 document.addEventListener('keydown',e=>{if(e.target.id!=='codeQ'||e.key!=='Enter')return;e.preventDefault();const x=codeFind(e.target.value);if(!x){toast('找不到這個代碼');return}
   o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();showTab('find');e.target.value='';toast(`已開啟 ${orderNo(x)}（代碼 ${findCode(x)}）`)});
 document.addEventListener('input',e=>{if(e.target.id!=='codeQ')return;const v=normNo(e.target.value).replace(/[^A-Z0-9]/g,'');if(v.length!==4)return;const x=Object.values(DB.orders).find(y=>!y.sample&&findCode(y)===v);if(x){o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();showTab('find');e.target.value='';toast(`已開啟 ${orderNo(x)}（代碼 ${v}）`)}});
-function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr);const fl=x.findM?x.fleet.filter(f=>f.m===x.findM):x.fleet;
+function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr);const fl0=x.findM?x.fleet.filter(f=>f.m===x.findM):x.fleet;/* 只算還沒派司機的車；全部都派了才顯示全部 */const fl=fl0.some(f=>!String(f.driver||'').trim())?fl0.filter(f=>!String(f.driver||'').trim()):fl0;
   const CNN=['零','一','兩','三','四','五','六','七','八','九','十'];const n2=n=>CNN[n]||String(n);
   const ng={};fl.forEach(f=>{const k=`${(f.color||'').trim()} ${MNAME[f.m]}`.trim();ng[k]=(ng[k]||0)+1});
   const pg={};fl.forEach(f=>{const v=payOf(f);const k=v==null?'?':String(v);(pg[k]=pg[k]||new Set()).add(MNAME[f.m])});
@@ -1150,7 +1150,7 @@ function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr)
   const note=(x.partner?(x.note||''):(x.flagNote||'')).trim(),noteShow=note&&!/^指定.{0,4}色$/.test(note);
   return [`代碼：${findCode(x)}`,`${fmtMDW(x.date,'zh')} ${ap(c.start)||'--:--'}-${ap(c.end)||'--:--'}`,`集合時間：${ap(c.gather||addMin(c.start,-20))||'待定'}`,'地點：',...pts.map((p,i)=>{const rd=roadOf(x.c[p.f]);let ar=areaOf(p.f)||({meet:x.cityA,wed:x.cityB})[p.f]||'';if(!ar){/* 沒寫縣市也查不到鄉鎮：沿用路線裡前後站的縣市 */const cty=q=>q?countyOf(x.c[q.f]||'')||({meet:x.cityA,wed:x.cityB})[q.f]||'':'';const seq=String(x.path||'').toUpperCase().match(/[A-D]/g)||[];const j=seq.lastIndexOf(p.k);const byK=k=>pts.find(q=>q.k===k);const cand=j>=0?[byK(seq[j+1]),byK(seq[j-1])]:[];ar=[...cand,...pts.slice(i+1),...pts.slice(0,i).reverse()].map(cty).find(Boolean)||''}return `${p.k}. ${ar||'（地區待確認）'}${rd?' '+rd:''}`}),
    `禮車流程：${x.path||'待定'}`,`需求：${Object.keys(ng).map(k=>`${k} ${n2(ng[k])}台`).join('、')||'—'}`,findReqText(x)?`條件：${findReqText(x)}`:'',`酬勞：${payL}`,
-   cane==='是'?'甘蔗：需固定':'',deco&&!/^(否|無|不)/.test(deco)?`指定車頭彩：${deco}`:'',noteShow?`備註：${note}`:'',x.findMain?'主禮車請預備：車頭彩／門把彩／對講機':'','','請問能支援嗎？'].filter((l,i,a)=>l!==''||i===a.length-2).join('\n')}
+   cane==='是'?'甘蔗：需固定':'',deco&&!/^(否|無|不)|待確認|待定|未定/.test(deco)?`指定車頭彩：${deco}`:'',noteShow?`備註：${note}`:'',x.findMain?'主禮車請預備：車頭彩／門把彩／對講機':'','','請問能支援嗎？'].filter((l,i,a)=>l!==''||i===a.length-2).join('\n')}
 
 /* ---------- contract ---------- */
 const CLAUSES=['所有車輛皆附司機，著正式服裝，出車前一律洗車、清內裝。','若新人要求趕時辰，而導致車輛行駛違反中華民國交通法規須由訂車人吸收罰款。','此報價單暨合約書為現金價格，不含發票 5%營業稅。','行程異動請於用車前三天電話或 Line 告知。','車隊會在指定時間提早 10~15 分鐘左右到達準備，實際依指定時間計算。','倘若發生以下情形而致無法依約定時間用車者，本公司將向消費者酌收手續費：','預訂車輛如遇不可抗拒因素無法出車時，訂車人同意租車公司免費升級為更高階車款。','若無加價指定車色，則由本公司安排車色，並於用車日三天前提供司機聯絡資訊。','本公司非常重視服務流程與品質，若訂車人未透過本公司窗口直接與司機有任何協議，如產生糾紛或其他衍生相關問題，本公司將不負擔任何賠償責任。'];
