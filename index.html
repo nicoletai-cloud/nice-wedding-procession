@@ -1604,6 +1604,9 @@ function needMiss(){const n=o.need,c=o.c,miss=[];
   if(!MODELS.some(m=>num(o.cars[m])>0)||!n.brand)miss.push(['cars','車款／台數']);if(!n.pax)miss.push(['pax','乘車人數']);
   {const k=carKind(o);if((k.lux||o.colorRare)&&n.avail!=='已確認有車')miss.push(['',n.avail?'特殊車款：'+n.avail:'特殊車款：接案前先確認有車'])}
   return miss}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-qdel]');if(!b)return;e.preventDefault();e.stopPropagation();
+  if(!b._arm){b._arm=1;b.textContent='確定刪除？';setTimeout(()=>{if(b.isConnected){b._arm=0;b.textContent='×'}},3000);return}
+  const i=+b.dataset.qdel;if(o.quotes&&o.quotes[i]){o.quotes.splice(i,1);o.updated=Date.now();save();renderNeed();toast('已刪除這個報價版本')}},true);
 function renderNeed(){if(!$('needMiss'))return;const miss=needMiss();
   $('needMiss').innerHTML=miss.length?'<div class="hint" style="margin:0 0 6px">還沒掌握：</div>'+miss.map(([k,l])=>k?`<button class="btn sm" data-scpick="${k}">${esc(l)} → 話術</button>`:`<span class="chip">${esc(l)}</span>`).join(' '):'<span class="chip ok">需求都掌握了，可以報價</span>';
   const sel=$('scKey');if(!sel.options.length){sel.innerHTML=SCRIPTS.map(([k,l])=>`<option value="${k}">${l}</option>`).join('');scLoad()}
@@ -1611,7 +1614,7 @@ function renderNeed(){if(!$('needMiss'))return;const miss=needMiss();
   $('matList').innerHTML=MATS.map(([k,l,w])=>`<div class="row" style="justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)"><div><b style="font-size:0.933rem">${l}</b><div class="sub" style="font-size:0.8rem;color:var(--muted)">${w}</div></div>${had(k)?`<span class="chip ok">已傳 ${new Date(sent.filter(x=>x.k===k).pop().at).toLocaleDateString('zh-TW')}</span>`:`<button class="btn sm" data-matsent="${k}">標記已傳</button>`}</div>`).join('');
   const sl=sent.filter(x=>SCRIPTS.some(s=>s[0]===x.k)).slice(-6).map(x=>`${(SCRIPTS.find(s=>s[0]===x.k)||[])[1]}（${new Date(x.at).toLocaleDateString('zh-TW')}）`);
   $('sentLog').textContent=sl.length?'已傳話術：'+sl.join('、'):'';
-  const Q=o.quotes||[];$('quoteVers').innerHTML=(Q.length?`<div class="hint" style="margin:0 0 6px">報價版本（複製時自動存）：</div>`+Q.map((q,i)=>`<details style="margin-bottom:4px"><summary style="cursor:pointer;font-size:0.867rem">第 ${i+1} 版｜${new Date(q.at).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}｜NT$${num(q.total).toLocaleString('en-US')}</summary><pre class="out" style="margin-top:6px">${esc(q.text)}</pre></details>`).join(''):'')}
+  const Q=o.quotes||[];$('quoteVers').innerHTML=(Q.length?`<div class="hint" style="margin:0 0 6px">報價版本（複製時自動存）：</div>`+Q.map((q,i)=>`<details style="margin-bottom:4px"><summary style="cursor:pointer;font-size:0.867rem">第 ${i+1} 版｜${new Date(q.at).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}｜NT$${num(q.total).toLocaleString('en-US')}<button class="btn sm" type="button" data-qdel="${i}" title="刪除這個版本" style="margin-left:8px;padding:0 9px;line-height:1.6">×</button></summary><pre class="out" style="margin-top:6px">${esc(q.text)}</pre></details>`).join(''):'')}
 function scLoad(){const k=$('scKey').value,s=SCRIPTS.find(x=>x[0]===k);const t=scFill(s?s[2]:'');$('scText').value=t;scWarn()}
 function scWarn(){const m=$('scText').value.match(/【.+?】/g);$('scWarn').textContent=m?'⚠️ 還有沒填的：'+[...new Set(m)].join('、')+'（不知道的請寫「待確認」）':''}
 function logSent(k){o.sent=(o.sent||[]).concat({k,at:Date.now()});save();renderNeed()}
