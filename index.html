@@ -1250,7 +1250,7 @@ function ptNames(x){const c=x.c||{};return{A:'男方',B:'女方',C:(c.o1L||'').t
 function renderQx(){const on=qxOn();document.querySelectorAll('.qx').forEach(e=>e.style.display=on?'':'none');
   $('btnAddPt').style.display=on?'none':'';$('btnDelPt').style.display=on?'':'none';$('q_backWrap').style.display=on?'none':'';$('q_routeWrap').style.display=on?'':'none';
   if(!on)return;const c=o.c,L=ptNames(o),hasC=!!String(c.o1||'').trim();
-  const opts=hasC?['A - B - A - D - C','A - B - D - C','A - B - D - A - C','A - D - B - A - C','A - B - A - C - D','A - B - C - D']:['A - B - A - D','A - B - D','A - B - D - A','A - D - B - A'];
+  const opts=hasC?['A - B - A - D - C','A - B - D - C','A - B - D - A - C','A - D - B - A - C','A - B - A - C - D','A - B - C - D','B - D - C','B - C - D','B - D - A - C']:['A - B - A - D','A - B - D','A - B - D - A','A - D - B - A','B - D','B - D - A'];
   const cur=normPath(o.path);if(cur&&/D/.test(cur)&&!opts.includes(cur))opts.push(cur);
   const sel=$('q_route');sel.innerHTML='<option value="">— 請選路線 —</option>'+opts.map(p=>`<option value="${p}">${p.split(' - ').map(k=>esc(L[k]||k)).join('→')}</option>`).join('');
   sel.value=opts.includes(cur)?cur:''}
