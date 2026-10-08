@@ -259,8 +259,10 @@ nav.tabs button{scroll-snap-align:start}
             <label class="f wide">餐廳地址<input id="q_addrC" data-b="c.o1" placeholder="沒有就留空"></label>
             <label class="f wide qx" style="display:none">新增地點名稱<input id="q_o2L" data-b="c.o2L" placeholder="例：教堂證婚"></label>
             <label class="f wide qx" style="display:none">新增地點地址<input id="q_addrD" data-b="c.o2" placeholder="貼上地址"></label>
-            <label class="f wide" id="q_routeWrap" style="display:none">路線<select id="q_route" data-b="path"></select></label>
-            <label class="f" id="q_backWrap">路線<select id="q_back" data-b="backHome" data-bool><option value="1">男方→女方→男方→餐廳</option><option value="0">男方→女方→餐廳</option></select></label>
+            <div class="f wide" id="q_routeBox">路線（依序點選地點）
+              <div id="q_routeShow" style="margin:6px 0 8px;padding:10px 12px;border:1px solid var(--line,#e5dccd);border-radius:10px;min-height:22px;font-weight:600"></div>
+              <div class="row" id="q_routeBtns" style="gap:6px;flex-wrap:wrap"></div>
+            </div>
           </div>
           <div class="row" style="margin-top:8px;gap:10px"><button class="btn sm" id="btnAddPt" type="button">＋ 新增地點</button><button class="btn sm" id="btnDelPt" type="button" style="display:none">移除新增地點</button><button class="btn sm pri" id="btnKm" type="button">計算總里程</button><span class="hint" id="kmMsg" style="margin:0"></span></div>
         </div>
@@ -992,8 +994,8 @@ function feeLines(x,lang){const t=L[lang],r=calc(x),hl=hrsLabel(x.hours),out=[];
 function otRates(x,lang){const ms=MODELS.filter(m=>num(x.cars[m])>0);return ms.map(m=>`${MNAME[m]} ${money(S.ot[m],lang)}${lang==='en'?'/hr':lang==='ja'?'/時間':'/時'}`).join(lang==='en'?', ':'、')}
 
 /* ---------- messages ---------- */
-function routeKeys(x){const c=x.c||{};if(String(c.o2||'').trim()||String(c.o2L||'').trim()){const p=normPath(x.path);if(/D/.test(p))return p.split(' - ')}
-  const C=!!String(c.o1||'').trim(),b=x.backHome!==false;if(!String(c.meet||'').trim()&&!String(c.wed||'').trim())return [];return C?(b?['A','B','A','C']:['A','B','C']):(b?['A','B','A']:['A','B'])}
+function defRoute(x){const c=x.c||{},C=!!String(c.o1||'').trim(),b=x.backHome!==false;return C?(b?['A','B','A','C']:['A','B','C']):(b?['A','B','A']:['A','B'])}
+function routeKeys(x){const p=normPath(x.path).split(' - ').filter(Boolean);return p.length?p:defRoute(x)}
 function routeLine(x,lang){const ks=routeKeys(x);if(ks.length<2)return '';const P=ptNames(x);
   const N=lang==='en'?{A:"Groom's home",B:"Bride's home",C:P.C==='餐廳'?'Restaurant':P.C,D:P.D}:lang==='ja'?{A:'新郎宅',B:'新婦宅',C:P.C==='餐廳'?'レストラン':P.C,D:P.D}:{A:'男方家',B:'女方家',C:P.C,D:P.D};
   return ks.map(k=>N[k]||k).join(' → ')}
@@ -1248,28 +1250,27 @@ function normPath(p){return String(p||'').toUpperCase().split(/\s*[-－>＞→�
 function qxOn(){const c=o.c||{};return !!(o._qx||String(c.o2||'').trim()||String(c.o2L||'').trim())}
 function ptNames(x){const c=x.c||{};return{A:'男方',B:'女方',C:(c.o1L||'').trim()&&!/餐廳|宴/.test(c.o1L)?c.o1L.trim():'餐廳',D:(c.o2L||'').trim()||'新增地點'}}
 function renderQx(){const on=qxOn();document.querySelectorAll('.qx').forEach(e=>e.style.display=on?'':'none');
-  $('btnAddPt').style.display=on?'none':'';$('btnDelPt').style.display=on?'':'none';$('q_backWrap').style.display=on?'none':'';$('q_routeWrap').style.display=on?'':'none';
-  if(!on)return;const c=o.c,L=ptNames(o),hasC=!!String(c.o1||'').trim();
-  const opts=hasC?['A - B - A - D - C','A - B - D - C','A - B - D - A - C','A - D - B - A - C','A - B - A - C - D','A - B - C - D','B - D - C','B - C - D','B - D - A - C']:['A - B - A - D','A - B - D','A - B - D - A','A - D - B - A','B - D','B - D - A'];
-  const cur=normPath(o.path);if(cur&&/D/.test(cur)&&!opts.includes(cur))opts.push(cur);
-  const sel=$('q_route');sel.innerHTML='<option value="">— 請選路線 —</option>'+opts.map(p=>`<option value="${p}">${p.split(' - ').map(k=>esc(L[k]||k)).join('→')}</option>`).join('');
-  sel.value=opts.includes(cur)?cur:''}
+  $('btnAddPt').style.display=on?'none':'';$('btnDelPt').style.display=on?'':'none';
+  const c=o.c,N=ptNames(o),nm={A:'男方家',B:'女方家',C:N.C,D:N.D},ks=normPath(o.path).split(' - ').filter(Boolean),has=k=>!!String(({A:c.meet,B:c.wed,C:c.o1,D:c.o2})[k]||'').trim();
+  $('q_routeShow').innerHTML=ks.length?ks.map(k=>`<span style="${has(k)?'':'color:var(--red,#b8323a)'}">${esc(nm[k])}${has(k)?'':'（沒填地址）'}</span>`).join(' → '):'<span class="sub" style="font-weight:400">還沒選，請依序點下面的地點（沒選時預設：'+defRoute(o).map(k=>esc(nm[k])).join(' → ')+'）</span>';
+  const av=['A','B','C'].concat(on?['D']:[]);
+  $('q_routeBtns').innerHTML=av.map(k=>`<button class="btn sm" type="button" data-rt="${k}">＋${esc(nm[k])}</button>`).join('')+`<button class="btn sm" type="button" data-rt="undo">退一步</button><button class="btn sm" type="button" data-rt="clear">清除重選</button>`}
+function setRoute(ks){o.path=ks.join(' - ');o.sample=false;flowFromPath(o);const km=$('kmMsg');if(km&&km.textContent)km.textContent='路線已變更，請重新按「計算總里程」';save();renderAll();try{renderFlow()}catch(e){}}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-rt]');if(!b)return;const k=b.dataset.rt;let ks=normPath(o.path).split(' - ').filter(Boolean);
+  if(k==='clear')ks=[];else if(k==='undo')ks.pop();else{if(ks.at(-1)===k)return;ks.push(k)}setRoute(ks)});
 function flowFromPath(x){const seq=normPath(x.path).split(' - ').filter(Boolean);if(seq.length<2)return;const old=x.flow||[];
   x.flow=[];for(let i=0;i<seq.length-1;i++)x.flow.push({t:old[i]?old[i].t:(i===0?(x.c.start||''):''),who:old[i]?old[i].who:'',seg:seq[i]+' - '+seq[i+1]})}
 async function calcKm(){const c=o.c,cl=s=>String(s||'').replace(/（[^）]*）|\([^)]*\)/g,'').trim();
-  const A=cl(c.meet),B=cl(c.wed),C=cl(c.o1),back=o.backHome!==false;
-  if((!A||!B)&&!qxOn()){$('kmMsg').textContent='請先填男方和女方地址';return}
   if(!S.driveUrl||!S.driveKey){$('kmMsg').textContent='請先到「價目設定」填 Drive 網址和金鑰';return}
-  const D=cl(c.o2),PN=ptNames(o);let stops=C?(back?[A,B,A,C]:[A,B,C]):(back?[A,B,A]:[A,B]),seqX=null;
-  if(D||qxOn()){const ks=normPath(o.path).split(' - ').filter(Boolean),ad={A,B,C,D};
-    if(!ks.includes('D')){$('kmMsg').textContent='請先選路線（含'+PN.D+'）';return}
-    const miss=ks.filter(k=>!ad[k]).map(k=>({A:'男方地址',B:'女方地址',C:'餐廳地址',D:'新增地點地址'})[k]);if(miss.length){$('kmMsg').textContent='請先填：'+[...new Set(miss)].join('、');return}
-    stops=ks.map(k=>ad[k]);seqX=ks.map(k=>PN[k])}
+  const ad={A:cl(c.meet),B:cl(c.wed),C:cl(c.o1),D:cl(c.o2)},N=ptNames(o),nm={A:'男方家',B:'女方家',C:N.C,D:N.D},ks=routeKeys(o);
+  if(ks.length<2){$('kmMsg').textContent='路線至少要選兩個地點';return}
+  const miss=[...new Set(ks.filter(k=>!ad[k]))].map(k=>nm[k]+'地址');if(miss.length){$('kmMsg').textContent='請先填：'+miss.join('、');return}
+  const stops=ks.map(k=>ad[k]),seqX=ks.map(k=>nm[k]);
   $('kmMsg').textContent='計算中…';
   try{const u=new URL(S.driveUrl);u.searchParams.set('action','km');u.searchParams.set('token',S.driveKey);u.searchParams.set('stops',JSON.stringify(stops));
     const j=await (await fetch(u)).json();if(!j.ok)throw new Error(j.error||'失敗');
     o.tripKm=Math.ceil(j.km);o.sample=false;save();fillInputs();renderAll();
-    const seq=seqX||(C?(back?['男方','女方','男方','餐廳']:['男方','女方','餐廳']):(back?['男方','女方','男方']:['男方','女方']));
+    const seq=seqX;
     $('kmMsg').textContent=`總里程約 ${j.km} 公里（${j.legs.map((l,i)=>`${seq[i]}→${seq[i+1]} ${l.km}`).join('、')}），已填入總行程里程`}
   catch(e){$('kmMsg').textContent='失敗：'+e.message}}
 document.addEventListener('input',e=>{const b=e.target&&e.target.dataset&&e.target.dataset.b;if(b)document.querySelectorAll('[data-b]').forEach(el=>{if(el!==e.target&&el.dataset.b===b&&el.tagName!=='SELECT')el.value=e.target.value})});
@@ -1394,8 +1395,7 @@ document.addEventListener('input',e=>{const el=e.target;
     if(el.dataset.b==='c.start'&&o.c.start){if(!o.c.gather||o.c.gather===o._autoG){o.c.gather=addMin(o.c.start,-20);o._autoG=o.c.gather;$('c_gather').value=o.c.gather}
       if(o.flow[0]&&!o.flow[0].t){o.flow[0].t=o.c.start;renderFlow()}}
     if(/^cars|hours/.test(el.dataset.b)){syncFleet();renderFleet();renderCars()}
-    if(el.id==='q_route'&&o.path){flowFromPath(o);try{renderFlow()}catch(e){}}
-    if(el.id==='q_route'||el.id==='q_back'||el.id==='q_addrD'||el.id==='q_addrA'||el.id==='q_addrB'||el.id==='q_addrC'){const km=$('kmMsg');if(km&&/總里程約/.test(km.textContent))km.textContent='路線或地址有變更，請重新按「計算總里程」'}
+    if(el.id==='q_addrD'||el.id==='q_addrA'||el.id==='q_addrB'||el.id==='q_addrC'){const km=$('kmMsg');if(km&&/總里程約/.test(km.textContent))km.textContent='路線或地址有變更，請重新按「計算總里程」'}
     save();renderAll();return}
   if(el.id==='s_vp'){S.vprices=S.vprices||{};S.vprices['幸福故事館']=el.value;saveS();renderAll();return}
   if(el.id==='s_vendors'){S.vendors=el.value.split('\n').map(l=>{const m=l.split(/[=＝]/);if(!m[0].trim())return null;const rest=(m[1]||'');return{name:m[0].trim(),rate:num(rest),monthly:/月結/.test(rest)}}).filter(Boolean);saveS();renderAll();return}
@@ -1817,7 +1817,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnMemoDocs':makeMemoDocs();break;
    case 'btnKm':calcKm();break;
    case 'btnAddPt':o._qx=true;renderQx();setTimeout(()=>$('q_o2L').focus(),0);break;
-   case 'btnDelPt':{const c=o.c;['o2','o2L','o2Map','o2S'].forEach(k=>c[k]='');o._qx=false;if(/D/.test(normPath(o.path))){o.path=c.o1?(o.backHome!==false?'A - B - A - C':'A - B - C'):'A - B - A';flowFromPath(o)}save();fillInputs();renderFlow();renderAll();break}
+   case 'btnDelPt':{const c=o.c;['o2','o2L','o2Map','o2S'].forEach(k=>c[k]='');o._qx=false;if(/D/.test(normPath(o.path))){o.path=normPath(o.path).split(' - ').filter(k=>k!=='D').filter((k,i,a)=>k!==a[i-1]).join(' - ');flowFromPath(o)}save();fillInputs();renderFlow();renderAll();break}
    case 'btnPaid':{const d=new Date();o.paid=true;if(!o.ttDone)o.ttDone=false;o.paidTs=Date.now();o.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`;o.sample=false;save();renderAll();toast('已標記收到訂金，記得填入 TimeTree');break}
    case 'btnTTPrompt':{const t=ttPromptText();clip(t);toast('已複製 TimeTree 檢查指令，貼給 Claude 即可');break}
    case 'btnTTDone':case 'btnTTDone2':o.ttDone=true;o.ttAt=Date.now();save();renderAll();toast('已標記填入 TimeTree');break;
