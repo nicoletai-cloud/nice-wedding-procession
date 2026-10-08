@@ -980,7 +980,7 @@ function feeLines(x,lang){const t=L[lang],r=calc(x),hl=hrsLabel(x.hours),out=[];
     if(lang==='zh')out.push(a?`指定${x.colorReq} ${money(a)}*${cq}=${money(a*cq)}${x.colorMode==='add'?'':`(${wv}免收)`}`:`指定${x.colorReq}`);else if(r.colorAdd)out.push(`${lang==='ja'?'指定カラー':'Custom color'} ${mult(a,cq,lang)}`)}
   if(lang==='zh')String(x.promoText||'').split('\n').forEach(l=>{const m=l.split(/[=＝]/);const n=(m[0]||'').trim(),a=num(m[1]);if(n&&a)out.push(`${n} ${money(a)}*${r.n}=${money(a*r.n)}(限時優惠免收)`)});
   if(r.eh)MODELS.forEach(m=>{const q=num(x.cars[m]);if(q)out.push(`${MNAME[m]} ${t.ot} ${r.eh}HR ${mult(num(S.ot[m])*r.eh,q,lang)}`)});
-  if(r.zone)out.push(`跨區/里程費 ${mult(zoneUnit(x),r.n-luxN(x),lang)}`);
+  if(r.zone){const zc=zoneCross(x),byKm=!(zc*num(S.zRate||500)>=zoneUnitKm(x)&&zc);const zl=lang==='en'?(byKm?`Mileage fee (over ${num(S.zBase||35)} km)`:`Cross-region fee (${zc} region${zc>1?'s':''})`):lang==='ja'?(byKm?`距離料金（${num(S.zBase||35)}km超過分）`:`エリア外料金（${zc}エリア）`):(byKm?`里程費（超過 ${num(S.zBase||35)} 公里）`:`跨區費（跨 ${zc} 區）`);out.push(`${zl} ${mult(zoneUnit(x),r.n-luxN(x),lang)}`)}
   if(zoneUnit(x)&&luxN(x)&&lang==='zh')out.push('豪車跨區費另行報價');
   if(r.cane)out.push(`${t.cane} ${mult(num(S.cane),num(x.cane),lang)}`);
   if(r.deco)out.push(`${t.deco} ${money(r.deco,lang)}`);
@@ -992,14 +992,21 @@ function feeLines(x,lang){const t=L[lang],r=calc(x),hl=hrsLabel(x.hours),out=[];
 function otRates(x,lang){const ms=MODELS.filter(m=>num(x.cars[m])>0);return ms.map(m=>`${MNAME[m]} ${money(S.ot[m],lang)}${lang==='en'?'/hr':lang==='ja'?'/時間':'/時'}`).join(lang==='en'?', ':'、')}
 
 /* ---------- messages ---------- */
-function quoteText(x,lang){const r=calc(x),f=feeLines(x,lang);const d=x.date?fmtDate(x.date)+(()=>{const p=dparts(x.date);return lang==='en'?` (${WD.en[p.w]})`:`（${WD[lang][p.w]}）`})():(lang==='en'?'TBD':lang==='ja'?'未定':'未定');
- if(lang==='en')return [`[Nice Wedding Car] Quote`,`Date: ${d}`,(+x.hours===0?'Service: one-way transfer':`Hours: ${hrsLabel(x.hours)} (within ${num(x.km)} km)`),`Vehicle(s): ${carsText(x,lang)}`,`Charges:`,...f,`Total = ${money(r.total,lang)}`,'',
-   x.invoice?'* Price includes 5% business tax.':'* Cash price; 5% business tax not included.',`* Overtime starts from the 16th minute, charged per started hour: ${otRates(x,lang)}`,
+function routeKeys(x){const c=x.c||{};if(String(c.o2||'').trim()||String(c.o2L||'').trim()){const p=normPath(x.path);if(/D/.test(p))return p.split(' - ')}
+  const C=!!String(c.o1||'').trim(),b=x.backHome!==false;if(!String(c.meet||'').trim()&&!String(c.wed||'').trim())return [];return C?(b?['A','B','A','C']:['A','B','C']):(b?['A','B','A']:['A','B'])}
+function routeLine(x,lang){const ks=routeKeys(x);if(ks.length<2)return '';const P=ptNames(x);
+  const N=lang==='en'?{A:"Groom's home",B:"Bride's home",C:P.C==='餐廳'?'Restaurant':P.C,D:P.D}:lang==='ja'?{A:'新郎宅',B:'新婦宅',C:P.C==='餐廳'?'レストラン':P.C,D:P.D}:{A:'男方家',B:'女方家',C:P.C,D:P.D};
+  return ks.map(k=>N[k]||k).join(' → ')}
+function quoteText(x,lang){const r=calc(x),f=feeLines(x,lang);const rt=routeLine(x,lang),tk=num(x.tripKm),zb=num(S.zBase||35),zr=num(S.zRate||500),zu=num(S.zRound)||0,oneWay=+x.hours===0;
+ const kmL=lang==='en'?[rt?`Route: ${rt}`:'',tk?`Estimated distance: approx. ${tk} km`:'']:lang==='ja'?[rt?`ルート：${rt}`:'',tk?`予想走行距離：約 ${tk}km`:'']:[rt?`預計流程：${rt}`:'',tk?`預估里程：約 ${tk} 公里`:''];
+ const kmN=oneWay?'':lang==='en'?`* Includes up to ${zb} km; beyond that, ${money(zr,lang)} per car for every additional ${zb} km (pro-rated${zu?`, rounded up to ${money(zu,lang)}`:''}).`:lang==='ja'?`＊${zb}km以内の料金です。超過分は${zb}kmごとに1台 ${money(zr,lang)}（按分${zu?`、${money(zu,lang)}単位で切り上げ`:''}）。`:`＊用車含 ${zb} 公里內，超過的里程每 ${zb} 公里加收 ${money(zr)}／台（按比例計算${zu?`，以 ${money(zu)} 為單位進位`:''}）`;const d=x.date?fmtDate(x.date)+(()=>{const p=dparts(x.date);return lang==='en'?` (${WD.en[p.w]})`:`（${WD[lang][p.w]}）`})():(lang==='en'?'TBD':lang==='ja'?'未定':'未定');
+ if(lang==='en')return [`[Nice Wedding Car] Quote`,`Date: ${d}`,(+x.hours===0?'Service: one-way transfer':`Hours: ${hrsLabel(x.hours)} (within ${num(x.km)} km)`),`Vehicle(s): ${carsText(x,lang)}`,...kmL,`Charges:`,...f,`Total = ${money(r.total,lang)}`,'',
+   kmN,x.invoice?'* Price includes 5% business tax.':'* Cash price; 5% business tax not included.',`* Overtime starts from the 16th minute, charged per started hour: ${otRates(x,lang)}`,
    r.cane?'':`* Real sugarcane on the roof: ${money(S.cane,lang)}/car (optional)`,`* A driver red envelope of ${money(S.red,lang)}/car is customary.`].filter(s=>s!=='').join('\n');
- if(lang==='ja')return [`【好好禮車】お見積り`,`ご利用日：${d}`,(+x.hours===0?'ご利用内容：片道送迎':`ご利用時間：${hrsLabel(x.hours)}（${num(x.km)}km以内）`),`ご予約車種：${carsText(x,lang)}`,`料金明細：`,...f,`合計 = ${money(r.total,lang)}`,'',
-   x.invoice?'＊5%営業税込みの金額です。':'＊現金価格です（5%営業税別）。',`＊16分目から延長料金が発生し、1時間未満は1時間で計算します：${otRates(x,lang)}`,
+ if(lang==='ja')return [`【好好禮車】お見積り`,`ご利用日：${d}`,(+x.hours===0?'ご利用内容：片道送迎':`ご利用時間：${hrsLabel(x.hours)}（${num(x.km)}km以内）`),`ご予約車種：${carsText(x,lang)}`,...kmL,`料金明細：`,...f,`合計 = ${money(r.total,lang)}`,'',
+   kmN,x.invoice?'＊5%営業税込みの金額です。':'＊現金価格です（5%営業税別）。',`＊16分目から延長料金が発生し、1時間未満は1時間で計算します：${otRates(x,lang)}`,
    r.cane?'':`＊車の屋根に本物のサトウキビを付ける場合：${money(S.cane,lang)}/台`].filter(s=>s!=='').join('\n');
- return [`【好好禮車 報價】`,`用車日期：${d}`,(+x.hours===0?`用車方式：單程接送`:`用車時數：${hrsLabel(x.hours)}（${num(x.km)} 公里內）`),`預約車款：${carsText(x,lang)}`,`費用明細：`,...f,`合計=${money(r.total)}`,'',
+ return [`【好好禮車 報價】`,`用車日期：${d}`,(+x.hours===0?`用車方式：單程接送`:`用車時數：${hrsLabel(x.hours)}（${num(x.km)} 公里內）`),`預約車款：${carsText(x,lang)}`,...kmL,`費用明細：`,...f,`合計=${money(r.total)}`,'',kmN,
    x.invoice?'＊以上含發票 5% 營業稅':'＊以上為現金價，不含發票 5% 營業稅',
    r.red?'':`＊不含司機紅包 ${money(S.red)}/台`].filter(s=>s!=='').join('\n')}
 
