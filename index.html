@@ -1258,12 +1258,12 @@ function flowFromPath(x){const seq=normPath(x.path).split(' - ').filter(Boolean)
   x.flow=[];for(let i=0;i<seq.length-1;i++)x.flow.push({t:old[i]?old[i].t:(i===0?(x.c.start||''):''),who:old[i]?old[i].who:'',seg:seq[i]+' - '+seq[i+1]})}
 async function calcKm(){const c=o.c,cl=s=>String(s||'').replace(/（[^）]*）|\([^)]*\)/g,'').trim();
   const A=cl(c.meet),B=cl(c.wed),C=cl(c.o1),back=o.backHome!==false;
-  if(!A||!B){$('kmMsg').textContent='請先填男方和女方地址';return}
+  if((!A||!B)&&!qxOn()){$('kmMsg').textContent='請先填男方和女方地址';return}
   if(!S.driveUrl||!S.driveKey){$('kmMsg').textContent='請先到「價目設定」填 Drive 網址和金鑰';return}
   const D=cl(c.o2),PN=ptNames(o);let stops=C?(back?[A,B,A,C]:[A,B,C]):(back?[A,B,A]:[A,B]),seqX=null;
-  if(D){const ks=normPath(o.path).split(' - ').filter(Boolean),ad={A,B,C,D};
+  if(D||qxOn()){const ks=normPath(o.path).split(' - ').filter(Boolean),ad={A,B,C,D};
     if(!ks.includes('D')){$('kmMsg').textContent='請先選路線（含'+PN.D+'）';return}
-    if(ks.some(k=>!ad[k])){$('kmMsg').textContent='路線裡有地點還沒填地址';return}
+    const miss=ks.filter(k=>!ad[k]).map(k=>({A:'男方地址',B:'女方地址',C:'餐廳地址',D:'新增地點地址'})[k]);if(miss.length){$('kmMsg').textContent='請先填：'+[...new Set(miss)].join('、');return}
     stops=ks.map(k=>ad[k]);seqX=ks.map(k=>PN[k])}
   $('kmMsg').textContent='計算中…';
   try{const u=new URL(S.driveUrl);u.searchParams.set('action','km');u.searchParams.set('token',S.driveKey);u.searchParams.set('stops',JSON.stringify(stops));
@@ -1395,6 +1395,7 @@ document.addEventListener('input',e=>{const el=e.target;
       if(o.flow[0]&&!o.flow[0].t){o.flow[0].t=o.c.start;renderFlow()}}
     if(/^cars|hours/.test(el.dataset.b)){syncFleet();renderFleet();renderCars()}
     if(el.id==='q_route'&&o.path){flowFromPath(o);try{renderFlow()}catch(e){}}
+    if(el.id==='q_route'||el.id==='q_back'||el.id==='q_addrD'||el.id==='q_addrA'||el.id==='q_addrB'||el.id==='q_addrC'){const km=$('kmMsg');if(km&&/總里程約/.test(km.textContent))km.textContent='路線或地址有變更，請重新按「計算總里程」'}
     save();renderAll();return}
   if(el.id==='s_vp'){S.vprices=S.vprices||{};S.vprices['幸福故事館']=el.value;saveS();renderAll();return}
   if(el.id==='s_vendors'){S.vendors=el.value.split('\n').map(l=>{const m=l.split(/[=＝]/);if(!m[0].trim())return null;const rest=(m[1]||'');return{name:m[0].trim(),rate:num(rest),monthly:/月結/.test(rest)}}).filter(Boolean);saveS();renderAll();return}
