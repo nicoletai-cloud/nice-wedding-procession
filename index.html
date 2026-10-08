@@ -1148,7 +1148,7 @@ function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr)
   const cane=c.caneAns||(x.cane?'是':'否'),deco=(c.decoAns||'').trim();
   /* 找司機訊息只放司機需要知道的：方案備註（同業單才帶同業的備註）；內部備註（婚顧、回金、報價、訂金…）不給司機看 */
   const note=(x.partner?(x.note||''):(x.flagNote||'')).trim(),noteShow=note&&!/^指定.{0,4}色$/.test(note);
-  return [`代碼：${findCode(x)}`,`${fmtMDW(x.date,'zh')} ${ap(c.start)||'--:--'}-${ap(c.end)||'--:--'}`,`集合時間：${ap(c.gather||addMin(c.start,-20))||'待定'}`,'地點：',...pts.map(p=>{const rd=roadOf(x.c[p.f]);return `${p.k}. ${areaOf(p.f)||({meet:x.cityA,wed:x.cityB})[p.f]||'（地區待確認）'}${rd?' '+rd:''}`}),
+  return [`代碼：${findCode(x)}`,`${fmtMDW(x.date,'zh')} ${ap(c.start)||'--:--'}-${ap(c.end)||'--:--'}`,`集合時間：${ap(c.gather||addMin(c.start,-20))||'待定'}`,'地點：',...pts.map((p,i)=>{const rd=roadOf(x.c[p.f]);let ar=areaOf(p.f)||({meet:x.cityA,wed:x.cityB})[p.f]||'';if(!ar){/* 沒寫縣市也查不到鄉鎮：沿用路線裡前後站的縣市 */const cty=q=>q?countyOf(x.c[q.f]||'')||({meet:x.cityA,wed:x.cityB})[q.f]||'':'';const seq=String(x.path||'').toUpperCase().match(/[A-D]/g)||[];const j=seq.lastIndexOf(p.k);const byK=k=>pts.find(q=>q.k===k);const cand=j>=0?[byK(seq[j+1]),byK(seq[j-1])]:[];ar=[...cand,...pts.slice(i+1),...pts.slice(0,i).reverse()].map(cty).find(Boolean)||''}return `${p.k}. ${ar||'（地區待確認）'}${rd?' '+rd:''}`}),
    `禮車流程：${x.path||'待定'}`,`需求：${Object.keys(ng).map(k=>`${k} ${n2(ng[k])}台`).join('、')||'—'}`,findReqText(x)?`條件：${findReqText(x)}`:'',`酬勞：${payL}`,
    cane==='是'?'甘蔗：需固定':'',deco&&!/^(否|無|不)/.test(deco)?`指定車頭彩：${deco}`:'',noteShow?`備註：${note}`:'',x.findMain?'主禮車請預備：車頭彩／門把彩／對講機':'','','請問能支援嗎？'].filter((l,i,a)=>l!==''||i===a.length-2).join('\n')}
 
