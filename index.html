@@ -257,9 +257,12 @@ nav.tabs button{scroll-snap-align:start}
             <label class="f wide">男方地址<input id="q_addrA" data-b="c.meet" placeholder="貼上地址"></label>
             <label class="f wide">女方地址<input id="q_addrB" data-b="c.wed" placeholder="貼上地址"></label>
             <label class="f wide">餐廳地址<input id="q_addrC" data-b="c.o1" placeholder="沒有就留空"></label>
-            <label class="f">路線<select id="q_back" data-b="backHome" data-bool><option value="1">男方→女方→男方→餐廳</option><option value="0">男方→女方→餐廳</option></select></label>
+            <label class="f wide qx" style="display:none">新增地點名稱<input id="q_o2L" data-b="c.o2L" placeholder="例：教堂證婚"></label>
+            <label class="f wide qx" style="display:none">新增地點地址<input id="q_addrD" data-b="c.o2" placeholder="貼上地址"></label>
+            <label class="f wide" id="q_routeWrap" style="display:none">路線<select id="q_route" data-b="path"></select></label>
+            <label class="f" id="q_backWrap">路線<select id="q_back" data-b="backHome" data-bool><option value="1">男方→女方→男方→餐廳</option><option value="0">男方→女方→餐廳</option></select></label>
           </div>
-          <div class="row" style="margin-top:8px;gap:10px"><button class="btn sm pri" id="btnKm" type="button">計算總里程</button><span class="hint" id="kmMsg" style="margin:0"></span></div>
+          <div class="row" style="margin-top:8px;gap:10px"><button class="btn sm" id="btnAddPt" type="button">＋ 新增地點</button><button class="btn sm" id="btnDelPt" type="button" style="display:none">移除新增地點</button><button class="btn sm pri" id="btnKm" type="button">計算總里程</button><span class="hint" id="kmMsg" style="margin:0"></span></div>
         </div>
         <div class="card">
           <h3>客人需求 <small>已填的不用再問；暫定、未知分開記</small></h3>
@@ -1234,16 +1237,32 @@ function memoBlocks(m){const t=m.t,B=[];B.push({t:'title',text:`好好禮車　�
 function tplModel(x,who){const m=memoModel(x,who,'zh'),r=calc(x);const mc=(x.fleet||[]).find(f=>f.role==='主禮車');
   return{no:m.no,wd:m.wd,dateLine:m.dateLine,gather:m.gather,contact:m.contact.replace(/\n/g,'\r'),boss:m.boss,plan:m.plan,flags:m.flags.split(' / ').slice(0,2).join(' / '),fleet:m.fleet,pts:m.pts,path:m.path,flow:m.flow,route:(m.route||'').replace(/\n/g,'\r'),pay:m.pay,
     xTip:mc?mc.m==='X':num(x.cars.X)>0,bank:S.bank,monthly:!!r.mon}}
+function normPath(p){return String(p||'').toUpperCase().split(/\s*[-－>＞→、,，\s]\s*/).filter(k=>/^[A-D]$/.test(k)).join(' - ')}
+function qxOn(){const c=o.c||{};return !!(o._qx||String(c.o2||'').trim()||String(c.o2L||'').trim())}
+function ptNames(x){const c=x.c||{};return{A:'男方',B:'女方',C:(c.o1L||'').trim()&&!/餐廳|宴/.test(c.o1L)?c.o1L.trim():'餐廳',D:(c.o2L||'').trim()||'新增地點'}}
+function renderQx(){const on=qxOn();document.querySelectorAll('.qx').forEach(e=>e.style.display=on?'':'none');
+  $('btnAddPt').style.display=on?'none':'';$('btnDelPt').style.display=on?'':'none';$('q_backWrap').style.display=on?'none':'';$('q_routeWrap').style.display=on?'':'none';
+  if(!on)return;const c=o.c,L=ptNames(o),hasC=!!String(c.o1||'').trim();
+  const opts=hasC?['A - B - A - D - C','A - B - D - C','A - B - D - A - C','A - D - B - A - C','A - B - A - C - D','A - B - C - D']:['A - B - A - D','A - B - D','A - B - D - A','A - D - B - A'];
+  const cur=normPath(o.path);if(cur&&/D/.test(cur)&&!opts.includes(cur))opts.push(cur);
+  const sel=$('q_route');sel.innerHTML='<option value="">— 請選路線 —</option>'+opts.map(p=>`<option value="${p}">${p.split(' - ').map(k=>esc(L[k]||k)).join('→')}</option>`).join('');
+  sel.value=opts.includes(cur)?cur:''}
+function flowFromPath(x){const seq=normPath(x.path).split(' - ').filter(Boolean);if(seq.length<2)return;const old=x.flow||[];
+  x.flow=[];for(let i=0;i<seq.length-1;i++)x.flow.push({t:old[i]?old[i].t:(i===0?(x.c.start||''):''),who:old[i]?old[i].who:'',seg:seq[i]+' - '+seq[i+1]})}
 async function calcKm(){const c=o.c,cl=s=>String(s||'').replace(/（[^）]*）|\([^)]*\)/g,'').trim();
   const A=cl(c.meet),B=cl(c.wed),C=cl(c.o1),back=o.backHome!==false;
   if(!A||!B){$('kmMsg').textContent='請先填男方和女方地址';return}
   if(!S.driveUrl||!S.driveKey){$('kmMsg').textContent='請先到「價目設定」填 Drive 網址和金鑰';return}
-  const stops=C?(back?[A,B,A,C]:[A,B,C]):(back?[A,B,A]:[A,B]);
+  const D=cl(c.o2),PN=ptNames(o);let stops=C?(back?[A,B,A,C]:[A,B,C]):(back?[A,B,A]:[A,B]),seqX=null;
+  if(D){const ks=normPath(o.path).split(' - ').filter(Boolean),ad={A,B,C,D};
+    if(!ks.includes('D')){$('kmMsg').textContent='請先選路線（含'+PN.D+'）';return}
+    if(ks.some(k=>!ad[k])){$('kmMsg').textContent='路線裡有地點還沒填地址';return}
+    stops=ks.map(k=>ad[k]);seqX=ks.map(k=>PN[k])}
   $('kmMsg').textContent='計算中…';
   try{const u=new URL(S.driveUrl);u.searchParams.set('action','km');u.searchParams.set('token',S.driveKey);u.searchParams.set('stops',JSON.stringify(stops));
     const j=await (await fetch(u)).json();if(!j.ok)throw new Error(j.error||'失敗');
     o.tripKm=Math.ceil(j.km);o.sample=false;save();fillInputs();renderAll();
-    const nm=['男方','女方','男方','餐廳'],seq=C?(back?['男方','女方','男方','餐廳']:['男方','女方','餐廳']):(back?['男方','女方','男方']:['男方','女方']);
+    const seq=seqX||(C?(back?['男方','女方','男方','餐廳']:['男方','女方','餐廳']):(back?['男方','女方','男方']:['男方','女方']));
     $('kmMsg').textContent=`總里程約 ${j.km} 公里（${j.legs.map((l,i)=>`${seq[i]}→${seq[i+1]} ${l.km}`).join('、')}），已填入總行程里程`}
   catch(e){$('kmMsg').textContent='失敗：'+e.message}}
 document.addEventListener('input',e=>{const b=e.target&&e.target.dataset&&e.target.dataset.b;if(b)document.querySelectorAll('[data-b]').forEach(el=>{if(el!==e.target&&el.dataset.b===b&&el.tagName!=='SELECT')el.value=e.target.value})});
@@ -1368,6 +1387,7 @@ document.addEventListener('input',e=>{const el=e.target;
     if(el.dataset.b==='c.start'&&o.c.start){if(!o.c.gather||o.c.gather===o._autoG){o.c.gather=addMin(o.c.start,-20);o._autoG=o.c.gather;$('c_gather').value=o.c.gather}
       if(o.flow[0]&&!o.flow[0].t){o.flow[0].t=o.c.start;renderFlow()}}
     if(/^cars|hours/.test(el.dataset.b)){syncFleet();renderFleet();renderCars()}
+    if(el.id==='q_route'&&o.path){flowFromPath(o);try{renderFlow()}catch(e){}}
     save();renderAll();return}
   if(el.id==='s_vp'){S.vprices=S.vprices||{};S.vprices['幸福故事館']=el.value;saveS();renderAll();return}
   if(el.id==='s_vendors'){S.vendors=el.value.split('\n').map(l=>{const m=l.split(/[=＝]/);if(!m[0].trim())return null;const rest=(m[1]||'');return{name:m[0].trim(),rate:num(rest),monthly:/月結/.test(rest)}}).filter(Boolean);saveS();renderAll();return}
@@ -1524,7 +1544,7 @@ function renderRefs(){renderSettle();const mEl=$('refMonth');if(!mEl.value){cons
   $('billVendorName').textContent=mv.map(v=>v.name).join('、');$('outBill').textContent=bills.join('\n\n')||'這個月沒有月結廠商的訂單。'}
 function renderOrderSel(){const list=Object.values(DB.orders).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.updated-a.updated);
   $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(orderNo(x))}${x.c.groom||x.c.bride||vLabel(x)?'・'+esc(coupleName(x)):''}${x.sample?'（範例）':x.partner?'・【同業 '+esc(x.partner.co||'')+'】':'・'+STAGE_LABEL[stageOf(x)]}</option>`).join('');renderTodoBadge();if(!$('todoModal').hidden)renderTodo()}
-function renderAll(){renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派車頭':''].filter(Boolean),tr=[k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就派司機':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月派司機':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月派司機':'白色特斯拉：用車前一週派司機'):''].filter(Boolean);$('headHint').textContent=(rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):k.tesla&&!k.lux?'特斯拉由你擔任車頭，不用指派車頭。':'本單沒有提前指派車頭的需求。')+(tr.length?'　'+tr.join('；'):'')+(String(o.carHead||'').trim()?'　✅ 已找車頭：司機由車頭安排，用車前 3 天再確認司機資料即可。':'')}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=CONFIRM_TPL;renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
+function renderAll(){try{renderQx()}catch(e){}renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派車頭':''].filter(Boolean),tr=[k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就派司機':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月派司機':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月派司機':'白色特斯拉：用車前一週派司機'):''].filter(Boolean);$('headHint').textContent=(rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):k.tesla&&!k.lux?'特斯拉由你擔任車頭，不用指派車頭。':'本單沒有提前指派車頭的需求。')+(tr.length?'　'+tr.join('；'):'')+(String(o.carHead||'').trim()?'　✅ 已找車頭：司機由車頭安排，用車前 3 天再確認司機資料即可。':'')}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=CONFIRM_TPL;renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
   $('outQuote').textContent=quoteText(o,'zh');$('outOrder').textContent=orderText(o,'zh');
   renderFind();$('contractPaper').innerHTML=contractHTML(o);renderMemo();
   ['meet','wed','o1','o2'].forEach(k=>{$('c_'+k+'S').placeholder=shortArea(o.c[k])||'自動'});
@@ -1780,6 +1800,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnDrive':saveToDrive();break;
    case 'btnMemoDocs':makeMemoDocs();break;
    case 'btnKm':calcKm();break;
+   case 'btnAddPt':o._qx=true;renderQx();setTimeout(()=>$('q_o2L').focus(),0);break;
+   case 'btnDelPt':{const c=o.c;['o2','o2L','o2Map','o2S'].forEach(k=>c[k]='');o._qx=false;if(/D/.test(normPath(o.path))){o.path=c.o1?(o.backHome!==false?'A - B - A - C':'A - B - C'):'A - B - A';flowFromPath(o)}save();fillInputs();renderFlow();renderAll();break}
    case 'btnPaid':{const d=new Date();o.paid=true;if(!o.ttDone)o.ttDone=false;o.paidTs=Date.now();o.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`;o.sample=false;save();renderAll();toast('已標記收到訂金，記得填入 TimeTree');break}
    case 'btnTTPrompt':{const t=ttPromptText();clip(t);toast('已複製 TimeTree 檢查指令，貼給 Claude 即可');break}
    case 'btnTTDone':case 'btnTTDone2':o.ttDone=true;o.ttAt=Date.now();save();renderAll();toast('已標記填入 TimeTree');break;
