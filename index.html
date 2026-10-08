@@ -1639,11 +1639,16 @@ function teslaDrvRule(x,d){const k=carKind(x),big=bigDay(x),ago=t=>(Date.now()-(
   if(x.colorReq==='紅色')return{why:'紅色特斯拉',late:ago(x.orderedAt||x.updated)>=2};
   if(x.colorReq==='黑色'&&d!==null&&d<=60)return{why:'黑色特斯拉',late:d<=53};
   if(x.colorReq==='白色'&&d!==null&&d<=(big?60:7))return{why:big?'白色特斯拉・大日子':'白色特斯拉',late:d<=(big?53:5)};return null}
+/* 報價追蹤：最後一次報價／追蹤／客人回覆後，第 2、7、21 天各一次（婚期 45 天內縮短為 1、4、7 天）；三次後停止 */
+function followBase(x){const q=(x.quotes||[]).reduce((a,z)=>Math.max(a,+z.at||0),0);return Math.max(+x.followAt||0,+x.replyAt||0,q,+x.inqAt||0)||+x.updated||0}
+function followPlan(x){const fn=+x.followN||0;if(fn>=3||(fn>=2&&!x.fv2))return null;const d=daysTo(x),soon=d!==null&&d<=45,gap=soon?[1,3,3][fn]:[2,5,14][fn];
+  const ago=(Date.now()-followBase(x))/DAY;return{n:fn+1,due:ago>=gap,why:['第 1 次追蹤','第 2 次・檔期','收尾'][fn]+(ago<gap?`・${Math.ceil(gap-ago)} 天後`:'')}}
+function dateLoad(x){return x.date?Object.values(DB.orders).filter(y=>y!==x&&y.id!==x.id&&!y.sample&&!y.lost&&!y.partner&&y.date===x.date&&(y.paid||y.orderedAt)).length:0}
 function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];const now=Date.now(),d=daysTo(x),T=[],ago=t=>(now-(+t||0))/DAY;
   if(x.quiet&&st!=='done'){const nd=!x.drvDone&&(!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim()));return d!==null&&d<=30&&nd?[{k:'nodrv',late:true,why:'一個月前安排車子'}]:[]}
   if(x.c&&x.c.photoReq==='要'&&!x.photoSentAt)T.push({k:'photo',late:d!==null&&d<=-3});
   if(st==='done'){if(d>=-30&&x.paid){if(!x.revAskAt&&!x.revSkip)T.push({k:'rev',late:d<=-2});else if(x.revAskAt&&!x.revLinkAt&&!x.revSkip)T.push({k:'revlink',late:false})}return T}
-  if(st==='inq'){const nx=x.need&&x.need.next;if(nx){const dn=daysTo({date:nx});if(dn!==null&&dn<=0)T.push({k:'inq',late:true})}else{const fn=+x.followN||0;if(fn<2)T.push({k:'inq',late:ago(x.followAt||x.inqAt||x.updated)>=(fn?7:3),why:fn?'收尾':''})}}
+  if(st==='inq'){const nx=x.need&&x.need.next;if(nx&&daysTo({date:nx})>0){}else if(nx&&!(x.followAt>new Date(nx+'T00:00').getTime())){T.push({k:'inq',late:true,why:'約定再聯繫'})}else{const F=followPlan(x);if(F)T.push({k:'inq',late:F.due,why:F.why})}}
   if(st==='unpaid')T.push({k:'unpaid',late:ago(x.orderedAt||x.updated)>=2});
   if(ttPending(x)&&st!=='done')T.push({k:'tt',late:true});
   if(st==='noform')T.push({k:'noform',late:ago(x.paidTs||x.updated)>=3});
@@ -1671,7 +1676,7 @@ function renderTodo(){const all=Object.values(DB.orders).filter(x=>!x.sample).ma
     +chip('lost','失單',all.filter(r=>r.st==='lost').length,0)+chip('done','已完成',all.filter(r=>r.st==='done').length,0);
   const rows=todoRows();[...todoSel].forEach(id=>{if(!rows.some(r=>r.x.id===id))todoSel.delete(id)});
   const B=[['tsAll',todoSel.size&&todoSel.size===rows.length?'取消全選':'全選'],['tsNames','複製客人名稱']];
-  if(todoF==='inq')B.push(['tsFollow','標記已追銷'],['tsOrdered','標記已開單'],['tsLost','標記失單']);
+  if(todoF==='inq')B.push(['tsFollow','標記已追銷'],['tsReplied','客人有回覆'],['tsOrdered','標記已開單'],['tsLost','標記失單']);
   if(todoF==='unpaid')B.push(['tsPaid','標記已收訂金'],['tsLost','標記失單']);
   if(todoF==='noform')B.push(['tsForm','標記已填表']);
   if(todoF==='tt')B.push(['tsTTAdd','複製補登指令'],['tsTT','標記已填 TimeTree']);
@@ -1693,7 +1698,8 @@ const RM_LABEL={inq:'提醒決定方案',unpaid:'提醒匯款',noform:'提醒填
 function rmHi(x){const c=x.c||{},ct=String(c.contact||'').trim();if(ct&&!/^(新郎|新娘|其他)$/.test(ct)&&((x.src&&x.src.vendor)||/婚顧|主持/.test(ct))){const n=ct.split(/[\s\/]/).pop().replace(/^(婚顧|主持人)/,'');if(n)return n+'您好'}return '您好'}
 function rmTexts(x){const T=tasksOf(x),out=[];if(!T.length)return out;const r=calc(x),no=orderNo(x),hi=rmHi(x),dt=x.date?fmtDate(x.date):'（日期未定）',cars=carsText(x),add=(k,t)=>{if(!out.some(z=>z.k===k))out.push({k,l:RM_LABEL[k],t})};
   T.forEach(t=>{switch(t.k){
-    case 'inq':add('inq',(+x.followN||0)>=1?`${hi}，先讓您安心安排婚禮，這邊就不再頻繁打擾🤍\n之後需要調整方案，或準備確認用車時，直接回覆這段對話就可以，我們再依當時檔期協助確認～`:`${hi}🤍 想跟您確認一下，前面提供的方案（${cars}）是否符合您預想的方向呢？☺️\n如果想調整車款、台數或整體預算，告訴我想調整的部分，我再幫您整理比較～`);break;
+    case 'inq':{const fn=+x.followN||0,nl=dateLoad(x);const t2=`${hi}🤍 跟您更新一下 ${dt} 的檔期：`+(nl?`這天目前已經有 ${nl} 組新人預約，車輛會依訂金順序保留，如果確定想用車，建議可以先幫您把車留下來☺️`:`這天的車輛目前還可以安排，確定日期後跟我說一聲，就能先幫您保留☺️`)+`\n如果還在比較方案或有預算考量，也可以直接告訴我，我幫您看看更適合的車款組合～`;
+      add('inq',x.need&&x.need.next&&t.why==='約定再聯繫'?`${hi}🤍 之前跟您約好這幾天再聯繫，想問問婚禮用車的部分有新的想法了嗎？\n前面提供的方案是（${cars}），需要調整或確認檔期都可以直接回覆我～`:fn>=2||(fn>=1&&!x.fv2&&false)?`${hi}，先讓您安心安排婚禮，這邊就不再頻繁打擾🤍\n之後需要調整方案，或準備確認用車時，直接回覆這段對話就可以，我們再依當時檔期協助確認～`:fn===1?t2:`${hi}🤍 想跟您確認一下，前面提供的方案（${cars}）是否符合您預想的方向呢？☺️\n如果想調整車款、台數或整體預算，告訴我想調整的部分，我再幫您整理比較～`);break}
     case 'unpaid':add('unpaid',`${hi}🤍 提醒您，訂單 ${no}（${dt}｜${cars}）的訂金 ${money(r.deposit)} 目前還沒有收到喔～\n${useEcpay(x)?`完成付款後才會為您保留車輛，請點以下連結轉帳（會產生您專屬的轉帳帳號）：\n${payLink(x)}\n\n付款後麻煩填寫訂車表單：\n${formLink(x)}`:`完成匯款後才會為您保留車輛：\n${S.bank}\n\n匯款後麻煩填寫訂車表單：\n${formLink(x)}\n\n如果已經匯款了，再麻煩告訴我們匯款帳號後五碼，我們馬上幫您確認☺️`}`);break;
     case 'noform':add('noform',`${hi}，已確認收到 ${no} 訂金 ${money(num(String(x.c.payAmt||'').replace(/[^\d.]/g,''))||r.deposit)}，謝謝🤍\n麻煩再幫我們填寫訂車表單（新人資料、行程與時間），填完我們就會提供合約：\n${formLink(x)}`);break;
     case 'cfsend':add('cfsend',CONFIRM_TPL);break;
@@ -1701,8 +1707,8 @@ function rmTexts(x){const T=tasksOf(x),out=[];if(!T.length)return out;const r=ca
     case 'rev':add('rev',REV_ASK);break;
     case 'revlink':add('revlink',REV_LINK);break}});
   return out}
-function showRemind(x){if(!x)return;const L=rmTexts(x);let m=$('rmModal');if(!m){m=document.createElement('div');m.id='rmModal';m.style.cssText='position:fixed;inset:0;z-index:70;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px';document.body.appendChild(m)}
-  m.hidden=false;m.innerHTML=`<div style="max-width:640px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px"><div class="row" style="justify-content:space-between;margin-bottom:12px;gap:8px"><h3 style="margin:0">提醒文字 <small>${esc(orderNo(x))} ${esc(x.c.chatName||[x.c.groom,x.c.bride].filter(Boolean).join('&'))}</small></h3><button class="btn" data-rmclose="1">關閉</button></div>`+(L.length?L.map((z,i)=>`<div class="card" style="margin-bottom:10px"><div class="row" style="justify-content:space-between;margin-bottom:6px"><b>${z.l}</b><button class="btn sm pri" data-rmcopy="${i}">複製</button></div><textarea data-rmt="${i}" rows="8" style="width:100%">${esc(z.t)}</textarea></div>`).join('')+'<p class="hint">可以先在框裡修改再複製；複製後到 LINE 貼上傳送。</p>':'<p class="hint">這張單目前沒有需要傳給客人的提醒（剩下的是內部作業，例如出合約、派司機）。</p>')+'</div>'}
+let rmX=null;function showRemind(x){if(!x)return;rmX=x;const L=rmTexts(x);let m=$('rmModal');if(!m){m=document.createElement('div');m.id='rmModal';m.style.cssText='position:fixed;inset:0;z-index:70;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px';document.body.appendChild(m)}
+  m.hidden=false;m.innerHTML=`<div style="max-width:640px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px"><div class="row" style="justify-content:space-between;margin-bottom:12px;gap:8px"><h3 style="margin:0">提醒文字 <small>${esc(orderNo(x))} ${esc(x.c.chatName||[x.c.groom,x.c.bride].filter(Boolean).join('&'))}</small></h3><button class="btn" data-rmclose="1">關閉</button></div>`+(L.length?L.map((z,i)=>`<div class="card" style="margin-bottom:10px"><div class="row" style="justify-content:space-between;margin-bottom:6px"><b>${z.l}</b><span class="row" style="gap:6px">${z.k==='inq'?`<button class="btn sm" data-rmreply="1">客人有回覆</button><button class="btn sm pri" data-rmfollow="${i}">複製＋標記已追</button>`:`<button class="btn sm pri" data-rmcopy="${i}">複製</button>`}</span></div><textarea data-rmt="${i}" rows="8" style="width:100%">${esc(z.t)}</textarea></div>`).join('')+'<p class="hint">可以先在框裡修改再複製；複製後到 LINE 貼上傳送。</p>':'<p class="hint">這張單目前沒有需要傳給客人的提醒（剩下的是內部作業，例如出合約、派司機）。</p>')+'</div>'}
 const clip=v=>{if(navigator.clipboard)navigator.clipboard.writeText(v).then(()=>toast('已複製'),()=>toast('複製失敗'))};
 function todoBatch(id){const rows=todoRows(),sel=rows.filter(r=>todoSel.has(r.x.id)).map(r=>r.x),now=Date.now();
   if(id==='tsAll'){if(todoSel.size===rows.length)todoSel.clear();else rows.forEach(r=>todoSel.add(r.x.id));renderTodo();return}
@@ -1710,7 +1716,7 @@ function todoBatch(id){const rows=todoRows(),sel=rows.filter(r=>todoSel.has(r.x.
   if(id==='tsNames'){clip(sel.map(x=>x.c.chatName||orderNo(x)).join('\n'));return}
   if(id==='tsTTAdd'){clip(ttPromptText(sel));toast(`已複製 ${sel.length} 筆補登指令，貼給 Claude 即可`);return}
   if(id==='tsCfCopy')clip(CONFIRM_TPL);if(id==='tsRevCopy')clip(REV_ASK);if(id==='tsRevLinkCopy')clip(REV_LINK);
-  const f={tsFollow:x=>{x.followAt=now;x.followN=(+x.followN||0)+1},tsOrdered:x=>x.orderedAt=now,tsLost:x=>x.lost=true,tsRevive:x=>x.lost=false,tsCfCopy:x=>x.cfSentAt=now,tsCfSent:x=>x.cfSentAt=now,tsCfDone:x=>x.cfDoneAt=now,tsRevCopy:x=>x.revAskAt=now,tsRevAsked:x=>x.revAskAt=now,tsRevLinkCopy:x=>x.revLinkAt=now,tsRevSkip:x=>x.revSkip=true,tsPhotoSent:x=>x.photoSentAt=now,tsPhotoReq:x=>x.c.photoReq='要',tsPaid:x=>{const d=new Date();x.paid=true;if(!x.ttDone)x.ttDone=false;x.paidTs=now;x.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`},tsForm:x=>x.formAt=now,tsTT:x=>{x.ttDone=true;x.ttAt=now},tsContract:x=>x.contractDone=true,tsDrv:x=>x.drvDone=true,tsMemo:x=>x.memoDone=true}[id];if(!f)return;
+  const f={tsFollow:x=>{x.followAt=now;x.followN=(+x.followN||0)+1;x.fv2=true},tsReplied:x=>{x.replyAt=now;x.followN=0;x.fv2=true},tsOrdered:x=>x.orderedAt=now,tsLost:x=>x.lost=true,tsRevive:x=>x.lost=false,tsCfCopy:x=>x.cfSentAt=now,tsCfSent:x=>x.cfSentAt=now,tsCfDone:x=>x.cfDoneAt=now,tsRevCopy:x=>x.revAskAt=now,tsRevAsked:x=>x.revAskAt=now,tsRevLinkCopy:x=>x.revLinkAt=now,tsRevSkip:x=>x.revSkip=true,tsPhotoSent:x=>x.photoSentAt=now,tsPhotoReq:x=>x.c.photoReq='要',tsPaid:x=>{const d=new Date();x.paid=true;if(!x.ttDone)x.ttDone=false;x.paidTs=now;x.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`},tsForm:x=>x.formAt=now,tsTT:x=>{x.ttDone=true;x.ttAt=now},tsContract:x=>x.contractDone=true,tsDrv:x=>x.drvDone=true,tsMemo:x=>x.memoDone=true}[id];if(!f)return;
   sel.forEach(x=>{f(x);x.updated=now;DB.orders[x.id]=x});todoSel.clear();store('nwcw_orders',DB);pushSync();renderOrderSel();renderAll();if(!/Copy$/.test(id))toast(`已更新 ${sel.length} 張訂單`)}
 document.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.tsel){t.checked?todoSel.add(t.dataset.tsel):todoSel.delete(t.dataset.tsel);renderTodo()}else if(t.id==='todoLate')renderTodo()});
 document.addEventListener('input',e=>{if(e.target.id==='todoQ')renderTodo()});
@@ -1756,6 +1762,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.setlang){const [k,v]=t.dataset.setlang.split(':');o.lang[k]=v;save();renderLangs();renderAll();return}
   if(t.dataset.who){o.memoWho=t.dataset.who;save();renderMemo();return}
   if(t.dataset.trm){e.preventDefault();showRemind(DB.orders[t.dataset.trm]);return}
+  if((t.dataset.rmfollow!==undefined||t.dataset.rmreply)&&rmX){const x=DB.orders[rmX.id]||rmX,now=Date.now();if(t.dataset.rmfollow!==undefined){const a=document.querySelector(`[data-rmt="${t.dataset.rmfollow}"]`);if(a)clip(a.value);x.followAt=now;x.followN=(+x.followN||0)+1;x.fv2=true;toast('已複製，並標記第 '+x.followN+' 次追蹤')}else{x.replyAt=now;x.followN=0;x.fv2=true;toast('已記錄客人回覆，追蹤重新計時')}
+    x.updated=now;DB.orders[x.id]=x;store('nwcw_orders',DB);pushSync();const m=$('rmModal');if(m)m.hidden=true;renderOrderSel();renderAll();try{renderTodo()}catch(e){}return}
   if(t.dataset.rmcopy!==undefined){const a=document.querySelector(`[data-rmt="${t.dataset.rmcopy}"]`);if(a)clip(a.value);return}
   if(t.dataset.rmclose){$('rmModal').hidden=true;return}
   if(t.dataset.ibf){ibF=t.dataset.ibf;ibSel.clear();renderInbox();return}
