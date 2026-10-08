@@ -418,6 +418,7 @@ nav.tabs button{scroll-snap-align:start}
       <div class="card">
         <h3>找司機訊息 <small>貼司機群組；不同車款分開找</small></h3>
         <div class="row" style="gap:12px;margin-bottom:8px;flex-wrap:wrap"><div class="seg" id="findM"></div><label class="row" style="gap:6px;font-size:0.867rem;color:var(--muted)"><input type="checkbox" id="findMain" style="width:auto"> 主禮車（備註車頭彩／門把彩／對講機）</label></div>
+        <div class="row" style="gap:14px;margin-bottom:8px;flex-wrap:wrap;font-size:0.867rem"><span class="hint" style="margin:0">條件：</span><label class="row" style="gap:6px"><input type="checkbox" data-freq="noMulti" style="width:auto"> 勿多元</label><label class="row" style="gap:6px"><input type="checkbox" data-freq="oem" style="width:auto"> 原廠車漆</label><label class="row" style="gap:6px"><input type="checkbox" data-freq="multiOk" style="width:auto"> 多元可</label></div>
         <div class="row" style="justify-content:space-between;margin-bottom:8px"><span></span><button class="btn sm pri" data-copy="outFind">複製</button></div>
         <pre class="out" id="outFind"></pre>
       </div>
@@ -1121,7 +1122,11 @@ function memoHTML(m,maps){const t=m.t;
 /* ---------- 找司機 ---------- */
 function renderFind(){const ms=[...new Set(o.fleet.map(f=>f.m))];if(o.findM&&!ms.includes(o.findM))o.findM='';
   $('findM').innerHTML=[['','全部'],...ms.map(m=>[m,MNAME[m]])].map(([v,t])=>`<button type="button" data-findm="${v}" aria-pressed="${(o.findM||'')===v}">${esc(t)}</button>`).join('');
-  $('findMain').checked=!!o.findMain;$('outFind').textContent=findText(o)}
+  $('findMain').checked=!!o.findMain;document.querySelectorAll('[data-freq]').forEach(c=>{c.checked=!!(o.findReq||{})[c.dataset.freq]});$('outFind').textContent=findText(o)}
+/* 找司機條件：勿多元／多元可 二選一，原廠車漆 */
+const FREQ_L={noMulti:'勿多元',oem:'原廠車漆',multiOk:'多元可'};
+function findReqText(x){const r=x.findReq||{};return ['noMulti','multiOk','oem'].filter(k=>r[k]).map(k=>FREQ_L[k]).join('、')}
+document.addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.freq;if(!k)return;o.findReq=Object.assign({},o.findReq||{});o.findReq[k]=e.target.checked;if(e.target.checked&&k==='noMulti')o.findReq.multiOk=false;if(e.target.checked&&k==='multiOk')o.findReq.noMulti=false;save();renderFind();try{renderBatchFind()}catch(_){}});
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-findm]');if(!b)return;o.findM=b.dataset.findm;o.findMain=!!o.findM&&o.fleet.some(f=>f.m===o.findM&&f.role==='主禮車');save();renderFind()});
 document.addEventListener('change',e=>{if(e.target.id==='findMain'){o.findMain=e.target.checked;save();renderFind()}});
 /* 找司機代碼：每張單一組 4 碼亂碼（由單號雜湊而來，看不出日期地區），司機回代碼後可直接搜尋開單 */
@@ -1144,7 +1149,7 @@ function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr)
   /* 找司機訊息只放司機需要知道的：方案備註（同業單才帶同業的備註）；內部備註（婚顧、回金、報價、訂金…）不給司機看 */
   const note=(x.partner?(x.note||''):(x.flagNote||'')).trim(),noteShow=note&&!/^指定.{0,4}色$/.test(note);
   return [`代碼：${findCode(x)}`,`${fmtMDW(x.date,'zh')} ${ap(c.start)||'--:--'}-${ap(c.end)||'--:--'}`,`集合時間：${ap(c.gather||addMin(c.start,-20))||'待定'}`,'地點：',...pts.map(p=>{const rd=roadOf(x.c[p.f]);return `${p.k}. ${areaOf(p.f)||({meet:x.cityA,wed:x.cityB})[p.f]||'（地區待確認）'}${rd?' '+rd:''}`}),
-   `禮車流程：${x.path||'待定'}`,`需求：${Object.keys(ng).map(k=>`${k} ${n2(ng[k])}台`).join('、')||'—'}`,`酬勞：${payL}`,
+   `禮車流程：${x.path||'待定'}`,`需求：${Object.keys(ng).map(k=>`${k} ${n2(ng[k])}台`).join('、')||'—'}`,findReqText(x)?`條件：${findReqText(x)}`:'',`酬勞：${payL}`,
    cane==='是'?'甘蔗：需固定':'',deco&&!/^(否|無|不)/.test(deco)?`指定車頭彩：${deco}`:'',noteShow?`備註：${note}`:'',x.findMain?'主禮車請預備：車頭彩／門把彩／對講機':'','','請問能支援嗎？'].filter((l,i,a)=>l!==''||i===a.length-2).join('\n')}
 
 /* ---------- contract ---------- */
