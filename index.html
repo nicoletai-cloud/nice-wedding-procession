@@ -336,9 +336,10 @@ nav.tabs button{scroll-snap-align:start}
         <div class="card">
           <h3>報價訊息 <small>貼 Line／FB</small></h3>
           <div class="row" style="justify-content:flex-end;margin-bottom:8px">
-            <button class="btn sm pri" data-copy="outQuote">複製</button>
+            <button class="btn sm" id="btnQuoteBoth" type="button" style="margin-right:6px">報價＋補充一起複製</button><button class="btn sm pri" data-copy="outQuote">複製</button>
           </div>
           <pre class="out" id="outQuote"></pre>
+          <div id="quoteAddBox" style="margin-top:12px;border-radius:12px;transition:box-shadow .3s"><div class="row" style="justify-content:space-between;margin-bottom:6px"><span class="hint" style="margin:0">貼完報價後接著傳這段</span><button class="btn sm pri" data-copy="outQuoteAdd">複製補充</button></div><pre class="out" id="outQuoteAdd"></pre></div>
           <div id="quoteVers" style="margin-top:10px"></div>
         </div>
         <div class="card">
@@ -1553,7 +1554,7 @@ function renderRefs(){renderSettle();const mEl=$('refMonth');if(!mEl.value){cons
 function renderOrderSel(){const list=Object.values(DB.orders).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.updated-a.updated);
   $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(orderNo(x))}${x.c.groom||x.c.bride||vLabel(x)?'・'+esc(coupleName(x)):''}${x.sample?'（範例）':x.partner?'・【同業 '+esc(x.partner.co||'')+'】':'・'+STAGE_LABEL[stageOf(x)]}</option>`).join('');renderTodoBadge();if(!$('todoModal').hidden)renderTodo()}
 function renderAll(){try{renderQx()}catch(e){}renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派車頭':''].filter(Boolean),tr=[k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就派司機':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月派司機':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月派司機':'白色特斯拉：用車前一週派司機'):''].filter(Boolean);$('headHint').textContent=(rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):k.tesla&&!k.lux?'特斯拉由你擔任車頭，不用指派車頭。':'本單沒有提前指派車頭的需求。')+(tr.length?'　'+tr.join('；'):'')+(String(o.carHead||'').trim()?'　✅ 已找車頭：司機由車頭安排，用車前 3 天再確認司機資料即可。':'')}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=CONFIRM_TPL;renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
-  $('outQuote').textContent=quoteText(o,'zh');$('outOrder').textContent=orderText(o,'zh');
+  $('outQuote').textContent=quoteText(o,'zh');if($('outQuoteAdd'))$('outQuoteAdd').textContent=QUOTE_ADD;$('outOrder').textContent=orderText(o,'zh');
   renderFind();$('contractPaper').innerHTML=contractHTML(o);renderMemo();
   ['meet','wed','o1','o2'].forEach(k=>{$('c_'+k+'S').placeholder=shortArea(o.c[k])||'自動'});
   $('sampleBar').hidden=!o.sample;renderOrderSel()}
@@ -1618,6 +1619,7 @@ function renderNeed(){if(!$('needMiss'))return;const miss=needMiss();
 function scLoad(){const k=$('scKey').value,s=SCRIPTS.find(x=>x[0]===k);const t=scFill(s?s[2]:'');$('scText').value=t;scWarn()}
 function scWarn(){const m=$('scText').value.match(/【.+?】/g);$('scWarn').textContent=m?'⚠️ 還有沒填的：'+[...new Set(m)].join('、')+'（不知道的請寫「待確認」）':''}
 function logSent(k){o.sent=(o.sent||[]).concat({k,at:Date.now()});save();renderNeed()}
+const QUOTE_ADD="也補充一下這份報價包含的服務，方便您跟家人討論、比較時參考🤍\n婚禮當天需要顧及的細節很多，我們會提前確認費用、車輛與行程，讓您更安心：\n・費用清楚列明：里程、超時費及司機禮都已註明在報價中，相關計費方式事先說明，讓您掌握預算。\n・指定車色寫入合約：確認的車色會記錄在合約中，當天依約安排，不臨時更換。\n・行程提前核對：婚禮前一週會與您確認地址和時間，提供司機資料及行程表；當天由負責人帶隊，協調車隊與流程。\n・司機熟悉婚禮流程：出發前須詳讀我們的婚禮流程教案，留意迎娶、送客的時間點與相關禮俗，配合當天安排。\n希望從預訂到婚禮當天，都讓您感受到有人替您留意細節的安心☺️\n您可以先跟家人討論，有任何想比較或確認的細節，隨時問我就好。確認車款與用車安排後，跟我說一聲，我會為您開立訂單，協助完成預訂、保留禮車🤍";
 function snapQuote(){const t=$('outQuote').textContent,Q=o.quotes||(o.quotes=[]);if(!Q.length||Q[Q.length-1].text!==t){Q.push({at:Date.now(),text:t,total:calc(o).total});if(Q.length>20)Q.shift();save()}renderNeed()}
 document.addEventListener('change',e=>{if(e.target.id==='scKey')scLoad()});
 document.addEventListener('input',e=>{if(e.target.id==='scText')scWarn()});
@@ -1779,7 +1781,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.tf){todoF=t.dataset.tf;todoSel.clear();renderTodo();return}
   if(t.dataset.tb){todoBatch(t.dataset.tb);return}
   if(t.dataset.topen){e.preventDefault();const x=DB.orders[t.dataset.topen];if(x){const k=(tasksOf(x)[0]||{}).k;o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();$('todoModal').hidden=true;if(k==='cfsend'||k==='cfwait'||k==='photo')$('coupleModal').hidden=false;else if(ST_TAB[k])showTab(ST_TAB[k])}return}
-  if(t.dataset.copy){copy($(t.dataset.copy).textContent,$(t.dataset.copy));if(t.dataset.copy==='outQuote')snapQuote();if(t.dataset.copy==='outOrder'&&!o.orderedAt){o.orderedAt=Date.now();save();renderOrderSel()}if(t.dataset.copy==='outConfirm'&&!o.cfSentAt){o.cfSentAt=Date.now();save();renderOrderSel()}return}
+  if(t.dataset.copy){copy($(t.dataset.copy).textContent,$(t.dataset.copy));if(t.dataset.copy==='outQuote'){snapQuote();const qb=$('quoteAddBox');if(qb){qb.scrollIntoView({behavior:'smooth',block:'center'});qb.style.boxShadow='0 0 0 3px var(--accent,#a67c45)';setTimeout(()=>qb.style.boxShadow='',2500)}setTimeout(()=>toast('已複製報價，貼上後再按「複製補充」'),300)}if(t.dataset.copy==='outOrder'&&!o.orderedAt){o.orderedAt=Date.now();save();renderOrderSel()}if(t.dataset.copy==='outConfirm'&&!o.cfSentAt){o.cfSentAt=Date.now();save();renderOrderSel()}return}
   if(t.dataset.copytext){const v=t.dataset.copytext;if(navigator.clipboard)navigator.clipboard.writeText(v).then(()=>toast('已複製'),()=>toast('複製失敗，請點開啟後從網址列複製'));return}
   if(t.dataset.copyv){const el=$(t.dataset.copyv);if(navigator.clipboard)navigator.clipboard.writeText(el.value).then(()=>toast('已複製'),()=>{el.select();toast('已選取文字，請按複製')});else{el.select()}return}
   if(t.dataset.fdel){o.flow.splice(+t.dataset.fdel,1);save();renderFlow();renderAll();return}
@@ -1819,6 +1821,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnDrive':saveToDrive();break;
    case 'btnMemoDocs':makeMemoDocs();break;
    case 'btnKm':calcKm();break;
+   case 'btnQuoteBoth':copy($('outQuote').textContent+'\n\n'+QUOTE_ADD,$('outQuote'));snapQuote();break;
    case 'btnAddPt':o._qx=true;renderQx();setTimeout(()=>$('q_o2L').focus(),0);break;
    case 'btnDelPt':{const c=o.c;['o2','o2L','o2Map','o2S'].forEach(k=>c[k]='');o._qx=false;if(/D/.test(normPath(o.path))){o.path=normPath(o.path).split(' - ').filter(k=>k!=='D').filter((k,i,a)=>k!==a[i-1]).join(' - ');flowFromPath(o)}save();fillInputs();renderFlow();renderAll();break}
    case 'btnPaid':{const d=new Date();o.paid=true;if(!o.ttDone)o.ttDone=false;o.paidTs=Date.now();o.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`;o.sample=false;save();renderAll();toast('已標記收到訂金，記得填入 TimeTree');break}
