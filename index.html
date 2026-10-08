@@ -336,7 +336,7 @@ nav.tabs button{scroll-snap-align:start}
         <div class="card">
           <h3>報價訊息 <small>貼 Line／FB</small></h3>
           <div class="row" style="justify-content:flex-end;margin-bottom:8px">
-            <button class="btn sm" id="btnQuoteBoth" type="button" style="margin-right:6px">報價＋補充一起複製</button><button class="btn sm pri" data-copy="outQuote">複製</button>
+            <button class="btn sm pri" data-copy="outQuote">複製</button>
           </div>
           <pre class="out" id="outQuote"></pre>
           <div id="quoteAddBox" style="margin-top:12px;border-radius:12px;transition:box-shadow .3s"><div class="row" style="justify-content:space-between;margin-bottom:6px"><span class="hint" style="margin:0">貼完報價後接著傳這段</span><button class="btn sm pri" data-copy="outQuoteAdd">複製補充</button></div><pre class="out" id="outQuoteAdd"></pre></div>
@@ -1821,7 +1821,6 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnDrive':saveToDrive();break;
    case 'btnMemoDocs':makeMemoDocs();break;
    case 'btnKm':calcKm();break;
-   case 'btnQuoteBoth':copy($('outQuote').textContent+'\n\n'+QUOTE_ADD,$('outQuote'));snapQuote();break;
    case 'btnAddPt':o._qx=true;renderQx();setTimeout(()=>$('q_o2L').focus(),0);break;
    case 'btnDelPt':{const c=o.c;['o2','o2L','o2Map','o2S'].forEach(k=>c[k]='');o._qx=false;if(/D/.test(normPath(o.path))){o.path=normPath(o.path).split(' - ').filter(k=>k!=='D').filter((k,i,a)=>k!==a[i-1]).join(' - ');flowFromPath(o)}save();fillInputs();renderFlow();renderAll();break}
    case 'btnPaid':{const d=new Date();o.paid=true;if(!o.ttDone)o.ttDone=false;o.paidTs=Date.now();o.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`;o.sample=false;save();renderAll();toast('已標記收到訂金，記得填入 TimeTree');break}
