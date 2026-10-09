@@ -12,7 +12,7 @@
 <style>
 /* Layout: brand bar + order switcher, sticky step tabs, two-column (inputs | outputs) workbench that stacks on phones */
 :root{
-  --bg:#FCEEF1; --surface:#FFFFFF; --surface-2:#F8E3E8; --fg:#3A2E24; --muted:#75665A; --line:#E8DBCB;
+  --bg:#F9DFE5; --surface:#FFFFFF; --surface-2:#F4D0D9; --fg:#3A2E24; --muted:#75665A; --line:#E8DBCB;
   --accent:#A9793B; --accent-ink:#FFFFFF; --accent-soft:#F3E6D6; --ok:#4F7A4A; --warn:#B5652B;
   --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
   --f-label:"Montserrat","Noto Sans TC","PingFang TC",sans-serif;
@@ -192,6 +192,13 @@ nav.tabs button{scroll-snap-align:start}
   #coupleModal>div{padding:12px!important}
 }
 @media print{.paper{zoom:1}}
+.kw-search{position:relative;flex:1 1 240px;min-width:200px}.kw-search input{width:100%}
+.kw-results{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:70;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:420px;overflow:auto}
+.kw-results button{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:10px 12px;font:inherit;color:var(--fg);cursor:pointer}
+.kw-results button small{display:block;color:var(--muted);font-size:.8rem}
+.kw-results button b{color:var(--accent);margin-right:6px}
+.kw-results button:hover,.kw-results button.on{background:var(--surface-2)}
+.kw-results .empty{padding:10px 12px;color:var(--muted);font-size:.9rem}
 </style>
 
 </head>
@@ -205,6 +212,7 @@ nav.tabs button{scroll-snap-align:start}
     <div class="orderbar">
       <select id="orderSel" aria-label="切換訂單"></select>
       <input id="codeQ" placeholder="司機回的代碼" maxlength="12" autocomplete="off" style="width:120px" title="輸入找司機訊息裡的 4 碼代碼，直接開啟那一場">
+      <div class="kw-search"><input id="kwQ" placeholder="🔍 搜尋單號、客人、新人、地址、婚顧" autocomplete="off"><div class="kw-results" id="kwResults" hidden></div></div>
       <button class="btn sm" id="btnSync" title="手機／電腦同步">同步</button>
       <button class="btn" id="btnInbox">訊息</button>
       <button class="btn" id="btnTodo">待辦</button>
@@ -1840,6 +1848,22 @@ function copy(text,el){const done=()=>toast('已複製');
 let tt;function toast(s){const t=$('toast');t.textContent=s;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1600)}
 function showTab(name){document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===name));
   document.querySelectorAll('section.tab').forEach(s=>s.hidden=s.id!=='tab-'+name);try{sessionStorage.setItem('nwcw_tab',name)}catch(_){}}
+
+/* ---------- 關鍵字搜尋：單號、客人名稱、新人、電話、地址、婚顧／廠商、備註…（空白分開可多個關鍵字） ---------- */
+(function(){const inp=$('kwQ'),box=$('kwResults');if(!inp||!box)return;let shown=[],act=-1;
+  const hay=x=>JSON.stringify(x).toLowerCase()+' '+String(orderNo(x)).toLowerCase();
+  function render(){const terms=inp.value.trim().toLowerCase().split(/\s+/).filter(Boolean);if(!terms.length){box.hidden=true;return}
+    shown=Object.values(DB.orders).filter(x=>!x.sample).filter(x=>{const h=hay(x),hd=h.replace(/[\s-]/g,'');return terms.every(t=>{const td=t.replace(/[\s-]/g,'');return h.includes(t)||(/^\d{3,}$/.test(td)&&hd.includes(td))})})
+      .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,20);
+    box.innerHTML=shown.length?shown.map((x,i)=>{const c=x.c||{},v=(x.src&&x.src.vendor)||'',st=STAGE_LABEL[stageOf(x)]||'';
+      return `<button type="button" data-i="${i}"${i===act?' class="on"':''}><b>${esc(orderNo(x))}</b>${esc(c.chatName||[c.groom,c.bride].filter(Boolean).join('＆')||'未命名')}<small>${esc([x.date,st,v?('婚顧／廠商 '+v):'',c.groom&&c.bride?c.groom+'＆'+c.bride:''].filter(Boolean).join('　'))}</small></button>`}).join(''):'<div class="empty">找不到相關訂單</div>';
+    box.hidden=false}
+  function open(x){box.hidden=true;inp.blur();o=x;save();loadOrder();try{window.scrollTo(0,0)}catch(e){}}
+  inp.addEventListener('input',()=>{act=-1;render()});inp.addEventListener('focus',()=>{if(inp.value.trim())render()});
+  inp.addEventListener('blur',()=>setTimeout(()=>{box.hidden=true},200));
+  inp.addEventListener('keydown',e=>{if(box.hidden||!shown.length)return;if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();act=(act+(e.key==='ArrowDown'?1:-1)+shown.length)%shown.length;render()}else if(e.key==='Enter'){e.preventDefault();open(shown[act>=0?act:0])}else if(e.key==='Escape')box.hidden=true});
+  box.addEventListener('mousedown',e=>{const b=e.target.closest('button[data-i]');if(!b)return;e.preventDefault();open(shown[+b.dataset.i])});
+})();
 function loadOrder(){migrate(o);syncFleet();fillInputs();renderLangs();renderCars();renderFleet();renderFlow();renderAll()}
 let pendingOpen=null;
 function openFromHash(){
