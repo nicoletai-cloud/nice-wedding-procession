@@ -397,7 +397,11 @@ nav.tabs button{scroll-snap-align:start}
       <span class="hint" style="margin:0" id="contractHint">資料來自「報價」與「新人資料」，改那邊這裡就會更新。</span>
       <div class="row"><span class="hint" id="driveLink" style="margin:0"></span><button class="btn" id="btnDrive" hidden>存到 Google Drive</button><button class="btn pri" id="btnPrint" hidden>列印／存成 PDF</button></div>
     </div>
-    <div class="paperwrap"><div class="paper" id="contractPaper"></div></div>
+    <div class="card" id="signedView" hidden style="max-width:900px;margin:0 auto 16px">
+      <div class="row" style="justify-content:space-between;gap:8px;margin-bottom:10px"><b id="signedInfo" style="color:#2f7d4f"></b><span class="row" style="gap:6px"><a class="btn sm" id="signedOpen" target="_blank" rel="noopener">開新分頁</a><button class="btn sm" id="btnShowDraft" type="button">看原始合約（未簽名版）</button></span></div>
+      <iframe id="signedFrame" title="已簽署合約" style="width:100%;height:80vh;border:1px solid var(--line);border-radius:10px;background:#fff" loading="lazy"></iframe>
+    </div>
+    <div class="paperwrap" id="draftWrap"><div class="paper" id="contractPaper"></div></div>
     <div class="card" id="ctSendCard" style="max-width:900px;margin:16px auto 0">
       <h3>傳合約給客人 <small>附注意事項；有指定車色會自動拿掉第 7 點</small></h3>
       <div id="ctStep1"><p class="hint">請先檢查上面的合約：日期、時間、車款、金額、地址都正確後，再按下一步。</p><button class="btn pri" id="btnCtOk">合約內容確認無誤，下一步</button></div>
@@ -1529,6 +1533,14 @@ function renderPaidAck(){renderTTCheck();renderCallCheck();const el=$('outPaidAc
     h.innerHTML='<b style="color:#A0453A">⚠️ 客人還沒填訂車表單</b>：上面這則已附表單連結，複製傳給客人。客人填完表單後，再到「3 合約」產生合約。'}
   else{el.textContent='已確認收到訂金，後續提供合約給您';h.textContent='傳合約給客人：到「3 合約」分頁預覽，確認內容後就會出現可複製的訊息。'}}
 const ctOk={};
+/* 已完成線上簽署：合約分頁直接顯示簽好的 PDF；要看未簽名的原始合約再按按鈕 */
+let showDraft={};
+function renderSigned(){const v=$('signedView');if(!v)return;const pdf=String(o.signedPdf||'');const on=!!(o.signedAt&&/^https:\/\/drive\.google\.com\//.test(pdf));
+  v.hidden=!on;const draft=!on||!!showDraft[o.id];$('draftWrap').hidden=!draft;if(window.__ctBtns!==undefined){$('btnDrive').hidden=$('btnPrint').hidden=!(window.__ctBtns&&draft)}
+  if(!on){if(window.__ctHint)$('contractHint').textContent=window.__ctHint;return}const pv=pdf.replace(/\/view.*$/,'/preview');if($('signedFrame').getAttribute('src')!==pv)$('signedFrame').setAttribute('src',pv);$('signedOpen').href=pdf;
+  $('signedInfo').textContent=`✅ 客人已於 ${new Date(o.signedAt).toLocaleString('zh-TW',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})} 完成線上簽署`;
+  $('btnShowDraft').textContent=draft?'收起原始合約':'看原始合約（未簽名版）';$('contractHint').textContent=draft?'下面是系統產生的原始合約（未簽名），資料來自「報價」與「新人資料」。':'這張已完成線上簽署，下面是簽好的合約。'}
+document.addEventListener('click',e=>{if(e.target.id!=='btnShowDraft')return;showDraft[o.id]=!showDraft[o.id];renderAll()});
 function renderCtSend(){if(!$('ctStep1'))return;const ok=!!(ctOk[o.id]||o.ctSentAt),url=(signUrlOf(o)||o.contractUrl||'').trim();$('ctStep1').hidden=ok;$('ctStep2').hidden=!ok;
   $('ctLinkHint').textContent=!url?'還沒有合約連結：先按上方「存到 Google Drive」產生 PDF，或把連結貼進來。':o.ctSentAt?'已於 '+new Date(o.ctSentAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+' 複製傳送過。':'';$('btnCtCopy').disabled=!url;
   const sg=$('ctSignHint');if(sg)sg.innerHTML=o.signedAt?`✅ 客人已於 ${esc(new Date(o.signedAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}))} 完成線上簽署　<a href="${esc(o.signedPdf||'')}" target="_blank" rel="noopener">開啟已簽署合約</a>`:signUrlOf(o)?`線上簽署連結：<a href="${esc(signUrlOf(o))}" target="_blank" rel="noopener">預覽客人看到的頁面</a>（客人尚未簽署）`:'按上方「存到 Google Drive」後會自動產生線上簽署連結。'}
@@ -1611,7 +1623,7 @@ function renderOrderSel(){const list=Object.values(DB.orders).sort((a,b)=>(b.dat
   $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(orderNo(x))}${x.c.groom||x.c.bride||vLabel(x)?'・'+esc(coupleName(x)):''}${x.sample?'（範例）':x.partner?'・【同業 '+esc(x.partner.co||'')+'】':'・'+STAGE_LABEL[stageOf(x)]}</option>`).join('');renderTodoBadge();if(!$('todoModal').hidden)renderTodo()}
 function renderAll(){try{renderQx()}catch(e){}renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派車頭':''].filter(Boolean),tr=[k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就派司機':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月派司機':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月派司機':'白色特斯拉：用車前一週派司機'):''].filter(Boolean);$('headHint').textContent=(rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):k.tesla&&!k.lux?'特斯拉由你擔任車頭，不用指派車頭。':'本單沒有提前指派車頭的需求。')+(tr.length?'　'+tr.join('；'):'')+(String(o.carHead||'').trim()?'　✅ 已找車頭：司機由車頭安排，用車前 3 天再確認司機資料即可。':'')}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=CONFIRM_TPL;renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
   $('outQuote').textContent=quoteText(o,'zh');if($('outQuoteAdd'))$('outQuoteAdd').textContent=QUOTE_ADD;$('outOrder').textContent=orderText(o,'zh');
-  renderFind();$('contractPaper').innerHTML=contractHTML(o);renderMemo();
+  renderFind();$('contractPaper').innerHTML=contractHTML(o);renderSigned();renderMemo();
   ['meet','wed','o1','o2'].forEach(k=>{$('c_'+k+'S').placeholder=shortArea(o.c[k])||'自動'});
   $('sampleBar').hidden=!o.sample;renderOrderSel()}
 function comboText(cars){return MODELS.filter(m=>num(cars[m])>0).map(m=>MABBR[m]+(num(cars[m])>1?'*'+num(cars[m]):'')).join('+')}
@@ -1945,7 +1957,7 @@ function openFromHash(){
 
 /* print only works when the page is opened directly (e.g. GitHub Pages) */
 let top=false;try{top=window.self===window.top}catch(_){top=false}
-if(top){$('btnPrint').hidden=false;$('btnDrive').hidden=false}else{$('contractHint').textContent='資料來自「報價」與「新人資料」。列印／存 PDF 請在 GitHub Pages 版本操作。'}
+if(top){$('btnPrint').hidden=false;$('btnDrive').hidden=false;window.__ctBtns=true}else{$('contractHint').textContent='資料來自「報價」與「新人資料」。列印／存 PDF 請在 GitHub Pages 版本操作。'}window.__ctHint=$('contractHint').textContent;try{renderSigned()}catch(_){}
 
 /* ===== 車頭彩檔期 ===== */
 const DECO_DEF=[['A','40cm 紅玫瑰心環'],['B','40cm 囍字紅金花環'],['C','錦瑟華年熱情款'],['D','艾莉絲藍粉色花彩'],['E','森系紅色仿真車彩'],['F','卡布奇諾浪漫款'],['G','紫戀花語詩韻款'],['H','繁花似錦溫馨款'],['I','花影流光夢幻款'],['J','雲裳花語優雅款'],['K','小清新浪漫女孩車花'],['L','花開如夢繽紛款'],['M','花辰月夕喜慶款'],['N','丹華映日禮讚款'],['O','幽蘭淡雅綺麗款']].map(([code,name])=>({code,name}));
