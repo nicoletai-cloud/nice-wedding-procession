@@ -212,7 +212,7 @@ nav.tabs button{scroll-snap-align:start}
     <div class="orderbar">
       <select id="orderSel" aria-label="切換訂單"></select>
       <button type="button" class="btn sm" id="grpCode" title="這場的代碼：LINE 群組名稱、找司機都用這組；點一下複製" hidden></button>
-      <input id="codeQ" placeholder="司機回的代碼" maxlength="12" autocomplete="off" style="width:120px" title="輸入找司機訊息裡的代碼（4～5 碼），直接開啟那一場">
+      <input id="codeQ" placeholder="代碼／報價編號" maxlength="14" autocomplete="off" style="width:120px" title="輸入找司機訊息裡的代碼（4～5 碼），或報價編號 Q-代碼-版本（按 Enter），直接開啟那一場">
       <div class="kw-search"><input id="kwQ" placeholder="🔍 搜尋單號、客人、新人、地址、婚顧" autocomplete="off"><div class="kw-results" id="kwResults" hidden></div></div>
       <button class="btn sm" id="btnSync" title="手機／電腦同步">同步</button>
       <button class="btn" id="btnInbox">訊息</button>
@@ -1023,7 +1023,13 @@ function routeKeys(x){const p=normPath(x.path).split(' - ').filter(Boolean);retu
 function routeLine(x,lang){const ks=routeKeys(x);if(ks.length<2)return '';const P=ptNames(x);
   const N=lang==='en'?{A:"Groom's home",B:"Bride's home",C:P.C==='餐廳'?'Restaurant':P.C,D:P.D}:lang==='ja'?{A:'新郎宅',B:'新婦宅',C:P.C==='餐廳'?'レストラン':P.C,D:P.D}:{A:'男方家',B:'女方家',C:P.C,D:P.D};
   return ks.map(k=>N[k]||k).join(' → ')}
-function quoteText(x,lang){const r=calc(x),f=feeLines(x,lang);const rt=routeLine(x,lang),tk=num(x.tripKm),zb=num(S.zBase||35),zr=num(S.zRate||500),zu=num(S.zRound)||0,oneWay=+x.hours===0;
+function quoteText(x,lang){const b=quoteBody(x,lang);const ref=qRef(x,b);return ref?b+'\n\n'+(lang==='en'?'Quote ref: ':lang==='ja'?'見積番号：':'報價編號：')+ref:b}
+/* 報價編號 Q-代碼-版本：每複製一個新版本自動 +1；跟正式訂單代碼（不含 Q）區分 */
+const QREF_RE=/\n*(?:報價編號：|Quote ref: |見積番号：)Q-[A-Z0-9]{4,5}-\d+$/;
+function qVer(q,i){if(q.v)return q.v;const m=String(q.text||'').match(/Q-[A-Z0-9]{4,5}-(\d+)$/);return m?+m[1]:i+1}
+function qRef(x,body){if(!x||x.sample)return'';const c=findCode(x);if(!c)return'';const Q=x.quotes||[],last=Q[Q.length-1];
+  const v=last&&String(last.text||'').replace(QREF_RE,'')===body?qVer(last,Q.length-1):Q.reduce((a,q,i)=>Math.max(a,qVer(q,i)),0)+1;return `Q-${c}-${v}`}
+function quoteBody(x,lang){const r=calc(x),f=feeLines(x,lang);const rt=routeLine(x,lang),tk=num(x.tripKm),zb=num(S.zBase||35),zr=num(S.zRate||500),zu=num(S.zRound)||0,oneWay=+x.hours===0;
  const kmL=lang==='en'?[rt?`Route: ${rt}`:'',tk?`Estimated distance: approx. ${tk} km`:'']:lang==='ja'?[rt?`ルート：${rt}`:'',tk?`予想走行距離：約 ${tk}km`:'']:[rt?`預計流程：${rt}`:'',tk?`預估里程：約 ${tk} 公里`:''];
  const kmN=oneWay?'':tk&&tk<=zb?(lang==='en'?`* Estimated ${tk} km, within ${zb} km — no mileage fee.`:lang==='ja'?`＊予想走行距離 約${tk}km（${zb}km以内）のため、距離料金はかかりません。`:`＊預估約 ${tk} 公里，在 ${zb} 公里內，不另收里程費`):lang==='en'?`* Includes up to ${zb} km; beyond that, ${money(zr,lang)} per car for every additional ${zb} km (pro-rated${zu?`, rounded up to ${money(zu,lang)}`:''}).`:lang==='ja'?`＊${zb}km以内の料金です。超過分は${zb}kmごとに1台 ${money(zr,lang)}（按分${zu?`、${money(zu,lang)}単位で切り上げ`:''}）。`:`＊用車含 ${zb} 公里內，超過的里程每 ${zb} 公里加收 ${money(zr)}／台（按比例計算${zu?`，以 ${money(zu)} 為單位進位`:''}）`;const d=x.date?fmtDate(x.date)+(()=>{const p=dparts(x.date);return lang==='en'?` (${WD.en[p.w]})`:`（${WD[lang][p.w]}）`})():(lang==='en'?'TBD':lang==='ja'?'未定':'未定');
  if(lang==='en')return [`[Nice Wedding Car] Quote`,`Date: ${d}`,(+x.hours===0?'Service: one-way transfer':`Hours: ${hrsLabel(x.hours)} (within ${num(x.km)} km)`),`Vehicle(s): ${carsText(x,lang)}`,...kmL,`Charges:`,...f,`Total = ${money(r.total,lang)}`,r.deposit?`Deposit: ${money(r.deposit,lang)} (balance ${money(r.balance,lang)})`:'','',
@@ -1175,9 +1181,12 @@ function fcPrefix(x){if(!x.partner)return 'N';const l=TRIP_PFX[String(x.partner.
 function findCode(x){if(!x)return'';if(x.findCode)return x.findCode;const used=new Set(Object.values(DB.orders).filter(y=>y!==x&&y.id!==x.id&&y.findCode).map(y=>y.findCode));
   const pf=fcPrefix(x),AB=pf.length>1?FC_ABC.replace(/[MPWXN]/g,''):FC_ABC;for(let i=0;i<50;i++){let h=fcHash('nwc~'+x.id+'~'+i),c=pf;for(let k=0;k<3;k++){c+=AB[h%AB.length];h=Math.floor(h/AB.length)}if(!used.has(c)){x.findCode=c;if(DB.orders[x.id]&&DB.orders[x.id]!==x)DB.orders[x.id].findCode=c;return c}}return''}
 function codeFind(q){q=normNo(q).replace(/[^A-Z0-9]/g,'');if(!q)return null;const L=Object.values(DB.orders).filter(x=>!x.sample);return L.find(x=>findCode(x)===q)||L.find(x=>normNo(orderNo(x))===q)||null}
-document.addEventListener('keydown',e=>{if(e.target.id!=='codeQ'||e.key!=='Enter')return;e.preventDefault();const x=codeFind(e.target.value);if(!x){toast('找不到這個代碼');return}
+function qCodeOpen(raw){const m=normNo(raw).replace(/[－—]/g,'-').match(/^Q-?([A-Z0-9]{4,5})(?:-(\d{1,2}))?$/);if(!m)return false;const x=Object.values(DB.orders).find(y=>!y.sample&&findCode(y)===m[1]);if(!x){toast('找不到這個報價編號');return true}
+  o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();showTab('quote');const v=m[2]?+m[2]:0;setTimeout(()=>{const d=v&&document.querySelector(`#quoteVers details[data-qv="${v}"]`);if(d){d.open=true;d.scrollIntoView({behavior:'smooth',block:'center'})}else{const q=$('quoteVers');if(q)q.scrollIntoView({behavior:'smooth',block:'center'})}},80);
+  toast(`已開啟 ${orderNo(x)}`+(v?`（報價第 ${v} 版）`:'（報價版本）')+(v&&!document.querySelector(`#quoteVers details[data-qv="${v}"]`)?'，但這個版本已刪除':''));return true}
+document.addEventListener('keydown',e=>{if(e.target.id!=='codeQ'||e.key!=='Enter')return;e.preventDefault();if(qCodeOpen(e.target.value)){e.target.value='';return}const x=codeFind(e.target.value);if(!x){toast('找不到這個代碼');return}
   o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();showTab('find');e.target.value='';toast(`已開啟 ${orderNo(x)}（代碼 ${findCode(x)}）`)});
-document.addEventListener('input',e=>{if(e.target.id!=='codeQ')return;const v=normNo(e.target.value).replace(/[^A-Z0-9]/g,'');if(v.length<4||v.length>5)return;const x=Object.values(DB.orders).find(y=>!y.sample&&findCode(y)===v);if(x){o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();showTab('find');e.target.value='';toast(`已開啟 ${orderNo(x)}（代碼 ${v}）`)}});
+document.addEventListener('input',e=>{if(e.target.id!=='codeQ')return;if(/^\s*Q/i.test(e.target.value)){if(e.inputType==='insertFromPaste'&&qCodeOpen(e.target.value))e.target.value='';return}const v=normNo(e.target.value).replace(/[^A-Z0-9]/g,'');if(v.length<4||v.length>5)return;const x=Object.values(DB.orders).find(y=>!y.sample&&findCode(y)===v);if(x){o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();showTab('find');e.target.value='';toast(`已開啟 ${orderNo(x)}（代碼 ${v}）`)}});
 function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr);const fl0=x.findM?x.fleet.filter(f=>f.m===x.findM):x.fleet;/* 只算還沒派司機的車；全部都派了才顯示全部 */const fl=fl0.some(f=>!String(f.driver||'').trim())?fl0.filter(f=>!String(f.driver||'').trim()):fl0;
   const CNN=['零','一','兩','三','四','五','六','七','八','九','十'];const n2=n=>CNN[n]||String(n);
   const ng={};fl.forEach(f=>{const k=`${(f.color||'').trim()} ${MNAME[f.m]}`.trim();ng[k]=(ng[k]||0)+1});
@@ -1661,12 +1670,12 @@ function renderNeed(){if(!$('needMiss'))return;const miss=needMiss();
   $('matList').innerHTML=MATS.map(([k,l,w])=>`<div class="row" style="justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)"><div><b style="font-size:0.933rem">${l}</b><div class="sub" style="font-size:0.8rem;color:var(--muted)">${w}</div></div>${had(k)?`<span class="chip ok">已傳 ${new Date(sent.filter(x=>x.k===k).pop().at).toLocaleDateString('zh-TW')}</span>`:`<button class="btn sm" data-matsent="${k}">標記已傳</button>`}</div>`).join('');
   const sl=sent.filter(x=>SCRIPTS.some(s=>s[0]===x.k)).slice(-6).map(x=>`${(SCRIPTS.find(s=>s[0]===x.k)||[])[1]}（${new Date(x.at).toLocaleDateString('zh-TW')}）`);
   $('sentLog').textContent=sl.length?'已傳話術：'+sl.join('、'):'';
-  const Q=o.quotes||[];$('quoteVers').innerHTML=(Q.length?`<div class="hint" style="margin:0 0 6px">報價版本（複製時自動存）：</div>`+Q.map((q,i)=>`<details style="margin-bottom:4px"><summary style="cursor:pointer;font-size:0.867rem">第 ${i+1} 版｜${new Date(q.at).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}｜NT$${num(q.total).toLocaleString('en-US')}<button class="btn sm" type="button" data-qdel="${i}" title="刪除這個版本" style="margin-left:8px;padding:0 9px;line-height:1.6">×</button></summary><pre class="out" style="margin-top:6px">${esc(q.text)}</pre></details>`).join(''):'')}
+  const Q=o.quotes||[];$('quoteVers').innerHTML=(Q.length?`<div class="hint" style="margin:0 0 6px">報價版本（複製時自動存）：</div>`+Q.map((q,i)=>`<details data-qv="${qVer(q,i)}" style="margin-bottom:4px"><summary style="cursor:pointer;font-size:0.867rem">第 ${qVer(q,i)} 版 <b>Q-${esc(findCode(o))}-${qVer(q,i)}</b>｜${new Date(q.at).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}｜NT$${num(q.total).toLocaleString('en-US')}<button class="btn sm" type="button" data-qdel="${i}" title="刪除這個版本" style="margin-left:8px;padding:0 9px;line-height:1.6">×</button></summary><pre class="out" style="margin-top:6px">${esc(q.text)}</pre></details>`).join(''):'')}
 function scLoad(){const k=$('scKey').value,s=SCRIPTS.find(x=>x[0]===k);const t=scFill(s?s[2]:'');$('scText').value=t;scWarn()}
 function scWarn(){const m=$('scText').value.match(/【.+?】/g);$('scWarn').textContent=m?'⚠️ 還有沒填的：'+[...new Set(m)].join('、')+'（不知道的請寫「待確認」）':''}
 function logSent(k){o.sent=(o.sent||[]).concat({k,at:Date.now()});save();renderNeed()}
 const QUOTE_ADD="也補充一下這份報價包含的服務，方便您跟家人討論、比較時參考🤍\n婚禮當天需要顧及的細節很多，我們會提前確認費用、車輛與行程，讓您更安心：\n・費用清楚列明：里程、超時費及司機禮都已註明在報價中，相關計費方式事先說明，讓您掌握預算。\n・指定車色寫入合約：確認的車色會記錄在合約中，當天依約安排，不臨時更換。\n・行程提前核對：婚禮前一週會與您確認地址和時間，提供司機資料及行程表；當天由負責人帶隊，協調車隊與流程。\n・司機熟悉婚禮流程：出發前須詳讀我們的婚禮流程教案，留意迎娶、送客的時間點與相關禮俗，配合當天安排。\n希望從預訂到婚禮當天，都讓您感受到有人替您留意細節的安心☺️\n您可以先跟家人討論，有任何想比較或確認的細節，隨時問我就好。確認車款與用車安排後，跟我說一聲，我會為您開立訂單，協助完成預訂、保留禮車🤍";
-function snapQuote(){const t=$('outQuote').textContent,Q=o.quotes||(o.quotes=[]);if(!Q.length||Q[Q.length-1].text!==t){Q.push({at:Date.now(),text:t,total:calc(o).total});if(Q.length>20)Q.shift();save()}renderNeed()}
+function snapQuote(){const t=$('outQuote').textContent,Q=o.quotes||(o.quotes=[]);if(!Q.length||Q[Q.length-1].text!==t){Q.push({at:Date.now(),text:t,total:calc(o).total,v:qVer({text:t},Q.length)});if(Q.length>20)Q.shift();save()}renderNeed()}
 document.addEventListener('change',e=>{if(e.target.id==='scKey')scLoad()});
 document.addEventListener('input',e=>{if(e.target.id==='scText')scWarn()});
 
