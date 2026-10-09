@@ -473,7 +473,7 @@ nav.tabs button{scroll-snap-align:start}
           <tbody id="fleetBody"></tbody>
         </table></div>
       </div>
-      <div class="card">
+      <div class="card" hidden>
         <h3>TimeTree 行程 <small>標題＝客人顯示名稱，FB／IG 會註明；內容＝報價＋合約連結</small></h3>
         <div class="fields">
           <label class="f wide">標題<div class="row" style="flex-wrap:nowrap"><input id="ttTitle" readonly style="flex:1"><button class="btn sm pri" data-copyv="ttTitle">複製</button></div></label>
@@ -687,7 +687,7 @@ nav.tabs button{scroll-snap-align:start}
 </div>
 <div id="todoModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
   <div style="max-width:980px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px">
-    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">待辦 <small>選進度篩選，勾選後可一起處理</small></h3><div class="row" style="gap:6px"><button class="btn pri" id="btnTTPrompt" title="把所有已收訂、還沒出車的訂單整理成指令，貼給 Claude 比對 TimeTree">🔍 產生 TimeTree 檢查指令</button><button class="btn" id="btnTodoClose">關閉</button></div></div>
+    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">待辦 <small>選進度篩選，勾選後可一起處理</small></h3><div class="row" style="gap:6px"><button class="btn pri" id="btnTTPrompt" hidden title="把所有已收訂、還沒出車的訂單整理成指令，貼給 Claude 比對 TimeTree">🔍 產生 TimeTree 檢查指令</button><button class="btn" id="btnTodoClose">關閉</button></div></div>
     <details id="mjBox" style="background:var(--card,#fff);border:1px solid var(--line,#e4dbce);border-radius:10px;padding:10px 12px;margin-bottom:12px"><summary style="cursor:pointer;font-weight:700">📋 給嫁給我（小洪）的確認訊息</summary>
       <div class="row" style="gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap"><label class="row" style="gap:6px">用車日 <input type="date" id="mjDate" style="width:auto"></label><button class="btn sm pri" id="btnMjCopy">複製訊息</button><span class="hint" style="margin:0">每天 15:00 也會自動傳到你的 LINE；「已確認」＝已按「已聯絡新人」</span></div>
       <pre class="out" id="mjOut" style="margin-top:8px"></pre></details>
@@ -1501,8 +1501,10 @@ function paidText(x){const tips=['禮車會提早大約20分鐘抵達集合地�
   const hi=typeof rmHi==='function'?rmHi(x):'您好';
   return [(hi==='您好'?'':hi+'🤍 ')+(signUrlOf(x)?'已經收到訂金，請點開以下連結確認合約內容，並按下方「簽名完成合約」完成線上簽署：':'已經收到訂金，合約提供您留存：'),signUrlOf(x)||(x.contractUrl||'').trim()||'（請貼上合約連結）','',...tips.map((t,i)=>`${i+1}.${t}`)].join('\n')}
 /* 後台入帳（paidAt=已入帳）等路徑不會設 ttDone；10/5 之後收訂的單一律當作還沒填 TimeTree */
-const TT_SINCE=Date.UTC(2026,9,5);function ttPending(x){return !!x.paid&&(x.ttDone===false||(x.ttDone===undefined&&+x.paidTs>=TT_SINCE))}
-function renderTTCheck(){const html=!o.paid?'':o.ttDone?`<span class="chip">✅ 已填入 TimeTree</span><button class="btn sm" id="btnTTUndo">改回未填</button>`:`<b style="color:#A0453A">⚠️ 已收訂，還沒填入 TimeTree</b><span class="hint" style="margin:0">到「5 車隊與流程」複製 TimeTree 標題與備註，填好後按 →</span><button class="btn sm pri" id="btnTTDone">已填入 TimeTree</button>`;
+/* 2026/10/9 起不再用 TimeTree（行程改看 Google 日曆，由機器人自動寫入）；要恢復把 TT_ON 改成 true */
+const TT_ON=false;
+const TT_SINCE=Date.UTC(2026,9,5);function ttPending(x){return TT_ON&&!!x.paid&&(x.ttDone===false||(x.ttDone===undefined&&+x.paidTs>=TT_SINCE))}
+function renderTTCheck(){const html=!TT_ON||!o.paid?'':o.ttDone?`<span class="chip">✅ 已填入 TimeTree</span><button class="btn sm" id="btnTTUndo">改回未填</button>`:`<b style="color:#A0453A">⚠️ 已收訂，還沒填入 TimeTree</b><span class="hint" style="margin:0">到「5 車隊與流程」複製 TimeTree 標題與備註，填好後按 →</span><button class="btn sm pri" id="btnTTDone">已填入 TimeTree</button>`;
   const a=$('ttCheck');if(a){a.innerHTML=html;a.hidden=!html}const b=$('ttCheck2');if(b)b.innerHTML=html.replace('id="btnTTUndo"','data-x="1" id="btnTTUndo2"').replace('id="btnTTDone"','id="btnTTDone2"').replace(/<span class="hint"[^<]*<\/span>/,'')}
 /* 車趟代碼＝找司機代碼（同一組，4 碼）：放在 LINE 群組名稱、找司機訊息都用這組 */
 function tripCode(x){return findCode(x)}
@@ -1684,6 +1686,7 @@ const DAY=864e5;
 const normNo=s=>String(s||'').replace(/\s/g,'').toUpperCase();
 function daysTo(x){const p=dparts(x.date);if(!p)return null;const t=new Date();t.setHours(0,0,0,0);return Math.round((new Date(p.y,p.m-1,p.d)-t)/DAY)}
 const ST={inq:'詢價追銷',unpaid:'開單未付款',tt:'收訂未填 TimeTree',noform:'付款未填表',nocontract:'填表未出合約',cfsend:'一週前核對行程',cfwait:'行前確認未回',nodrv:'未派司機',nomemo:'未給 memo',call:'主禮車未聯絡新人',ptask:'同業詢問未確認',ptinfo:'同業留車待補資料',head:'待指派車頭',rev:'用車後追評價',revlink:'正評待傳評價連結',photo:'待傳照片'};
+if(!TT_ON)delete ST.tt;
 const REV_ASK='請問司機服務還滿意嗎？\n\n如果您對我們的服務感到滿意，誠摯邀請您抽空寫幾句話留下寶貴評價，或是對司機的鼓勵。這將成為我們成長的最大動力，也能讓更多人了解我們的用心服務。';
 const REV_LINK='感謝您選擇🧡好好禮車🧡，讓我們能有機會在您最重要的這天一起留下美好回憶！ 希望可以幫我們複製上面評價後，貼在下方連結處：\n\n👉 在 Google 本地商家留下評價：https://goo.gl/maps/WsAvwhXy1eQPqk5f6\n\n👉 或者至 Facebook 粉絲專頁評論：https://www.facebook.com/niceweddingcar\n\n非常感謝您的鼓勵與支持，每一句肯定都將讓我們更加努力、持續提升服務品質。\n\n再次祝福您新婚快樂，百年好合💍✨！ 期待未來如果有機場接送或包車旅遊需求， 都能再有機會為您服務！ （＊好好新人享有 95 折優惠）';
 const PHOTO_TPL='提供司機不專業側拍給兩位下載 (連結將在一週後失效)：\n';
@@ -1882,7 +1885,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnKm':calcKm();break;
    case 'btnAddPt':o._qx=true;renderQx();setTimeout(()=>$('q_o2L').focus(),0);break;
    case 'btnDelPt':{const c=o.c;['o2','o2L','o2Map','o2S'].forEach(k=>c[k]='');o._qx=false;if(/D/.test(normPath(o.path))){o.path=normPath(o.path).split(' - ').filter(k=>k!=='D').filter((k,i,a)=>k!==a[i-1]).join(' - ');flowFromPath(o)}save();fillInputs();renderFlow();renderAll();break}
-   case 'btnPaid':{const d=new Date();o.paid=true;if(!o.ttDone)o.ttDone=false;o.paidTs=Date.now();o.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`;o.sample=false;save();renderAll();toast('已標記收到訂金，記得填入 TimeTree');break}
+   case 'btnPaid':{const d=new Date();o.paid=true;if(!o.ttDone)o.ttDone=false;o.paidTs=Date.now();o.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`;o.sample=false;save();renderAll();toast('已標記收到訂金，約 10 分鐘內會自動加進 Google 日曆');break}
    case 'btnTTPrompt':{const t=ttPromptText();clip(t);toast('已複製 TimeTree 檢查指令，貼給 Claude 即可');break}
    case 'btnTTDone':case 'btnTTDone2':o.ttDone=true;o.ttAt=Date.now();save();renderAll();toast('已標記填入 TimeTree');break;
    case 'btnTTUndo':case 'btnTTUndo2':o.ttDone=false;save();renderAll();break;
