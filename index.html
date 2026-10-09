@@ -1254,7 +1254,7 @@ function contractHTML(x){const r=calc(x),c=x.c,rin=!!x.ctRedIn&&r.red>0,rent=rin
   if(String(c.o1||'').trim())rows.push(['其他地點 1',addr(c.o1,c.o1L)]);
   if(String(c.o2||'').trim())rows.push([`其他地點 ${String(c.o1||'').trim()?2:1}`,addr(c.o2,c.o2L)]);
   rows.push(['路線說明',String(c.route||x.path||'').trim()?E(c.route||x.path):'行前一週確認']);
-  const B=['用車時間自禮車出發起算；司機於出發前 20 分鐘抵達',short?'本方案未滿 3 小時，無超時緩衝；超過用車時間即以每 30 分鐘計收超時費用':'超過 15 分鐘內不加收超時費；超過 16 分鐘起計算超時費用（未滿一小時以一小時計）','以上費用含駕駛、油資、過路費','尾款請於用車當日結清',(()=>{const u=MODELS.filter(m=>num(x.cars[m])>0),t=u.filter(m=>MBRAND[m]==='Tesla').length;return t&&t<u.length?'隨車附手把彩：特斯拉每車 2 個、其他車款每車 4 個，新娘座車另附車頭彩 1 組':`隨車附手把彩每車 ${u.length&&!t?4:2} 個，新娘座車另附車頭彩 1 組`})()];String(x.ctNote||'').split('\n').map(t=>t.trim()).filter(Boolean).forEach(t=>B.push(t));
+  const B=['用車時間自禮車出發起算；司機於出發前 20 分鐘抵達',short?'本方案未滿 3 小時，無超時緩衝；超過用車時間即以每 30 分鐘計收超時費用':'超過 15 分鐘內不加收超時費；超過 16 分鐘起計算超時費用（未滿一小時以一小時計）',num(x.cane)>0?`以上費用含駕駛、油資、過路費及甘蔗固定費 ${money(S.cane)}*${num(x.cane)}台`:'以上費用含駕駛、油資、過路費','尾款請於用車當日結清',(()=>{const u=MODELS.filter(m=>num(x.cars[m])>0),t=u.filter(m=>MBRAND[m]==='Tesla').length;return t&&t<u.length?'隨車附手把彩：特斯拉每車 2 個、其他車款每車 4 個，新娘座車另附車頭彩 1 組':`隨車附手把彩每車 ${u.length&&!t?4:2} 個，新娘座車另附車頭彩 1 組`})()];String(x.ctNote||'').split('\n').map(t=>t.trim()).filter(Boolean).forEach(t=>B.push(t));
   const ul=a=>`<ul>${a.map(s=>`<li>${E(s)}</li>`).join('')}</ul>`;
   const ft=p=>`<table class="ft"><tr><td>好好禮車&nbsp;&nbsp;NICE WEDDING CAR</td><td class="p">${p}</td></tr></table>`;
   const amt=(k,v)=>`<td class="c"><span class="k">${k}</span>NT${E(money(v))}</td>`;
@@ -1272,7 +1272,7 @@ function contractHTML(x){const r=calc(x),c=x.c,rin=!!x.ctRedIn&&r.red>0,rent=rin
   <table class="amt"><tr>${amt('租金總計',rent)}<td class="gap"></td>${amt('預付訂金',r.deposit)}<td class="gap"></td>${amt('尾款金額',rent-r.deposit)}</tr></table>
   <table class="li" style="margin-top:8pt"><tr><td>匯款日期&nbsp;&nbsp;${E(pd)}</td><td>匯款後五碼&nbsp;&nbsp;${E(c.last5)}</td><td>匯款金額&nbsp;&nbsp;${E(pa)}</td></tr></table>
   <table class="li" style="margin-top:4pt"><tr><td class="k2">超時費用</td><td>${otRows.map(E).join('&nbsp;&nbsp;&nbsp;')}</td></tr>
-   <tr><td class="k2">另付項目</td><td>${rin?`司機紅包已含於租金總計；甘蔗固定 ${money(S.cane)}/車，於用車當日與尾款一併支付`:`司機紅包 ${money(S.red)}/人、甘蔗固定 ${money(S.cane)}/車，於用車當日與尾款一併支付`}<br>是否需要甘蔗：${E(caneTxt||'否')}</td></tr></table>
+   <tr><td class="k2">另付項目</td><td>${num(x.cane)>0?(rin?`司機紅包已含於租金總計；甘蔗固定 ${money(S.cane)}/車，於用車當日與尾款一併支付`:`司機紅包 ${money(S.red)}/人、甘蔗固定 ${money(S.cane)}/車，於用車當日與尾款一併支付`):(rin?'司機紅包已含於租金總計':`司機紅包 ${money(S.red)}/人，於用車當日與尾款一併支付`)}</td></tr></table>
   <div class="sec"><i>04</i>付款與用車說明</div>
   <table><tr><td style="padding-right:14pt">${ul(B.slice(0,3))}</td><td>${ul(B.slice(3))}</td></tr></table>
   <div class="mu" style="margin-top:22pt">合約注意事項與簽署欄續於第 2 頁</div>
@@ -1512,7 +1512,7 @@ function renderMemo(){const who=o.memoWho||'cust';renderMemoLinks();if($('routeI
   const lang='zh';const m=memoModel(o,who,lang);
   $('outMemo').textContent=memoText(m,false);$('memoDoc').innerHTML=memoHTML(m,false)}
 function payState(x){const r=calc(x),c=x.c;const amt=num(String(c.payAmt||'').replace(/[^\d.]/g,''));return{r,amt,match:amt>0&&amt===r.deposit}}
-function paidText(x){const tips=['我們會在用車前一週再次與您核對最終行程及用車時間。','用車前三日會提供司機資訊，一天前司機會再次聯絡確認細節。','禮車會提早大約20分鐘抵達集合地點，並佈置完車彩，如不先綁彩可提前告知。','如需要綁甘蔗豬肉，請提前告知準備專業工具架設。(甘蔗豬肉是新人自備，司機準備專用工具架設)','禮車行駛路線，請新人安排熟悉路線親友乘坐前導車引路，如無安排將依導航or司機熟悉路線行駛。','服務當天司機會協助側拍紀錄，如有不能拍攝清晰人像照片之情況請提前告知客服。','尾款、甘蔗固定費及司機禮請於用車日交給司機(可由親友轉交）或是用車前一日匯款，因會計無法即時對帳，請勿於用車結束當日進行匯款。'];
+function paidText(x){const tips=['我們會在用車前一週再次與您核對最終行程及用車時間。','用車前三日會提供司機資訊，一天前司機會再次聯絡確認細節。','禮車會提早大約20分鐘抵達集合地點，並佈置完車彩，如不先綁彩可提前告知。',num(x.cane)>0?'甘蔗豬肉是新人自備，請將甘蔗(3米內)及豬肉包好交給司機，司機會協助固定。':`如需要綁甘蔗豬肉，請提前告知準備專業工具架設，並於尾款支付固定費用 ${money(S.cane)}/台。(甘蔗豬肉是新人自備，請將甘蔗(3米內)及豬肉包好交給司機，司機會協助固定。)`,'禮車行駛路線，請新人安排熟悉路線親友乘坐前導車引路，如無安排將依導航or司機熟悉路線行駛。','服務當天司機會協助側拍紀錄，如有不能拍攝清晰人像照片之情況請提前告知客服。','尾款、甘蔗固定費及司機禮請於用車日交給司機(可由親友轉交）或是用車前一日匯款，因會計無法即時對帳，請勿於用車結束當日進行匯款。'];
   if(!x.colorReq)tips.push('車色無法指定，一般為黑色或白色由派車人員安排。');
   const hi=typeof rmHi==='function'?rmHi(x):'您好';
   return [(hi==='您好'?'':hi+'🤍 ')+(signUrlOf(x)?'已經收到訂金，請點開以下連結確認合約內容，並按下方「簽名完成合約」完成線上簽署：':'已經收到訂金，合約提供您留存：'),signUrlOf(x)||(x.contractUrl||'').trim()||'（請貼上合約連結）','',...tips.map((t,i)=>`${i+1}.${t}`)].join('\n')}
