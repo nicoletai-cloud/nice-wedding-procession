@@ -1249,7 +1249,7 @@ function contractHTML(x){const r=calc(x),c=x.c,rin=!!x.ctRedIn&&r.red>0,rent=rin
   const user=[c.groom,c.bride].filter(Boolean).join('、')||contactName(x);
   const cars=MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MBRAND[m]==='Tesla'?'Tesla ':''}${MNAME[m]} × ${num(x.cars[m])}`);
   const short=+x.hours>0&&x.hours<3;
-  const otRows=MODELS.map(m=>`${MNAME[m]} ${money(S.ot[m])}/${short?'每 30 分鐘':'時'}`).filter((s,i)=>num(x.cars[MODELS[i]])>0);
+  const otRows=MODELS.map(m=>`${MNAME[m]} ${money(S.ot[m])}/${short?'每 0.5 小時':'時'}`).filter((s,i)=>num(x.cars[MODELS[i]])>0);
   const caneTxt=c.caneAns?(c.caneAns+(x.cane?`（${x.cane} 台）`:'')):(x.cane?`是（${x.cane} 台）`:'');
   const pd=c.payDate?fmtDate(c.payDate):'';const pa=c.payAmt?money(num(String(c.payAmt).replace(/[^\d.]/g,''))):'';
   const noteBits=[x.colorReq?`指定${x.colorReq}`:'',x.colorRare?'稀有車款若無法出車，將協調調度其他車款':''].filter(Boolean);
@@ -1260,7 +1260,7 @@ function contractHTML(x){const r=calc(x),c=x.c,rin=!!x.ctRedIn&&r.red>0,rent=rin
   if(String(c.o1||'').trim())rows.push([oL(c.o1L)?E(oL(c.o1L)):'其他地點 1',oL(c.o1L)?E(c.o1):addr(c.o1,c.o1L)]);
   if(String(c.o2||'').trim())rows.push([oL(c.o2L)?E(oL(c.o2L)):`其他地點 ${String(c.o1||'').trim()?2:1}`,oL(c.o2L)?E(c.o2):addr(c.o2,c.o2L)]);
   rows.push(['路線說明',String(c.route||x.path||'').trim()?E(c.route||x.path):'行前一週確認']);
-  const B=['用車時間自禮車出發起算；司機於出發前 20 分鐘抵達',short?'本方案未滿 3 小時，無超時緩衝；超過用車時間即以每 30 分鐘計收超時費用':'超過 15 分鐘內不加收超時費；超過 16 分鐘起計算超時費用（未滿一小時以一小時計）',num(x.cane)>0?`以上費用含駕駛、油資、過路費及甘蔗固定費 ${money(S.cane)}*${num(x.cane)}台`:'以上費用含駕駛、油資、過路費','尾款請於用車當日結清',(()=>{const u=MODELS.filter(m=>num(x.cars[m])>0),t=u.filter(m=>MBRAND[m]==='Tesla').length;return t&&t<u.length?'隨車附手把彩：特斯拉每車 2 個、其他車款每車 4 個，新娘座車另附車頭彩 1 組':`隨車附手把彩每車 ${u.length&&!t?4:2} 個，新娘座車另附車頭彩 1 組`})()];String(x.ctNote||'').split('\n').map(t=>t.trim()).filter(Boolean).forEach(t=>B.push(t));
+  const B=['用車時間自禮車出發起算；司機於出發前 20 分鐘抵達',short?'短時數方案無緩衝時間，加時以每 0.5 小時收取一小時費用（超過用車時間即開始計算）':'超過 15 分鐘內不加收超時費；超過 16 分鐘起計算超時費用（未滿一小時以一小時計）',num(x.cane)>0?`以上費用含駕駛、油資、過路費及甘蔗固定費 ${money(S.cane)}*${num(x.cane)}台`:'以上費用含駕駛、油資、過路費','尾款請於用車當日結清',(()=>{const u=MODELS.filter(m=>num(x.cars[m])>0),t=u.filter(m=>MBRAND[m]==='Tesla').length;return t&&t<u.length?'隨車附手把彩：特斯拉每車 2 個、其他車款每車 4 個，新娘座車另附車頭彩 1 組':`隨車附手把彩每車 ${u.length&&!t?4:2} 個，新娘座車另附車頭彩 1 組`})()];String(x.ctNote||'').split('\n').map(t=>t.trim()).filter(Boolean).forEach(t=>B.push(t));
   const ul=a=>`<ul>${a.map(s=>`<li>${E(s)}</li>`).join('')}</ul>`;
   const ft=p=>`<table class="ft"><tr><td>好好禮車&nbsp;&nbsp;NICE WEDDING CAR</td><td class="p">${p}</td></tr></table>`;
   const amt=(k,v)=>`<td class="c"><span class="k">${k}</span>NT${E(money(v))}</td>`;
@@ -1364,7 +1364,7 @@ async function saveToDrive(){const btn=$('btnDrive');if(!S.driveUrl||!S.driveKey
 
 /* ---------- form paste parser ---------- */
 const FORM_ORDER=['orderNo','groom','bride','role','phone','start','end','meet','wed','o1','o2','route','caneAns','decoAns','payDate','payAmt','last5','o1L','o2L'];
-const LABELS=[['orderNo',/訂單編號/],['groom',/新郎姓名/],['bride',/新娘姓名/],['phone',/主要聯絡人電話/],['rel',/主要聯絡人身份|聯絡人身份/],['role',/主要聯絡人(?!電話|身份)/],['start',/開始用車時間/],['end',/結束用車時間/],['meet',/集合地點/],['wed',/迎娶地點/],['o1L',/其他(?:停靠|停車)?地點\s*1.{0,8}(是什麼|類型|名稱)/],['o2L',/其他(?:停靠|停車)?地點\s*2.{0,8}(是什麼|類型|名稱)/],['o1',/其他(?:停靠|停車)?地點\s*1(?!.{0,8}(是什麼|類型|名稱))/],['o2',/其他(?:停靠|停車)?地點\s*2(?!.{0,8}(是什麼|類型|名稱))/],['route',/路線說明/],['caneAns',/車頂需掛實體甘蔗[?？]?|車頂甘蔗固定需求/],['decoAns',/是否需.{0,3}付費.{0,3}指定或設計客製化車頭彩|車頭彩安排/],['payDate',/匯款日期/],['payAmt',/匯款金額/],['last5',/匯款後五碼/]];
+const LABELS=[['orderNo',/訂單編號/],['groom',/新郎姓名/],['bride',/新娘姓名/],['phone',/主要聯絡人電話/],['rel',/主要聯絡人身份|聯絡人身份/],['role',/主要聯絡人(?!電話|身份)/],['start',/開始用車時間/],['end',/結束用車時間/],['meetL',/集合地點名稱/],['wedL',/迎娶地點名稱/],['meet',/集合地點(?!名稱)/],['wed',/迎娶地點(?!名稱)/],['o1L',/其他(?:停靠|停車)?地點\s*1.{0,8}(是什麼|類型|名稱)/],['o2L',/其他(?:停靠|停車)?地點\s*2.{0,8}(是什麼|類型|名稱)/],['o1',/其他(?:停靠|停車)?地點\s*1(?!.{0,8}(是什麼|類型|名稱))/],['o2',/其他(?:停靠|停車)?地點\s*2(?!.{0,8}(是什麼|類型|名稱))/],['route',/路線說明/],['caneAns',/車頂需掛實體甘蔗[?？]?|車頂甘蔗固定需求/],['decoAns',/是否需.{0,3}付費.{0,3}指定或設計客製化車頭彩|車頭彩安排/],['payDate',/匯款日期/],['payAmt',/匯款金額/],['last5',/匯款後五碼/]];
 function normTime(v){v=(v||'').trim().replace(/：/g,':');
   {const mm=v.match(/(早上|上午|中午|下午|晚上)?\s*(\d{1,2})\s*[點时時](半|(\d{1,2})\s*分?)?/);if(mm&&!/\d:\d/.test(v)){let h=+mm[2];const mi=mm[3]==='半'?30:(mm[4]?+mm[4]:0);if((mm[1]==='下午'||mm[1]==='晚上')&&h<12)h+=12;if(mm[1]==='中午'&&h<11)h+=12;return `${p2(h)}:${p2(mi)}`}}let m=v.match(/(上午|下午|AM|PM|am|pm)?\s*(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM|am|pm|上午|下午)?/);if(!m)return '';let h=+m[2];const mer=(m[1]||m[4]||'').toLowerCase();
   if((mer==='下午'||mer==='pm')&&h<12)h+=12;if((mer==='上午'||mer==='am')&&h===12)h=0;return `${p2(h)}:${m[3]}`}
@@ -1425,7 +1425,7 @@ function applyForm(res){const c=o.c;let n=0;o.sample=false;const set=(k,v)=>{if(
   set('groom',res.groom);set('bride',res.bride);
   if(res.role){if(/新郎/.test(res.role))c.role='新郎';else if(/新娘/.test(res.role))c.role='新娘';else{c.role='其他';c.contact=res.role;if(res.rel)c.rel=res.rel}n++}
   set('phone',res.phone);set('start',normTime(res.start));set('end',normTime(res.end));
-  ['meet','wed','o1','o2','route'].forEach(k=>{const v=res[k];if(v&&!/^n\/?a$/i.test(v))set(k,v)});['o1L','o2L'].forEach(k=>{const v=res[k];if(v&&!/^(n\/?a|無|沒有|否)$/i.test(v))set(k,v)});
+  ['meet','wed','o1','o2','route'].forEach(k=>{const v=res[k];if(v&&!/^n\/?a$/i.test(v))set(k,v)});['o1L','o2L','meetL','wedL'].forEach(k=>{const v=res[k];if(v&&!/^(n\/?a|無|沒有|否)$/i.test(v))set(k,v)});
   ['caneAns','decoAns'].forEach(k=>{const v=res[k]||'';if(/待確認/.test(v))set(k,'待確認');else if(/不需要|否|一般車頭彩/.test(v))set(k,'否');else if(/是|需要|付費指定|客製/.test(v))set(k,'是')});
   set('payDate',normDate(res.payDate));set('payAmt',res.payAmt);set('last5',res.last5);
   if(res.orderNo){const m=res.orderNo.match(/^(\d{4})(\d{2})(\d{2})([A-Za-z]*)(\d*)$/);if(m){o.date=`${m[1]}-${m[2]}-${m[3]}`;if(m[4]&&m[4].toUpperCase()!==autoCode(o))o.code=m[4];if(m[5])o.seq=m[5]}}
@@ -1902,7 +1902,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnBundleAdd':S.bundles.push({name:'新方案',cars:{},price:0});saveS();renderPriceSettings();break;
    case 'btnConfirm':{const res=parseConfirm($('confirmBox').value);if(!Object.keys(res).length){$('confirmResult').innerHTML='<p class="hint">沒有認出欄位，請確認貼上的是行前確認的回覆。</p>';break}const r=applyConfirm(res);o.cfDoneAt=Date.now();save();renderOrderSel();fillInputs();renderFlow();renderAll();renderConfirmResult(r);toast('已帶入行前確認');break}
    case 'btnApplyH':{if(o._suggestH){o.hours=o._suggestH;o._suggestH=null;save();fillInputs();renderCars();renderFleet();renderAll();$('confirmResult').insertAdjacentHTML('beforeend','<p class="hint">合約時數已更新，報價、合約、memo 都已重算。</p>');t.remove()}break}
-   case 'btnFormData':{const fd=FORMDATA[normNo(orderNo(o))];if(!fd||!fd.f){toast('這張單還沒有客人填寫頁回覆');break}const cols=[['no','訂單編號'],['groom','新郎姓名'],['bride','新娘姓名'],['role','主要聯絡人'],['rel','主要聯絡人身份'],['phone','主要聯絡人電話'],['start','預計開始用車時間'],['end','預計結束用車時間'],['meet','禮車集合地點'],['wed','迎娶地點'],['o1','其他停靠地點 1（選填）'],['o1L','其他停靠地點 1 是什麼地點？（選填）'],['o2','其他停靠地點 2（選填）'],['o2L','其他停靠地點 2 是什麼地點？（選填）'],['route','路線說明'],['cane','車頂甘蔗固定需求'],['deco','車頭彩安排']];const cl=v=>String(v==null?'':v).replace(/[\t\n\r]+/g,' ');$('pasteBox').value=cols.map(c=>c[1]).join('\t')+'\n'+cols.map(c=>cl(fd.f[c[0]])).join('\t');$('btnParse').click();break}
+   case 'btnFormData':{const fd=FORMDATA[normNo(orderNo(o))];if(!fd||!fd.f){toast('這張單還沒有客人填寫頁回覆');break}const cols=[['no','訂單編號'],['groom','新郎姓名'],['bride','新娘姓名'],['role','主要聯絡人'],['rel','主要聯絡人身份'],['phone','主要聯絡人電話'],['start','預計開始用車時間'],['end','預計結束用車時間'],['meet','禮車集合地點'],['meetL','集合地點名稱'],['wed','迎娶地點'],['wedL','迎娶地點名稱'],['o1','其他停靠地點 1（選填）'],['o1L','其他停靠地點 1 是什麼地點？（選填）'],['o2','其他停靠地點 2（選填）'],['o2L','其他停靠地點 2 是什麼地點？（選填）'],['route','路線說明'],['cane','車頂甘蔗固定需求'],['deco','車頭彩安排']];const cl=v=>String(v==null?'':v).replace(/[\t\n\r]+/g,' ');$('pasteBox').value=cols.map(c=>c[1]).join('\t')+'\n'+cols.map(c=>cl(fd.f[c[0]])).join('\t');$('btnParse').click();break}
     case 'btnParse':{const res=parseForm($('pasteBox').value);const n=applyForm(res);save();fillInputs();renderCars();syncFleet();renderFleet();renderFlow();renderAll();
      $('parseMsg').textContent=n?`已帶入 ${n} 個欄位，請核對。`:'沒有認出欄位，請確認貼上的是表單回覆。';break}
    case 'btnSync':{if(!S.driveKey){const k=(prompt('輸入同步金鑰（在電腦「價目設定」的 Drive 金鑰）')||'').trim();if(!k)break;S.driveKey=k;if(!S.driveUrl)S.driveUrl=DEF_S.driveUrl;store('nwcw_settings',S);toast('已設定同步，正在下載訂單…')}doSync();break}
