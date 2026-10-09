@@ -1253,7 +1253,7 @@ function contractHTML(x){const r=calc(x),c=x.c,rin=!!x.ctRedIn&&r.red>0,rent=rin
   const rows=[['集合地點',addr(c.meet,c.meetL)],['迎娶地點',addr(c.wed,c.wedL)]];
   if(String(c.o1||'').trim())rows.push(['其他地點 1',addr(c.o1,c.o1L)]);
   if(String(c.o2||'').trim())rows.push([`其他地點 ${String(c.o1||'').trim()?2:1}`,addr(c.o2,c.o2L)]);
-  rows.push(['路線說明',E(c.route||x.path)]);
+  rows.push(['路線說明',String(c.route||x.path||'').trim()?E(c.route||x.path):'行前一週確認']);
   const B=['用車時間自禮車出發起算；司機於出發前 20 分鐘抵達',short?'本方案未滿 3 小時，無超時緩衝；超過用車時間即以每 30 分鐘計收超時費用':'超過 15 分鐘內不加收超時費；超過 16 分鐘起計算超時費用（未滿一小時以一小時計）','以上費用含駕駛、油資、過路費','尾款請於用車當日結清',(()=>{const u=MODELS.filter(m=>num(x.cars[m])>0),t=u.filter(m=>MBRAND[m]==='Tesla').length;return t&&t<u.length?'隨車附手把彩：特斯拉每車 2 個、其他車款每車 4 個，新娘座車另附車頭彩 1 組':`隨車附手把彩每車 ${u.length&&!t?4:2} 個，新娘座車另附車頭彩 1 組`})()];String(x.ctNote||'').split('\n').map(t=>t.trim()).filter(Boolean).forEach(t=>B.push(t));
   const ul=a=>`<ul>${a.map(s=>`<li>${E(s)}</li>`).join('')}</ul>`;
   const ft=p=>`<table class="ft"><tr><td>好好禮車&nbsp;&nbsp;NICE WEDDING CAR</td><td class="p">${p}</td></tr></table>`;
