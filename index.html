@@ -2084,12 +2084,14 @@ function DRV_AREA_(){return {'北部':['基隆','台北','新北','桃園','新�
 /* 有選升等就用升等後的車款找司機 */
 function upId(f){const u=String(f.up||'').trim();if(!u)return'';const m=S.models.find(z=>z.name===u||z.abbr===u);return m?m.id:''}
 function drvColorOk(d,c){const w=String(c||'').replace(/色/g,'').trim();if(!w)return true;const dc=String(d.color||'');return dc.includes(w)||dc.includes(w[0])}
+/* 禮車助手車卡狀態（後台 drivers 名單帶 wc）：綁定、保險是否在效期 */
+function wcTag(d){const w=d&&d.wc;if(!w)return'';if(!w.bound)return'未綁車卡';if(!w.ins)return'⚠️未傳保險';if(!w.exp)return'⚠️保險日期待確認';if(!w.expOk)return'⛔保險已過期 '+w.exp.replace(/-/g,'/');return'✅保險至 '+w.exp.replace(/-/g,'/')+(w.both?'':'（部分）')}
 function drvOptions(f){const mode=($('drvMode')&&$('drvMode').value)||'mc';if(!DRV.length)return'<option value="">（載入司機名單中…）</option>';
   zodSync();const av=o.avoidZ||[];const ar=($('drvArea')&&$('drvArea').value)||'',arL=DRV_AREA_()[ar]||[];const fm=upId(f)||f.m;let L=DRV.filter(d=>(!ar||arL.some(n=>String(d.city||'').replace(/臺/g,'台').includes(n)))&&(mode==='all'||drvModelOk(d,fm)&&(mode==='m'||drvColorOk(d,f.color)))&&!(av.length&&av.includes(zodOf(d))));
   L=L.sort((a,b)=>(a.src==='司機總表'?0:1)-(b.src==='司機總表'?0:1)||a.name.localeCompare(b.name,'zh-Hant'));
   const busy=new Set();if(o.date)Object.values(DB.orders).forEach(x=>{if(x.id!==o.id&&!x.sample&&!x.lost&&x.date===o.date)(x.fleet||[]).forEach(z=>{if(z.driver)busy.add(String(z.driver).trim())})});
-  const lab=d=>(busy.has(d.name)?'⚠️當天已排 ':'')+[d.name,zodOf(d)?'屬'+zodOf(d):'',d.color,d.model||d.brand,d.plate,d.status].filter(Boolean).join('｜');
-  return `<option value="">▼ 選司機（${L.length} 位）</option>`+(String(f.driver||'').trim()?`<option value="__clear">✕ 移除目前司機（${esc(f.driver)}）</option>`:'')+L.map(d=>`<option value="${esc(d.name+'|'+d.plate)}">${esc(lab(d))}${d.src==='司機招募'?'（招募）':''}</option>`).join('')}
+  const lab=d=>(busy.has(d.name)?'⚠️當天已排 ':'')+[d.name,zodOf(d)?'屬'+zodOf(d):'',d.color,d.model||d.brand,d.plate,d.status,wcTag(d)].filter(Boolean).join('｜');
+  return `<option value="">▼ 選司機（${L.length} 位）</option>`+(String(f.driver||'').trim()?`<option value="__clear">✕ 移除目前司機（${esc(f.driver)}）</option>`:'')+L.map(d=>`<option value="${esc(d.name+'|'+d.plate)}">${esc(lab(d))}${d.src==='司機招募'?'（招募）':d.src==='禮車助手'?'（禮車助手）':''}</option>`).join('')}
 async function loadDrivers(force){const st=$('drvSt');if(!S.driveUrl||!S.driveKey)return;let ts=0;try{ts=+localStorage.getItem('nwcw_drivers_ts')||0}catch(_){}
   if(!force&&DRV.length&&Date.now()-ts<18e5)return;if(st)st.textContent='讀取司機名單…';
   try{const u=new URL(S.driveUrl);u.searchParams.set('action','drivers');u.searchParams.set('token',S.driveKey);const j=await (await fetch(u)).json();if(!j.ok)throw new Error(j.error||'失敗');
