@@ -192,7 +192,7 @@ nav.tabs button{scroll-snap-align:start}
   #coupleModal>div{padding:12px!important}
 }
 @media print{.paper{zoom:1}}
-.kw-search{position:relative;flex:1 1 240px;min-width:200px}.kw-search input{width:100%}
+.kw-search{position:relative;flex:1 1 240px;min-width:200px}.kw-call{float:right;margin-left:8px;font-size:0.8rem;font-weight:700;color:#A0453A;border:1px solid currentColor;border-radius:999px;padding:1px 8px}.kw-call.ok{color:#2f7d4f;border-color:transparent}.kw-search input{width:100%}
 .kw-results{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:70;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:420px;overflow:auto}
 .kw-results button{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:10px 12px;font:inherit;color:var(--fg);cursor:pointer}
 .kw-results button small{display:block;color:var(--muted);font-size:.8rem}
@@ -211,6 +211,7 @@ nav.tabs button{scroll-snap-align:start}
     <a class="nwc-hub" id="nwcDrvLink" href="https://nicoletai-cloud.github.io/nice-hub/#drivers">司機 ›</a>
     <div class="orderbar">
       <select id="orderSel" aria-label="切換訂單"></select>
+      <button type="button" class="btn sm" id="grpCode" title="這場的代碼：LINE 群組名稱、找司機都用這組；點一下複製" hidden></button>
       <input id="codeQ" placeholder="司機回的代碼" maxlength="12" autocomplete="off" style="width:120px" title="輸入找司機訊息裡的 4 碼代碼，直接開啟那一場">
       <div class="kw-search"><input id="kwQ" placeholder="🔍 搜尋單號、客人、新人、地址、婚顧" autocomplete="off"><div class="kw-results" id="kwResults" hidden></div></div>
       <button class="btn sm" id="btnSync" title="手機／電腦同步">同步</button>
@@ -480,6 +481,7 @@ nav.tabs button{scroll-snap-align:start}
         <div class="row" style="justify-content:space-between;margin:10px 0 6px"><span class="hint" style="margin:0" id="ttWhen"></span><button class="btn sm pri" data-copy="ttMemo">複製備註</button></div>
         <pre class="out" id="ttMemo"></pre>
         <div id="ttCheck2" class="row" style="margin-top:10px;gap:8px;align-items:center"></div>
+        <div id="callCheck" class="row" style="margin-top:10px;gap:8px;align-items:center;flex-wrap:wrap" hidden></div>
       </div>
       <div class="card">
         <h3>司機 LINE 群組 <small>建群後貼開場訊息；緊急聯絡人只出現在這裡</small></h3>
@@ -853,7 +855,7 @@ let syncReady=false,syncBusy=false,syncTimer=null,syncAgain=false;
 function syncStat(t){const el=$('btnSync');if(el)el.textContent=t}
 function pushSync(){if(!syncReady)return;clearTimeout(syncTimer);syncTimer=setTimeout(doSync,1500)}
 async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl;if(!S.driveUrl||!S.driveKey){syncStat('點我設定同步');return}if(syncBusy&&Date.now()-syncBusy<120000){syncAgain=true;return}syncBusy=Date.now();syncStat('同步中…');
-  try{const send={};Object.values(DB.orders).forEach(x=>{if(x.sample)return;let k=null;try{const r=calc(x),v=vendorOf(x);k={total:r.total,deposit:r.deposit,balance:r.balance,dsum:r.dsum,dok:r.dok,mon:r.mon,onsite:r.onsite,red:r.red,refAmt:r.refAmt,bill:r.bill,vendor:v?v.name:'',lux:carKind(x).lux,tesla:carKind(x).tesla}}catch(_){}send[x.id]=Object.assign({},x,{_no:orderNo(x),_calc:k})});
+  try{const send={};Object.values(DB.orders).forEach(x=>{if(x.sample)return;let k=null;try{const r=calc(x),v=vendorOf(x);k={total:r.total,deposit:r.deposit,balance:r.balance,dsum:r.dsum,dok:r.dok,mon:r.mon,onsite:r.onsite,red:r.red,refAmt:r.refAmt,bill:r.bill,vendor:v?v.name:'',lux:carKind(x).lux,tesla:carKind(x).tesla}}catch(_){}send[x.id]=Object.assign({},x,{_no:orderNo(x),_trip:tripCode(x),_calc:k})});
     const ac=new AbortController(),to=setTimeout(()=>ac.abort(),90000);
     const res=await fetch(S.driveUrl,{signal:ac.signal,method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'sync',orders:send,deleted:DB.deleted||{},settings:S._ts?S:null})});
     const j=await res.json();clearTimeout(to);if(!j.ok)throw new Error(j.error||'失敗');
@@ -1155,8 +1157,11 @@ document.addEventListener('change',e=>{if(e.target.id==='findMain'){o.findMain=e
 /* 找司機代碼：每張單一組 4 碼亂碼（由單號雜湊而來，看不出日期地區），司機回代碼後可直接搜尋開單 */
 const FC_ABC='ACDEFGHJKMNPQRTUVWXY34679';
 function fcHash(s){let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)>>>0}return h}
+/* 代碼開頭：嫁給我 M、Wantesla W、澎澎禮車 P、其他同業 X、好好禮車自己的單 N；已經產生過的舊代碼不改 */
+const TRIP_PFX={'嫁給我':'M','Wantesla':'W','澎澎禮車':'P'};
+function fcPrefix(x){if(!x.partner)return 'N';return TRIP_PFX[String(x.partner.co||'').trim()]||'X'}
 function findCode(x){if(!x)return'';if(x.findCode)return x.findCode;const used=new Set(Object.values(DB.orders).filter(y=>y!==x&&y.id!==x.id&&y.findCode).map(y=>y.findCode));
-  for(let i=0;i<50;i++){let h=fcHash('nwc~'+x.id+'~'+i),c='';for(let k=0;k<4;k++){c+=FC_ABC[h%FC_ABC.length];h=Math.floor(h/FC_ABC.length)}if(!used.has(c)){x.findCode=c;if(DB.orders[x.id]&&DB.orders[x.id]!==x)DB.orders[x.id].findCode=c;return c}}return''}
+  const pf=fcPrefix(x);for(let i=0;i<50;i++){let h=fcHash('nwc~'+x.id+'~'+i),c=pf;for(let k=0;k<3;k++){c+=FC_ABC[h%FC_ABC.length];h=Math.floor(h/FC_ABC.length)}if(!used.has(c)){x.findCode=c;if(DB.orders[x.id]&&DB.orders[x.id]!==x)DB.orders[x.id].findCode=c;return c}}return''}
 function codeFind(q){q=normNo(q).replace(/[^A-Z0-9]/g,'');if(!q)return null;const L=Object.values(DB.orders).filter(x=>!x.sample);return L.find(x=>findCode(x)===q)||L.find(x=>normNo(orderNo(x))===q)||null}
 document.addEventListener('keydown',e=>{if(e.target.id!=='codeQ'||e.key!=='Enter')return;e.preventDefault();const x=codeFind(e.target.value);if(!x){toast('找不到這個代碼');return}
   o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();showTab('find');e.target.value='';toast(`已開啟 ${orderNo(x)}（代碼 ${findCode(x)}）`)});
@@ -1478,7 +1483,13 @@ function paidText(x){const tips=['禮車會提早大約20分鐘抵達集合地�
 const TT_SINCE=Date.UTC(2026,9,5);function ttPending(x){return !!x.paid&&(x.ttDone===false||(x.ttDone===undefined&&+x.paidTs>=TT_SINCE))}
 function renderTTCheck(){const html=!o.paid?'':o.ttDone?`<span class="chip">✅ 已填入 TimeTree</span><button class="btn sm" id="btnTTUndo">改回未填</button>`:`<b style="color:#A0453A">⚠️ 已收訂，還沒填入 TimeTree</b><span class="hint" style="margin:0">到「5 車隊與流程」複製 TimeTree 標題與備註，填好後按 →</span><button class="btn sm pri" id="btnTTDone">已填入 TimeTree</button>`;
   const a=$('ttCheck');if(a){a.innerHTML=html;a.hidden=!html}const b=$('ttCheck2');if(b)b.innerHTML=html.replace('id="btnTTUndo"','data-x="1" id="btnTTUndo2"').replace('id="btnTTDone"','id="btnTTDone2"').replace(/<span class="hint"[^<]*<\/span>/,'')}
-function renderPaidAck(){renderTTCheck();const el=$('outPaidAck'),h=$('paidAckHint');if(!el)return;const nf=o.paid&&stageOf(o)==='noform';
+/* 車趟代碼＝找司機代碼（同一組，4 碼）：放在 LINE 群組名稱、找司機訊息都用這組 */
+function tripCode(x){return findCode(x)}
+function callTime(t){const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`}
+function renderCallCheck(){const gc=$('grpCode');if(gc){const c=o&&!o.sample?findCode(o):'';gc.hidden=!c;gc.textContent='代碼 '+c}const el=$('callCheck');if(!el)return;if(!o.paid){el.hidden=true;return}el.hidden=false;
+  el.innerHTML=`<span class="chip">車趟代碼 <b>${esc(tripCode(o))}</b></span><button class="btn sm" id="btnCopyTrip">複製代碼</button>`+(o.callAt?`<span class="chip">✅ 主禮車司機已電話聯絡新人（${callTime(o.callAt)} 回報）</span><button class="btn sm" id="btnCallUndo">改回未聯絡</button>`
+    :`<b style="color:#A0453A">☎️ 主禮車司機還沒回報聯絡新人</b><span class="hint" style="margin:0">用車前一天 12:00 前要回報</span><button class="btn sm pri" id="btnCallDone">已聯絡新人</button>`)}
+function renderPaidAck(){renderTTCheck();renderCallCheck();const el=$('outPaidAck'),h=$('paidAckHint');if(!el)return;const nf=o.paid&&stageOf(o)==='noform';
   if(nf){const t=(rmTexts(o).find(z=>z.k==='noform')||{}).t;el.textContent=t||'已確認收到訂金，謝謝🤍\n麻煩再幫我們填寫訂車表單，填完我們就會提供合約：\n'+formLink(o);
     h.innerHTML='<b style="color:#A0453A">⚠️ 客人還沒填訂車表單</b>：上面這則已附表單連結，複製傳給客人。客人填完表單後，再到「3 合約」產生合約。'}
   else{el.textContent='已確認收到訂金，後續提供合約給您';h.textContent='傳合約給客人：到「3 合約」分頁預覽，確認內容後就會出現可複製的訊息。'}}
@@ -1639,7 +1650,7 @@ document.addEventListener('input',e=>{if(e.target.id==='scText')scWarn()});
 const DAY=864e5;
 const normNo=s=>String(s||'').replace(/\s/g,'').toUpperCase();
 function daysTo(x){const p=dparts(x.date);if(!p)return null;const t=new Date();t.setHours(0,0,0,0);return Math.round((new Date(p.y,p.m-1,p.d)-t)/DAY)}
-const ST={inq:'詢價追銷',unpaid:'開單未付款',tt:'收訂未填 TimeTree',noform:'付款未填表',nocontract:'填表未出合約',cfsend:'一週前核對行程',cfwait:'行前確認未回',nodrv:'未派司機',nomemo:'未給 memo',head:'待指派車頭',rev:'用車後追評價',revlink:'正評待傳評價連結',photo:'待傳照片'};
+const ST={inq:'詢價追銷',unpaid:'開單未付款',tt:'收訂未填 TimeTree',noform:'付款未填表',nocontract:'填表未出合約',cfsend:'一週前核對行程',cfwait:'行前確認未回',nodrv:'未派司機',nomemo:'未給 memo',call:'主禮車未聯絡新人',head:'待指派車頭',rev:'用車後追評價',revlink:'正評待傳評價連結',photo:'待傳照片'};
 const REV_ASK='請問司機服務還滿意嗎？\n\n如果您對我們的服務感到滿意，誠摯邀請您抽空寫幾句話留下寶貴評價，或是對司機的鼓勵。這將成為我們成長的最大動力，也能讓更多人了解我們的用心服務。';
 const REV_LINK='感謝您選擇🧡好好禮車🧡，讓我們能有機會在您最重要的這天一起留下美好回憶！ 希望可以幫我們複製上面評價後，貼在下方連結處：\n\n👉 在 Google 本地商家留下評價：https://goo.gl/maps/WsAvwhXy1eQPqk5f6\n\n👉 或者至 Facebook 粉絲專頁評論：https://www.facebook.com/niceweddingcar\n\n非常感謝您的鼓勵與支持，每一句肯定都將讓我們更加努力、持續提升服務品質。\n\n再次祝福您新婚快樂，百年好合💍✨！ 期待未來如果有機場接送或包車旅遊需求， 都能再有機會為您服務！ （＊好好新人享有 95 折優惠）';
 const PHOTO_TPL='提供司機不專業側拍給兩位下載 (連結將在一週後失效)：\n';
@@ -1676,7 +1687,8 @@ function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];c
     if(x.cfSentAt&&!x.cfDoneAt)T.push({k:'cfwait',late:d<=5});
     if(!x.drvDone&&(!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim()))){const hd=String(x.carHead||'').trim();if(hd){if(d!==null&&d<=3)T.push({k:'nodrv',late:true,why:'車頭已安排，確認司機資料'})}else{const tr=teslaDrvRule(x,d);T.push(tr?{k:'nodrv',late:d<=14||tr.late,why:tr.why}:{k:'nodrv',late:d<=14})}}
     else if(d<=7&&!x.memoDone&&!(x.memoLinks&&x.memoLinks.cust))T.push({k:'nomemo',late:d<=3});}
-  if(x.partner)return T.filter(t=>t.k==='tt'||t.k==='nodrv');
+  if(x.paid&&d!==null&&d>=0&&d<=2&&!x.callAt)T.push({k:'call',late:d<=1,why:'前一天 12:00 前回報'});
+  if(x.partner)return T.filter(t=>t.k==='tt'||t.k==='nodrv'||t.k==='call');
   return T}
 let todoF='all';const todoSel=new Set();
 function todoRows(){const q=normNo($('todoQ').value),late=$('todoLate').checked;
@@ -1838,6 +1850,9 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnTTPrompt':{const t=ttPromptText();clip(t);toast('已複製 TimeTree 檢查指令，貼給 Claude 即可');break}
    case 'btnTTDone':case 'btnTTDone2':o.ttDone=true;o.ttAt=Date.now();save();renderAll();toast('已標記填入 TimeTree');break;
    case 'btnTTUndo':case 'btnTTUndo2':o.ttDone=false;save();renderAll();break;
+    case 'btnCallDone':o.callAt=Date.now();save();renderAll();toast('已記錄：主禮車司機已聯絡新人');break;
+    case 'btnCallUndo':o.callAt=0;save();renderAll();break;
+    case 'btnCopyTrip':case 'grpCode':clip(tripCode(o));toast('已複製代碼 '+tripCode(o)+'，可以貼進 LINE 群組名稱');break;
    case 'btnUnpaid':o.paid=false;o.paidAt='';o.paidTs='';save();renderAll();renderOrderSel();break;
    case 'btnResetS':{const keep={bank:S.bank,phone:S.phone,email:S.email,formBase:S.formBase,formEntry:S.formEntry};S=Object.assign(clone(DEF_S),keep);saveS();renderPriceSettings();fillInputs();renderCars();renderAll();$('resetMsg').textContent='已恢復預設價目';break}
   }});
@@ -1851,18 +1866,20 @@ function showTab(name){document.querySelectorAll('#tabs button').forEach(b=>b.se
 
 /* ---------- 關鍵字搜尋：單號、客人名稱、新人、電話、地址、婚顧／廠商、備註…（空白分開可多個關鍵字） ---------- */
 (function(){const inp=$('kwQ'),box=$('kwResults');if(!inp||!box)return;let shown=[],act=-1;
-  const hay=x=>JSON.stringify(x).toLowerCase()+' '+String(orderNo(x)).toLowerCase();
+  const hay=x=>JSON.stringify(x).toLowerCase()+' '+String(tripCode(x)+' '+orderNo(x)).toLowerCase();
   function render(){const terms=inp.value.trim().toLowerCase().split(/\s+/).filter(Boolean);if(!terms.length){box.hidden=true;return}
     shown=Object.values(DB.orders).filter(x=>!x.sample).filter(x=>{const h=hay(x),hd=h.replace(/[\s-]/g,'');return terms.every(t=>{const td=t.replace(/[\s-]/g,'');return h.includes(t)||(/^\d{3,}$/.test(td)&&hd.includes(td))})})
       .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,20);
     box.innerHTML=shown.length?shown.map((x,i)=>{const c=x.c||{},v=(x.src&&x.src.vendor)||'',st=STAGE_LABEL[stageOf(x)]||'';
-      return `<button type="button" data-i="${i}"${i===act?' class="on"':''}><b>${esc(orderNo(x))}</b>${esc(c.chatName||[c.groom,c.bride].filter(Boolean).join('＆')||'未命名')}<small>${esc([x.date,st,v?('婚顧／廠商 '+v):'',c.groom&&c.bride?c.groom+'＆'+c.bride:''].filter(Boolean).join('　'))}</small></button>`}).join(''):'<div class="empty">找不到相關訂單</div>';
+      const dd=daysTo(x),cl=x.paid&&dd!==null&&dd>=0?(x.callAt?'<span class="kw-call ok">☎️ 已聯絡新人</span>':`<span class="kw-call" data-call="${i}">☎️ 按這裡標記已聯絡新人</span>`):'';
+      return `<button type="button" data-i="${i}"${i===act?' class="on"':''}>${cl}<b>${esc(tripCode(x))}｜${esc(orderNo(x))}</b>${esc(c.chatName||[c.groom,c.bride].filter(Boolean).join('＆')||'未命名')}<small>${esc([x.date,st,v?('婚顧／廠商 '+v):'',c.groom&&c.bride?c.groom+'＆'+c.bride:''].filter(Boolean).join('　'))}</small></button>`}).join(''):'<div class="empty">找不到相關訂單</div>';
     box.hidden=false}
   function open(x){box.hidden=true;inp.blur();o=x;save();loadOrder();try{window.scrollTo(0,0)}catch(e){}}
   inp.addEventListener('input',()=>{act=-1;render()});inp.addEventListener('focus',()=>{if(inp.value.trim())render()});
   inp.addEventListener('blur',()=>setTimeout(()=>{box.hidden=true},200));
   inp.addEventListener('keydown',e=>{if(box.hidden||!shown.length)return;if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();act=(act+(e.key==='ArrowDown'?1:-1)+shown.length)%shown.length;render()}else if(e.key==='Enter'){e.preventDefault();open(shown[act>=0?act:0])}else if(e.key==='Escape')box.hidden=true});
-  box.addEventListener('mousedown',e=>{const b=e.target.closest('button[data-i]');if(!b)return;e.preventDefault();open(shown[+b.dataset.i])});
+  box.addEventListener('mousedown',e=>{const c=e.target.closest('[data-call]');if(c){e.preventDefault();const x=shown[+c.dataset.call];if(x){const t=Date.now();x.callAt=t;x.updated=t;DB.orders[x.id]=x;if(o&&o.id===x.id){o.callAt=t;o.updated=t}store('nwcw_orders',DB);pushSync();try{renderAll()}catch(_){}render();toast('已記錄：'+tripCode(x)+' 主禮車司機已聯絡新人')}return}
+    const b=e.target.closest('button[data-i]');if(!b)return;e.preventDefault();open(shown[+b.dataset.i])});
 })();
 function loadOrder(){migrate(o);syncFleet();fillInputs();renderLangs();renderCars();renderFleet();renderFlow();renderAll()}
 let pendingOpen=null;
