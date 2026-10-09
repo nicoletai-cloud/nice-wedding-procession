@@ -212,6 +212,7 @@ nav.tabs button{scroll-snap-align:start}
     <a class="nwc-hub" id="nwcAirLink" href="https://nicoletai-cloud.github.io/nice-wedding-car/">機場系統 ›</a>
     <a class="nwc-hub" id="nwcDrvLink" href="https://nicoletai-cloud.github.io/nice-hub/#drivers">司機 ›</a>
     <a class="nwc-hub" id="nwcCardsLink" href="https://nicoletai-cloud.github.io/nice-hub/cards.html?t=wed&amp;from=wed">司機資料總表 ›</a>
+    <a class="nwc-hub" id="nwcLessonLink" href="https://docs.google.com/document/d/1K6DnYwcA0rDnFsxS_l0Rqs-Nk7z1OwpHPUImlviNWJs/edit" target="_blank" rel="noopener" title="編輯司機教案（Google 文件）；改完司機在 LINE「禮車助手」看到的就是新版。司機用的連結：https://liff.line.me/2011949076-1fqUEtE2?p=lesson">司機教案 ›</a>
     <div class="orderbar">
       <select id="orderSel" aria-label="切換訂單"></select>
       <button type="button" class="btn sm" id="grpCode" title="這場的代碼：LINE 群組名稱、找司機都用這組；點一下複製" hidden></button>
@@ -760,7 +761,7 @@ nav.tabs button{scroll-snap-align:start}
         <div class="card">
           <h3>貼上表單回覆 <small>自動拆欄位</small></h3>
           <textarea id="pasteBox" rows="9" placeholder="把「好好禮車訂單回覆」的回覆貼在這裡：可以是試算表整列（含或不含標題列），或回覆通知信的內容。"></textarea>
-          <div class="row" style="margin-top:8px"><button class="btn pri" id="btnParse">帶入欄位</button><span class="hint" id="parseMsg"></span></div>
+          <div class="row" style="margin-top:8px"><button class="btn pri" id="btnParse">帶入欄位</button><button class="btn" id="btnFormData" hidden>📥 帶入客人填寫頁回覆</button><span class="hint" id="parseMsg"></span></div>
         </div>
         <div class="card">
           <h3>行前確認 <small>用車前一週傳給客人</small></h3>
@@ -892,7 +893,7 @@ async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl
     if(!DB.orders[o.id]){o=real[0]||Object.values(DB.orders)[0];cur=true}else o=DB.orders[o.id];
     if(j.settings&&(+j.settings._ts||0)>(+S._ts||0)){const keep={driveUrl:S.driveUrl,driveKey:S.driveKey};S=Object.assign(clone(DEF_S),j.settings,keep);store('nwcw_settings',S);rebuildModels();renderPriceSettings();cur=true}
     try{if(j.shopee)setTimeout(()=>spMerge(j.shopee),0)}catch(_){}
-    let upN=false;{const F=j.forms||{},N=j.formNames||{};Object.values(DB.orders).forEach(x=>{const k=normNo(orderNo(x)),t=F[k],nm=N[k];if(t&&!x.formAt){x.formAt=t;if(x.id===o.id)cur=true}
+    let upN=false;FORMDATA=j.formData||FORMDATA;try{renderFormDataBtn()}catch(e){}{const F=j.forms||{},N=j.formNames||{};Object.values(DB.orders).forEach(x=>{const k=normNo(orderNo(x)),t=F[k],nm=N[k];if(t&&!x.formAt){x.formAt=t;if(x.id===o.id)cur=true}
       if(nm&&(nm.groom||nm.bride)&&!x.c.groom&&!x.c.bride){x.c.groom=nm.groom||'';x.c.bride=nm.bride||'';x.updated=Date.now();upN=true;if(x.id===o.id)cur=true}})}
     DB.cur=o.id;store('nwcw_orders',DB);if(cur)loadOrder();else renderOrderSel();openFromHash();
     if(upN)syncAgain=true;
@@ -941,7 +942,10 @@ function areaOf(k){return o.c[k+'S']||shortArea(o.c[k])}
 function roadOf(a){if(!a)return '';let s=String(a).replace(/臺/g,'台');const d=s.match(new RegExp(CTY_RE+'[縣市]?.{0,3}?[區鎮鄉市]'));if(d)s=s.slice(s.indexOf(d[0])+d[0].length);else{const tw=townOf(s);if(tw)s=s.slice(tw.i+tw.raw.length)}
   s=s.replace(/^.*?[村里](?=[^村里]*?(路|街|大道))/,'').replace(/\d+鄰/g,'');const m=s.match(/([\u4e00-\u9fa5]{1,6}?(?:大道|路|街))([一二三四五六七八九十]段)?/);return m?m[1]+(m[2]||''):''}
 function mapUrl(a){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(a)}
-function formLink(x){const fb=/docs\.google\.com\/forms|forms\.gle/.test(S.formBase||'')?S.formBase:DEF_S.formBase;const base=fb.split('?')[0];return `${base}?usp=pp_url&${S.formEntry}=${encodeURIComponent(orderNo(x))}`}
+function renderFormDataBtn(){const b=$('btnFormData');if(!b||!o)return;const fd=FORMDATA[normNo(orderNo(o))];b.hidden=!fd;if(fd)b.title='客人填寫時間：'+new Date(fd.at).toLocaleString()}
+const WED_FORM_URL='https://nicoletai-cloud.github.io/nice-hub/wed-form.html';let FORMDATA={};
+function formLink(x){return `${WED_FORM_URL}?no=${encodeURIComponent(orderNo(x))}`}
+function formLinkGoogle(x){const fb=/docs\.google\.com\/forms|forms\.gle/.test(S.formBase||'')?S.formBase:DEF_S.formBase;const base=fb.split('?')[0];return `${base}?usp=pp_url&${S.formEntry}=${encodeURIComponent(orderNo(x))}`}
 function carCount(x){return MODELS.reduce((a,m)=>a+num(x.cars[m]),0)}
 function contactName(x){const c=x.c;return c.role==='新郎'?c.groom:c.role==='新娘'?c.bride:c.contact}
 
@@ -1359,7 +1363,7 @@ async function saveToDrive(){const btn=$('btnDrive');if(!S.driveUrl||!S.driveKey
 
 /* ---------- form paste parser ---------- */
 const FORM_ORDER=['orderNo','groom','bride','role','phone','start','end','meet','wed','o1','o2','route','caneAns','decoAns','payDate','payAmt','last5','o1L','o2L'];
-const LABELS=[['orderNo',/訂單編號/],['groom',/新郎姓名/],['bride',/新娘姓名/],['phone',/主要聯絡人電話/],['role',/主要聯絡人(?!電話)/],['start',/開始用車時間/],['end',/結束用車時間/],['meet',/集合地點/],['wed',/迎娶地點/],['o1L',/其他(?:停靠|停車)?地點\s*1.{0,8}(是什麼|類型|名稱)/],['o2L',/其他(?:停靠|停車)?地點\s*2.{0,8}(是什麼|類型|名稱)/],['o1',/其他(?:停靠|停車)?地點\s*1(?!.{0,8}(是什麼|類型|名稱))/],['o2',/其他(?:停靠|停車)?地點\s*2(?!.{0,8}(是什麼|類型|名稱))/],['route',/路線說明/],['caneAns',/車頂需掛實體甘蔗[?？]?|車頂甘蔗固定需求/],['decoAns',/是否需.{0,3}付費.{0,3}指定或設計客製化車頭彩/],['payDate',/匯款日期/],['payAmt',/匯款金額/],['last5',/匯款後五碼/]];
+const LABELS=[['orderNo',/訂單編號/],['groom',/新郎姓名/],['bride',/新娘姓名/],['phone',/主要聯絡人電話/],['role',/主要聯絡人(?!電話)/],['start',/開始用車時間/],['end',/結束用車時間/],['meet',/集合地點/],['wed',/迎娶地點/],['o1L',/其他(?:停靠|停車)?地點\s*1.{0,8}(是什麼|類型|名稱)/],['o2L',/其他(?:停靠|停車)?地點\s*2.{0,8}(是什麼|類型|名稱)/],['o1',/其他(?:停靠|停車)?地點\s*1(?!.{0,8}(是什麼|類型|名稱))/],['o2',/其他(?:停靠|停車)?地點\s*2(?!.{0,8}(是什麼|類型|名稱))/],['route',/路線說明/],['caneAns',/車頂需掛實體甘蔗[?？]?|車頂甘蔗固定需求/],['decoAns',/是否需.{0,3}付費.{0,3}指定或設計客製化車頭彩|車頭彩安排/],['payDate',/匯款日期/],['payAmt',/匯款金額/],['last5',/匯款後五碼/]];
 function normTime(v){v=(v||'').trim().replace(/：/g,':');
   {const mm=v.match(/(早上|上午|中午|下午|晚上)?\s*(\d{1,2})\s*[點时時](半|(\d{1,2})\s*分?)?/);if(mm&&!/\d:\d/.test(v)){let h=+mm[2];const mi=mm[3]==='半'?30:(mm[4]?+mm[4]:0);if((mm[1]==='下午'||mm[1]==='晚上')&&h<12)h+=12;if(mm[1]==='中午'&&h<11)h+=12;return `${p2(h)}:${p2(mi)}`}}let m=v.match(/(上午|下午|AM|PM|am|pm)?\s*(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM|am|pm|上午|下午)?/);if(!m)return '';let h=+m[2];const mer=(m[1]||m[4]||'').toLowerCase();
   if((mer==='下午'||mer==='pm')&&h<12)h+=12;if((mer==='上午'||mer==='am')&&h===12)h=0;return `${p2(h)}:${m[3]}`}
@@ -1421,7 +1425,7 @@ function applyForm(res){const c=o.c;let n=0;o.sample=false;const set=(k,v)=>{if(
   if(res.role){if(/新郎/.test(res.role))c.role='新郎';else if(/新娘/.test(res.role))c.role='新娘';else{c.role='其他';c.contact=res.role}n++}
   set('phone',res.phone);set('start',normTime(res.start));set('end',normTime(res.end));
   ['meet','wed','o1','o2','route'].forEach(k=>{const v=res[k];if(v&&!/^n\/?a$/i.test(v))set(k,v)});['o1L','o2L'].forEach(k=>{const v=res[k];if(v&&!/^(n\/?a|無|沒有|否)$/i.test(v))set(k,v)});
-  ['caneAns','decoAns'].forEach(k=>{const v=res[k]||'';if(/待確認/.test(v))set(k,'待確認');else if(/是/.test(v))set(k,'是');else if(/否/.test(v))set(k,'否')});
+  ['caneAns','decoAns'].forEach(k=>{const v=res[k]||'';if(/待確認/.test(v))set(k,'待確認');else if(/不需要|否|一般車頭彩/.test(v))set(k,'否');else if(/是|需要|付費指定|客製/.test(v))set(k,'是')});
   set('payDate',normDate(res.payDate));set('payAmt',res.payAmt);set('last5',res.last5);
   if(res.orderNo){const m=res.orderNo.match(/^(\d{4})(\d{2})(\d{2})([A-Za-z]*)(\d*)$/);if(m){o.date=`${m[1]}-${m[2]}-${m[3]}`;if(m[4]&&m[4].toUpperCase()!==autoCode(o))o.code=m[4];if(m[5])o.seq=m[5]}}
   if(!o.cityA&&countyOf(c.meet))o.cityA=countyOf(c.meet);if(!o.cityB&&countyOf(c.wed))o.cityB=countyOf(c.wed);
@@ -1645,7 +1649,7 @@ function renderRefs(){renderSettle();const mEl=$('refMonth');if(!mEl.value){cons
   $('billVendorName').textContent=mv.map(v=>v.name).join('、');$('outBill').textContent=bills.join('\n\n')||'這個月沒有月結廠商的訂單。'}
 function renderOrderSel(){const list=Object.values(DB.orders).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.updated-a.updated);
   $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(orderNo(x))}${x.c.groom||x.c.bride||vLabel(x)?'・'+esc(coupleName(x)):''}${x.sample?'（範例）':x.partner?'・【同業 '+esc(x.partner.co||'')+'】':'・'+STAGE_LABEL[stageOf(x)]}</option>`).join('');renderTodoBadge();if(!$('todoModal').hidden)renderTodo()}
-function renderAll(){try{renderQx()}catch(e){}renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派車頭':''].filter(Boolean),tr=[k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就派司機':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月派司機':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月派司機':'白色特斯拉：用車前一週派司機'):''].filter(Boolean);$('headHint').textContent=(rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):k.tesla&&!k.lux?'特斯拉由你擔任車頭，不用指派車頭。':'本單沒有提前指派車頭的需求。')+(tr.length?'　'+tr.join('；'):'')+(String(o.carHead||'').trim()?'　✅ 已找車頭：司機由車頭安排，用車前 3 天再確認司機資料即可。':'')}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=CONFIRM_TPL;renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
+function renderAll(){try{renderQx()}catch(e){}try{renderFormDataBtn()}catch(e){}renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派車頭':''].filter(Boolean),tr=[k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就派司機':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月派司機':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月派司機':'白色特斯拉：用車前一週派司機'):''].filter(Boolean);$('headHint').textContent=(rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):k.tesla&&!k.lux?'特斯拉由你擔任車頭，不用指派車頭。':'本單沒有提前指派車頭的需求。')+(tr.length?'　'+tr.join('；'):'')+(String(o.carHead||'').trim()?'　✅ 已找車頭：司機由車頭安排，用車前 3 天再確認司機資料即可。':'')}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=CONFIRM_TPL;renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
   $('outQuote').textContent=quoteText(o,'zh');if($('outQuoteAdd'))$('outQuoteAdd').textContent=QUOTE_ADD;$('outOrder').textContent=orderText(o,'zh');
   renderFind();$('contractPaper').innerHTML=contractHTML(o);ctTuneFill();renderSigned();renderMemo();
   ['meet','wed','o1','o2'].forEach(k=>{$('c_'+k+'S').placeholder=shortArea(o.c[k])||'自動'});
@@ -1897,7 +1901,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnBundleAdd':S.bundles.push({name:'新方案',cars:{},price:0});saveS();renderPriceSettings();break;
    case 'btnConfirm':{const res=parseConfirm($('confirmBox').value);if(!Object.keys(res).length){$('confirmResult').innerHTML='<p class="hint">沒有認出欄位，請確認貼上的是行前確認的回覆。</p>';break}const r=applyConfirm(res);o.cfDoneAt=Date.now();save();renderOrderSel();fillInputs();renderFlow();renderAll();renderConfirmResult(r);toast('已帶入行前確認');break}
    case 'btnApplyH':{if(o._suggestH){o.hours=o._suggestH;o._suggestH=null;save();fillInputs();renderCars();renderFleet();renderAll();$('confirmResult').insertAdjacentHTML('beforeend','<p class="hint">合約時數已更新，報價、合約、memo 都已重算。</p>');t.remove()}break}
-   case 'btnParse':{const res=parseForm($('pasteBox').value);const n=applyForm(res);save();fillInputs();renderCars();syncFleet();renderFleet();renderFlow();renderAll();
+   case 'btnFormData':{const fd=FORMDATA[normNo(orderNo(o))];if(!fd||!fd.f){toast('這張單還沒有客人填寫頁回覆');break}const cols=[['no','訂單編號'],['groom','新郎姓名'],['bride','新娘姓名'],['role','主要聯絡人'],['phone','主要聯絡人電話'],['start','預計開始用車時間'],['end','預計結束用車時間'],['meet','禮車集合地點'],['wed','迎娶地點'],['o1','其他停靠地點 1（選填）'],['o1L','其他停靠地點 1 是什麼地點？（選填）'],['o2','其他停靠地點 2（選填）'],['o2L','其他停靠地點 2 是什麼地點？（選填）'],['route','路線說明'],['cane','車頂甘蔗固定需求'],['deco','車頭彩安排']];const cl=v=>String(v==null?'':v).replace(/[\t\n\r]+/g,' ');$('pasteBox').value=cols.map(c=>c[1]).join('\t')+'\n'+cols.map(c=>cl(fd.f[c[0]])).join('\t');$('btnParse').click();break}
+    case 'btnParse':{const res=parseForm($('pasteBox').value);const n=applyForm(res);save();fillInputs();renderCars();syncFleet();renderFleet();renderFlow();renderAll();
      $('parseMsg').textContent=n?`已帶入 ${n} 個欄位，請核對。`:'沒有認出欄位，請確認貼上的是表單回覆。';break}
    case 'btnSync':{if(!S.driveKey){const k=(prompt('輸入同步金鑰（在電腦「價目設定」的 Drive 金鑰）')||'').trim();if(!k)break;S.driveKey=k;if(!S.driveUrl)S.driveUrl=DEF_S.driveUrl;store('nwcw_settings',S);toast('已設定同步，正在下載訂單…')}doSync();break}
    case 'btnSetupLink':{if(!S.driveUrl||!S.driveKey){toast('請先填 Drive 網址和金鑰');break}const u=`${location.origin}${location.pathname}#setup=${encodeURIComponent(JSON.stringify({u:S.driveUrl,k:S.driveKey}))}`;if(navigator.clipboard)navigator.clipboard.writeText(u).then(()=>toast('已複製手機設定連結，傳給自己後用手機打開一次即可'),()=>toast('複製失敗'));break}
