@@ -743,11 +743,11 @@ nav.tabs button{scroll-snap-align:start}
           <label class="f wide">B 導航定位連結（地址搜尋不到才填）<input id="c_wedMap" data-b="c.wedMap" placeholder="https://maps.app.goo.gl/…"></label>
           <label class="f">B 短地區<input id="c_wedS" data-b="c.wedS" placeholder="自動"></label>
           <label class="f wide">C. 其他地點 1<input id="c_o1" data-b="c.o1"></label>
-          <label class="f">C 標註<input id="c_o1L" data-b="c.o1L" placeholder="例：宴客飯店"></label>
+          <datalist id="placeTypes"><option value="新家"><option value="祭祖地點"><option value="證婚地點"><option value="儀式地點"><option value="入房地點"><option value="宴客餐廳"></datalist><label class="f">C 標註<input id="c_o1L" data-b="c.o1L" list="placeTypes" placeholder="例：新家、宴客餐廳"></label>
           <label class="f wide">C 導航定位連結（地址搜尋不到才填）<input id="c_o1Map" data-b="c.o1Map" placeholder="https://maps.app.goo.gl/…"></label>
           <label class="f">C 短地區<input id="c_o1S" data-b="c.o1S" placeholder="自動"></label>
           <label class="f wide">D. 其他地點 2<input id="c_o2" data-b="c.o2"></label>
-          <label class="f">D 標註<input id="c_o2L" data-b="c.o2L"></label>
+          <label class="f">D 標註<input id="c_o2L" data-b="c.o2L" list="placeTypes" placeholder="例：祭祖地點"></label>
           <label class="f wide">D 導航定位連結（地址搜尋不到才填）<input id="c_o2Map" data-b="c.o2Map" placeholder="https://maps.app.goo.gl/…"></label>
           <label class="f">D 短地區<input id="c_o2S" data-b="c.o2S" placeholder="自動"></label>
           <label class="f wide">路線說明<textarea id="c_route" data-b="c.route"></textarea></label>
@@ -1251,8 +1251,9 @@ function contractHTML(x){const r=calc(x),c=x.c,rin=!!x.ctRedIn&&r.red>0,rent=rin
   const no=E(orderNo(x)),hrs=+x.hours===0?'單程接送':`${E(x.hours)} 小時`,time=String(x.ctTime||'').trim()?E(String(x.ctTime).trim()):[c.start,c.end].filter(Boolean).map(E).join(' – ');
   const addr=(v,l)=>E(v)+(l?E(`（${l}）`):'');
   const rows=[['集合地點',addr(c.meet,c.meetL)],['迎娶地點',addr(c.wed,c.wedL)]];
-  if(String(c.o1||'').trim())rows.push(['其他地點 1',addr(c.o1,c.o1L)]);
-  if(String(c.o2||'').trim())rows.push([`其他地點 ${String(c.o1||'').trim()?2:1}`,addr(c.o2,c.o2L)]);
+  const oL=v=>String(v||'').trim();
+  if(String(c.o1||'').trim())rows.push([oL(c.o1L)?E(oL(c.o1L)):'其他地點 1',oL(c.o1L)?E(c.o1):addr(c.o1,c.o1L)]);
+  if(String(c.o2||'').trim())rows.push([oL(c.o2L)?E(oL(c.o2L)):`其他地點 ${String(c.o1||'').trim()?2:1}`,oL(c.o2L)?E(c.o2):addr(c.o2,c.o2L)]);
   rows.push(['路線說明',String(c.route||x.path||'').trim()?E(c.route||x.path):'行前一週確認']);
   const B=['用車時間自禮車出發起算；司機於出發前 20 分鐘抵達',short?'本方案未滿 3 小時，無超時緩衝；超過用車時間即以每 30 分鐘計收超時費用':'超過 15 分鐘內不加收超時費；超過 16 分鐘起計算超時費用（未滿一小時以一小時計）',num(x.cane)>0?`以上費用含駕駛、油資、過路費及甘蔗固定費 ${money(S.cane)}*${num(x.cane)}台`:'以上費用含駕駛、油資、過路費','尾款請於用車當日結清',(()=>{const u=MODELS.filter(m=>num(x.cars[m])>0),t=u.filter(m=>MBRAND[m]==='Tesla').length;return t&&t<u.length?'隨車附手把彩：特斯拉每車 2 個、其他車款每車 4 個，新娘座車另附車頭彩 1 組':`隨車附手把彩每車 ${u.length&&!t?4:2} 個，新娘座車另附車頭彩 1 組`})()];String(x.ctNote||'').split('\n').map(t=>t.trim()).filter(Boolean).forEach(t=>B.push(t));
   const ul=a=>`<ul>${a.map(s=>`<li>${E(s)}</li>`).join('')}</ul>`;
@@ -1357,8 +1358,8 @@ async function saveToDrive(){const btn=$('btnDrive');if(!S.driveUrl||!S.driveKey
   catch(e){toast('存檔失敗：'+e.message);$('driveLink').textContent='❌ 存檔失敗：'+e.message+'，請再按一次'}finally{btn.disabled=false;btn.textContent='存到 Google Drive'}}
 
 /* ---------- form paste parser ---------- */
-const FORM_ORDER=['orderNo','groom','bride','role','phone','start','end','meet','wed','o1','o2','route','caneAns','decoAns','payDate','payAmt','last5'];
-const LABELS=[['orderNo',/訂單編號/],['groom',/新郎姓名/],['bride',/新娘姓名/],['phone',/主要聯絡人電話/],['role',/主要聯絡人(?!電話)/],['start',/開始用車時間/],['end',/結束用車時間/],['meet',/集合地點/],['wed',/迎娶地點/],['o1',/其他地點\s*1/],['o2',/其他地點\s*2/],['route',/路線說明/],['caneAns',/車頂需掛實體甘蔗[?？]?/],['decoAns',/是否需.{0,3}付費.{0,3}指定或設計客製化車頭彩/],['payDate',/匯款日期/],['payAmt',/匯款金額/],['last5',/匯款後五碼/]];
+const FORM_ORDER=['orderNo','groom','bride','role','phone','start','end','meet','wed','o1','o2','route','caneAns','decoAns','payDate','payAmt','last5','o1L','o2L'];
+const LABELS=[['orderNo',/訂單編號/],['groom',/新郎姓名/],['bride',/新娘姓名/],['phone',/主要聯絡人電話/],['role',/主要聯絡人(?!電話)/],['start',/開始用車時間/],['end',/結束用車時間/],['meet',/集合地點/],['wed',/迎娶地點/],['o1L',/其他(?:停靠|停車)?地點\s*1.{0,8}(是什麼|類型|名稱)/],['o2L',/其他(?:停靠|停車)?地點\s*2.{0,8}(是什麼|類型|名稱)/],['o1',/其他(?:停靠|停車)?地點\s*1(?!.{0,8}(是什麼|類型|名稱))/],['o2',/其他(?:停靠|停車)?地點\s*2(?!.{0,8}(是什麼|類型|名稱))/],['route',/路線說明/],['caneAns',/車頂需掛實體甘蔗[?？]?|車頂甘蔗固定需求/],['decoAns',/是否需.{0,3}付費.{0,3}指定或設計客製化車頭彩/],['payDate',/匯款日期/],['payAmt',/匯款金額/],['last5',/匯款後五碼/]];
 function normTime(v){v=(v||'').trim().replace(/：/g,':');
   {const mm=v.match(/(早上|上午|中午|下午|晚上)?\s*(\d{1,2})\s*[點时時](半|(\d{1,2})\s*分?)?/);if(mm&&!/\d:\d/.test(v)){let h=+mm[2];const mi=mm[3]==='半'?30:(mm[4]?+mm[4]:0);if((mm[1]==='下午'||mm[1]==='晚上')&&h<12)h+=12;if(mm[1]==='中午'&&h<11)h+=12;return `${p2(h)}:${p2(mi)}`}}let m=v.match(/(上午|下午|AM|PM|am|pm)?\s*(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM|am|pm|上午|下午)?/);if(!m)return '';let h=+m[2];const mer=(m[1]||m[4]||'').toLowerCase();
   if((mer==='下午'||mer==='pm')&&h<12)h+=12;if((mer==='上午'||mer==='am')&&h===12)h=0;return `${p2(h)}:${m[3]}`}
@@ -1419,7 +1420,7 @@ function applyForm(res){const c=o.c;let n=0;o.sample=false;const set=(k,v)=>{if(
   set('groom',res.groom);set('bride',res.bride);
   if(res.role){if(/新郎/.test(res.role))c.role='新郎';else if(/新娘/.test(res.role))c.role='新娘';else{c.role='其他';c.contact=res.role}n++}
   set('phone',res.phone);set('start',normTime(res.start));set('end',normTime(res.end));
-  ['meet','wed','o1','o2','route'].forEach(k=>{const v=res[k];if(v&&!/^n\/?a$/i.test(v))set(k,v)});
+  ['meet','wed','o1','o2','route'].forEach(k=>{const v=res[k];if(v&&!/^n\/?a$/i.test(v))set(k,v)});['o1L','o2L'].forEach(k=>{const v=res[k];if(v&&!/^(n\/?a|無|沒有|否)$/i.test(v))set(k,v)});
   ['caneAns','decoAns'].forEach(k=>{const v=res[k]||'';if(/待確認/.test(v))set(k,'待確認');else if(/是/.test(v))set(k,'是');else if(/否/.test(v))set(k,'否')});
   set('payDate',normDate(res.payDate));set('payAmt',res.payAmt);set('last5',res.last5);
   if(res.orderNo){const m=res.orderNo.match(/^(\d{4})(\d{2})(\d{2})([A-Za-z]*)(\d*)$/);if(m){o.date=`${m[1]}-${m[2]}-${m[3]}`;if(m[4]&&m[4].toUpperCase()!==autoCode(o))o.code=m[4];if(m[5])o.seq=m[5]}}
@@ -1512,7 +1513,7 @@ function renderMemo(){const who=o.memoWho||'cust';renderMemoLinks();if($('routeI
   const lang='zh';const m=memoModel(o,who,lang);
   $('outMemo').textContent=memoText(m,false);$('memoDoc').innerHTML=memoHTML(m,false)}
 function payState(x){const r=calc(x),c=x.c;const amt=num(String(c.payAmt||'').replace(/[^\d.]/g,''));return{r,amt,match:amt>0&&amt===r.deposit}}
-function paidText(x){const tips=['我們會在用車前一週再次與您核對最終行程及用車時間。','用車前三日會提供司機資訊，一天前司機會再次聯絡確認細節。','禮車會提早大約20分鐘抵達集合地點，並佈置完車彩，如不先綁彩可提前告知。',num(x.cane)>0?'甘蔗豬肉是新人自備，請將甘蔗(3米內)及豬肉包好交給司機，司機會協助固定。':`如需要綁甘蔗豬肉，請提前告知準備專業工具架設，並於尾款支付固定費用 ${money(S.cane)}/台。(甘蔗豬肉是新人自備，請將甘蔗(3米內)及豬肉包好交給司機，司機會協助固定。)`,'禮車行駛路線，請新人安排熟悉路線親友乘坐前導車引路，如無安排將依導航路線行駛。','服務當天司機會協助側拍紀錄，如有不能拍攝清晰人像照片之情況請提前告知客服。','尾款、甘蔗固定費及司機禮請於用車日交給司機(可由親友轉交)或是用車前一日匯款，因會計無法即時對帳，請勿於用車結束當日進行匯款。'];
+function paidText(x){const tips=['我們會在用車前一週再次與您核對最終行程及用車時間。','用車前三日會提供司機資訊，一天前司機會再次聯絡確認細節。','禮車會提早大約20分鐘抵達集合地點，並佈置完車彩，如不先綁彩可提前告知。',num(x.cane)>0?'甘蔗豬肉是新人自備，請將甘蔗(3米內)及豬肉包好交給司機，司機會協助固定。':`如需要綁甘蔗豬肉，請提前告知準備專業工具架設，並於尾款支付固定費用 ${money(S.cane)}/台。[甘蔗豬肉是新人自備，請將甘蔗(3米內)及豬肉包好交給司機，司機會協助固定]`,'禮車行駛路線，請新人安排熟悉路線親友乘坐前導車引路，如無安排將依導航路線行駛。','服務當天司機會協助側拍紀錄，如有不能拍攝清晰人像照片之情況請提前告知客服。','尾款、甘蔗固定費及司機禮請於用車日交給司機(可由親友轉交)或是用車前一日匯款，因會計無法即時對帳，請勿於用車結束當日進行匯款。'];
   if(!x.colorReq)tips.push('車色無法指定，一般為黑色或白色由派車人員安排。');
   const hi=typeof rmHi==='function'?rmHi(x):'您好';
   return [(hi==='您好'?'':hi+'🤍 ')+(signUrlOf(x)?'已經收到訂金，請點開以下連結確認合約內容，並按下方「簽名完成合約」完成線上簽署：':'已經收到訂金，合約提供您留存：'),signUrlOf(x)||(x.contractUrl||'').trim()||'（請貼上合約連結）','',...tips.map((t,i)=>`${i+1}.${t}`)].join('\n')}
