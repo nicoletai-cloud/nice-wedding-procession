@@ -116,6 +116,8 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .doc a{color:var(--accent)}
 /* contract: paper document, fixed light palette by design */
 .paperwrap{overflow-x:auto;padding-bottom:6px}
+.signed-pages canvas{display:block;width:794px;max-width:100%;height:auto;margin:0 auto 16px;border-radius:4px;background:#fff}
+.signed-pages .hint{text-align:center}
 .paper{--paper:#F9EEEA;--ink:#1F1B18;--gold:#C49A63;background:var(--paper);color:var(--ink);width:794px;min-height:1123px;margin:0 auto;padding:34px 40px;font-family:var(--f-body);font-size:13px;line-height:1.45;border-radius:4px}
 .paper table.plain td{border:0;padding:0;vertical-align:middle}
 .paper .ring{width:54px;height:54px;border:1.5px solid var(--gold);border-radius:50%;font-size:15px;line-height:1.05;text-align:center;color:var(--gold);padding-top:11px;box-sizing:border-box}
@@ -395,11 +397,11 @@ nav.tabs button{scroll-snap-align:start}
   <section class="tab" id="tab-contract" hidden>
     <div class="row" style="margin-bottom:12px;justify-content:space-between">
       <span class="hint" style="margin:0" id="contractHint">資料來自「報價」與「新人資料」，改那邊這裡就會更新。</span>
-      <div class="row"><span class="hint" id="driveLink" style="margin:0"></span><button class="btn" id="btnDrive" hidden>存到 Google Drive</button><button class="btn pri" id="btnPrint" hidden>列印／存成 PDF</button></div>
+      <div class="row"><a class="btn" id="signedOpen" hidden target="_blank" rel="noopener" style="text-decoration:none">開新分頁</a><button class="btn" id="btnShowDraft" type="button" hidden>看原始合約（未簽名版）</button><span class="hint" id="driveLink" style="margin:0"></span><button class="btn" id="btnDrive" hidden>存到 Google Drive</button><button class="btn pri" id="btnPrint" hidden>列印／存成 PDF</button></div>
     </div>
-    <div class="card" id="signedView" hidden style="max-width:900px;margin:0 auto 16px">
-      <div class="row" style="justify-content:space-between;gap:8px;margin-bottom:10px"><b id="signedInfo" style="color:#2f7d4f"></b><span class="row" style="gap:6px"><a class="btn sm" id="signedOpen" target="_blank" rel="noopener">開新分頁</a><button class="btn sm" id="btnShowDraft" type="button">看原始合約（未簽名版）</button></span></div>
-      <iframe id="signedFrame" title="已簽署合約" style="width:100%;height:80vh;border:1px solid var(--line);border-radius:10px;background:#fff" loading="lazy"></iframe>
+    <div id="signedView" hidden>
+      <div class="paperwrap"><div id="signedPages" class="signed-pages"></div></div>
+      <iframe id="signedFrame" hidden title="已簽署合約" style="display:block;width:794px;max-width:100%;height:80vh;margin:0 auto;border:0;border-radius:4px;background:#fff"></iframe>
     </div>
     <div class="paperwrap" id="draftWrap"><div class="paper" id="contractPaper"></div></div>
     <div class="card" id="ctSendCard" style="max-width:900px;margin:16px auto 0">
@@ -1533,13 +1535,24 @@ function renderPaidAck(){renderTTCheck();renderCallCheck();const el=$('outPaidAc
     h.innerHTML='<b style="color:#A0453A">⚠️ 客人還沒填訂車表單</b>：上面這則已附表單連結，複製傳給客人。客人填完表單後，再到「3 合約」產生合約。'}
   else{el.textContent='已確認收到訂金，後續提供合約給您';h.textContent='傳合約給客人：到「3 合約」分頁預覽，確認內容後就會出現可複製的訊息。'}}
 const ctOk={};
-/* 已完成線上簽署：合約分頁直接顯示簽好的 PDF；要看未簽名的原始合約再按按鈕 */
-let showDraft={};
+/* 已完成線上簽署：合約分頁直接顯示簽好的 PDF（用 pdf.js 畫成跟原始合約一樣的紙張；讀不到時改用 Google 雲端硬碟預覽） */
+let showDraft={};const pdfCache={};
+function loadScript(u){return new Promise((res,rej)=>{if(document.querySelector(`script[src="${u}"]`))return res();const sc=document.createElement('script');sc.src=u;sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)})}
+async function drawSigned(x){const box=$('signedPages'),pdf=String(x.signedPdf||'');if(box.dataset.k===pdf)return;box.dataset.k=pdf;box.innerHTML='<p class="hint">讀取簽好的合約中…</p>';$('signedFrame').hidden=true;
+  try{const PJ='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';await loadScript(PJ+'pdf.min.js');window.pdfjsLib.GlobalWorkerOptions.workerSrc=PJ+'pdf.worker.min.js';
+    const b64=pdfCache[pdf]||(pdfCache[pdf]=(await gasCall({action:'signedPdf',url:pdf})).b64);const raw=atob(b64),u8=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)u8[i]=raw.charCodeAt(i);
+    const doc=await window.pdfjsLib.getDocument({data:u8}).promise;if(box.dataset.k!==pdf)return;box.innerHTML='';
+    for(let n=1;n<=doc.numPages;n++){const pg=await doc.getPage(n),vp0=pg.getViewport({scale:1}),sc=(794/vp0.width)*(window.devicePixelRatio>1?2:1.5),vp=pg.getViewport({scale:sc});const cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;box.appendChild(cv);await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise}
+  }catch(err){console.warn(err);if(box.dataset.k!==pdf)return;box.innerHTML='';const f=$('signedFrame');f.hidden=false;const pv=pdf.replace(/\/view.*$/,'/preview');if(f.getAttribute('src')!==pv)f.setAttribute('src',pv)}}
 function renderSigned(){const v=$('signedView');if(!v)return;const pdf=String(o.signedPdf||'');const on=!!(o.signedAt&&/^https:\/\/drive\.google\.com\//.test(pdf));
-  v.hidden=!on;const draft=!on||!!showDraft[o.id];$('draftWrap').hidden=!draft;if(window.__ctBtns!==undefined){$('btnDrive').hidden=$('btnPrint').hidden=!(window.__ctBtns&&draft)}
-  if(!on){if(window.__ctHint)$('contractHint').textContent=window.__ctHint;return}const pv=pdf.replace(/\/view.*$/,'/preview');if($('signedFrame').getAttribute('src')!==pv)$('signedFrame').setAttribute('src',pv);$('signedOpen').href=pdf;
-  $('signedInfo').textContent=`✅ 客人已於 ${new Date(o.signedAt).toLocaleString('zh-TW',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})} 完成線上簽署`;
-  $('btnShowDraft').textContent=draft?'收起原始合約':'看原始合約（未簽名版）';$('contractHint').textContent=draft?'下面是系統產生的原始合約（未簽名），資料來自「報價」與「新人資料」。':'這張已完成線上簽署，下面是簽好的合約。'}
+  const draft=!on||!!showDraft[o.id];v.hidden=!on||draft;$('draftWrap').hidden=!draft;$('signedOpen').hidden=!on;$('btnShowDraft').hidden=!on;
+  if(window.__ctBtns!==undefined){$('btnDrive').hidden=$('btnPrint').hidden=!(window.__ctBtns&&draft)}
+  const ch=$('contractHint');ch.style.color='';ch.style.fontWeight='';
+  if(!on){if(window.__ctHint)ch.textContent=window.__ctHint;return}
+  $('signedOpen').href=pdf;$('btnShowDraft').textContent=draft?'看簽好的合約':'看原始合約（未簽名版）';
+  if(draft){ch.textContent='下面是系統產生的原始合約（未簽名），資料來自「報價」與「新人資料」。';return}
+  ch.textContent=`✅ 客人已於 ${new Date(o.signedAt).toLocaleString('zh-TW',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})} 完成線上簽署`;ch.style.color='#2f6b45';ch.style.fontWeight='700';
+  if(!v.hidden)drawSigned(o)}
 document.addEventListener('click',e=>{if(e.target.id!=='btnShowDraft')return;showDraft[o.id]=!showDraft[o.id];renderAll()});
 function renderCtSend(){if(!$('ctStep1'))return;const ok=!!(ctOk[o.id]||o.ctSentAt),url=(signUrlOf(o)||o.contractUrl||'').trim();$('ctStep1').hidden=ok;$('ctStep2').hidden=!ok;
   $('ctLinkHint').textContent=!url?'還沒有合約連結：先按上方「存到 Google Drive」產生 PDF，或把連結貼進來。':o.ctSentAt?'已於 '+new Date(o.ctSentAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+' 複製傳送過。':'';$('btnCtCopy').disabled=!url;
