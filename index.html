@@ -212,7 +212,7 @@ nav.tabs button{scroll-snap-align:start}
     <div class="orderbar">
       <select id="orderSel" aria-label="切換訂單"></select>
       <button type="button" class="btn sm" id="grpCode" title="這場的代碼：LINE 群組名稱、找司機都用這組；點一下複製" hidden></button>
-      <input id="codeQ" placeholder="司機回的代碼" maxlength="12" autocomplete="off" style="width:120px" title="輸入找司機訊息裡的 4 碼代碼，直接開啟那一場">
+      <input id="codeQ" placeholder="司機回的代碼" maxlength="12" autocomplete="off" style="width:120px" title="輸入找司機訊息裡的代碼（4～5 碼），直接開啟那一場">
       <div class="kw-search"><input id="kwQ" placeholder="🔍 搜尋單號、客人、新人、地址、婚顧" autocomplete="off"><div class="kw-results" id="kwResults" hidden></div></div>
       <button class="btn sm" id="btnSync" title="手機／電腦同步">同步</button>
       <button class="btn" id="btnInbox">訊息</button>
@@ -1169,13 +1169,14 @@ const FC_ABC='ACDEFGHJKMNPQRTUVWXY34679';
 function fcHash(s){let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)>>>0}return h}
 /* 代碼開頭：嫁給我 M、Wantesla W、澎澎禮車 P、其他同業 X、好好禮車自己的單 N；已經產生過的舊代碼不改 */
 const TRIP_PFX={'嫁給我':'M','Wantesla':'W','澎澎禮車':'P'};
-function fcPrefix(x){if(!x.partner)return 'N';return TRIP_PFX[String(x.partner.co||'').trim()]||'X'}
+/* 同業單開頭用兩個一樣的字母（嫁給我 MM、Wantesla WW、澎澎禮車 PP、其他同業 XX），LINE 搜尋「MM」就能一次找出同一家的群組；好好禮車自己的單維持 N */
+function fcPrefix(x){if(!x.partner)return 'N';const l=TRIP_PFX[String(x.partner.co||'').trim()]||'X';return l+l}
 function findCode(x){if(!x)return'';if(x.findCode)return x.findCode;const used=new Set(Object.values(DB.orders).filter(y=>y!==x&&y.id!==x.id&&y.findCode).map(y=>y.findCode));
-  const pf=fcPrefix(x);for(let i=0;i<50;i++){let h=fcHash('nwc~'+x.id+'~'+i),c=pf;for(let k=0;k<3;k++){c+=FC_ABC[h%FC_ABC.length];h=Math.floor(h/FC_ABC.length)}if(!used.has(c)){x.findCode=c;if(DB.orders[x.id]&&DB.orders[x.id]!==x)DB.orders[x.id].findCode=c;return c}}return''}
+  const pf=fcPrefix(x),AB=pf.length>1?FC_ABC.replace(/[MPWXN]/g,''):FC_ABC;for(let i=0;i<50;i++){let h=fcHash('nwc~'+x.id+'~'+i),c=pf;for(let k=0;k<3;k++){c+=AB[h%AB.length];h=Math.floor(h/AB.length)}if(!used.has(c)){x.findCode=c;if(DB.orders[x.id]&&DB.orders[x.id]!==x)DB.orders[x.id].findCode=c;return c}}return''}
 function codeFind(q){q=normNo(q).replace(/[^A-Z0-9]/g,'');if(!q)return null;const L=Object.values(DB.orders).filter(x=>!x.sample);return L.find(x=>findCode(x)===q)||L.find(x=>normNo(orderNo(x))===q)||null}
 document.addEventListener('keydown',e=>{if(e.target.id!=='codeQ'||e.key!=='Enter')return;e.preventDefault();const x=codeFind(e.target.value);if(!x){toast('找不到這個代碼');return}
   o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();showTab('find');e.target.value='';toast(`已開啟 ${orderNo(x)}（代碼 ${findCode(x)}）`)});
-document.addEventListener('input',e=>{if(e.target.id!=='codeQ')return;const v=normNo(e.target.value).replace(/[^A-Z0-9]/g,'');if(v.length!==4)return;const x=Object.values(DB.orders).find(y=>!y.sample&&findCode(y)===v);if(x){o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();showTab('find');e.target.value='';toast(`已開啟 ${orderNo(x)}（代碼 ${v}）`)}});
+document.addEventListener('input',e=>{if(e.target.id!=='codeQ')return;const v=normNo(e.target.value).replace(/[^A-Z0-9]/g,'');if(v.length<4||v.length>5)return;const x=Object.values(DB.orders).find(y=>!y.sample&&findCode(y)===v);if(x){o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();showTab('find');e.target.value='';toast(`已開啟 ${orderNo(x)}（代碼 ${v}）`)}});
 function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr);const fl0=x.findM?x.fleet.filter(f=>f.m===x.findM):x.fleet;/* 只算還沒派司機的車；全部都派了才顯示全部 */const fl=fl0.some(f=>!String(f.driver||'').trim())?fl0.filter(f=>!String(f.driver||'').trim()):fl0;
   const CNN=['零','一','兩','三','四','五','六','七','八','九','十'];const n2=n=>CNN[n]||String(n);
   const ng={};fl.forEach(f=>{const k=`${(f.color||'').trim()} ${MNAME[f.m]}`.trim();ng[k]=(ng[k]||0)+1});
