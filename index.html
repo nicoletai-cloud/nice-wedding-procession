@@ -998,6 +998,7 @@ const L={
 function mult(unit,q,lang){return q>1?`${money(unit,lang)}×${q} = ${money(unit*q,lang)}`:money(unit,lang)}
 function feeLines(x,lang){const t=L[lang],r=calc(x),hl=hrsLabel(x.hours),out=[];const short=x.hours<3;
   const within=t.within(+x.hours>3?hrsLabel(3):hl,num(x.km));
+  if(r.eh&&+x.hours>3)out.push(lang==='en'?`${hl} total quote (3HR base + ${r.eh}HR overtime)`:lang==='ja'?`合計 ${hl} のお見積り（基本 3HR＋延長 ${r.eh}HR）`:`以下為 ${hl} 報價（基本 3HR＋超時 ${r.eh}HR）`);
   if(r.b){const nm=MODELS.filter(m=>num(x.cars[m])>0).map(m=>MNAME[m]+(num(x.cars[m])>1?'*'+num(x.cars[m]):'')).join(' + ');
     out.push(lang==='zh'?`${comboText(x.cars)}=${money(r.b.price,lang)} ${within}`:`${nm} ${t.bundle} ${money(r.b.price,lang)} ${within}`)}
   else MODELS.forEach(m=>{const q=num(x.cars[m]);if(q)out.push(`${MNAME[m]} ${mult(cPrice(m,x.hours).v,q,lang)} ${+x.hours===0?(lang==='en'?'(one-way transfer)':lang==='ja'?'(片道送迎)':'(單程接送)'):within}`)});
