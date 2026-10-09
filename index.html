@@ -645,7 +645,7 @@ nav.tabs button{scroll-snap-align:start}
             <label class="f">迎娶地址<textarea id="fp_wed" rows="6"></textarea></label>
             <label class="f">其他停靠地址<textarea id="fp_stop" rows="6"></textarea></label>
           </div>
-          <div class="row" style="margin-top:8px;gap:8px;align-items:center"><button class="btn pri" id="fpSave" type="button">儲存地點按鈕</button><button class="btn sm" id="fpReset" type="button">恢復預設</button><a class="hint" href="https://nicoletai-cloud.github.io/nice-hub/wed-form.html?no=%E9%A0%90%E8%A6%BD%E6%B8%AC%E8%A9%A6&amp;preview=1" target="_blank" rel="noopener" style="margin:0">預覽填寫頁 ›</a></div>
+          <div class="row" style="margin-top:8px;gap:8px;align-items:center"><button class="btn pri" id="fpSave" type="button">儲存地點按鈕</button><button class="btn sm" id="fpReset" type="button">恢復預設</button><a class="hint" href="https://love.niceweddingcar.com/wed-form?no=%E9%A0%90%E8%A6%BD%E6%B8%AC%E8%A9%A6&amp;preview=1" target="_blank" rel="noopener" style="margin:0">預覽填寫頁 ›</a></div>
           <div class="hint" style="margin-top:12px">客人選「其他」自己打的地點名稱（次數多的可以按 ＋ 加成按鈕）：</div>
           <div id="fpStats" style="margin-top:6px"></div>
         </div>
@@ -961,7 +961,7 @@ function roadOf(a){if(!a)return '';let s=String(a).replace(/臺/g,'台');const d
   s=s.replace(/^.*?[村里](?=[^村里]*?(路|街|大道))/,'').replace(/\d+鄰/g,'');const m=s.match(/([\u4e00-\u9fa5]{1,6}?(?:大道|路|街))([一二三四五六七八九十]段)?/);return m?m[1]+(m[2]||''):''}
 function mapUrl(a){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(a)}
 function renderFormDataBtn(){const b=$('btnFormData');if(!b||!o)return;const fd=FORMDATA[normNo(orderNo(o))];b.hidden=!fd;if(fd)b.title='客人填寫時間：'+new Date(fd.at).toLocaleString()}
-const WED_FORM_URL='https://nicoletai-cloud.github.io/nice-hub/wed-form.html';let FORMDATA={};
+const WED_FORM_URL='https://love.niceweddingcar.com/wed-form';let FORMDATA={};
 const FP_DEF={meet:['男方家','女方家','飯店','新家'],wed:['女方家','男方家','飯店'],stop:['新家','祭祖地點','證婚地點','儀式地點','入房地點']};
 function fpGet(){const f=S.formPlaces||{};const r={};Object.keys(FP_DEF).forEach(k=>{r[k]=Array.isArray(f[k])&&f[k].length?f[k].slice():FP_DEF[k].slice()});return r}
 function renderFormPlaces(){if(!$('fpCard'))return;const P=fpGet();['meet','wed','stop'].forEach(k=>{const el=$('fp_'+k);if(document.activeElement!==el)el.value=P[k].join('\n')});
