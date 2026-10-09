@@ -681,6 +681,9 @@ nav.tabs button{scroll-snap-align:start}
 <div id="todoModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
   <div style="max-width:980px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px">
     <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">待辦 <small>選進度篩選，勾選後可一起處理</small></h3><div class="row" style="gap:6px"><button class="btn pri" id="btnTTPrompt" title="把所有已收訂、還沒出車的訂單整理成指令，貼給 Claude 比對 TimeTree">🔍 產生 TimeTree 檢查指令</button><button class="btn" id="btnTodoClose">關閉</button></div></div>
+    <details id="mjBox" style="background:var(--card,#fff);border:1px solid var(--line,#e4dbce);border-radius:10px;padding:10px 12px;margin-bottom:12px"><summary style="cursor:pointer;font-weight:700">📋 給嫁給我（小洪）的確認訊息</summary>
+      <div class="row" style="gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap"><label class="row" style="gap:6px">用車日 <input type="date" id="mjDate" style="width:auto"></label><button class="btn sm pri" id="btnMjCopy">複製訊息</button><span class="hint" style="margin:0">每天 15:00 也會自動傳到你的 LINE；「已確認」＝已按「已聯絡新人」</span></div>
+      <pre class="out" id="mjOut" style="margin-top:8px"></pre></details>
     <div id="todoChips" class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
     <div class="row" style="gap:10px;margin-bottom:10px;flex-wrap:wrap"><input id="todoQ" placeholder="搜尋單號、客人名稱、新人姓名" style="flex:1;min-width:180px"><label class="row" style="gap:4px;font-size:0.867rem;flex-wrap:nowrap"><input type="checkbox" id="todoLate" style="width:auto"> 只看逾期</label></div>
     <div id="todoBatch" class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
@@ -1485,6 +1488,17 @@ function renderTTCheck(){const html=!o.paid?'':o.ttDone?`<span class="chip">✅ 
   const a=$('ttCheck');if(a){a.innerHTML=html;a.hidden=!html}const b=$('ttCheck2');if(b)b.innerHTML=html.replace('id="btnTTUndo"','data-x="1" id="btnTTUndo2"').replace('id="btnTTDone"','id="btnTTDone2"').replace(/<span class="hint"[^<]*<\/span>/,'')}
 /* 車趟代碼＝找司機代碼（同一組，4 碼）：放在 LINE 群組名稱、找司機訊息都用這組 */
 function tripCode(x){return findCode(x)}
+/* 給嫁給我的確認訊息（和機器人 15:00 傳的同格式） */
+const MJ_CTY='(台北|新北|桃園|台中|台南|高雄|基隆|新竹|嘉義|苗栗|彰化|南投|雲林|屏東|宜蘭|花蓮|台東)';
+function mjArea(x){const c=x.c||{},src=[c.meet,c.wed,c.addr1].filter(Boolean).join(' ').replace(/臺/g,'台');
+  const m=src.match(new RegExp(MJ_CTY+'[市縣]?\\s*([^\\s\\d市縣]{1,3}?)[區鎮鄉市]'));if(m)return m[1]+m[2];const m2=src.match(new RegExp(MJ_CTY));return m2?m2[1]:(x.cityA||'地點未填')}
+function mjText(day){const L=Object.values(DB.orders).filter(x=>!x.sample&&!x.lost&&x.paid&&x.date===day&&x.partner&&String(x.partner.co||'').trim()==='嫁給我')
+  .sort((a,b)=>String(a.c.start||'').localeCompare(String(b.c.start||'')));const p=dparts(day);if(!p)return '';
+  if(!L.length)return `（${p.m}/${p.d} 沒有嫁給我的單）`;const cn=n=>n===2?'兩':(['零','一','二','三','四','五','六','七','八','九','十'][n]||String(n));
+  return [`${p.m}/${p.d}`].concat(L.map(x=>{const n=Object.values(x.cars||{}).reduce((a,b)=>a+(+b||0),0);return `${mjArea(x)} ${cn(n)}台 ${x.callAt?'已確認':'待確認'}`})).join('\n')}
+function renderMj(){const d=$('mjDate'),out=$('mjOut');if(!d||!out)return;if(!d.value){const t=new Date(Date.now()+DAY);d.value=`${t.getFullYear()}-${p2(t.getMonth()+1)}-${p2(t.getDate())}`}out.textContent=mjText(d.value)}
+document.addEventListener('input',e=>{if(e.target.id==='mjDate')renderMj()});
+document.addEventListener('toggle',e=>{if(e.target.id==='mjBox'&&e.target.open)renderMj()},true);
 function callTime(t){const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`}
 function renderCallCheck(){const gc=$('grpCode');if(gc){const c=o&&!o.sample?findCode(o):'';gc.hidden=!c;gc.textContent='代碼 '+c}const el=$('callCheck');if(!el)return;if(!o.paid){el.hidden=true;return}el.hidden=false;
   el.innerHTML=`<span class="chip">車趟代碼 <b>${esc(tripCode(o))}</b></span><button class="btn sm" id="btnCopyTrip">複製代碼</button>`+(o.callAt?`<span class="chip">✅ 主禮車司機已電話聯絡新人（${callTime(o.callAt)} 回報）</span><button class="btn sm" id="btnCallUndo">改回未聯絡</button>`
@@ -1850,6 +1864,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnTTPrompt':{const t=ttPromptText();clip(t);toast('已複製 TimeTree 檢查指令，貼給 Claude 即可');break}
    case 'btnTTDone':case 'btnTTDone2':o.ttDone=true;o.ttAt=Date.now();save();renderAll();toast('已標記填入 TimeTree');break;
    case 'btnTTUndo':case 'btnTTUndo2':o.ttDone=false;save();renderAll();break;
+    case 'btnMjCopy':renderMj();clip($('mjOut').textContent);toast('已複製，可以直接貼給小洪');break;
     case 'btnCallDone':o.callAt=Date.now();save();renderAll();toast('已記錄：主禮車司機已聯絡新人');break;
     case 'btnCallUndo':o.callAt=0;save();renderAll();break;
     case 'btnCopyTrip':case 'grpCode':clip(tripCode(o));toast('已複製代碼 '+tripCode(o)+'，可以貼進 LINE 群組名稱');break;
