@@ -449,10 +449,17 @@ nav.tabs button{scroll-snap-align:start}
       <pre class="out" id="bfOut"></pre>
     </div>
     <div class="grid">
-      <div class="card">
-        <h3>車頭指派 <small>豪車、指定顏色的特斯拉要提前確認車頭</small></h3>
-        <label class="f wide">車頭 LINE 名字<input id="q_carHead" data-b="carHead" placeholder="多台用 / 分隔，例：MX 小明 / M3 小華"></label>
-        <p class="hint" id="headHint" style="margin:8px 0 0"></p>
+      <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+        <div class="card">
+          <h3>車頭指派 <small>豪車、指定顏色的特斯拉要提前確認車頭</small></h3>
+          <label class="f wide">車頭 LINE 名字<input id="q_carHead" data-b="carHead" placeholder="多台用 / 分隔，例：MX 小明 / M3 小華"></label>
+          <p class="hint" id="headHint" style="margin:8px 0 0"></p>
+        </div>
+        <div class="card">
+          <h3>司機車資</h3>
+          <p class="hint" style="margin:0 0 10px">預設＝價目設定的司機酬勞（含紅包）＋超時；總行程超過 35km 且跨區（不同縣市；台北新北同區、新竹縣市同區），每多 35km 每台 +$300；同區不加。個別車輛可在「車隊與流程」再調。</p>
+          <div class="sum" id="payBox"></div>
+        </div>
       </div>
       <div class="card">
         <h3>找司機訊息 <small>貼司機群組；不同車款分開找</small></h3>
@@ -460,11 +467,6 @@ nav.tabs button{scroll-snap-align:start}
         <div class="row" style="gap:14px;margin-bottom:8px;flex-wrap:wrap;font-size:0.867rem"><span class="hint" style="margin:0">條件：</span><label class="row" style="gap:6px"><input type="checkbox" data-freq="noMulti" style="width:auto"> 勿多元</label><label class="row" style="gap:6px"><input type="checkbox" data-freq="oem" style="width:auto"> 原廠車漆</label><label class="row" style="gap:6px"><input type="checkbox" data-freq="multiOk" style="width:auto"> 多元可</label></div>
         <div class="row" style="justify-content:space-between;margin-bottom:8px"><span></span><button class="btn sm pri" data-copy="outFind">複製</button></div>
         <pre class="out" id="outFind"></pre>
-      </div>
-      <div class="card">
-        <h3>司機車資</h3>
-        <p class="hint" style="margin:0 0 10px">預設＝價目設定的司機酬勞（含紅包）＋超時；總行程超過 35km 且跨區（不同縣市；台北新北同區、新竹縣市同區），每多 35km 每台 +$300；同區不加。個別車輛可在「車隊與流程」再調。</p>
-        <div class="sum" id="payBox"></div>
       </div>
     </div>
   </section>
