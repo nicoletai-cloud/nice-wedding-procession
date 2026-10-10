@@ -1018,7 +1018,7 @@ function driverOtText(m,x){const d=S.dp[m]||{},h=+x.hours;if(h===0)return `${MAB
 function vendorOf(x){const v=(x.src&&x.src.vendor||'').trim();return v?(S.vendors||[]).find(d=>d.name===v)||{name:v,rate:5}:null}
 function vLabel(x){const v=(x.src&&x.src.vendor||'').trim();if(!v)return '';const r=(x.src.ref||'').trim();return v+(r&&r!==v?' '+r:'')}
 /* 訂單下拉選單：訂單編號-(來源)下訂人名稱-新郎&新娘(婚顧)-訂單狀態 */
-function selLabel(x){const c=x.c||{},ch=x.partner?'同業 '+(x.partner.co||''):({FB:'fb',IG:'ig','私人LINE':'私人LINE'}[c.channel]||'LINE'),who=x.partner?(c.chatName||''):(c.chatName||'');
+function selLabel(x){const c=x.c||{},ch=x.partner?'同業 '+(x.partner.co||''):({FB:'fb',IG:'ig','私人LINE':'私人LINE'}[c.channel]||'LINE'),who=x.partner?'':(c.chatName||'');
   const cp=[c.groom,c.bride].filter(Boolean).join('&'),v=vLabel(x),st=x.sample?'範例':STAGE_LABEL[stageOf(x)]||'';
   return [orderNo(x),'('+ch+')'+who,cp+(v?`(${v})`:''),st].filter(t=>t&&t!=='()').join('-')}
 function coupleName(x){const c=[x.c.groom,x.c.bride].filter(Boolean).join('&'),v=vLabel(x);return c+(v?`(${v})`:'')}
