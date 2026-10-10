@@ -181,6 +181,7 @@ nav.tabs button{scroll-snap-align:start}
   .brand span{display:none}
   header.top .orderbar{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
   .orderbar select{grid-column:1/-1;max-width:none}
+  header.top .orderbar{position:relative}.orderbar .kw-search{grid-column:span 2;min-width:0}.orderbar .kw-search,.orderbar .kw-date{position:static}.orderbar .kw-date .btn{width:100%;font-size:.85rem;white-space:nowrap;overflow:hidden;padding-inline:4px}.kw-date-pop{left:0;right:0;width:auto}
   .orderbar .btn{width:100%;text-align:center;padding-inline:6px}
   nav.tabs button{padding-inline:11px;font-size:0.933rem}
   section.tab{padding-top:12px}
@@ -201,6 +202,10 @@ nav.tabs button{scroll-snap-align:start}
 .kw-results button b{color:var(--accent);margin-right:6px}
 .kw-results button:hover,.kw-results button.on{background:var(--surface-2)}
 .kw-results .empty{padding:10px 12px;color:var(--muted);font-size:.9rem}
+.dr-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.dr-bar input[type=date]{width:auto;min-width:0}.dr-bar .lbl{font-weight:700;font-size:.9rem}
+.kw-date{position:relative}.kw-date-pop{position:absolute;right:0;top:calc(100% + 4px);z-index:71;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:12px;width:min(520px,calc(100vw - 32px))}
+.kw-results .kw-head{padding:8px 12px;font-size:.85rem;color:var(--muted);border-bottom:1px solid var(--line)}
+#kwDateBtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
 </style>
 
 </head>
@@ -218,6 +223,7 @@ nav.tabs button{scroll-snap-align:start}
       <button type="button" class="btn sm" id="grpCode" title="這場的代碼：LINE 群組名稱、找司機都用這組；點一下複製" hidden></button>
       <input id="codeQ" placeholder="代碼／報價編號" maxlength="14" autocomplete="off" style="width:120px" title="輸入找司機訊息裡的代碼（4～5 碼），或報價編號 Q-代碼-版本（按 Enter），直接開啟那一場">
       <div class="kw-search"><input id="kwQ" placeholder="🔍 搜尋單號、客人、新人、地址、婚顧" autocomplete="off"><div class="kw-results" id="kwResults" hidden></div></div>
+      <div class="kw-date"><button type="button" class="btn sm" id="kwDateBtn" title="依用車日期篩選車趟">📅 用車日</button><div class="kw-date-pop" id="kwDatePop" hidden><div class="dr-bar" data-dr="kw"></div><div class="row" style="justify-content:flex-end;margin-top:8px"><button type="button" class="btn sm pri" id="kwDateShow">列出這段日期的車趟</button></div></div></div>
       <button class="btn sm" id="btnSync" title="手機／電腦同步">同步</button>
       <button class="btn" id="btnInbox">訊息</button>
       <button class="btn" id="btnTodo">待辦</button>
@@ -470,6 +476,7 @@ nav.tabs button{scroll-snap-align:start}
       <div class="card" id="ptCard" hidden style="border-color:#A77D4C"><h3>同業單 <small>只要選司機；不用出合約、memo、派車單</small></h3><datalist id="ptCoList"></datalist><div id="ptCardBody"></div></div>
       <div class="card">
         <h3>車隊 <small>車序、車號、司機</small></h3>
+        <div id="fleetCall" class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2,#faf5ee)" hidden></div>
         <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 8px"><span class="hint" style="margin:0">從司機名單選：</span><select id="drvMode" style="width:auto"><option value="mc">車款＋顏色相符</option><option value="m">只看車款</option><option value="all">全部司機</option></select><select id="drvArea" style="width:auto" title="依司機居住地區篩選"><option value="">全部地區</option><option value="北部">住北部（基北北桃竹宜）</option><option value="中部">住中部（苗中彰投雲）</option><option value="南部">住南部（嘉南高屏）</option><option value="東部">住東部（花東）</option></select><button class="btn sm" id="btnDrvReload">更新司機名單</button><button class="btn sm" id="btnDrvAdd">＋新增司機</button><span class="hint" style="margin:0" id="drvSt"></span></div>
         <div class="row" style="gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 8px" id="zodBar"><span class="hint" style="margin:0">避開生肖（點選後不列出）：</span><button class="btn sm" data-zod="鼠" aria-pressed="false" style="padding:2px 8px">鼠</button><button class="btn sm" data-zod="牛" aria-pressed="false" style="padding:2px 8px">牛</button><button class="btn sm" data-zod="虎" aria-pressed="false" style="padding:2px 8px">虎</button><button class="btn sm" data-zod="兔" aria-pressed="false" style="padding:2px 8px">兔</button><button class="btn sm" data-zod="龍" aria-pressed="false" style="padding:2px 8px">龍</button><button class="btn sm" data-zod="蛇" aria-pressed="false" style="padding:2px 8px">蛇</button><button class="btn sm" data-zod="馬" aria-pressed="false" style="padding:2px 8px">馬</button><button class="btn sm" data-zod="羊" aria-pressed="false" style="padding:2px 8px">羊</button><button class="btn sm" data-zod="猴" aria-pressed="false" style="padding:2px 8px">猴</button><button class="btn sm" data-zod="雞" aria-pressed="false" style="padding:2px 8px">雞</button><button class="btn sm" data-zod="狗" aria-pressed="false" style="padding:2px 8px">狗</button><button class="btn sm" data-zod="豬" aria-pressed="false" style="padding:2px 8px">豬</button><span class="hint" style="margin:0" id="zodSt"></span></div>
         <div id="drvAddBox" hidden style="border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 12px;background:var(--surface-2)">
@@ -522,6 +529,7 @@ nav.tabs button{scroll-snap-align:start}
 
   <!-- 6 memo -->
   <section class="tab" id="tab-memo" hidden>
+    <div id="memoCall" class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 12px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2,#faf5ee)" hidden></div>
     <div class="row" style="margin-bottom:12px;gap:14px">
       <div class="seg" id="memoWho">
         <button data-who="cust" aria-pressed="true">客人用</button><button data-who="drv" aria-pressed="false">司機端</button>
@@ -720,6 +728,7 @@ nav.tabs button{scroll-snap-align:start}
       <div class="row" style="gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap"><label class="row" style="gap:6px">用車日 <input type="date" id="mjDate" style="width:auto"></label><button class="btn sm pri" id="btnMjCopy">複製訊息</button><span class="hint" style="margin:0">每天 15:00 也會自動傳到你的 LINE；「已確認」＝已按「已聯絡新人」</span></div>
       <pre class="out" id="mjOut" style="margin-top:8px"></pre></details>
     <div id="todoChips" class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
+    <div class="dr-bar" data-dr="todo" style="margin-bottom:10px"></div>
     <div class="row" style="gap:10px;margin-bottom:10px;flex-wrap:wrap"><input id="todoQ" placeholder="搜尋單號、客人名稱、新人姓名" style="flex:1;min-width:180px"><label class="row" style="gap:4px;font-size:0.867rem;flex-wrap:nowrap"><input type="checkbox" id="todoLate" style="width:auto"> 只看逾期</label></div>
     <div id="todoBatch" class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
     <div id="todoList"></div>
@@ -1579,7 +1588,11 @@ function renderMj(){const d=$('mjDate'),out=$('mjOut');if(!d||!out)return;if(!d.
 document.addEventListener('input',e=>{if(e.target.id==='mjDate')renderMj()});
 document.addEventListener('toggle',e=>{if(e.target.id==='mjBox'&&e.target.open)renderMj()},true);
 function callTime(t){const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`}
-function renderCallCheck(){const gc=$('grpCode');if(gc){const c=o&&!o.sample?findCode(o):'';gc.hidden=!c;gc.textContent='代碼 '+c}const el=$('callCheck');if(!el)return;if(!o.paid){el.hidden=true;return}el.hidden=false;
+function renderFleetCall(){['fleetCall','memoCall'].forEach(id=>{const f=$(id);if(!f)return;if(!o||o.sample){f.hidden=true;return}f.hidden=false;
+  f.innerHTML=o.callAt?`<span class="chip">✅ 負責人已聯絡新人（${callTime(o.callAt)}）</span><button class="btn sm" data-fcall="undo">改回未聯絡</button>`
+    :`<b style="color:#A0453A">☎️ 負責人還沒回報聯絡新人</b><span class="hint" style="margin:0">用車前一天 12:00 前要回報</span><button class="btn sm pri" data-fcall="done">負責人已聯絡新人</button>`})}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-fcall]');if(!b)return;e.preventDefault();if(b.dataset.fcall==='done'){o.callAt=Date.now();toast('已記錄：'+orderNo(o)+' 負責人已聯絡新人')}else o.callAt=0;o.updated=Date.now();save();renderAll()});
+function renderCallCheck(){renderFleetCall();const gc=$('grpCode');if(gc){const c=o&&!o.sample?findCode(o):'';gc.hidden=!c;gc.textContent='代碼 '+c}const el=$('callCheck');if(!el)return;if(!o.paid){el.hidden=true;return}el.hidden=false;
   el.innerHTML=`<span class="chip">車趟代碼 <b>${esc(tripCode(o))}</b></span><button class="btn sm" id="btnCopyTrip">複製代碼</button>`+(o.callAt?`<span class="chip">✅ 主禮車司機已電話聯絡新人（${callTime(o.callAt)} 回報）</span><button class="btn sm" id="btnCallUndo">改回未聯絡</button>`
     :`<b style="color:#A0453A">☎️ 主禮車司機還沒回報聯絡新人</b><span class="hint" style="margin:0">用車前一天 12:00 前要回報</span><button class="btn sm pri" id="btnCallDone">已聯絡新人</button>`)}
 function renderPaidAck(){renderTTCheck();renderCallCheck();const el=$('outPaidAck'),h=$('paidAckHint');if(!el)return;const nf=o.paid&&stageOf(o)==='noform';
@@ -1805,14 +1818,36 @@ function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];c
     return T.filter(t=>t.k==='tt'||t.k==='nodrv'||t.k==='call'||t.k==='ptinfo')}
   return T}
 let todoF='all';const todoSel=new Set();
+/* ---- 用車日期篩選（待辦＋上方搜尋共用） ---- */
+const DR={todo:{f:'',t:''},kw:{f:'',t:''}};
+function drYmd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function drPreset(k){const t=new Date();t.setHours(0,0,0,0);const a=new Date(t),b=new Date(t);
+  if(k==='tmr'){a.setDate(a.getDate()+1);b.setDate(b.getDate()+1)}
+  else if(k==='wk'){const w=(t.getDay()+6)%7;a.setDate(a.getDate()-w);b.setDate(a.getDate()+6)}
+  else if(k==='nwk'){const w=(t.getDay()+6)%7;a.setDate(a.getDate()-w+7);b.setTime(a.getTime());b.setDate(b.getDate()+6)}
+  else if(k==='mo'){a.setDate(1);b.setMonth(b.getMonth()+1,0)}
+  else if(k==='nmo'){a.setMonth(a.getMonth()+1,1);b.setMonth(b.getMonth()+2,0)}
+  else if(k==='14'){b.setDate(b.getDate()+13)}
+  return[drYmd(a),drYmd(b)]}
+function drIn(k,x){const r=DR[k];if(!r.f&&!r.t)return true;const d=x.date||'';if(!d)return false;if(r.f&&d<r.f)return false;if(r.t&&d>r.t)return false;return true}
+function drOn(k){return !!(DR[k].f||DR[k].t)}
+function drLabel(k){const r=DR[k],f=s=>s?s.slice(5).replace('-','/'):'';if(!drOn(k))return'';return r.f&&r.t&&r.f===r.t?f(r.f):(f(r.f)||'…')+'–'+(f(r.t)||'…')}
+function drRender(k){const el=document.querySelector(`.dr-bar[data-dr="${k}"]`);if(!el)return;const r=DR[k];
+  const P=[['today','今天'],['tmr','明天'],['wk','本週'],['nwk','下週'],['14','未來14天'],['mo','本月'],['nmo','下個月']];
+  el.innerHTML=`<span class="lbl">用車日</span><input type="date" data-drf="${k}" value="${r.f}"> – <input type="date" data-drt="${k}" value="${r.t}">`+P.map(([p,l])=>`<button type="button" class="btn sm" data-drp="${k}:${p}">${l}</button>`).join('')+(drOn(k)?`<button type="button" class="btn sm" data-drp="${k}:clear">清除日期</button>`:'')}
+function drChanged(k){drRender(k);if(k==='todo'){todoSel.clear();renderTodo()}else if(window.kwDateChanged)window.kwDateChanged()}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-drp]');if(!b)return;e.preventDefault();const[k,p]=b.dataset.drp.split(':');
+  if(p==='clear'){DR[k].f='';DR[k].t=''}else{const[a,c]=drPreset(p);DR[k].f=a;DR[k].t=c}drChanged(k)});
+document.addEventListener('change',e=>{const t=e.target;if(!t.dataset)return;if(t.dataset.drf){const k=t.dataset.drf;DR[k].f=t.value;if(DR[k].t&&t.value&&DR[k].t<t.value)DR[k].t=t.value;drChanged(k)}else if(t.dataset.drt){const k=t.dataset.drt;DR[k].t=t.value;if(DR[k].f&&t.value&&DR[k].f>t.value)DR[k].f=t.value;drChanged(k)}});
 function todoRows(){const q=normNo($('todoQ').value),late=$('todoLate').checked;
   return Object.values(DB.orders).filter(x=>!x.sample).map(x=>({x,T:tasksOf(x),st:stageOf(x)})).filter(r=>{
     if(todoF==='lost'||todoF==='done'){if(r.st!==todoF)return false}else if(todoF==='all'){if(!r.T.length)return false}else if(!r.T.some(t=>t.k===todoF))return false;
+    if(!drIn('todo',r.x))return false;
     if(late&&!r.T.some(t=>t.late&&(todoF==='all'||t.k===todoF)))return false;
     if(q&&!normNo([findCode(r.x),orderNo(r.x),r.x.c.chatName,r.x.c.groom,r.x.c.bride].join(' ')).includes(q))return false;return true})
   .sort((a,b)=>(a.x.date||'9').localeCompare(b.x.date||'9'))}
 function renderTodoBadge(){let n=0;Object.values(DB.orders).forEach(x=>{if(tasksOf(x).some(t=>t.late))n++});$('btnTodo').innerHTML='待辦'+(n?`<b>${n}</b>`:'')}
-function renderTodo(){const all=Object.values(DB.orders).filter(x=>!x.sample).map(x=>({T:tasksOf(x),st:stageOf(x)}));
+function renderTodo(){if(!document.querySelector('.dr-bar[data-dr="todo"] input'))drRender('todo');const all=Object.values(DB.orders).filter(x=>!x.sample&&drIn('todo',x)).map(x=>({T:tasksOf(x),st:stageOf(x)}));
   const cnt=k=>all.filter(r=>r.T.some(t=>t.k===k)).length,lc=k=>all.filter(r=>r.T.some(t=>t.k===k&&t.late)).length;
   const chip=(k,l,n,ln)=>`<button class="btn sm${todoF===k?' pri':''}" data-tf="${k}">${l} ${n}${ln?`<span class="chip late" style="margin-left:4px">${ln} 逾期</span>`:''}</button>`;
   $('todoChips').innerHTML=chip('all','全部待辦',all.filter(r=>r.T.length).length,all.filter(r=>r.T.some(t=>t.late)).length)+Object.keys(ST).map(k=>chip(k,ST[k],cnt(k),lc(k))).join('')
@@ -1995,15 +2030,21 @@ function showTab(name){document.querySelectorAll('#tabs button').forEach(b=>b.se
 /* ---------- 關鍵字搜尋：單號、客人名稱、新人、電話、地址、婚顧／廠商、備註…（空白分開可多個關鍵字） ---------- */
 (function(){const inp=$('kwQ'),box=$('kwResults');if(!inp||!box)return;let shown=[],act=-1;
   const hay=x=>JSON.stringify(x).toLowerCase()+' '+String(tripCode(x)+' '+orderNo(x)).toLowerCase();
-  function render(){const terms=inp.value.trim().toLowerCase().split(/\s+/).filter(Boolean);if(!terms.length){box.hidden=true;return}
-    shown=Object.values(DB.orders).filter(x=>!x.sample).filter(x=>{const h=hay(x),hd=h.replace(/[\s-]/g,'');return terms.every(t=>{const td=t.replace(/[\s-]/g,'');return h.includes(t)||(/^\d{3,}$/.test(td)&&hd.includes(td))})})
-      .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,20);
-    box.innerHTML=shown.length?shown.map((x,i)=>{const c=x.c||{},v=(x.src&&x.src.vendor)||'',st=STAGE_LABEL[stageOf(x)]||'';
+  function render(){const terms=inp.value.trim().toLowerCase().split(/\s+/).filter(Boolean),dOn=drOn('kw');if(!terms.length&&!dOn){box.hidden=true;return}
+    shown=Object.values(DB.orders).filter(x=>!x.sample&&drIn('kw',x)).filter(x=>{const h=hay(x),hd=h.replace(/[\s-]/g,'');return terms.every(t=>{const td=t.replace(/[\s-]/g,'');return h.includes(t)||(/^\d{3,}$/.test(td)&&hd.includes(td))})})
+      .sort((a,b)=>dOn?String(a.date||'').localeCompare(String(b.date||''))||String(orderNo(a)).localeCompare(String(orderNo(b))):String(b.date||'').localeCompare(String(a.date||'')));
+    const tot=shown.length;shown=shown.slice(0,dOn?200:20);
+    box.innerHTML=(dOn?`<div class="kw-head">📅 用車日 ${esc(drLabel('kw'))}${terms.length?'＋關鍵字':''}：共 ${tot} 趟${tot>shown.length?'（只列前 '+shown.length+' 趟）':''}</div>`:'')+(shown.length?shown.map((x,i)=>{const c=x.c||{},v=(x.src&&x.src.vendor)||'',st=STAGE_LABEL[stageOf(x)]||'';
       const dd=daysTo(x),cl=x.paid&&dd!==null&&dd>=0?(x.callAt?'<span class="kw-call ok">☎️ 已聯絡新人</span>':`<span class="kw-call" data-call="${i}">☎️ 按這裡標記已聯絡新人</span>`):'';
-      return `<button type="button" data-i="${i}"${i===act?' class="on"':''}>${cl}<b>${esc(tripCode(x))}｜${esc(orderNo(x))}</b>${esc(c.chatName||[c.groom,c.bride].filter(Boolean).join('＆')||'未命名')}<small>${esc([x.date,st,v?('婚顧／廠商 '+v):'',c.groom&&c.bride?c.groom+'＆'+c.bride:''].filter(Boolean).join('　'))}</small></button>`}).join(''):'<div class="empty">找不到相關訂單</div>';
+      return `<button type="button" data-i="${i}"${i===act?' class="on"':''}>${cl}<b>${esc(tripCode(x))}｜${esc(orderNo(x))}</b>${esc(c.chatName||[c.groom,c.bride].filter(Boolean).join('＆')||'未命名')}<small>${esc([x.date,st,v?('婚顧／廠商 '+v):'',c.groom&&c.bride?c.groom+'＆'+c.bride:''].filter(Boolean).join('　'))}</small></button>`}).join(''):'<div class="empty">找不到相關訂單</div>');
     box.hidden=false}
+  const dBtn=$('kwDateBtn'),dPop=$('kwDatePop');
+  window.kwDateChanged=()=>{dBtn.textContent=drOn('kw')?'📅 '+drLabel('kw'):'📅 用車日';dBtn.classList.toggle('on',drOn('kw'));act=-1;if(drOn('kw')||inp.value.trim())render();else box.hidden=true};
+  dBtn.addEventListener('click',e=>{e.preventDefault();dPop.hidden=!dPop.hidden;box.hidden=true;if(!dPop.hidden)drRender('kw')});
+  $('kwDateShow').addEventListener('click',e=>{e.preventDefault();dPop.hidden=true;act=-1;render()});
+  document.addEventListener('mousedown',e=>{if(!dPop.hidden&&!e.target.closest('.kw-date'))dPop.hidden=true;if(!box.hidden&&!e.target.closest('.kw-search')&&!e.target.closest('.kw-date')&&document.activeElement!==inp)box.hidden=true});
   function open(x){box.hidden=true;inp.blur();o=x;save();loadOrder();try{window.scrollTo(0,0)}catch(e){}}
-  inp.addEventListener('input',()=>{act=-1;render()});inp.addEventListener('focus',()=>{if(inp.value.trim())render()});
+  inp.addEventListener('input',()=>{act=-1;render()});inp.addEventListener('focus',()=>{if(inp.value.trim()||drOn('kw'))render()});
   inp.addEventListener('blur',()=>setTimeout(()=>{box.hidden=true},200));
   inp.addEventListener('keydown',e=>{if(box.hidden||!shown.length)return;if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();act=(act+(e.key==='ArrowDown'?1:-1)+shown.length)%shown.length;render()}else if(e.key==='Enter'){e.preventDefault();open(shown[act>=0?act:0])}else if(e.key==='Escape')box.hidden=true});
   box.addEventListener('mousedown',e=>{const c=e.target.closest('[data-call]');if(c){e.preventDefault();const x=shown[+c.dataset.call];if(x){const t=Date.now();x.callAt=t;x.updated=t;DB.orders[x.id]=x;if(o&&o.id===x.id){o.callAt=t;o.updated=t}store('nwcw_orders',DB);pushSync();try{renderAll()}catch(_){}render();toast('已記錄：'+tripCode(x)+' 主禮車司機已聯絡新人')}return}
