@@ -883,7 +883,7 @@ rebuildModels();
 function newOrder(){return{
   id:'o'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
   sample:false,backHome:true,cityA:'',cityB:'',code:'',seq:'',_seqKey:'',_seq:'',date:'',hours:3,km:S.km,
-  cars:{X:1,S:0,Y:0,'3':0},zoneName:'',zones:0,tripKm:0,promoText:'',contractUrl:'',colorReq:'',colorFee:800,colorQty:0,colorMode:'free',colorWaive:'限時優惠',colorRare:false,cane:0,deco:0,
+  cars:{X:0,S:0,Y:0,'3':0},zoneName:'',zones:0,tripKm:0,promoText:'',contractUrl:'',colorReq:'',colorFee:800,colorQty:0,colorMode:'free',colorWaive:'限時優惠',colorRare:false,cane:0,deco:0,
   extras:[{n:'',a:0}],discName:'',discAmt:0,red:true,invoice:false,depOverride:'',note:'',
   src:{vendor:'',ref:'',rate:'',from:''},c:{combo:'',caneNote:'',chatName:'',channel:'LINE',groom:'',bride:'',role:'新娘',contact:'',phone:'',start:'',end:'',gather:'',
      meet:'',meetL:'男方家',meetS:'',wed:'',wedL:'女方家',wedS:'',o1:'',o1L:'',o1S:'',o2:'',o2L:'',o2S:'',meetMap:'',wedMap:'',o1Map:'',o2Map:'',route:'',rel:'',contact2:'',rel2:'',phone2:'',contact3:'',rel3:'',phone3:'',
@@ -1103,7 +1103,7 @@ function qRef(x,body){if(!x||x.sample)return'';const c=findCode(x);if(!c)return'
   const v=last&&String(last.text||'').replace(QREF_RE,'')===body?qVer(last,Q.length-1):Q.reduce((a,q,i)=>Math.max(a,qVer(q,i)),0)+1;return `Q-${c}-${v}`}
 function quoteBody(x,lang){const r=calc(x),f=feeLines(x,lang);const rt=routeLine(x,lang),tk=num(x.tripKm),zb=num(S.zBase||35),zr=num(S.zRate||500),zu=num(S.zRound)||0,oneWay=+x.hours===0;
  const kmL=lang==='en'?[rt?`Route: ${rt}`:'',tk?`Estimated distance: approx. ${tk} km`:'']:lang==='ja'?[rt?`ルート：${rt}`:'',tk?`予想走行距離：約 ${tk}km`:'']:[rt?`預計流程：${rt}`:'',tk?`預估里程：約 ${tk} 公里`:''];
- const kmN=oneWay?'':tk&&tk<=zb?(lang==='en'?`* Estimated ${tk} km, within ${zb} km — no mileage fee.`:lang==='ja'?`＊予想走行距離 約${tk}km（${zb}km以内）のため、距離料金はかかりません。`:`＊預估約 ${tk} 公里，在 ${zb} 公里內，不另收里程費`):lang==='en'?`* Includes up to ${zb} km; beyond that, ${money(zr,lang)} per car for every additional ${zb} km (pro-rated${zu?`, rounded up to ${money(zu,lang)}`:''}).`:lang==='ja'?`＊${zb}km以内の料金です。超過分は${zb}kmごとに1台 ${money(zr,lang)}（按分${zu?`、${money(zu,lang)}単位で切り上げ`:''}）。`:`＊用車含 ${zb} 公里內，超過的里程每 ${zb} 公里加收 ${money(zr)}／台（按比例計算${zu?`，以 ${money(zu)} 為單位進位`:''}）`;const d=x.date?fmtDate(x.date)+(()=>{const p=dparts(x.date);return lang==='en'?` (${WD.en[p.w]})`:`（${WD[lang][p.w]}）`})():(lang==='en'?'TBD':lang==='ja'?'未定':'未定');
+ const kmN=oneWay?'':tk&&tk<=zb?(lang==='en'?`* Estimated ${tk} km, within ${zb} km — no mileage fee.`:lang==='ja'?`＊予想走行距離 約${tk}km（${zb}km以内）のため、距離料金はかかりません。`:`＊預估約 ${tk} 公里，在 ${zb} 公里內，不另收里程費`):lang==='en'?`* Includes up to ${zb} km; beyond that, ${money(zr,lang)} per car for every additional ${zb} km (pro-rated${zu?`, rounded up to ${money(zu,lang)}`:''}).`:lang==='ja'?`＊${zb}km以内の料金です。超過分は${zb}kmごとに1台 ${money(zr,lang)}（按分${zu?`、${money(zu,lang)}単位で切り上げ`:''}）。`:`＊用車含 ${zb} 公里內，超過加收里程費用`;const d=x.date?fmtDate(x.date)+(()=>{const p=dparts(x.date);return lang==='en'?` (${WD.en[p.w]})`:`（${WD[lang][p.w]}）`})():(lang==='en'?'TBD':lang==='ja'?'未定':'未定');
  if(lang==='en')return [`[Nice Wedding Car] Quote`,`Date: ${d}`,(+x.hours===0?'Service: one-way transfer':`Hours: ${hrsLabel(x.hours)} (within ${num(x.km)} km)`),`Vehicle(s): ${carsText(x,lang)}`,...kmL,`Charges:`,...f,`Total = ${money(r.total,lang)}`,r.deposit?`Deposit: ${money(r.deposit,lang)} (balance ${money(r.balance,lang)})`:'','',
    kmN,x.invoice?'* Price includes 5% business tax.':'* Cash price; 5% business tax not included.',`* Overtime starts from the 16th minute, charged per started hour: ${otRates(x,lang)}`,
    r.cane?'':`* Real sugarcane on the roof: ${money(S.cane,lang)}/car (optional)`,`* A driver red envelope of ${money(S.red,lang)}/car is customary.`].filter(s=>s!=='').join('\n');
@@ -1112,6 +1112,7 @@ function quoteBody(x,lang){const r=calc(x),f=feeLines(x,lang);const rt=routeLine
    r.cane?'':`＊車の屋根に本物のサトウキビを付ける場合：${money(S.cane,lang)}/台`].filter(s=>s!=='').join('\n');
  return [`【好好禮車 報價】`,`用車日期：${d}`,(+x.hours===0?`用車方式：單程接送`:`用車時數：${hrsLabel(x.hours)}（${num(x.km)} 公里內）`),`預約車款：${carsText(x,lang)}`,...kmL,`費用明細：`,...f,`合計=${money(r.total)}`,r.deposit?`訂金：${money(r.deposit)}（尾款 ${money(r.balance)}）`:'','',kmN,
    x.invoice?'＊以上含發票 5% 營業稅':'＊以上為現金價，不含發票 5% 營業稅',
+   +x.hours===0||!otRates(x,lang)?'':`＊超時第 16 分鐘起計，未滿 1 小時以 1 小時計，每小時每台：${otRates(x,lang)}`,
    r.red?'':`＊不含司機紅包 ${money(S.red)}/台`].filter(s=>s!=='').join('\n')}
 
 /* 綠界：訂金付款連結 */
@@ -1936,7 +1937,7 @@ function ibQuote(uid){const u=IB.find(x=>x.uid===uid);if(!u)return;$('inboxModal
   const d=(u.bot&&u.bot.data)||{};o=newOrder();o.sample=false;
   o.c.chatName=u.name||'';o.c.channel='LINE';if(d.iso)o.date=d.iso;
   o.need.dateSt=d.st||'';o.need.month=d.iso?'':(d.month||'').trim();o.need.brand={tesla:'特斯拉',benz:'賓士',other:'其他'}[d.brand]||'';
-  o.cars=d.brand==='benz'?{X:0,S:0,Y:0,'3':0,W222:1,W213:1}:{X:1,S:0,Y:0,'3':1};
+  o.cars={X:0,S:0,Y:0,'3':0};   // 新訂單車輛一律從 0 開始，不預選
   o.c.meet=d.groomAddr||d.groom||'';o.c.wed=d.brideAddr||d.bride||'';if(d.venue){o.c.o1=d.venueAddr||d.venue;o.c.o1L='宴客餐廳'}
   if(d.meal==='午宴'){o.c.start='08:30';o.c.end='11:30'}else if(d.meal==='晚宴'){o.c.start='14:30';o.c.end='17:30'}
   o.cityA=countyOf(o.c.meet);o.cityB=countyOf(o.c.wed);
