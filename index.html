@@ -1112,7 +1112,7 @@ function quoteBody(x,lang){const r=calc(x),f=feeLines(x,lang);const rt=routeLine
    r.cane?'':`＊車の屋根に本物のサトウキビを付ける場合：${money(S.cane,lang)}/台`].filter(s=>s!=='').join('\n');
  return [`【好好禮車 報價】`,`用車日期：${d}`,(+x.hours===0?`用車方式：單程接送`:`用車時數：${hrsLabel(x.hours)}（${num(x.km)} 公里內）`),`預約車款：${carsText(x,lang)}`,...kmL,`費用明細：`,...f,`合計=${money(r.total)}`,r.deposit?`訂金：${money(r.deposit)}（尾款 ${money(r.balance)}）`:'','',kmN,
    x.invoice?'＊以上含發票 5% 營業稅':'＊以上為現金價，不含發票 5% 營業稅',
-   +x.hours===0||!otRates(x,lang)?'':`＊超時第 16 分鐘起計，未滿 1 小時以 1 小時計，每小時每台：${otRates(x,lang)}`,
+   +x.hours===0||!otRates(x,lang)?'':`＊加時 ${otRates(x,lang)}`,
    r.red?'':`＊不含司機紅包 ${money(S.red)}/台`].filter(s=>s!=='').join('\n')}
 
 /* 綠界：訂金付款連結 */
