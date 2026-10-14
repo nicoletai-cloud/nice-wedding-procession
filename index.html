@@ -2068,7 +2068,7 @@ document.addEventListener('change',e=>{const t=e.target;if(!t)return;if(t.id==='
 async function loadInbox(){try{IB=await ibCall({action:'inbox'});renderInbox()}catch(e){if(!$('inboxModal').hidden)$('ibList').innerHTML='<p class="hint">讀取失敗，請按重新整理</p>'}}
 function ibAgo(t){const m=Math.round((Date.now()-t)/60000);return m<60?m+' 分鐘前':m<1440?Math.round(m/60)+' 小時前':Math.round(m/1440)+' 天前'}
 function renderInbox(){const n=IB.filter(u=>u.pending).length;$('btnInbox').innerHTML='訊息'+(n?`<b>${n}</b>`:'');if($('inboxModal').hidden)return;
-  const cats=['禮車','接送機','應徵','其他',''],cn=c=>c||'未分類';
+  const cats=['禮車','接送機','包車','應徵','其他',''],cn=c=>c||'未分類';
   const rows=IB.filter(u=>ibF==='done'?!u.pending:ibF==='pending'?u.pending:u.pending&&(u.cat||'')===ibF.slice(4));
   [...ibSel].forEach(id=>{if(!rows.some(u=>u.uid===id))ibSel.delete(id)});
   const chip=(k,l,c)=>`<button class="btn sm${ibF===k?' pri':''}" data-ibf="${k}">${l} ${c}</button>`;
