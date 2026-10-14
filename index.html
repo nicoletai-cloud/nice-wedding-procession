@@ -1487,7 +1487,7 @@ const CF_LIFF='2009335688-N0uyJ02P';// 行前確認 LIFF ID（建好後填上；
 let CONFIRMS={};
 function cfKey(id){const h=t=>{let v=0x811c9dc5;for(let i=0;i<t.length;i++){v^=t.charCodeAt(i);v=Math.imul(v,0x01000193)>>>0}return v.toString(36)};return h(String(id))+h('cf'+id)}
 function cfLink(x){const q='?no='+encodeURIComponent(orderNo(x))+'&k='+cfKey(x.id);return CF_LIFF?'https://liff.line.me/'+CF_LIFF+q:'https://love.niceweddingcar.com/wed-confirm'+q}
-function cfMsg(x){return `${rmHi(x)}🤍 婚禮快到了，我們要最終確認行程嘍！\n請點下面連結，確認當天的聯絡人、地址和時間（已先帶入您之前填的資料，有變動直接修改就好）👇\n${cfLink(x)}\n\n📝行程表若確定，也可以直接傳給我們喔！方便司機掌握情況`}
+function cfMsg(x){return `${rmHi(x)}🤍 婚禮快到了，我們要最終確認行程嘍！\n請點下面連結，確認當天的聯絡人、地址和時間（已先帶入您之前填的資料，有變動直接修改就好）👇\n${cfLink(x)}\n\n📝行程表若確定，也可以直接傳給我們喔！方便司機掌握情況${((x.c||{}).channel==='私人LINE')?'\n\n（這個連結可以轉給新人填寫，也可以由您代填；開始填寫時選擇身分即可）':''}`}
 // 單點繞圈：只有集合地點，第一圈（＋第二圈）時間；每圈抓 30 分鐘
 function applyLoop(f){const c=o.c,diffs=['行程：單點繞圈'],warn=[];o.sample=false;
   const chg=(label,oldV,newV)=>{if(newV&&String(oldV||'')!==String(newV))diffs.push(`${label}：${oldV||'（空白）'} → ${newV}`)};
@@ -1506,7 +1506,7 @@ function applyLoop(f){const c=o.c,diffs=['行程：單點繞圈'],warn=[];o.samp
   return{diffs,warn}}
 function cfAuto(){const ch=[];Object.values(DB.orders).forEach(x=>{if(x.sample)return;const cf=CONFIRMS[normNo(orderNo(x))];if(!cf||!cf.f||!(+cf.at>(+x.cfApplyAt||0)))return;
   const keep=o;o=x;try{const f=cf.f,r=f.mode==='loop'?applyLoop(f):applyConfirm({name:f.name,phone:f.phone,meet:f.meet,wed:f.wed,start:f.start,combo:f.combo,cane:f.cane,back:f.back,restYN:f.restYN,restT:f.restT,restAddr:f.restAddr});
-    x.cfLast={at:+cf.at,diffs:r.diffs,warn:r.warn,note:f.note||'',files:f.files||[],uid:!!cf.uid};x.cfApplyAt=+cf.at;if(!x.cfDoneAt)x.cfDoneAt=+cf.at;if(!x.cfSentAt)x.cfSentAt=+cf.at;x.updated=Date.now();DB.orders[x.id]=x;ch.push(x)}catch(e){console.warn('行前確認帶入失敗',orderNo(x),e)}finally{o=keep}});
+    x.cfLast={at:+cf.at,diffs:r.diffs,warn:r.warn,note:f.note||'',files:f.files||[],uid:!!cf.uid,who:cf.who||'',lname:cf.lname||'',cmp:cf.cmp||null};x.cfApplyAt=+cf.at;if(!x.cfDoneAt)x.cfDoneAt=+cf.at;if(!x.cfSentAt)x.cfSentAt=+cf.at;x.updated=Date.now();DB.orders[x.id]=x;ch.push(x)}catch(e){console.warn('行前確認帶入失敗',orderNo(x),e)}finally{o=keep}});
   return ch}
 async function cfPush(list){if(!S.driveUrl||!S.driveKey){toast('還沒設定機器人連線');return}
   toast(`傳送中…（${list.length} 筆）`);try{await doSync()}catch(_){}
@@ -1532,7 +1532,7 @@ function cfApplyQ(q){if(!q)return [];const inJob={},ch=[];(q.jobs||[]).forEach(j
     if(c){x.updated=Date.now();ch.push(x)}});return ch}
 function renderCfSt(){const el=$('cfSt');if(!el||!o)return;const L=o.cfLast;
   if(!L){el.textContent=(o.cfDoneAt?'已完成行前確認':o.cfSentAt?'已傳給客人（'+new Date(o.cfSentAt).toLocaleDateString('zh-TW')+'），客人還沒送出':'')+(o.cfPushErr?'\n⚠️ 上次傳送失敗：'+o.cfPushErr:'');$('confirmResult').innerHTML='';return}
-  const d=new Date(L.at);el.innerHTML=`<b style="color:var(--ok)">✅ ${L.manual?'已用貼上的回覆帶入':'客人已用確認頁送出，已自動帶入'}（${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}${L.uid?'，LINE 登入':''}）</b>`+(L.note?`<div class="sum" style="margin-top:6px">客人想提醒司機：${esc(L.note)}</div>`:'')+((L.files||[]).length?`<div style="margin-top:6px">行程表／路線圖：${L.files.map((z,i)=>`<a href="https://drive.google.com/file/d/${encodeURIComponent(z.id)}/view" target="_blank" rel="noopener">${z.pdf?'📄':'🖼️'} 檔案 ${i+1}</a>`).join('　')}</div>`:'');
+  const d=new Date(L.at);el.innerHTML=`<b style="color:var(--ok)">✅ ${L.manual?'已用貼上的回覆帶入':'客人已用確認頁送出，已自動帶入'}（${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}${L.uid?'，LINE 登入':''}）</b>`+(L.who?`<div style="margin-top:4px">填寫的人：<b>${L.who==='agent'?'婚顧／主持人代填':'新人'}</b>${L.lname?`（LINE：${esc(L.lname)}）`:''}</div>`:'')+(L.cmp&&(L.cmp.lines||[]).length?`<div class="sum" style="margin-top:6px;border-left:3px solid #A0453A"><b style="color:#A0453A">⚠️ 跟 ${(()=>{const z=new Date(L.cmp.at);return (z.getMonth()+1)+'/'+z.getDate()+' '+p2(z.getHours())+':'+p2(z.getMinutes())})()}（${L.cmp.who==='agent'?'婚顧／主持人代填':L.cmp.who?'新人':'上次'}）填的不一樣，請跟客人核對：</b><br>${L.cmp.lines.map(esc).join('<br>')}</div>`:'')+(L.note?`<div class="sum" style="margin-top:6px">客人想提醒司機：${esc(L.note)}</div>`:'')+((L.files||[]).length?`<div style="margin-top:6px">行程表／路線圖：${L.files.map((z,i)=>`<a href="https://drive.google.com/file/d/${encodeURIComponent(z.id)}/view" target="_blank" rel="noopener">${z.pdf?'📄':'🖼️'} 檔案 ${i+1}</a>`).join('　')}</div>`:'');
   renderConfirmResult({warn:L.warn||[],diffs:L.diffs||[]})}
 const CF=[['name',/聯絡人姓名/],['phone',/聯絡人電話/],['meet',/男方家地址|集合地點/],['wed',/女方家地址/],['start',/預計出發時間|出發時間/],['combo',/訂結一起/],['cane',/甘蔗|竹子/],['back',/迎娶回男方家|幾點迎娶回/],['restYN',/接送至餐廳/],['restT',/出發去餐廳/],['restAddr',/餐廳地址/]];
 function parseConfirm(text){const res={},lines=text.replace(/\r/g,'').split('\n');
