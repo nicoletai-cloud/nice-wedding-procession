@@ -323,6 +323,8 @@ nav.tabs button{scroll-snap-align:start}
           <div class="fields">
             <label class="f">客人怎麼找到我們<select id="q_from" data-b="src.from"><option value="">（還不知道）</option><option>Google 搜尋／地圖</option><option>IG</option><option>FB</option><option>FB/IG 廣告</option><option>Google 廣告</option><option>婚顧／廠商介紹</option><option>朋友介紹</option><option>老客回購</option><option>官網</option><option>網路文章／論壇</option><option>其他</option></select></label>
             <label class="f">合作廠商／婚顧<input id="q_vendor" data-b="src.vendor" list="vendorList" placeholder="直客免填"></label>
+            <label class="f">婚顧方式<select id="q_vmode" data-b="src.mode"><option value="">—</option><option value="推薦">推薦（客人自己訂車）</option><option value="代訂">代訂（婚顧幫客人訂車）</option></select></label>
+            <label class="f">婚顧窗口<input id="q_vagent" data-b="src.agent" placeholder="例：Demi、Jungle"></label>
             <label class="f">推薦人<input id="q_ref" data-b="src.ref" list="refList" placeholder="例：千千"></label>
             <label class="f">回金 %（留空＝廠商預設）<input type="number" id="q_rate" data-b="src.rate" placeholder="自動"></label>
           </div>
@@ -686,7 +688,9 @@ nav.tabs button{scroll-snap-align:start}
   <div style="max-width:520px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px">
     <div class="row" style="justify-content:space-between;margin-bottom:10px"><h3 style="margin:0">預覽：行前確認訊息</h3><button class="btn sm" id="btnCfPrevClose">取消</button></div>
     <div id="cfPrevBody"></div>
-    <div class="row" style="justify-content:flex-end;gap:8px;margin-top:14px"><button class="btn" id="btnCfPrevCancel">取消</button><button class="btn pri" id="btnCfPrevSend">送出</button></div>
+    <div class="row" style="justify-content:flex-end;gap:8px;margin-top:14px"><button class="btn" id="btnCfPrevCancel">取消</button><button class="btn pri" id="btnCfPrevSend">立即傳送</button></div>
+    <div class="row" style="justify-content:flex-end;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;border-top:1px dashed rgba(0,0,0,.12);padding-top:10px"><span class="hint" style="margin:0">或預約時間：</span><input type="datetime-local" id="cfPrevAt" style="min-width:230px;max-width:260px"><button class="btn" id="btnCfPrevSched">⏰ 預約傳送</button></div>
+    <div class="hint" style="margin:6px 0 0;text-align:right">預約後電腦可以關掉，時間到由機器人傳（最多晚 5 分鐘）。傳之前客人若已完成或已傳過會自動跳過。</div>
   </div>
 </div>
 <div id="lgModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
@@ -924,7 +928,7 @@ function newOrder(){return{
      caneAns:'',decoAns:'',payDate:'',payAmt:'',last5:'',photoReq:'',photoUrl:''},
   fleet:[],path:'',flow:[],lang:{q:'zh',o:'zh',m:'zh'},memoWho:'cust',mapLinks:true,
   need:{dateSt:'',month:'',brand:'',care:'',pax:'',budget:'',next:'',note:'',avail:''},sent:[],quotes:[],
-  inqAt:Date.now(),orderedAt:'',followAt:'',lost:false,formAt:'',paidTs:'',cfSentAt:'',cfDoneAt:'',revAskAt:'',revLinkAt:'',revSkip:false,photoSentAt:'',carHead:'',
+  inqAt:Date.now(),orderedAt:'',followAt:'',lost:false,formAt:'',paidTs:'',cfSentAt:'',cfDoneAt:'',cfSchedAt:'',revAskAt:'',revLinkAt:'',revSkip:false,photoSentAt:'',carHead:'',
   updated:Date.now()}}
 function sampleOrder(){const o=newOrder();Object.assign(o,{sample:true,cityA:'彰化',cityB:'台中',date:'2026-10-06',hours:3,
   cars:{X:1,S:0,Y:0,'3':2},path:'A - B - A'});
@@ -964,7 +968,7 @@ async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl
     if(j.settings&&(+j.settings._ts||0)>(+S._ts||0)){const keep={driveUrl:S.driveUrl,driveKey:S.driveKey};S=Object.assign(clone(DEF_S),j.settings,keep);store('nwcw_settings',S);rebuildModels();renderPriceSettings();cur=true}
     try{if(j.shopee)setTimeout(()=>spMerge(j.shopee),0)}catch(_){}
     try{if(j.review){REV=j.review;store('nwcw_rev',REV);let up=false;Object.keys(REV).forEach(id=>{const x=DB.orders[id],r=REV[id];if(x&&r.reply&&r.reply.photo&&x.c&&x.c.photoReq!=='要'){x.c.photoReq='要';x.updated=Date.now();up=true;if(id===o.id)cur=true}});if(up)syncAgain=true;try{renderRev()}catch(_){}}}catch(_){}
-    let upN=false;FORMDATA=j.formData||FORMDATA;CONFIRMS=j.confirms||CONFIRMS;try{const ch=cfAuto();if(ch.length){upN=true;if(ch.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}setTimeout(()=>toast(`已帶入 ${ch.length} 筆客人行前確認：${ch.map(x=>orderNo(x)).join('、')}`),800)}}catch(e){console.warn(e)}try{renderFormDataBtn();renderFormPlaces()}catch(e){}{const F=j.forms||{},N=j.formNames||{};Object.values(DB.orders).forEach(x=>{const k=normNo(orderNo(x)),t=F[k],nm=N[k];if(t&&!x.formAt){x.formAt=t;if(x.id===o.id)cur=true}
+    let upN=false;FORMDATA=j.formData||FORMDATA;CONFIRMS=j.confirms||CONFIRMS;try{const qc=cfApplyQ(j.cfq);if(qc.length){upN=true;if(qc.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}}}catch(e){console.warn(e)}try{const ch=cfAuto();if(ch.length){upN=true;if(ch.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}setTimeout(()=>toast(`已帶入 ${ch.length} 筆客人行前確認：${ch.map(x=>orderNo(x)).join('、')}`),800)}}catch(e){console.warn(e)}try{renderFormDataBtn();renderFormPlaces()}catch(e){}{const F=j.forms||{},N=j.formNames||{};Object.values(DB.orders).forEach(x=>{const k=normNo(orderNo(x)),t=F[k],nm=N[k];if(t&&!x.formAt){x.formAt=t;if(x.id===o.id)cur=true}
       if(nm&&(nm.groom||nm.bride)&&!x.c.groom&&!x.c.bride){x.c.groom=nm.groom||'';x.c.bride=nm.bride||'';x.updated=Date.now();upN=true;if(x.id===o.id)cur=true}})}
     DB.cur=o.id;store('nwcw_orders',DB);if(cur)loadOrder();else renderOrderSel();openFromHash();
     if(upN)syncAgain=true;
@@ -1511,6 +1515,21 @@ async function cfPush(list){if(!S.driveUrl||!S.driveKey){toast('還沒設定機�
   const now=Date.now(),bad=[];(j.res||[]).forEach(r=>{const x=DB.orders[r.id];if(!x)return;if(r.ok){x.cfSentAt=now;x.cfPushErr='';x.updated=now}else{x.cfPushErr=r.err;bad.push(orderNo(x)+'：'+r.err)}});
   store('nwcw_orders',DB);pushSync();renderOrderSel();renderAll();try{renderTodo()}catch(_){}
   const ok=(j.res||[]).filter(r=>r.ok).length;if(!bad.length)toast(`已傳給新人 ${ok} 筆`);else alert(`已傳 ${ok} 筆，${bad.length} 筆傳不到（可改用「複製文字訊息」手動傳）：\n\n`+bad.join('\n'))}
+/* 2026-10-15 行前確認預約傳送：機器人排程，到時間自動傳；結果同步時帶回 */
+async function cfQApi(body){if(!S.driveUrl||!S.driveKey)return null;try{const r=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({token:S.driveKey},body))});return await r.json()}catch(e){return null}}
+async function cfSchedule(list,at){if(!S.driveUrl||!S.driveKey){toast('還沒設定機器人連線');return false}
+  try{await doSync()}catch(_){}
+  const j=await cfQApi({action:'cfSchedule',ids:list.map(x=>x.id),at});
+  if(!j||!j.ok){toast('預約失敗：'+((j&&j.error)||'連不到機器人'));return false}
+  const now=Date.now();list.forEach(x=>{x.cfSchedAt=at;x.cfPushErr='';x.updated=now});cfApplyQ(j.cfq);store('nwcw_orders',DB);try{pushSync()}catch(_){}try{renderTodo()}catch(_){}
+  toast(`已預約 ${cfSchedLabel(at)} 傳給新人（${list.length} 筆）`);return true}
+function cfSchedLabel(t){const z=new Date(+t);return `${z.getMonth()+1}/${z.getDate()} ${p2(z.getHours())}:${p2(z.getMinutes())}`}
+function cfApplyQ(q){if(!q)return [];const inJob={},ch=[];(q.jobs||[]).forEach(j=>(j.ids||[]).forEach(id=>inJob[id]=+j.at));
+  Object.values(DB.orders).forEach(x=>{const r=(q.res||{})[x.id];let c=false;
+    if(r&&+r.at>(+x.cfQAt||0)&&(!x.cfSchedAt||+r.at>=+x.cfSchedAt-6e5)){x.cfQAt=+r.at;if(r.ok){if(!r.skip&&!x.cfSentAt)x.cfSentAt=+r.at;x.cfPushErr=''}else x.cfPushErr='預約傳送失敗：'+(r.err||'');x.cfSchedAt='';c=true}
+    else if(inJob[x.id]&&+x.cfSchedAt!==inJob[x.id]){x.cfSchedAt=inJob[x.id];c=true}
+    else if(x.cfSchedAt&&!inJob[x.id]&&!(r&&+r.at>(+x.cfQAt||0))){x.cfSchedAt='';c=true}
+    if(c){x.updated=Date.now();ch.push(x)}});return ch}
 function renderCfSt(){const el=$('cfSt');if(!el||!o)return;const L=o.cfLast;
   if(!L){el.textContent=(o.cfDoneAt?'已完成行前確認':o.cfSentAt?'已傳給客人（'+new Date(o.cfSentAt).toLocaleDateString('zh-TW')+'），客人還沒送出':'')+(o.cfPushErr?'\n⚠️ 上次傳送失敗：'+o.cfPushErr:'');$('confirmResult').innerHTML='';return}
   const d=new Date(L.at);el.innerHTML=`<b style="color:var(--ok)">✅ ${L.manual?'已用貼上的回覆帶入':'客人已用確認頁送出，已自動帶入'}（${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}${L.uid?'，LINE 登入':''}）</b>`+(L.note?`<div class="sum" style="margin-top:6px">客人想提醒司機：${esc(L.note)}</div>`:'')+((L.files||[]).length?`<div style="margin-top:6px">行程表／路線圖：${L.files.map((z,i)=>`<a href="https://drive.google.com/file/d/${encodeURIComponent(z.id)}/view" target="_blank" rel="noopener">${z.pdf?'📄':'🖼️'} 檔案 ${i+1}</a>`).join('　')}</div>`:'');
@@ -2044,7 +2063,7 @@ let cfF='all',cfPrevList=[];const cfSel=new Set(),CFCHK={};let cfChkBusy='';
 async function cfCheckDay(d,L){const need=L.filter(x=>!CFCHK[x.id]).map(x=>x.id);if(!need.length||cfChkBusy===d||!S.driveUrl||!S.driveKey)return;cfChkBusy=d;
   try{const r=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'cfCheck',ids:need})});const j=await r.json();if(j&&j.ok)(j.res||[]).forEach(z=>{CFCHK[z.id]=z})}catch(e){}cfChkBusy='';if(!$('cfModal').hidden)renderCf()}
 function cfCanSend(x){const z=CFCHK[x.id];return !(z&&z.ok===false)&&(((x.c||{}).channel||'LINE')!=='私人LINE')}
-function openCf(d){Object.keys(CFCHK).forEach(k=>delete CFCHK[k]);const ds=Object.keys(cfPendingDays()).sort();$('cfDate').value=d||ds[0]||lgToday();cfF='all';cfSel.clear();$('cfModal').hidden=false;renderCf()}
+function openCf(d){Object.keys(CFCHK).forEach(k=>delete CFCHK[k]);const ds=Object.keys(cfPendingDays()).sort();$('cfDate').value=d||ds[0]||lgToday();cfF='all';cfSel.clear();$('cfModal').hidden=false;renderCf();cfQApi({action:'cfQueue'}).then(j=>{if(!j||!j.ok)return;const c=cfApplyQ(j.cfq);if(c.length){store('nwcw_orders',DB);try{pushSync()}catch(_){}}if(!$('cfModal').hidden)renderCf()})}
 function cfStOf(x){return x.cfDoneAt?'done':x.cfSentAt?'wait':'new'}
 function renderCf(){const m=cfPendingDays(),d=$('cfDate').value,ds=Object.keys(m).sort().slice(0,8);
   $('cfDays').innerHTML=ds.length?'<span class="hint" style="margin:0">還沒傳：</span>'+ds.map(k=>{const p=dparts(k);return `<button class="btn sm${k===d?' pri':''}" data-cfday="${k}">${p?p.m+'/'+p.d:k}（${m[k]}）</button>`}).join(''):'<span class="hint" style="margin:0">之後的車趟都傳過了 ✅</span>';
@@ -2057,10 +2076,10 @@ function renderCf(){const m=cfPendingDays(),d=$('cfDate').value,ds=Object.keys(m
   $('cfFilt').innerHTML+=selable.length?`<div class="row" style="gap:6px;flex-wrap:wrap;align-items:center;width:100%;margin-top:6px"><button class="btn sm" data-cfall="1">${cfSel.size&&cfSel.size===selable.length?'取消全選':'全選'}</button><button class="btn sm pri" data-cfsendsel="1"${cfSel.size?'':' disabled'}>📤 傳送已選（${cfSel.size}）</button><span class="hint" style="margin:0">已選 ${cfSel.size} / ${selable.length}，一次最多 20 筆；送出前會先預覽</span></div>`:'';
   const pt=Object.values(DB.orders).filter(x=>!x.sample&&!x.lost&&x.partner&&x.date===d).length;
   $('cfList').innerHTML=(L.length?L.map(x=>{const c=x.c||{},st=cfStOf(x),dt=t=>{const z=new Date(t);return (z.getMonth()+1)+'/'+z.getDate()};
-    const tag=st==='done'?`<span style="color:var(--ok);font-weight:700">✅ 已完成 ${dt(x.cfDoneAt)}</span>`:st==='wait'?`<span style="color:#A0453A;font-weight:700">已傳 ${dt(x.cfSentAt)}，客人還沒送出</span>`:'<span class="hint" style="margin:0">還沒傳</span>';
+    const tag=st==='done'?`<span style="color:var(--ok);font-weight:700">✅ 已完成 ${dt(x.cfDoneAt)}</span>`:st==='wait'?`<span style="color:#A0453A;font-weight:700">已傳 ${dt(x.cfSentAt)}，客人還沒送出</span>`:x.cfSchedAt?`<span style="color:#8a6d43;font-weight:700">⏰ 已預約 ${cfSchedLabel(x.cfSchedAt)} 傳送</span> <button class="btn sm" data-cfunsched="${esc(x.id)}">取消預約</button>`:'<span class="hint" style="margin:0">還沒傳</span>';
     const nm=c.chatName||[c.groom,c.bride].filter(Boolean).join('＆')||'未命名';
     const cb=(st==='done'||!cfCanSend(x))?'<span style="display:inline-block;width:22px"></span>':`<input type="checkbox" data-cfsel="${esc(x.id)}" style="width:auto;margin:3px 8px 0 0;flex:none"${cfSel.has(x.id)?' checked':''}>`;
-    return `<div class="card" style="padding:12px;margin-bottom:8px"><div class="row" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><div style="min-width:0;display:flex;align-items:flex-start">${cb}<div style="min-width:0"><b>${esc(tripCode(x))}｜${esc(orderNo(x))}</b>　${esc(nm)}<div class="hint" style="margin:2px 0 0">${(()=>{const z=CFCHK[x.id],pl={line:'官方 LINE',fb:'FB',ig:'IG'};const vd=(x.src&&x.src.vendor)||'';const tg=(c.channel==='私人LINE')?'<b style="color:#A0453A">⚠️ 私人 LINE，只能複製訊息自己傳</b>':!z?'<span>比對聊天室中…</span>':z.ok?`<b style="color:var(--ok)">✅ ${pl[z.plat]||z.plat}</b>${z.warn?` <span style="color:#A0453A">（${esc(z.warn)}）</span>`:''}`:`<b style="color:#A0453A">⚠️ ${esc(z.err||'找不到聊天室')}</b>${(c.channel||'LINE')==='LINE'?'：可到訂單「官方 LINE 聊天室網址」貼上這位客人的聊天室網址，或複製訊息自己傳':'，只能複製訊息自己傳'}`;const cn=String(c.chatName||'').trim(),vlab=vd?(cn&&cn.indexOf(vd)<0&&vd.indexOf(cn)<0?`${vd} ${cn} 訂車`:`${vd} 訂車`):'';return tg+(vlab?`　婚顧：${esc(vlab)}`:'')+'　'+esc([c.groom,c.bride].filter(Boolean).join('＆'))})()}</div><div style="margin-top:4px">${tag}${x.cfPushErr?`<div class="hint" style="color:#A0453A;margin:2px 0 0">⚠️ 上次傳送失敗：${esc(x.cfPushErr)}</div>`:''}</div></div></div>
+    return `<div class="card" style="padding:12px;margin-bottom:8px"><div class="row" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><div style="min-width:0;display:flex;align-items:flex-start">${cb}<div style="min-width:0"><b>${esc(tripCode(x))}｜${esc(orderNo(x))}</b>　${esc(nm)}<div class="hint" style="margin:2px 0 0">${(()=>{const z=CFCHK[x.id],pl={line:'官方 LINE',fb:'FB',ig:'IG'};const vd=(x.src&&x.src.vendor)||'';const tg=(c.channel==='私人LINE')?'<b style="color:#A0453A">⚠️ 私人 LINE，只能複製訊息自己傳</b>':!z?'<span>比對聊天室中…</span>':z.ok?`<b style="color:var(--ok)">✅ ${pl[z.plat]||z.plat}</b>${z.warn?` <span style="color:#A0453A">（${esc(z.warn)}）</span>`:''}`:`<b style="color:#A0453A">⚠️ ${esc(z.err||'找不到聊天室')}</b>${(c.channel||'LINE')==='LINE'?'：可到訂單「官方 LINE 聊天室網址」貼上這位客人的聊天室網址，或複製訊息自己傳':'，只能複製訊息自己傳'}`;const cn=String(c.chatName||'').trim(),sr=x.src||{},ag=String(sr.agent||'').trim()||(sr.mode!=='推薦'&&cn&&cn.indexOf(vd)<0&&vd.indexOf(cn)<0?cn:''),vlab=vd?[vd,ag,sr.mode==='推薦'?'推薦（客人自己訂）':sr.mode==='代訂'?'代訂':'訂車'].filter(Boolean).join(' '):'';return tg+(vlab?`　婚顧：${esc(vlab)}`:'')+'　'+esc([c.groom,c.bride].filter(Boolean).join('＆'))})()}</div><div style="margin-top:4px">${tag}${x.cfPushErr?`<div class="hint" style="color:#A0453A;margin:2px 0 0">⚠️ 上次傳送失敗：${esc(x.cfPushErr)}</div>`:''}</div></div></div>
       <div class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn sm" data-cfopen="${esc(x.id)}">開啟訂單</button>${st==='done'?'':`<button class="btn sm pri" data-cfprev="${esc(x.id)}">${st==='wait'?'📤 再傳一次':'📤 傳行前確認'}</button>`}</div></div></div>`}).join(''):`<p class="hint">${d?'這天沒有'+(cfF==='all'?'需要行前確認的車趟':'這個狀態的車趟'):'請選日期'}</p>`)+(pt?`<p class="hint">這天另有 ${pt} 趟同業單，不用行前確認。</p>`:'');
 }
 function cfPreview(list){list=(list||[]).filter(Boolean);if(!list.length)return;cfPrevList=list;
@@ -2073,9 +2092,10 @@ function cfPreview(list){list=(list||[]).filter(Boolean);if(!list.length)return;
       ${!bad&&(ch==='FB'||ch==='IG')?'<div class="hint" style="margin:6px 0 0">FB／IG 規定：客人 24 小時內有傳過訊息才能主動發送。</div>':''}
       <div class="hint" style="margin:6px 0 0;word-break:break-all">確認頁連結：<a href="${esc(cfLink(x))}" target="_blank" rel="noopener">${esc(cfLink(x))}</a></div>
       <div style="margin-top:6px"><button class="btn sm" data-cfcopy="${esc(x.id)}">複製文字訊息（傳不到時自己貼）＋標記已傳</button></div></div>`}).join('');
-  const b=$('btnCfPrevSend');b.disabled=!can;b.textContent=can?(list.length>1?`送出（${can} 筆）`:'送出'):'沒有可以送出的';
+  const b=$('btnCfPrevSend');b.disabled=!can;b.textContent=can?(list.length>1?`立即傳送（${can} 筆）`:'立即傳送'):'沒有可以送出的';
+  {const bs=$('btnCfPrevSched');bs.disabled=!can;bs.textContent=can>1?`⏰ 預約傳送（${can} 筆）`:'⏰ 預約傳送';const z=new Date();if(z.getHours()>=9)z.setDate(z.getDate()+1);z.setHours(10,0,0,0);const ex=list.map(x=>+x.cfSchedAt||0).find(Boolean);const t=ex?new Date(ex):z;$('cfPrevAt').value=`${t.getFullYear()}-${p2(t.getMonth()+1)}-${p2(t.getDate())}T${p2(t.getHours())}:${p2(t.getMinutes())}`}
   $('cfPrevModal').hidden=false}
-document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.closest('#cfListBtn,#btnCfRecheck,#btnCfClose,#btnCfPrevClose,#btnCfPrevCancel,#btnCfPrevSend,[data-cfday],[data-cff],[data-cfprev],[data-cfopen],[data-cfcopy],[data-cfall],[data-cfsendsel]');if(!b)return;e.preventDefault();
+document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.closest('#cfListBtn,#btnCfRecheck,#btnCfClose,#btnCfPrevClose,#btnCfPrevCancel,#btnCfPrevSend,#btnCfPrevSched,[data-cfunsched],[data-cfday],[data-cff],[data-cfprev],[data-cfopen],[data-cfcopy],[data-cfall],[data-cfsendsel]');if(!b)return;e.preventDefault();
   if(b.dataset.cfall){const d=$('cfDate').value,L=Object.values(DB.orders).filter(x=>cfOk(x)&&x.date===d&&cfStOf(x)!=='done'&&cfCanSend(x)&&(cfF==='all'||cfStOf(x)===cfF));if(cfSel.size===L.length)cfSel.clear();else{cfSel.clear();L.slice(0,20).forEach(x=>cfSel.add(x.id));if(L.length>20)toast('一次最多 20 筆，先選前 20 筆')}renderCf();return}
   if(b.dataset.cfsendsel){const L=[...cfSel].map(id=>DB.orders[id]).filter(Boolean);if(L.length)cfPreview(L);return}
   if(b.id==='cfListBtn'){openCf(o&&cfOk(o)&&o.date>=lgToday()?o.date:'');return}
@@ -2087,6 +2107,8 @@ document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.c
   if(b.dataset.cfprev){cfPreview([DB.orders[b.dataset.cfprev]]);return}
   if(b.dataset.cfopen){const x=DB.orders[b.dataset.cfopen];if(x){o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();$('cfModal').hidden=true;$('coupleModal').hidden=false}return}
   if(b.dataset.cfcopy){const x=DB.orders[b.dataset.cfcopy];if(!x)return;clip(cfMsg(x));x.cfSentAt=x.cfSentAt||Date.now();x.updated=Date.now();store('nwcw_orders',DB);try{pushSync()}catch(_){}b.textContent='✅ 已複製，已標記已傳';try{renderAll();renderTodo()}catch(_){}if(!$('cfModal').hidden)renderCf();return}
+  if(b.id==='btnCfPrevSched'){const L=cfPrevList.filter(x=>{const c=x.c||{};return (c.channel||'LINE')!=='私人LINE'&&c.chatName&&cfCanSend(x)});if(!L.length)return;const v=$('cfPrevAt').value,at=v?new Date(v).getTime():0;if(!at||at<Date.now()+60000){toast('預約時間要在現在之後');return}b.disabled=true;b.textContent='預約中…';const ok=await cfSchedule(L,at);b.disabled=false;if(ok){L.forEach(x=>cfSel.delete(x.id));$('cfPrevModal').hidden=true;if(!$('cfModal').hidden)renderCf()}else b.textContent='⏰ 預約傳送';return}
+  if(b.dataset.cfunsched){const x=DB.orders[b.dataset.cfunsched];if(!x)return;b.disabled=true;b.textContent='取消中…';const j=await cfQApi({action:'cfUnschedule',ids:[x.id]});if(j&&j.ok){x.cfSchedAt='';x.updated=Date.now();cfApplyQ(j.cfq);store('nwcw_orders',DB);try{pushSync()}catch(_){}toast('已取消預約')}else{b.disabled=false;b.textContent='取消預約';toast('取消失敗：'+((j&&j.error)||'連不到機器人'))}if(!$('cfModal').hidden)renderCf();return}
   if(b.id==='btnCfPrevSend'){const L=cfPrevList.filter(x=>{const c=x.c||{};return (c.channel||'LINE')!=='私人LINE'&&c.chatName&&cfCanSend(x)});if(!L.length)return;b.disabled=true;b.textContent='傳送中…';await cfPush(L);L.forEach(x=>cfSel.delete(x.id));$('cfPrevModal').hidden=true;if(!$('cfModal').hidden)renderCf();return}
 });
 document.addEventListener('change',e=>{const t=e.target;if(!t)return;if(t.id==='cfDate'){cfF='all';cfSel.clear();renderCf();return}if(t.dataset&&t.dataset.cfsel){if(t.checked){if(cfSel.size>=20){t.checked=false;toast('一次最多 20 筆');return}cfSel.add(t.dataset.cfsel)}else cfSel.delete(t.dataset.cfsel);renderCf()}});
@@ -2226,7 +2248,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
     try{localStorage.setItem('hhlc_handoff',JSON.stringify({from:'wed',ts:Date.now(),wedId:o.id,wedDate:o.date||'',name:nm||C.groom||C.bride||'',phone:C.phone||'',chatName:C.chatName||'',channel:C.channel||'LINE',addrs:A}))}catch(e){toast('無法交接資料');break}
     window.open(location.origin+'/nice-wedding-car/','_blank');toast('已開啟機場接送報價');break}
    case 'btnNew':{o=newOrder();DB.orders[o.id]=o;syncFleet();save();loadOrder();toast('已建立新訂單');break}
-   case 'btnDup':{const n=clone(o);n.id=newOrder().id;n.sample=false;n.seq='';n._seqKey='';n._seq='';n.c=Object.assign(newOrder().c,{});n.fleet=n.fleet.map(f=>Object.assign(f,{plate:'',driver:'',phone:''}));Object.assign(n,{paid:false,paidAt:'',paidTs:'',contractUrl:'',memoLinks:null,driveFolder:'',inqAt:Date.now(),orderedAt:'',followAt:'',lost:false,formAt:'',cfSentAt:'',cfDoneAt:'',revAskAt:'',revLinkAt:'',revSkip:false,photoSentAt:'',carHead:'',balPaid:false,settled:false,sent:[],quotes:[],need:clone(newOrder().need)});o=n;DB.orders[o.id]=o;save();loadOrder();toast('已複製車款與價格到新訂單');break}
+   case 'btnDup':{const n=clone(o);n.id=newOrder().id;n.sample=false;n.seq='';n._seqKey='';n._seq='';n.c=Object.assign(newOrder().c,{});n.fleet=n.fleet.map(f=>Object.assign(f,{plate:'',driver:'',phone:''}));Object.assign(n,{paid:false,paidAt:'',paidTs:'',contractUrl:'',memoLinks:null,driveFolder:'',inqAt:Date.now(),orderedAt:'',followAt:'',lost:false,formAt:'',cfSentAt:'',cfDoneAt:'',cfSchedAt:'',revAskAt:'',revLinkAt:'',revSkip:false,photoSentAt:'',carHead:'',balPaid:false,settled:false,sent:[],quotes:[],need:clone(newOrder().need)});o=n;DB.orders[o.id]=o;save();loadOrder();toast('已複製車款與價格到新訂單');break}
    case 'btnDel':{const h=$('delHint'),reset=()=>{delStep=0;t.textContent='🗑 刪除此訂單';h.textContent=''};clearTimeout(delTimer);
      if(Date.now()-delArm>8000)delStep=0;delArm=Date.now();delStep++;
      if(delStep===1){t.textContent='確認刪除 '+orderNo(o)+'？';h.textContent='刪除後整張訂單（報價、合約、派車、memo）都會消失，無法復原。';delTimer=setTimeout(reset,8000);break}
@@ -2276,7 +2298,7 @@ function showTab(name){document.querySelectorAll('#tabs button').forEach(b=>b.se
     const tot=shown.length;shown=shown.slice(0,dOn?200:20);
     box.innerHTML=(dOn?`<div class="kw-head">📅 用車日 ${esc(drLabel('kw'))}${terms.length?'＋關鍵字':''}：共 ${tot} 趟${tot>shown.length?'（只列前 '+shown.length+' 趟）':''}</div>`:'')+(shown.length?shown.map((x,i)=>{const c=x.c||{},v=(x.src&&x.src.vendor)||'',st=STAGE_LABEL[stageOf(x)]||'';
       const dd=daysTo(x),cl=x.paid&&dd!==null&&dd>=0?(x.callAt?'<span class="kw-call ok">☎️ 已聯絡新人</span>':`<span class="kw-call" data-call="${i}">☎️ 按這裡標記已聯絡新人</span>`):'';
-      return `<button type="button" data-i="${i}"${i===act?' class="on"':''}>${cl}<b>${esc(tripCode(x))}｜${esc(orderNo(x))}</b>${esc(c.chatName||[c.groom,c.bride].filter(Boolean).join('＆')||'未命名')}<small>${esc([x.date,st,v?('婚顧／廠商 '+v):'',c.groom&&c.bride?c.groom+'＆'+c.bride:''].filter(Boolean).join('　'))}</small></button>`}).join(''):'<div class="empty">找不到相關訂單</div>');
+      return `<button type="button" data-i="${i}"${i===act?' class="on"':''}>${cl}<b>${esc(tripCode(x))}｜${esc(orderNo(x))}</b>${esc(c.chatName||[c.groom,c.bride].filter(Boolean).join('＆')||'未命名')}<small>${esc([x.date,st,v?('婚顧／廠商 '+v+((x.src||{}).agent?' '+x.src.agent:'')+((x.src||{}).mode?'（'+x.src.mode+'）':'')):'',c.groom&&c.bride?c.groom+'＆'+c.bride:''].filter(Boolean).join('　'))}</small></button>`}).join(''):'<div class="empty">找不到相關訂單</div>');
     box.hidden=false}
   const dBtn=$('kwDateBtn'),dPop=$('kwDatePop');
   window.kwDateChanged=()=>{dBtn.textContent=drOn('kw')?'📅 '+drLabel('kw'):'📅 用車日';dBtn.classList.toggle('on',drOn('kw'));act=-1;if(drOn('kw')||inp.value.trim())render();else box.hidden=true};
