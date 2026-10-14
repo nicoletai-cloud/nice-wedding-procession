@@ -224,8 +224,7 @@ nav.tabs button{scroll-snap-align:start}
       <select id="orderSel" aria-label="切換訂單"></select>
       <button type="button" class="btn sm" id="grpCode" title="這場的代碼：LINE 群組名稱、找司機都用這組；點一下複製" hidden></button>
       <button type="button" class="btn sm" id="grpName" title="選用車日期，列出當天所有車趟的 LINE 群組名稱；可複製、勾選已建立">📋 群組名稱</button>
-      <input id="codeQ" placeholder="代碼／報價編號" maxlength="14" autocomplete="off" style="width:120px" title="輸入找司機訊息裡的代碼（4～5 碼），或報價編號 Q-代碼-版本（按 Enter），直接開啟那一場">
-      <div class="kw-search"><input id="kwQ" placeholder="🔍 搜尋單號、客人、新人、地址、婚顧" autocomplete="off"><div class="kw-results" id="kwResults" hidden></div></div>
+      <div class="kw-search"><input id="kwQ" placeholder="🔍 代碼、客人、新人、單號、地址、婚顧" autocomplete="off" title="輸入關鍵字列出相關訂單；貼上或輸入代碼（4～5 碼）／報價編號 Q-代碼-版本後按 Enter，直接開啟那一場"><div class="kw-results" id="kwResults" hidden></div></div>
       <div class="kw-date"><button type="button" class="btn sm" id="kwDateBtn" title="依用車日期篩選車趟">📅 用車日</button><div class="kw-date-pop" id="kwDatePop" hidden><div class="dr-bar" data-dr="kw"></div><div class="row" style="justify-content:flex-end;margin-top:8px"><button type="button" class="btn sm pri" id="kwDateShow">列出這段日期的車趟</button></div></div></div>
       <button class="btn sm" id="btnSync" title="手機／電腦同步">同步</button>
       <button class="btn" id="btnInbox">訊息</button>
@@ -1277,9 +1276,13 @@ function codeFind(q){q=normNo(q).replace(/[^A-Z0-9]/g,'');if(!q)return null;cons
 function qCodeOpen(raw){const m=normNo(raw).replace(/[－—]/g,'-').match(/^Q-?([A-Z0-9]{4,5})(?:-(\d{1,2}))?$/);if(!m)return false;const x=Object.values(DB.orders).find(y=>!y.sample&&findCode(y)===m[1]);if(!x){toast('找不到這個報價編號');return true}
   o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();showTab('quote');const v=m[2]?+m[2]:0;setTimeout(()=>{const d=v&&document.querySelector(`#quoteVers details[data-qv="${v}"]`);if(d){d.open=true;d.scrollIntoView({behavior:'smooth',block:'center'})}else{const q=$('quoteVers');if(q)q.scrollIntoView({behavior:'smooth',block:'center'})}},80);
   toast(`已開啟 ${orderNo(x)}`+(v?`（報價第 ${v} 版）`:'（報價版本）')+(v&&!document.querySelector(`#quoteVers details[data-qv="${v}"]`)?'，但這個版本已刪除':''));return true}
-document.addEventListener('keydown',e=>{if(e.target.id!=='codeQ'||e.key!=='Enter')return;e.preventDefault();if(qCodeOpen(e.target.value)){e.target.value='';return}const x=codeFind(e.target.value);if(!x){toast('找不到這個代碼');return}
-  o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();showTab('find');e.target.value='';toast(`已開啟 ${orderNo(x)}（代碼 ${findCode(x)}）`)});
-document.addEventListener('input',e=>{if(e.target.id!=='codeQ')return;if(/^\s*Q/i.test(e.target.value)){if(e.inputType==='insertFromPaste'&&qCodeOpen(e.target.value))e.target.value='';return}const v=normNo(e.target.value).replace(/[^A-Z0-9]/g,'');if(v.length<4||v.length>5)return;const x=Object.values(DB.orders).find(y=>!y.sample&&findCode(y)===v);if(x){o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();showTab('find');e.target.value='';toast(`已開啟 ${orderNo(x)}（代碼 ${v}）`)}});
+/* 2026-10-15 代碼／報價編號併入上方搜尋框：Enter 或貼上完整代碼時直接開啟那一場 */
+function kwCodeOpen(raw){const t=String(raw||'').trim();if(!t||/\s/.test(t))return false;
+  const m=normNo(t).replace(/[－—]/g,'-').match(/^Q-?([A-Z0-9]{4,5})(?:-(\d{1,2}))?$/);
+  if(m&&Object.values(DB.orders).some(y=>!y.sample&&findCode(y)===m[1]))return qCodeOpen(t);
+  const v=normNo(t).replace(/[^A-Z0-9]/g,'');if(v.length<4)return false;
+  const x=codeFind(t);if(!x)return false;
+  o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();showTab('find');toast(`已開啟 ${orderNo(x)}（代碼 ${findCode(x)}）`);return true}
 function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr);const fl0=x.findM?x.fleet.filter(f=>f.m===x.findM):x.fleet;/* 只算還沒派司機的車；全部都派了才顯示全部 */const fl=fl0.some(f=>!String(f.driver||'').trim())?fl0.filter(f=>!String(f.driver||'').trim()):fl0;
   const CNN=['零','一','兩','三','四','五','六','七','八','九','十'];const n2=n=>CNN[n]||String(n);
   const ng={};fl.forEach(f=>{const k=`${(f.color||'').trim()} ${MNAME[f.m]}`.trim();ng[k]=(ng[k]||0)+1});
@@ -2204,9 +2207,9 @@ function showTab(name){document.querySelectorAll('#tabs button').forEach(b=>b.se
   $('kwDateShow').addEventListener('click',e=>{e.preventDefault();dPop.hidden=true;act=-1;render()});
   document.addEventListener('mousedown',e=>{if(!dPop.hidden&&!e.target.closest('.kw-date'))dPop.hidden=true;if(!box.hidden&&!e.target.closest('.kw-search')&&!e.target.closest('.kw-date')&&document.activeElement!==inp)box.hidden=true});
   function open(x){box.hidden=true;inp.blur();o=x;save();loadOrder();try{window.scrollTo(0,0)}catch(e){}}
-  inp.addEventListener('input',()=>{act=-1;render()});inp.addEventListener('focus',()=>{if(inp.value.trim()||drOn('kw'))render()});
+  inp.addEventListener('input',e=>{if(e.inputType==='insertFromPaste'&&kwCodeOpen(inp.value)){inp.value='';box.hidden=true;inp.blur();return}act=-1;render()});inp.addEventListener('focus',()=>{if(inp.value.trim()||drOn('kw'))render()});
   inp.addEventListener('blur',()=>setTimeout(()=>{box.hidden=true},200));
-  inp.addEventListener('keydown',e=>{if(box.hidden||!shown.length)return;if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();act=(act+(e.key==='ArrowDown'?1:-1)+shown.length)%shown.length;render()}else if(e.key==='Enter'){e.preventDefault();open(shown[act>=0?act:0])}else if(e.key==='Escape')box.hidden=true});
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&act<0&&kwCodeOpen(inp.value)){e.preventDefault();inp.value='';box.hidden=true;inp.blur();return}if(box.hidden||!shown.length)return;if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();act=(act+(e.key==='ArrowDown'?1:-1)+shown.length)%shown.length;render()}else if(e.key==='Enter'){e.preventDefault();open(shown[act>=0?act:0])}else if(e.key==='Escape')box.hidden=true});
   box.addEventListener('mousedown',e=>{const c=e.target.closest('[data-call]');if(c){e.preventDefault();const x=shown[+c.dataset.call];if(x){const t=Date.now();x.callAt=t;x.updated=t;DB.orders[x.id]=x;if(o&&o.id===x.id){o.callAt=t;o.updated=t}store('nwcw_orders',DB);pushSync();try{renderAll()}catch(_){}render();toast('已記錄：'+tripCode(x)+' 主禮車司機已聯絡新人')}return}
     const b=e.target.closest('button[data-i]');if(!b)return;e.preventDefault();open(shown[+b.dataset.i])});
 })();
