@@ -517,6 +517,7 @@ nav.tabs button{scroll-snap-align:start}
         <div class="fields">
           <label class="f wide">群組名稱<div class="row" style="flex-wrap:nowrap"><input id="lgName" readonly style="flex:1"><button class="btn sm pri" data-copyv="lgName">複製</button></div></label>
         </div>
+        <div id="lgCard" style="margin-top:8px"></div>
         <div class="row" style="justify-content:space-between;margin:10px 0 6px"><span class="hint" style="margin:0">開場訊息</span><button class="btn sm pri" data-copy="lgMsg">複製訊息</button></div>
         <pre class="out" id="lgMsg"></pre>
         <div class="pubBox" style="margin-top:10px"></div>
@@ -1728,7 +1729,7 @@ function renderPay(){const ps=payState(o),r=ps.r,c=o.c;
    <div><span>匯款日期／後五碼</span><span>${c.payDate?fmtDate(c.payDate):'—'}／${esc(c.last5||'—')}</span></div>`;
   $('payChip').innerHTML=o.paid?`<span class="chip ok">已確認收款 ${esc(o.paidAt||'')}</span>`:ps.amt?(ps.match?'<span class="chip ok">金額相符，待確認入帳</span>':'<span class="chip" style="color:var(--warn)">金額不符，請核對</span>'):'<span class="chip">尚未填匯款資料</span>';
   $('btnPaid').hidden=!!o.paid;$('btnUnpaid').hidden=!o.paid;$('outPaid').textContent=paidText(o);renderCtSend();renderPaidAck();
-  $('ttTitle').value=ttTitle(o);$('ttWhen').textContent=`日期 ${o.date?fmtDate(o.date):'未定'}　${o.c.start||'--:--'} → ${o.c.end||'--:--'}`;$('ttMemo').textContent=ttMemo(o);$('lgName').value=lgName(o);$('lgMsg').textContent=lgMsg(o);try{renderPub()}catch(e){}}
+  $('ttTitle').value=ttTitle(o);$('ttWhen').textContent=`日期 ${o.date?fmtDate(o.date):'未定'}　${o.c.start||'--:--'} → ${o.c.end||'--:--'}`;$('ttMemo').textContent=ttMemo(o);$('lgName').value=lgName(o);try{renderLgCard()}catch(e){}$('lgMsg').textContent=lgMsg(o);try{renderPub()}catch(e){}}
 function refRowText(x){const r=calc(x),v=vendorOf(x);const p=dparts(x.date);
   return [p?`${p.y}/${p.m}/${p.d}`:'',orderNo(x),planName(x).replace(/^Tesla /,'').replace(/ \S*禮車方案$/,''),v?v.name:'',x.src.ref||'',money(r.planFee),v?refRate(x)+'%':'',v&&r.refAmt?money(r.refAmt):'','',isMonthly(x)?'月結':''].join('\t')}
 function renderSrc(){const v=vendorOf(o),r=calc(o);
@@ -2034,19 +2035,25 @@ function lgBind(x){const ds=(x.fleet||[]).filter(f=>String(f.driver||'').trim())
     if(!list.some(z=>z.n===n))list.push({n,ok,role:f.role||'',car:(typeof MABBR!=='undefined'&&MABBR[f.m])||'',ph:String(f.phone||(d&&d.phone)||'').trim()})});
   return {total:ds.length,miss:[...new Set(miss)],list}}
 const LGST={};let lgBusy='',lgF='all';
+/* 車隊與流程頁「司機 LINE 群組」卡：已建立勾選、傳綁定車卡、司機綁定狀態（跟群組名稱清單共用） */
+function renderLgCard(){const el=$('lgCard');if(!el||!o)return;if(o.sample||!lgOk(o)){el.innerHTML='<span class="hint" style="margin:0">收訂後才會出現「已建立」與「傳綁定車卡」。</span>';return}
+  const g=LGST[o.id],bd=lgBind(o);
+  el.innerHTML=`<div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer"><input type="checkbox" data-lgdone="${esc(o.id)}" style="width:auto"${o.lgAt?' checked':''}>群組已建立</label><button class="btn sm" data-lgbind="${esc(o.id)}"${g&&g.ok?'':' disabled'}>📨 傳綁定車卡</button><span class="hint" style="margin:0">${g==null?'查詢群組中…':g.ok?'🤖 禮車助手已在群組':'⚠️ 還沒偵測到群組（群組名稱要有代碼、禮車助手要在群組裡）'}</span></div>`
+    +`<div class="hint" style="margin:6px 0 0">${!bd.total?'還沒派司機':bd.miss.length?`<b style="color:var(--warn)">未綁車卡 ${bd.miss.length}/${bd.total}：${esc(bd.miss.join('、'))}</b>`:`✅ 司機 ${bd.total} 位都已綁車卡`}</div>`;
+  if(g==null)lgStatus([o])}
 async function lgCall(body){if(!S.driveUrl||!S.driveKey)throw new Error('未設定同步');const r=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({token:S.driveKey,action:'wedGrp'},body))});const j=await r.json();if(!j.ok)throw new Error(j.error||'失敗');return j}
 const lgKeys=x=>[tripCode(x),findCode(x),x._no||orderNo(x)].filter(Boolean);
 async function lgStatus(L){const need=L.filter(x=>LGST[x.id]==null);const k=need.map(x=>x.id).join(',');if(!need.length||lgBusy===k)return;lgBusy=k;
-  try{const j=await lgCall({op:'status',trips:need.map(x=>({id:x.id,keys:lgKeys(x)}))});Object.assign(LGST,j.st||{})}catch(e){need.forEach(x=>LGST[x.id]={ok:false,err:1})}lgBusy='';if(!$('lgModal').hidden)renderLg()}
+  try{const j=await lgCall({op:'status',trips:need.map(x=>({id:x.id,keys:lgKeys(x)}))});Object.assign(LGST,j.st||{})}catch(e){need.forEach(x=>LGST[x.id]={ok:false,err:1})}lgBusy='';if(!$('lgModal').hidden)renderLg();try{renderLgCard()}catch(_){}}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#grpName,#btnLgClose,[data-lgday],[data-lgcopy],[data-lgbind],[data-lgf]');if(!b)return;e.preventDefault();
   if(b.dataset.lgf){lgF=b.dataset.lgf;renderLg();return}
-  if(b.dataset.lgbind){const x=DB.orders[b.dataset.lgbind];if(!x)return;b.disabled=true;b.textContent='傳送中…';lgCall({op:'bind',keys:lgKeys(x)}).then(j=>toast('已在「'+(j.name||'群組')+'」傳綁定車卡按鈕')).catch(err=>toast('傳送失敗：'+err.message)).finally(()=>renderLg());return}
+  if(b.dataset.lgbind){const x=DB.orders[b.dataset.lgbind];if(!x)return;b.disabled=true;b.textContent='傳送中…';lgCall({op:'bind',keys:lgKeys(x)}).then(j=>toast('已在「'+(j.name||'群組')+'」傳綁定車卡按鈕')).catch(err=>toast('傳送失敗：'+err.message)).finally(()=>{renderLg();try{renderLgCard()}catch(_){}});return}
   if(b.id==='grpName'){openLg(o&&!o.sample&&o.date?o.date:'');return}
   if(b.id==='btnLgClose'){$('lgModal').hidden=true;return}
   if(b.dataset.lgday){$('lgDate').value=b.dataset.lgday;renderLg();return}
   const x=DB.orders[b.dataset.lgcopy];if(x){const n=lgName(x);clip(n);toast('已複製群組名稱：'+n)}});
 document.addEventListener('change',e=>{const t=e.target;if(!t)return;if(t.id==='lgDate'){renderLg();return}if(!t.dataset||!t.dataset.lgdone)return;const x=DB.orders[t.dataset.lgdone];if(!x)return;
-  x.lgAt=t.checked?Date.now():0;x.updated=Date.now();store('nwcw_orders',DB);try{pushSync()}catch(_){}renderLg()});
+  x.lgAt=t.checked?Date.now():0;x.updated=Date.now();store('nwcw_orders',DB);try{pushSync()}catch(_){}renderLg();try{renderLgCard()}catch(_){}});
 async function loadInbox(){try{IB=await ibCall({action:'inbox'});renderInbox()}catch(e){if(!$('inboxModal').hidden)$('ibList').innerHTML='<p class="hint">讀取失敗，請按重新整理</p>'}}
 function ibAgo(t){const m=Math.round((Date.now()-t)/60000);return m<60?m+' 分鐘前':m<1440?Math.round(m/60)+' 小時前':Math.round(m/1440)+' 天前'}
 function renderInbox(){const n=IB.filter(u=>u.pending).length;$('btnInbox').innerHTML='訊息'+(n?`<b>${n}</b>`:'');if($('inboxModal').hidden)return;
