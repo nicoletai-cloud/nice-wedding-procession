@@ -2038,8 +2038,8 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 /* ===== 2026-10-15 行前確認清單：選用車日 → 列出要確認的車趟 → 預覽 → 送出（同業單不用）===== */
 function cfOk(x){return x&&!x.sample&&!x.lost&&!x.partner&&!!x.date&&!!x.paid}
 function cfPendingDays(){const t=lgToday(),m={};Object.values(DB.orders).forEach(x=>{if(cfOk(x)&&x.date>=t&&!x.cfDoneAt&&!x.cfSentAt)m[x.date]=(m[x.date]||0)+1});return m}
-let cfF='all',cfPrevList=[];
-function openCf(d){const ds=Object.keys(cfPendingDays()).sort();$('cfDate').value=d||ds[0]||lgToday();cfF='all';$('cfModal').hidden=false;renderCf()}
+let cfF='all',cfPrevList=[];const cfSel=new Set();
+function openCf(d){const ds=Object.keys(cfPendingDays()).sort();$('cfDate').value=d||ds[0]||lgToday();cfF='all';cfSel.clear();$('cfModal').hidden=false;renderCf()}
 function cfStOf(x){return x.cfDoneAt?'done':x.cfSentAt?'wait':'new'}
 function renderCf(){const m=cfPendingDays(),d=$('cfDate').value,ds=Object.keys(m).sort().slice(0,8);
   $('cfDays').innerHTML=ds.length?'<span class="hint" style="margin:0">還沒傳：</span>'+ds.map(k=>{const p=dparts(k);return `<button class="btn sm${k===d?' pri':''}" data-cfday="${k}">${p?p.m+'/'+p.d:k}（${m[k]}）</button>`}).join(''):'<span class="hint" style="margin:0">之後的車趟都傳過了 ✅</span>';
@@ -2047,11 +2047,15 @@ function renderCf(){const m=cfPendingDays(),d=$('cfDate').value,ds=Object.keys(m
   const cnt=k=>all.filter(x=>cfStOf(x)===k).length;
   $('cfFilt').innerHTML=[['all','全部',all.length],['new','還沒傳',cnt('new')],['wait','已傳未回',cnt('wait')],['done','✅ 已完成',cnt('done')]].map(([k,l,n])=>`<button class="btn sm${cfF===k?' pri':''}" data-cff="${k}">${l} ${n}</button>`).join('');
   const L=cfF==='all'?all:all.filter(x=>cfStOf(x)===cfF);
+  /* 2026-10-15 多選一次傳送 */
+  const selable=L.filter(x=>cfStOf(x)!=='done');[...cfSel].forEach(id=>{if(!selable.some(x=>x.id===id))cfSel.delete(id)});
+  $('cfFilt').innerHTML+=selable.length?`<div class="row" style="gap:6px;flex-wrap:wrap;align-items:center;width:100%;margin-top:6px"><button class="btn sm" data-cfall="1">${cfSel.size&&cfSel.size===selable.length?'取消全選':'全選'}</button><button class="btn sm pri" data-cfsendsel="1"${cfSel.size?'':' disabled'}>📤 傳送已選（${cfSel.size}）</button><span class="hint" style="margin:0">已選 ${cfSel.size} / ${selable.length}，一次最多 20 筆；送出前會先預覽</span></div>`:'';
   const pt=Object.values(DB.orders).filter(x=>!x.sample&&!x.lost&&x.partner&&x.date===d).length;
   $('cfList').innerHTML=(L.length?L.map(x=>{const c=x.c||{},st=cfStOf(x),dt=t=>{const z=new Date(t);return (z.getMonth()+1)+'/'+z.getDate()};
     const tag=st==='done'?`<span style="color:var(--ok);font-weight:700">✅ 已完成 ${dt(x.cfDoneAt)}</span>`:st==='wait'?`<span style="color:#A0453A;font-weight:700">已傳 ${dt(x.cfSentAt)}，客人還沒送出</span>`:'<span class="hint" style="margin:0">還沒傳</span>';
     const nm=c.chatName||[c.groom,c.bride].filter(Boolean).join('＆')||'未命名';
-    return `<div class="card" style="padding:12px;margin-bottom:8px"><div class="row" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><div style="min-width:0"><b>${esc(tripCode(x))}｜${esc(orderNo(x))}</b>　${esc(nm)}<div class="hint" style="margin:2px 0 0">${esc([c.channel||'LINE',[c.groom,c.bride].filter(Boolean).join('＆')].filter(Boolean).join('　'))}</div><div style="margin-top:4px">${tag}${x.cfPushErr?`<div class="hint" style="color:#A0453A;margin:2px 0 0">⚠️ 上次傳送失敗：${esc(x.cfPushErr)}</div>`:''}</div></div>
+    const cb=st==='done'?'<span style="display:inline-block;width:22px"></span>':`<input type="checkbox" data-cfsel="${esc(x.id)}" style="width:auto;margin:3px 8px 0 0;flex:none"${cfSel.has(x.id)?' checked':''}>`;
+    return `<div class="card" style="padding:12px;margin-bottom:8px"><div class="row" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><div style="min-width:0;display:flex;align-items:flex-start">${cb}<div style="min-width:0"><b>${esc(tripCode(x))}｜${esc(orderNo(x))}</b>　${esc(nm)}<div class="hint" style="margin:2px 0 0">${esc([c.channel||'LINE',[c.groom,c.bride].filter(Boolean).join('＆')].filter(Boolean).join('　'))}</div><div style="margin-top:4px">${tag}${x.cfPushErr?`<div class="hint" style="color:#A0453A;margin:2px 0 0">⚠️ 上次傳送失敗：${esc(x.cfPushErr)}</div>`:''}</div></div></div>
       <div class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn sm" data-cfopen="${esc(x.id)}">開啟訂單</button>${st==='done'?'':`<button class="btn sm pri" data-cfprev="${esc(x.id)}">${st==='wait'?'📤 再傳一次':'📤 傳行前確認'}</button>`}</div></div></div>`}).join(''):`<p class="hint">${d?'這天沒有'+(cfF==='all'?'需要行前確認的車趟':'這個狀態的車趟'):'請選日期'}</p>`)+(pt?`<p class="hint">這天另有 ${pt} 趟同業單，不用行前確認。</p>`:'');
 }
 function cfPreview(list){list=(list||[]).filter(Boolean);if(!list.length)return;cfPrevList=list;
@@ -2066,18 +2070,20 @@ function cfPreview(list){list=(list||[]).filter(Boolean);if(!list.length)return;
       <div style="margin-top:6px"><button class="btn sm" data-cfcopy="${esc(x.id)}">複製文字訊息（傳不到時自己貼）＋標記已傳</button></div></div>`}).join('');
   const b=$('btnCfPrevSend');b.disabled=!can;b.textContent=can?(list.length>1?`送出（${can} 筆）`:'送出'):'沒有可以送出的';
   $('cfPrevModal').hidden=false}
-document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.closest('#cfListBtn,#btnCfClose,#btnCfPrevClose,#btnCfPrevCancel,#btnCfPrevSend,[data-cfday],[data-cff],[data-cfprev],[data-cfopen],[data-cfcopy]');if(!b)return;e.preventDefault();
+document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.closest('#cfListBtn,#btnCfClose,#btnCfPrevClose,#btnCfPrevCancel,#btnCfPrevSend,[data-cfday],[data-cff],[data-cfprev],[data-cfopen],[data-cfcopy],[data-cfall],[data-cfsendsel]');if(!b)return;e.preventDefault();
+  if(b.dataset.cfall){const d=$('cfDate').value,L=Object.values(DB.orders).filter(x=>cfOk(x)&&x.date===d&&cfStOf(x)!=='done'&&(cfF==='all'||cfStOf(x)===cfF));if(cfSel.size===L.length)cfSel.clear();else{cfSel.clear();L.slice(0,20).forEach(x=>cfSel.add(x.id));if(L.length>20)toast('一次最多 20 筆，先選前 20 筆')}renderCf();return}
+  if(b.dataset.cfsendsel){const L=[...cfSel].map(id=>DB.orders[id]).filter(Boolean);if(L.length)cfPreview(L);return}
   if(b.id==='cfListBtn'){openCf(o&&cfOk(o)&&o.date>=lgToday()?o.date:'');return}
   if(b.id==='btnCfClose'){$('cfModal').hidden=true;return}
   if(b.id==='btnCfPrevClose'||b.id==='btnCfPrevCancel'){$('cfPrevModal').hidden=true;return}
-  if(b.dataset.cfday){$('cfDate').value=b.dataset.cfday;renderCf();return}
-  if(b.dataset.cff){cfF=b.dataset.cff;renderCf();return}
+  if(b.dataset.cfday){$('cfDate').value=b.dataset.cfday;cfSel.clear();renderCf();return}
+  if(b.dataset.cff){cfF=b.dataset.cff;cfSel.clear();renderCf();return}
   if(b.dataset.cfprev){cfPreview([DB.orders[b.dataset.cfprev]]);return}
   if(b.dataset.cfopen){const x=DB.orders[b.dataset.cfopen];if(x){o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();$('cfModal').hidden=true;$('coupleModal').hidden=false}return}
   if(b.dataset.cfcopy){const x=DB.orders[b.dataset.cfcopy];if(!x)return;clip(cfMsg(x));x.cfSentAt=x.cfSentAt||Date.now();x.updated=Date.now();store('nwcw_orders',DB);try{pushSync()}catch(_){}b.textContent='✅ 已複製，已標記已傳';try{renderAll();renderTodo()}catch(_){}if(!$('cfModal').hidden)renderCf();return}
-  if(b.id==='btnCfPrevSend'){const L=cfPrevList.filter(x=>{const c=x.c||{};return (c.channel||'LINE')!=='私人LINE'&&c.chatName});if(!L.length)return;b.disabled=true;b.textContent='傳送中…';await cfPush(L);$('cfPrevModal').hidden=true;if(!$('cfModal').hidden)renderCf();return}
+  if(b.id==='btnCfPrevSend'){const L=cfPrevList.filter(x=>{const c=x.c||{};return (c.channel||'LINE')!=='私人LINE'&&c.chatName});if(!L.length)return;b.disabled=true;b.textContent='傳送中…';await cfPush(L);L.forEach(x=>cfSel.delete(x.id));$('cfPrevModal').hidden=true;if(!$('cfModal').hidden)renderCf();return}
 });
-document.addEventListener('change',e=>{if(e.target&&e.target.id==='cfDate'){cfF='all';renderCf()}});
+document.addEventListener('change',e=>{const t=e.target;if(!t)return;if(t.id==='cfDate'){cfF='all';cfSel.clear();renderCf();return}if(t.dataset&&t.dataset.cfsel){if(t.checked){if(cfSel.size>=20){t.checked=false;toast('一次最多 20 筆');return}cfSel.add(t.dataset.cfsel)}else cfSel.delete(t.dataset.cfsel);renderCf()}});
 function lgOk(x){return x&&!x.sample&&!x.lost&&!!x.date&&!!(x.paid||x.partner)}
 function lgToday(){const t=new Date();return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0')}
 function lgPending(){const t=lgToday(),m={};Object.values(DB.orders).forEach(x=>{if(lgOk(x)&&x.date>=t&&!x.lgAt)m[x.date]=(m[x.date]||0)+1});return m}
