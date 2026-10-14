@@ -35,6 +35,7 @@ header.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding-
 .nwc-hub:hover{border-color:var(--accent);color:var(--accent)}
 .orderbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .orderbar select{max-width:260px}
+.orderbar #btnDecoCal{margin-left:auto}
 nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);overflow-x:auto;display:flex;gap:2px;scrollbar-width:none}
 nav.tabs button{flex:0 0 auto;border:0;background:none;color:var(--muted);font:500 0.933rem var(--f-body);padding:12px 14px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
 nav.tabs button .n{font-family:var(--f-label);font-size:0.733rem;margin-right:6px;opacity:.7}
@@ -179,7 +180,7 @@ nav.tabs button{scroll-snap-align:start}
   header.top{padding-block:12px 8px;gap:8px}
   .brand b{font-size:1.2rem}
   .brand span{display:none}
-  header.top .orderbar{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  header.top .orderbar{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;grid-auto-flow:row dense}.orderbar #btnDecoCal{grid-column:3;margin-left:0}
   .orderbar select{grid-column:1/-1;max-width:none}
   header.top .orderbar{position:relative}.orderbar .kw-search{grid-column:span 2;min-width:0}.orderbar .kw-search,.orderbar .kw-date{position:static}.orderbar .kw-date .btn{width:100%;font-size:.85rem;white-space:nowrap;overflow:hidden;padding-inline:4px}.kw-date-pop{left:0;right:0;width:auto}
   .orderbar .btn{width:100%;text-align:center;padding-inline:6px}
@@ -219,23 +220,24 @@ nav.tabs button{scroll-snap-align:start}
     <a class="nwc-hub" id="nwcCardsLink" href="https://nicoletai-cloud.github.io/nice-hub/cards.html?t=wed&amp;from=wed">司機資料總表 ›</a>
     <a class="nwc-hub" id="nwcLessonLink" href="https://docs.google.com/document/d/1K6DnYwcA0rDnFsxS_l0Rqs-Nk7z1OwpHPUImlviNWJs/edit" target="_blank" rel="noopener" title="編輯司機教案（Google 文件）；改完司機在 LINE「禮車助手」看到的就是新版。司機用的連結：https://liff.line.me/2011949076-1fqUEtE2?p=lesson">司機教案 ›</a>
     <div class="orderbar">
+      <button class="btn" id="btnNew">＋ 新訂單</button>
       <select id="orderSel" aria-label="切換訂單"></select>
       <button type="button" class="btn sm" id="grpCode" title="這場的代碼：LINE 群組名稱、找司機都用這組；點一下複製" hidden></button>
+      <button type="button" class="btn sm" id="grpName" title="司機 LINE 群組名稱（用車日期＋集合地點＋代碼）；點一下複製" hidden>📋 群組名稱</button>
       <input id="codeQ" placeholder="代碼／報價編號" maxlength="14" autocomplete="off" style="width:120px" title="輸入找司機訊息裡的代碼（4～5 碼），或報價編號 Q-代碼-版本（按 Enter），直接開啟那一場">
       <div class="kw-search"><input id="kwQ" placeholder="🔍 搜尋單號、客人、新人、地址、婚顧" autocomplete="off"><div class="kw-results" id="kwResults" hidden></div></div>
       <div class="kw-date"><button type="button" class="btn sm" id="kwDateBtn" title="依用車日期篩選車趟">📅 用車日</button><div class="kw-date-pop" id="kwDatePop" hidden><div class="dr-bar" data-dr="kw"></div><div class="row" style="justify-content:flex-end;margin-top:8px"><button type="button" class="btn sm pri" id="kwDateShow">列出這段日期的車趟</button></div></div></div>
       <button class="btn sm" id="btnSync" title="手機／電腦同步">同步</button>
       <button class="btn" id="btnInbox">訊息</button>
       <button class="btn" id="btnTodo">待辦</button>
-      <button class="btn" id="btnDecoCal">車頭彩檔期</button>
       <button class="btn" id="btnRemind">提醒文字</button>
       <button class="btn" id="btnCouple">新人資料</button>
       <button class="btn" id="btnToAir" title="把這位客人的資料帶到機場接送報價">✈️ 轉機場接送</button>
-      <button class="btn" id="btnNew">＋ 新訂單</button>
       <button class="btn" id="btnPartner">＋ 同業單</button>
       <button class="btn" id="btnPtSettle">同業結算</button>
       <button class="btn" id="btnDup">複製此單</button>
       <button class="btn danger" id="btnDel">刪除</button>
+      <button class="btn" id="btnDecoCal">車頭彩檔期</button>
     </div>
   </header>
 
@@ -263,6 +265,7 @@ nav.tabs button{scroll-snap-align:start}
           <div class="fields">
             <label class="f">客人顯示名稱（LINE / FB / IG）<input id="q_chat" data-b="c.chatName" placeholder="對話裡的名字"></label>
             <label class="f">聯絡管道<select id="q_ch" data-b="c.channel"><option>LINE</option><option value="私人LINE">私人 LINE（我的個人帳號）</option><option>FB</option><option>IG</option></select></label>
+            <div class="f" style="grid-column:1/-1"><span>同一組新人的其他對話 <small class="hint" style="margin:0">FB／IG／另一個 LINE，機器人會認成同一組客人</small></span><div id="q_chats"></div><div><button class="btn sm" id="btnChatAdd" type="button">＋ 加對話</button></div></div>
             <label class="f">用車日期<input type="date" id="q_date" data-b="date"></label>
             <label class="f">用車時數
               <select id="q_hours" data-b="hours" data-num>
@@ -1543,6 +1546,7 @@ function setPath(obj,path,v){const ks=path.split('.');const last=ks.pop();const 
 function fillInputs(){document.querySelectorAll('[data-b]').forEach(el=>{const v=getPath(o,el.dataset.b);if(el.hasAttribute('data-bool'))el.value=v?'1':'0';else el.value=v==null||(el.dataset.b==='tripKm'&&!+v)?'':v});
   document.querySelectorAll('[data-s]').forEach(el=>{el.value=S[el.dataset.s]==null?'':S[el.dataset.s]});
   try{renderFormPlaces()}catch(e){}
+  try{renderChats()}catch(e){}
   $('mapLinks').checked=!!o.mapLinks;
   if(document.activeElement!==$('s_vp'))$('s_vp').value=(S.vprices&&S.vprices['幸福故事館'])||'';
   if(document.activeElement!==$('s_vendors'))$('s_vendors').value=(S.vendors||[]).map(v=>`${v.name}=${v.rate}${v.monthly?',月結':''}`).join('\n');
@@ -1652,7 +1656,7 @@ function renderFleetCall(){['fleetCall','memoCall'].forEach(id=>{const f=$(id);i
   f.innerHTML=o.callAt?`<span class="chip">✅ 負責人已聯絡新人（${callTime(o.callAt)}）</span><button class="btn sm" data-fcall="undo">改回未聯絡</button>`
     :`<b style="color:#A0453A">☎️ 負責人還沒回報聯絡新人</b><span class="hint" style="margin:0">用車前一天 12:00 前要回報</span><button class="btn sm pri" data-fcall="done">負責人已聯絡新人</button>`})}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-fcall]');if(!b)return;e.preventDefault();if(b.dataset.fcall==='done'){o.callAt=Date.now();toast('已記錄：'+orderNo(o)+' 負責人已聯絡新人')}else o.callAt=0;o.updated=Date.now();save();renderAll()});
-function renderCallCheck(){renderFleetCall();const gc=$('grpCode');if(gc){const c=o&&!o.sample?findCode(o):'';gc.hidden=!c;gc.textContent='代碼 '+c}const el=$('callCheck');if(!el)return;if(!o.paid){el.hidden=true;return}el.hidden=false;
+function renderCallCheck(){renderFleetCall();const gc=$('grpCode');if(gc){const c=o&&!o.sample?findCode(o):'';gc.hidden=!c;gc.textContent='代碼 '+c;const gn=$('grpName');if(gn)gn.hidden=!c}const el=$('callCheck');if(!el)return;if(!o.paid){el.hidden=true;return}el.hidden=false;
   el.innerHTML=`<span class="chip">車趟代碼 <b>${esc(tripCode(o))}</b></span><button class="btn sm" id="btnCopyTrip">複製代碼</button>`+(o.callAt?`<span class="chip">✅ 主禮車司機已電話聯絡新人（${callTime(o.callAt)} 回報）</span><button class="btn sm" id="btnCallUndo">改回未聯絡</button>`
     :`<b style="color:#A0453A">☎️ 主禮車司機還沒回報聯絡新人</b><span class="hint" style="margin:0">用車前一天 12:00 前要回報</span><button class="btn sm pri" id="btnCallDone">已聯絡新人</button>`)}
 function renderPaidAck(){renderTTCheck();renderCallCheck();const el=$('outPaidAck'),h=$('paidAckHint');if(!el)return;const nf=o.paid&&stageOf(o)==='noform';
@@ -1981,6 +1985,24 @@ document.addEventListener('input',e=>{if(e.target.id==='todoQ')renderTodo()});
 let IB=[],ibF='pending';const ibSel=new Set();
 async function ibCall(body){if(!S.driveUrl||!S.driveKey)throw new Error('未設定同步');const ac=new AbortController(),to=setTimeout(()=>ac.abort(),60000);
   const r=await fetch(S.driveUrl,{signal:ac.signal,method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({token:S.driveKey},body))});const j=await r.json();clearTimeout(to);if(!j.ok)throw new Error(j.error||'失敗');return j.inbox||[]}
+/* 2026-10-14 同一組新人的其他對話（o.c.chats）：FB／IG／另一個 LINE 都連到這張單；收件匣標關聯、機器人認成同一組客人 */
+const CH_OPTS=['LINE','FB','IG','私人LINE'],REL_OPTS=['新郎','新娘','家人','婚顧','其他'];
+function renderChats(){const el=$('q_chats');if(!el||!o)return;const L=(o.c&&o.c.chats)||[];
+  el.innerHTML=L.map((x,i)=>`<div class="row" style="gap:6px;margin:4px 0;flex-wrap:nowrap"><select data-chi="${i}:ch" style="width:auto">${CH_OPTS.map(v=>`<option value="${v}"${(x.ch||'FB')===v?' selected':''}>${v==='私人LINE'?'私人 LINE':v}</option>`).join('')}</select><input data-chi="${i}:name" value="${esc(x.name||'')}" placeholder="對話裡的名字" style="flex:1;min-width:0"><select data-chi="${i}:rel" style="width:auto"><option value="">身分</option>${REL_OPTS.map(v=>`<option${x.rel===v?' selected':''}>${v}</option>`).join('')}</select><button class="btn sm" type="button" data-chdel="${i}" title="移除">✕</button></div>`).join('')}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#btnChatAdd,[data-chdel]');if(!b||!o)return;e.preventDefault();o.c.chats=(o.c.chats||[]).slice();
+  if(b.id==='btnChatAdd')o.c.chats.push({ch:'FB',name:'',rel:''});else o.c.chats.splice(+b.dataset.chdel,1);save();renderChats();try{renderInbox()}catch(_){}});
+document.addEventListener('input',e=>{const t=e.target;if(!t||!t.dataset||!t.dataset.chi||!o)return;const[i,k]=t.dataset.chi.split(':'),L=o.c.chats||[];if(!L[+i])return;L[+i][k]=t.value;save()});
+const chNm=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
+/* 收件匣的人對到哪張單：已連結的 u.order 優先；不然比對訂單的主要對話與「其他對話」（管道也要一樣） */
+function ibOrderOf(u){if(u.order&&DB.orders[u.order])return DB.orders[u.order];const m=String(u.name||'').match(/^\((fb|ig)\)(.*)$/i),ch=m?m[1].toUpperCase():'LINE',n=chNm(m?m[2]:u.name);if(!n)return null;
+  const hit=Object.values(DB.orders).filter(x=>x&&!x.sample&&x.c&&[{ch:x.c.channel||'LINE',name:x.c.chatName}].concat(x.c.chats||[]).some(z=>chNm(String(z.name||'').replace(/^\((fb|ig)\)/i,''))===n&&String(z.ch||'LINE').toUpperCase()===ch));
+  return hit.length===1?hit[0]:null}
+const ibBound=new Set();
+function ibLink(u){const x=ibOrderOf(u);if(!x)return '';if(!u.order&&!ibBound.has(u.uid)){ibBound.add(u.uid);ibCall({action:'inboxSet',uids:[u.uid],set:{order:x.id}}).catch(()=>{})}
+  const c=x.c||{},p=dparts(x.date),who=[c.groom,c.bride].filter(Boolean).join('＆')||c.chatName||'',me=(c.chats||[]).find(z=>chNm(z.name)&&chNm(String(u.name||'').replace(/^\((fb|ig)\)/i,''))===chNm(z.name));
+  return `<button class="btn sm" type="button" data-ibo="${esc(x.id)}" title="開啟這張訂單">🔗 ${p?p.m+'/'+p.d+' ':''}${esc(who)}${me&&me.rel?'（'+esc(me.rel)+'）':''}</button>`}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-ibo]');if(!b)return;e.preventDefault();e.stopPropagation();const x=DB.orders[b.dataset.ibo];if(!x)return;
+  $('inboxModal').hidden=true;o=x;DB.cur=x.id;store('nwcw_orders',DB);loadOrder();showTab('quote')});
 async function loadInbox(){try{IB=await ibCall({action:'inbox'});renderInbox()}catch(e){if(!$('inboxModal').hidden)$('ibList').innerHTML='<p class="hint">讀取失敗，請按重新整理</p>'}}
 function ibAgo(t){const m=Math.round((Date.now()-t)/60000);return m<60?m+' 分鐘前':m<1440?Math.round(m/60)+' 小時前':Math.round(m/1440)+' 天前'}
 function renderInbox(){const n=IB.filter(u=>u.pending).length;$('btnInbox').innerHTML='訊息'+(n?`<b>${n}</b>`:'');if($('inboxModal').hidden)return;
@@ -1990,7 +2012,7 @@ function renderInbox(){const n=IB.filter(u=>u.pending).length;$('btnInbox').inne
   const chip=(k,l,c)=>`<button class="btn sm${ibF===k?' pri':''}" data-ibf="${k}">${l} ${c}</button>`;
   $('ibChips').innerHTML=chip('pending','待回覆',n)+cats.map(c=>chip('cat:'+c,cn(c),IB.filter(u=>u.pending&&(u.cat||'')===c).length)).join('')+chip('done','已回覆（3 天內）',IB.length-n);
   $('ibBatch').innerHTML=`<button class="btn sm" data-ibb="all">${ibSel.size&&ibSel.size===rows.length?'取消全選':'全選'}</button>`+(ibF==='done'?`<button class="btn sm pri" data-ibb="reopen"${ibSel.size?'':' disabled'}>改回待回覆</button>`:`<button class="btn sm pri" data-ibb="done"${ibSel.size?'':' disabled'}>已回覆</button>`)+`<span class="hint" style="margin:0 0 0 4px">已選 ${ibSel.size} / ${rows.length}</span>`;
-  $('ibList').innerHTML=rows.length?rows.map(u=>`<label class="todo-row"><input type="checkbox" data-ibsel="${esc(u.uid)}" style="width:auto"${ibSel.has(u.uid)?' checked':''}><div class="m"><div><b>${esc(u.name||'（讀不到名字）')}</b><span class="sub">${ibAgo(u.pending?u.since:u.doneAt)}</span></div><div class="sub" style="white-space:pre-line">${esc((u.texts||[]).slice(-3).join('\n'))}</div>${ibBot(u)}</div><div class="tg"><select data-ibcat="${esc(u.uid)}" style="width:auto">${cats.map(c=>`<option value="${c}"${(u.cat||'')===c?' selected':''}>${cn(c)}</option>`).join('')}</select></div>${u.bot&&u.bot.step==='done'?`<button class="btn sm" data-ibq="${esc(u.uid)}">${u.order&&DB.orders[u.order]?'開啟報價':'建立報價'}</button>`:''}${u.pending?`<button class="btn sm pri" data-ibdone="${esc(u.uid)}">已回覆</button>`:''}</label>`).join(''):'<p class="hint">沒有訊息。</p>'}
+  $('ibList').innerHTML=rows.length?rows.map(u=>`<label class="todo-row"><input type="checkbox" data-ibsel="${esc(u.uid)}" style="width:auto"${ibSel.has(u.uid)?' checked':''}><div class="m"><div><b>${esc(u.name||'（讀不到名字）')}</b><span class="sub">${ibAgo(u.pending?u.since:u.doneAt)}</span> ${ibLink(u)}</div><div class="sub" style="white-space:pre-line">${esc((u.texts||[]).slice(-3).join('\n'))}</div>${ibBot(u)}</div><div class="tg"><select data-ibcat="${esc(u.uid)}" style="width:auto">${cats.map(c=>`<option value="${c}"${(u.cat||'')===c?' selected':''}>${cn(c)}</option>`).join('')}</select></div>${u.bot&&u.bot.step==='done'?`<button class="btn sm" data-ibq="${esc(u.uid)}">${u.order&&DB.orders[u.order]?'開啟報價':'建立報價'}</button>`:''}${u.pending?`<button class="btn sm pri" data-ibdone="${esc(u.uid)}">已回覆</button>`:''}</label>`).join(''):'<p class="hint">沒有訊息。</p>'}
 function ibBot(u){const b=u.bot;if(!b)return '';if(b.step!=='done')return b.stop?'':'<div class="sub">🤖 機器人問答進行中…</div>';const d=b.data||{};
   return `<div class="sub" style="color:#8a6a3a">🤖 婚期 ${esc(d.iso||((d.month||'').trim()||'未定'))}｜男方 ${esc(d.groomAddr||d.groom||'—')}｜女方 ${esc(d.brideAddr||d.bride||'—')}${d.venue?'｜餐廳 '+esc(d.venue):''}｜${esc(d.meal||'—')}${d.time?' '+esc(d.time):''}｜車款 ${esc(d.car||'—')}</div>`}
 function ibQuote(uid){const u=IB.find(x=>x.uid===uid);if(!u)return;$('inboxModal').hidden=true;
@@ -2097,6 +2119,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
       save();loadOrder();toast('已帶入車款：'+r.cars.map(k=>(k.color||'')+(MNAME[k.m]||k.m)).join('、'));break}
     case 'btnCallDone':o.callAt=Date.now();save();renderAll();toast('已記錄：主禮車司機已聯絡新人');break;
     case 'btnCallUndo':o.callAt=0;save();renderAll();break;
+    case 'grpName':{const n=lgName(o);clip(n);toast('已複製群組名稱：'+n);break}
     case 'btnCopyTrip':case 'grpCode':clip(tripCode(o));toast('已複製代碼 '+tripCode(o)+'，可以貼進 LINE 群組名稱');break;
    case 'btnUnpaid':o.paid=false;o.paidAt='';o.paidTs='';save();renderAll();renderOrderSel();break;
    case 'btnResetS':{const keep={bank:S.bank,phone:S.phone,email:S.email,formBase:S.formBase,formEntry:S.formEntry};S=Object.assign(clone(DEF_S),keep);saveS();renderPriceSettings();fillInputs();renderCars();renderAll();$('resetMsg').textContent='已恢復預設價目';break}
