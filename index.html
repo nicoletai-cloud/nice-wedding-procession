@@ -1319,7 +1319,7 @@ const CT2_CSS=`.ct2{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei
 .ct2 .seal table td{text-align:center;color:#9E4C43;font-size:21pt;line-height:1.05}`;
 function ctTuneFill(){['ctTime','ctNote'].forEach(id=>{const el=$(id);if(el&&document.activeElement!==el)el.value=o[id]||''})}
 ['ctTime','ctNote'].forEach(id=>{const el=document.getElementById(id);if(!el)return;el.addEventListener('input',()=>{o[id]=el.value;save();$('contractPaper').innerHTML=contractHTML(o)})});
-function contractHTML(x){const r=calc(x),c=x.c,rin=!!x.ctRedIn&&r.red>0,rent=rin?r.total:r.rent;const E=v=>esc(v==null?'':String(v));
+function contractHTML(x){const r=calc(x),c=x.c,rin=r.red>0   /* 2026-10-14 Nicole：合約租金總計一律含司機紅包 */,rent=rin?r.total:r.rent;const E=v=>esc(v==null?'':String(v));
   const user=[c.groom,c.bride].filter(Boolean).join('、')||contactName(x);
   const cars=MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MBRAND[m]==='Tesla'?'Tesla ':''}${MNAME[m]} × ${num(x.cars[m])}`);
   const short=+x.hours>0&&x.hours<3;
