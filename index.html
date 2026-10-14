@@ -2024,13 +2024,15 @@ function renderLg(){const m=lgPending(),d=$('lgDate').value,ds=Object.keys(m).so
   $('lgList').innerHTML=L.length?L.map(x=>{const n=lgName(x),c=x.c||{},who=x.partner?'同業 '+(x.partner.co||''):([c.groom,c.bride].filter(Boolean).join('＆')||c.chatName||'');
     const g=LGST[x.id],bd=lgBind(x);
     return `<div class="todo-row" style="align-items:center;gap:10px;flex-wrap:wrap${x.lgAt&&bd.miss.length===0&&bd.total?';opacity:.55':''}"><label style="display:flex;align-items:center;gap:6px;margin:0;white-space:nowrap;cursor:pointer"><input type="checkbox" data-lgdone="${esc(x.id)}" style="width:auto"${x.lgAt?' checked':''}>已建立</label><div class="m" style="flex:1;min-width:0"><div><b>${esc(n)}</b></div><div class="sub">${esc(orderNo(x)||'')}${who?'｜'+esc(who):''}${c.start?'｜'+esc(c.start)+' 出發':''}</div>`
+      +(bd.list.length?`<div class="sub" style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px 10px">${bd.list.map(z=>`<span style="white-space:nowrap">${z.ok?'✅':'⚠️'} <b>${esc(z.n)}</b>${z.role?'（'+esc(z.role)+(z.car?'・'+esc(z.car):'')+'）':''}${z.ph?' '+esc(z.ph):''}</span>`).join('')}</div>`:'')
       +`<div class="sub">${!bd.total?'還沒派司機':bd.miss.length?`<b style="color:var(--warn)">未綁車卡 ${bd.miss.length}/${bd.total}：${esc(bd.miss.join('、'))}</b>`:`✅ 司機 ${bd.total} 位都已綁車卡`}｜${g==null?'查詢群組中…':g.ok?'🤖 禮車助手已在群組':'⚠️ 還沒偵測到群組（群組名稱要有代碼、禮車助手要在群組裡）'}</div></div>`
       +`<div class="row" style="gap:6px"><button class="btn sm pri" data-lgcopy="${esc(x.id)}">複製</button><button class="btn sm" data-lgbind="${esc(x.id)}"${g&&g.ok?'':' disabled'} title="在群組傳「綁定車卡」按鈕給司機">📨 傳綁定車卡</button></div></div>`}).join(''):(A.length?'<p class="hint">這個篩選沒有車趟。</p>':'<p class="hint">這天沒有已收訂的車趟。</p>');
   lgStatus(L)}
 /* 這趟司機的禮車助手車卡綁定狀態：用司機名單（後台帶 wc.bound）比對電話或姓名 */
 function lgBind(x){const ds=(x.fleet||[]).filter(f=>String(f.driver||'').trim()),pn=v=>String(v||'').replace(/\D/g,'').slice(-9),miss=[];
-  ds.forEach(f=>{const d=(DRV||[]).find(z=>(pn(f.phone)&&pn(z.phone)===pn(f.phone))||nz(z.name)===nz(f.driver));if(!(d&&d.wc&&d.wc.bound))miss.push(String(f.driver).trim())});
-  return {total:ds.length,miss:[...new Set(miss)]}}
+  const list=[];ds.forEach(f=>{const d=(DRV||[]).find(z=>(pn(f.phone)&&pn(z.phone)===pn(f.phone))||nz(z.name)===nz(f.driver)),ok=!!(d&&d.wc&&d.wc.bound),n=String(f.driver).trim();if(!ok)miss.push(n);
+    if(!list.some(z=>z.n===n))list.push({n,ok,role:f.role||'',car:(typeof MABBR!=='undefined'&&MABBR[f.m])||'',ph:String(f.phone||(d&&d.phone)||'').trim()})});
+  return {total:ds.length,miss:[...new Set(miss)],list}}
 const LGST={};let lgBusy='',lgF='all';
 async function lgCall(body){if(!S.driveUrl||!S.driveKey)throw new Error('未設定同步');const r=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({token:S.driveKey,action:'wedGrp'},body))});const j=await r.json();if(!j.ok)throw new Error(j.error||'失敗');return j}
 const lgKeys=x=>[tripCode(x),findCode(x),x._no||orderNo(x)].filter(Boolean);
