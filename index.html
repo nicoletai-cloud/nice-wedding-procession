@@ -246,7 +246,7 @@ nav.tabs button{scroll-snap-align:start}
     <button role="tab" data-tab="contract"><span class="n">3</span>合約</button>
     <button role="tab" data-tab="find"><span class="n">4</span>找司機</button>
     <button role="tab" data-tab="dispatch"><span class="n">5</span>車隊與流程</button>
-    <button role="tab" data-tab="memo"><span class="n">6</span>司機／客人 memo</button>
+    <button role="tab" data-tab="memo"><span class="n">6</span>派車單／服務確認單</button>
     <button role="tab" data-tab="refs"><span class="n">7</span>回金・月結</button>
     <button role="tab" data-tab="settings"><span class="n">8</span>價目設定</button>
   </nav>
@@ -538,7 +538,7 @@ nav.tabs button{scroll-snap-align:start}
     <div id="memoCall" class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 12px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2,#faf5ee)" hidden></div>
     <div class="row" style="margin-bottom:12px;gap:14px">
       <div class="seg" id="memoWho">
-        <button data-who="cust" aria-pressed="true">客人用</button><button data-who="drv" aria-pressed="false">司機端</button>
+        <button data-who="cust" aria-pressed="true">禮車服務確認單</button><button data-who="drv" aria-pressed="false">司機派車單</button>
       </div>
       <label class="row" style="font-size:0.867rem;color:var(--muted);gap:6px">方案備註（顯示在車頭彩下一行）<input id="flagNote" data-b="flagNote" placeholder="例：多預備三組門把彩" style="width:220px"></label>
       <label class="row" style="font-size:0.867rem;color:var(--muted);gap:6px">加時寫法（空白＝依價目表）<input id="otText" data-b="otText" placeholder="例：M3 $800/0.5HR ; MX $1,200/0.5HR" style="width:260px"></label>
@@ -548,7 +548,7 @@ nav.tabs button{scroll-snap-align:start}
     </div>
     <div class="card" style="margin-bottom:18px">
       <h3>memo 連結 <small>Google 文件，知道連結的人可檢視；資料改了再按一次，連結不變</small></h3>
-      <div class="row"><button class="btn pri" id="btnMemoDocs">產生／更新兩份 memo 連結</button><span class="hint" id="memoDocMsg" style="margin:0"></span></div>
+      <div class="row"><button class="btn pri" id="btnMemoDocs">產生／更新派車單＋服務確認單連結</button><span class="hint" id="memoDocMsg" style="margin:0"></span></div>
       <div class="sum" id="memoLinks" style="margin-top:10px"></div>
     </div>
     <div class="grid">
@@ -1432,7 +1432,7 @@ async function calcKm(){const c=o.c,cl=s=>String(s||'').replace(/（[^）]*）|\
 document.addEventListener('input',e=>{const b=e.target&&e.target.dataset&&e.target.dataset.b;if(b)document.querySelectorAll('[data-b]').forEach(el=>{if(el!==e.target&&el.dataset.b===b&&el.tagName!=='SELECT')el.value=e.target.value})});
 async function makeMemoDocs(){const btn=$('btnMemoDocs');if(!S.driveUrl||!S.driveKey){toast('請先到「價目設定」填 Drive 網址和金鑰');showTab('settings');return}
   btn.disabled=true;$('memoDocMsg').textContent='建立中，約需 10 秒…';
-  try{const no=orderNo(o);const docs=['cust','drv'].map(k=>({key:k,name:`訂單編號:${no}${k==='drv'?'-司機端':''}`,model:tplModel(o,k)}));
+  try{const no=orderNo(o);const docs=['cust','drv'].map(k=>({key:k,name:k==='drv'?`訂單編號:${no}-司機端`:`禮車服務確認單｜訂單編號:${no}`,model:tplModel(o,k)}));
     const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'memo',orderNo:no,couple:coupleName(o),docs})});
     const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');o.memoLinks=j.links;o.driveFolder=o.driveFolder||j.folder;save();renderMemoLinks();$('memoDocMsg').textContent='已更新';toast('memo 連結已更新')}
   catch(e){$('memoDocMsg').textContent='失敗：'+e.message}finally{btn.disabled=false}}
@@ -1442,7 +1442,7 @@ function upText(x){const g={};(x.fleet||[]).forEach(f=>{const u=(f.up||'').trim(
   return '\n\n'+k.map(u=>`${[...new Set(g[u])].join('、')}有幫您升等為 ${u}`).join('；')+'，再請幫我們多多推薦喔！'}
 function renderMemoLinks(){const L=o.memoLinks||{};const row=(k,label)=>L[k]?`<div><span>${label}</span><span class="row" style="gap:6px"><a href="${esc(L[k])}" target="_blank" rel="noopener">開啟</a><button class="btn sm" data-copytext="${esc(L[k])}">複製連結</button></span></div>`:'';
   const cu=L.cust?String(L.cust).replace(/\?.*$/,''):'';
-  $('memoLinks').innerHTML=(row('cust','客人 memo')+row('drv','司機派車單')||'<div class="sub">還沒有產生連結。</div>')+(cu?`<div class="row" style="justify-content:space-between;margin:12px 0 6px"><span class="hint" style="margin:0">傳給客人的訊息</span><button class="btn sm pri" data-copy="custLinkMsg">複製</button></div><pre class="out" id="custLinkMsg">提供司機資訊及注意事項：
+  $('memoLinks').innerHTML=(row('cust','禮車服務確認單')+row('drv','司機派車單')||'<div class="sub">還沒有產生連結。</div>')+(cu?`<div class="row" style="justify-content:space-between;margin:12px 0 6px"><span class="hint" style="margin:0">傳給客人的訊息</span><button class="btn sm pri" data-copy="custLinkMsg">複製</button></div><pre class="out" id="custLinkMsg">提供禮車服務確認單（司機資訊及注意事項）：
 ${esc(cu)}${esc(upText(o))}</pre>`:'')+(L.drv?`<div class="row" style="justify-content:space-between;margin:12px 0 6px"><span class="hint" style="margin:0">傳給司機的訊息</span><button class="btn sm pri" data-copy="drvLinkMsg">複製</button></div><pre class="out" id="drvLinkMsg">${esc(drvLinkText(String(L.drv).replace(/\?.*$/,'')+'?usp=sharing'))}</pre>`:'');if($('lgMsg'))$('lgMsg').textContent=lgMsg(o)}
 async function gasCall(body){if(!S.driveUrl||!S.driveKey)throw new Error('未設定同步');const r=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({token:S.driveKey},body))});const j=await r.json();if(!j.ok)throw new Error(j.error||'失敗');return j}
 let SIGN_OK=false;fetch('https://sign.niceweddingcar.com/',{mode:'no-cors',cache:'no-store'}).then(()=>{SIGN_OK=true;try{$('outPaid').textContent=paidText(o);renderCtSend()}catch(e){}}).catch(()=>{});
@@ -1554,7 +1554,7 @@ function renderConfirmResult(r){const b=$('confirmResult');if(!r){b.innerHTML=''
   b.innerHTML=(r.warn.length?`<div class="sum">${r.warn.map(w=>`<div style="color:var(--warn)">● ${esc(w)}</div>`).join('')}</div>`:'<span class="chip ok">跟合約沒有衝突</span>')+
    (r.diffs.length?`<div class="sum" style="margin-top:8px">${r.diffs.map(d=>`<div class="sub">${esc(d)}</div>`).join('')}</div>`:'')+
    (o._suggestH?`<div class="row" style="margin-top:8px"><button class="btn sm" id="btnApplyH">合約時數改成 ${hrsLabel(o._suggestH)}</button></div>`:'')+
-   `<p class="hint">流程已依回覆重排；司機派車單和客人 memo 已更新，請到「車隊與流程」檢查時間。</p>`}
+   `<p class="hint">流程已依回覆重排；司機派車單和禮車服務確認單已更新，請到「車隊與流程」檢查時間。</p>`}
 function applyForm(res){const c=o.c;let n=0;o.sample=false;const set=(k,v)=>{if(v){c[k]=v;n++}};
   {const fv=String(res.foundVia||'').trim();if(fv){o.src=o.src||{};if(!o.src.from){const M={'Instagram':'IG','Facebook':'FB','婚顧／婚禮廠商介紹':'婚顧／廠商介紹'},KN=['Google 搜尋／地圖','IG','FB','婚顧／廠商介紹','朋友介紹','網路文章／論壇'],v=M[fv]||fv;if(KN.indexOf(v)>=0)o.src.from=v;else{o.src.from='其他';o.src.fromNote=fv}n++}}}
   set('groom',res.groom);set('bride',res.bride);
@@ -1735,7 +1735,7 @@ function lgName(x){const c=x.c,p=dparts(x.date);return [p?p.m+'/'+p.d:'',meetPla
 function lgMsg(x){const c=x.c,p=dparts(x.date),L=x.memoLinks||{},ld=lead(x)||{};
   const cars=x.fleet.map(f=>[`${f.role}｜${MNAME[f.m]} ${f.color||''}｜${f.plate||'—'}`,`　${f.driver||'（未派）'}${f.lead?'（負責人）':''} ${ph(f.phone)}`.trimEnd(),f.emg?`　緊急聯絡：${ph(f.emg)}`:''].filter(Boolean).join('\n'));
   return ['各位司機好，這是本次禮車任務群組',`訂單編號：${orderNo(x)}`,`日期：${x.date?fmtDate(x.date)+'（'+WD.zh[p.w]+'）':'未定'}`,`司機集合：${c.gather||addMin(c.start,-20)||'—'}　${c.meetL?c.meetL+'：':''}${c.meet||''}`.trimEnd(),`用車時間：${c.start||'--:--'} - ${c.end||'--:--'}`,
-    `派車單：${L.drv||'（請先到「司機／客人 memo」產生連結）'}`,'','車隊',...cars,'',`負責人：${ld.driver||'—'}`,'請大家看完派車單回覆「收到」，當天出發前在群組報到，謝謝！'].join('\n')}
+    `派車單：${L.drv||'（請先到「派車單／服務確認單」產生連結）'}`,'','車隊',...cars,'',`負責人：${ld.driver||'—'}`,'請大家看完派車單回覆「收到」，當天出發前在群組報到，謝謝！'].join('\n')}
 function ttMemo(x){if(x.partner)return [`同業單：${x.partner.co||''}`,`訂單編號：${orderNo(x)}`,'',x.partner.raw||''].join('\n');return [quoteText(x,'zh'),'',`訂單編號：${orderNo(x)}`,`合約：${x.driveFolder||'（合約尚未存到 Drive，存檔後會自動帶入連結）'}`].join('\n')}
 function ttPromptText(pick){const sv=o,L=[],now=new Date();
   const list=(pick||Object.values(DB.orders)).filter(x=>x.paid&&!x.sample&&!x.lost&&x.date&&daysTo(x)!==null&&daysTo(x)>=0).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:String(a.c.start||'').localeCompare(String(b.c.start||'')));
@@ -1877,7 +1877,7 @@ document.addEventListener('input',e=>{if(e.target.id==='scText')scWarn()});
 const DAY=864e5;
 const normNo=s=>String(s||'').replace(/\s/g,'').toUpperCase();
 function daysTo(x){const p=dparts(x.date);if(!p)return null;const t=new Date();t.setHours(0,0,0,0);return Math.round((new Date(p.y,p.m-1,p.d)-t)/DAY)}
-const ST={inq:'詢價追銷',unpaid:'開單未付款',tt:'收訂未填 TimeTree',noform:'付款未填表',nocontract:'填表未出合約',cfsend:'一週前核對行程',cfwait:'行前確認未回',nodrv:'未派司機',nomemo:'未給 memo',call:'主禮車未聯絡新人',ptask:'同業詢問未確認',ptinfo:'同業留車待補資料',head:'待指派車頭',rev:'用車後追評價',revlink:'正評待傳評價連結',revcomp:'評價回覆待處理',photo:'待傳照片',ptphoto:'同業照片未傳'};
+const ST={inq:'詢價追銷',unpaid:'開單未付款',tt:'收訂未填 TimeTree',noform:'付款未填表',nocontract:'填表未出合約',cfsend:'一週前核對行程',cfwait:'行前確認未回',nodrv:'未派司機',nomemo:'未給服務確認單',call:'主禮車未聯絡新人',ptask:'同業詢問未確認',ptinfo:'同業留車待補資料',head:'待指派車頭',rev:'用車後追評價',revlink:'正評待傳評價連結',revcomp:'評價回覆待處理',photo:'待傳照片',ptphoto:'同業照片未傳'};
 if(!TT_ON)delete ST.tt;
 const REV_ASK='請問司機服務還滿意嗎？\n\n如果您對我們的服務感到滿意，誠摯邀請您抽空寫幾句話留下寶貴評價，或是對司機的鼓勵。這將成為我們成長的最大動力，也能讓更多人了解我們的用心服務。';
 const REV_LINK='感謝您選擇🧡好好禮車🧡，讓我們能有機會在您最重要的這天一起留下美好回憶！ 希望可以幫我們複製上面評價後，貼在下方連結處：\n\n👉 在 Google 本地商家留下評價：https://goo.gl/maps/WsAvwhXy1eQPqk5f6\n\n👉 或者至 Facebook 粉絲專頁評論：https://www.facebook.com/niceweddingcar\n\n非常感謝您的鼓勵與支持，每一句肯定都將讓我們更加努力、持續提升服務品質。\n\n再次祝福您新婚快樂，百年好合💍✨！ 期待未來如果有機場接送或包車旅遊需求， 都能再有機會為您服務！ （＊好好新人享有 95 折優惠）';
@@ -1971,7 +1971,7 @@ function renderTodo(){if(!document.querySelector('.dr-bar[data-dr="todo"] input'
   if(todoF==='cfwait')B.push(['tsCfPush','📤 再傳一次確認按鈕'],['tsCfDone','標記已回填']);
   if(todoF==='nodrv')B.push(['tsDrv','標記已派車']);
   if(todoF==='call'||todoF==='all')B.push(['tsCall','標記負責人已聯絡新人']);
-  if(todoF==='nomemo')B.push(['tsMemo','標記已給 memo']);
+  if(todoF==='nomemo')B.push(['tsMemo','標記已給服務確認單']);
   if(todoF==='lost')B.push(['tsRevive','恢復']);
   if(todoF==='rev')B.push(['tsRevCopy','複製評價詢問＋標記已問'],['tsRevAsked','標記已問']);
   if(todoF==='revlink')B.push(['tsRevLinkCopy','複製評價連結訊息＋標記已傳'],['tsRevSkip','不需要傳']);
