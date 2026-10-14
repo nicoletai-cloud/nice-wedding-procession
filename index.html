@@ -1098,7 +1098,11 @@ function defRoute(x){const c=x.c||{},C=!!String(c.o1||'').trim(),b=x.backHome!==
 function routeKeys(x){const p=normPath(x.path).split(' - ').filter(Boolean);return p.length?p:defRoute(x)}
 function routeLine(x,lang){const ks=routeKeys(x);if(ks.length<2)return '';const P=ptNames(x);
   const N=lang==='en'?{A:"Groom's home",B:"Bride's home",C:P.C==='餐廳'?'Restaurant':P.C,D:P.D}:lang==='ja'?{A:'新郎宅',B:'新婦宅',C:P.C==='餐廳'?'レストラン':P.C,D:P.D}:{A:'男方家',B:'女方家',C:P.C,D:P.D};
-  return ks.map(k=>N[k]||k).join(' → ')}
+  /* 2026-10-14 報價流程加地區：「苗栗後龍（男方家）→ 南投國姓（女方家）→ 苗栗後龍（餐廳）」；地址沒寫鄉鎮就只顯示原名稱；英文版不加 */
+  const c=x.c||{},F={A:'meet',B:'wed',C:'o1',D:'o2'};const ar=k=>{const f=F[k];if(!f||lang==='en')return '';return quoteArea(c[f+'S']||c[f]||'')};
+  return ks.map(k=>{const n=N[k]||k,a=ar(k);return a?a+'（'+n+'）':n}).join(' → ')}
+/* 報價用地區：先用 shortArea；只抓到縣市（例「苗栗後龍」沒寫鎮）時，再用鄉鎮名稱補上 */
+function quoteArea(a){a=String(a||'').trim();if(!a)return '';let s=shortArea(a);if(s&&s.length>2)return s;const tw=townOf(a);if(tw&&(!s||tw.c===s))return tw.c+tw.t;return s}
 function quoteText(x,lang){const b=quoteBody(x,lang);const ref=qRef(x,b);return ref?b+'\n\n'+(lang==='en'?'Quote ref: ':lang==='ja'?'見積番号：':'報價編號：')+ref:b}
 /* 報價編號 Q-代碼-版本：每複製一個新版本自動 +1；跟正式訂單代碼（不含 Q）區分 */
 const QREF_RE=/\n*(?:報價編號：|Quote ref: |見積番号：)Q-[A-Z0-9]{4,5}-\d+$/;
