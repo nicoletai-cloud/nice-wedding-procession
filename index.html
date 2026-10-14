@@ -674,6 +674,7 @@ nav.tabs button{scroll-snap-align:start}
   <div style="max-width:760px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px">
     <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">LINE 群組名稱 <small>選用車日期，建好群組就勾「已建立」</small></h3><button class="btn sm" id="btnLgClose">關閉</button></div>
     <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px"><input type="date" id="lgDate" style="width:auto"><span id="lgDays" class="row" style="gap:6px;flex-wrap:wrap;align-items:center"></span></div>
+    <div id="lgFilt" class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
     <div id="lgList"></div>
   </div>
 </div>
@@ -2014,13 +2015,30 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 function lgOk(x){return x&&!x.sample&&!x.lost&&!!x.date&&!!(x.paid||x.partner)}
 function lgToday(){const t=new Date();return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0')}
 function lgPending(){const t=lgToday(),m={};Object.values(DB.orders).forEach(x=>{if(lgOk(x)&&x.date>=t&&!x.lgAt)m[x.date]=(m[x.date]||0)+1});return m}
-function openLg(d){const ds=Object.keys(lgPending()).sort();$('lgDate').value=d||ds[0]||lgToday();$('lgModal').hidden=false;renderLg()}
+function openLg(d){Object.keys(LGST).forEach(k=>delete LGST[k]);try{if(!DRV.length)loadDrivers()}catch(_){}const ds=Object.keys(lgPending()).sort();$('lgDate').value=d||ds[0]||lgToday();$('lgModal').hidden=false;renderLg()}
 function renderLg(){const m=lgPending(),d=$('lgDate').value,ds=Object.keys(m).sort().slice(0,8);
   $('lgDays').innerHTML=ds.length?'<span class="hint" style="margin:0">還沒建群組：</span>'+ds.map(k=>{const p=dparts(k);return `<button class="btn sm${k===d?' pri':''}" data-lgday="${k}">${p?p.m+'/'+p.d:k}（${m[k]}）</button>`}).join(''):'<span class="hint" style="margin:0">之後的車趟群組都建好了 ✅</span>';
-  const L=Object.values(DB.orders).filter(x=>lgOk(x)&&x.date===d).sort((a,b)=>String((a.c&&a.c.start)||'').localeCompare(String((b.c&&b.c.start)||'')));
+  const A=Object.values(DB.orders).filter(x=>lgOk(x)&&x.date===d),bs=x=>{const b=lgBind(x);return b.total&&!b.miss.length?'ok':b.total?'miss':'none'},cnt=k=>A.filter(x=>bs(x)===k).length;
+  $('lgFilt').innerHTML=[['all','全部',A.length],['ok','✅ 司機全部已綁定',cnt('ok')],['miss','有人還沒綁',cnt('miss')],['none','還沒派司機',cnt('none')]].map(([k,l,n])=>`<button class="btn sm${lgF===k?' pri':''}" data-lgf="${k}">${l}（${n}）</button>`).join('');
+  const L=A.filter(x=>lgF==='all'||bs(x)===lgF).sort((a,b)=>String((a.c&&a.c.start)||'').localeCompare(String((b.c&&b.c.start)||'')));
   $('lgList').innerHTML=L.length?L.map(x=>{const n=lgName(x),c=x.c||{},who=x.partner?'同業 '+(x.partner.co||''):([c.groom,c.bride].filter(Boolean).join('＆')||c.chatName||'');
-    return `<div class="todo-row" style="align-items:center;gap:10px${x.lgAt?';opacity:.55':''}"><label style="display:flex;align-items:center;gap:6px;margin:0;white-space:nowrap;cursor:pointer"><input type="checkbox" data-lgdone="${esc(x.id)}" style="width:auto"${x.lgAt?' checked':''}>已建立</label><div class="m" style="flex:1;min-width:0"><div><b>${esc(n)}</b></div><div class="sub">${esc(orderNo(x)||'')}${who?'｜'+esc(who):''}${c.start?'｜'+esc(c.start)+' 出發':''}</div></div><button class="btn sm pri" data-lgcopy="${esc(x.id)}">複製</button></div>`}).join(''):'<p class="hint">這天沒有已收訂的車趟。</p>'}
-document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#grpName,#btnLgClose,[data-lgday],[data-lgcopy]');if(!b)return;e.preventDefault();
+    const g=LGST[x.id],bd=lgBind(x);
+    return `<div class="todo-row" style="align-items:center;gap:10px;flex-wrap:wrap${x.lgAt&&bd.miss.length===0&&bd.total?';opacity:.55':''}"><label style="display:flex;align-items:center;gap:6px;margin:0;white-space:nowrap;cursor:pointer"><input type="checkbox" data-lgdone="${esc(x.id)}" style="width:auto"${x.lgAt?' checked':''}>已建立</label><div class="m" style="flex:1;min-width:0"><div><b>${esc(n)}</b></div><div class="sub">${esc(orderNo(x)||'')}${who?'｜'+esc(who):''}${c.start?'｜'+esc(c.start)+' 出發':''}</div>`
+      +`<div class="sub">${!bd.total?'還沒派司機':bd.miss.length?`<b style="color:var(--warn)">未綁車卡 ${bd.miss.length}/${bd.total}：${esc(bd.miss.join('、'))}</b>`:`✅ 司機 ${bd.total} 位都已綁車卡`}｜${g==null?'查詢群組中…':g.ok?'🤖 禮車助手已在群組':'⚠️ 還沒偵測到群組（群組名稱要有代碼、禮車助手要在群組裡）'}</div></div>`
+      +`<div class="row" style="gap:6px"><button class="btn sm pri" data-lgcopy="${esc(x.id)}">複製</button><button class="btn sm" data-lgbind="${esc(x.id)}"${g&&g.ok?'':' disabled'} title="在群組傳「綁定車卡」按鈕給司機">📨 傳綁定車卡</button></div></div>`}).join(''):(A.length?'<p class="hint">這個篩選沒有車趟。</p>':'<p class="hint">這天沒有已收訂的車趟。</p>');
+  lgStatus(L)}
+/* 這趟司機的禮車助手車卡綁定狀態：用司機名單（後台帶 wc.bound）比對電話或姓名 */
+function lgBind(x){const ds=(x.fleet||[]).filter(f=>String(f.driver||'').trim()),pn=v=>String(v||'').replace(/\D/g,'').slice(-9),miss=[];
+  ds.forEach(f=>{const d=(DRV||[]).find(z=>(pn(f.phone)&&pn(z.phone)===pn(f.phone))||nz(z.name)===nz(f.driver));if(!(d&&d.wc&&d.wc.bound))miss.push(String(f.driver).trim())});
+  return {total:ds.length,miss:[...new Set(miss)]}}
+const LGST={};let lgBusy='',lgF='all';
+async function lgCall(body){if(!S.driveUrl||!S.driveKey)throw new Error('未設定同步');const r=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({token:S.driveKey,action:'wedGrp'},body))});const j=await r.json();if(!j.ok)throw new Error(j.error||'失敗');return j}
+const lgKeys=x=>[tripCode(x),findCode(x),x._no||orderNo(x)].filter(Boolean);
+async function lgStatus(L){const need=L.filter(x=>LGST[x.id]==null);const k=need.map(x=>x.id).join(',');if(!need.length||lgBusy===k)return;lgBusy=k;
+  try{const j=await lgCall({op:'status',trips:need.map(x=>({id:x.id,keys:lgKeys(x)}))});Object.assign(LGST,j.st||{})}catch(e){need.forEach(x=>LGST[x.id]={ok:false,err:1})}lgBusy='';if(!$('lgModal').hidden)renderLg()}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#grpName,#btnLgClose,[data-lgday],[data-lgcopy],[data-lgbind],[data-lgf]');if(!b)return;e.preventDefault();
+  if(b.dataset.lgf){lgF=b.dataset.lgf;renderLg();return}
+  if(b.dataset.lgbind){const x=DB.orders[b.dataset.lgbind];if(!x)return;b.disabled=true;b.textContent='傳送中…';lgCall({op:'bind',keys:lgKeys(x)}).then(j=>toast('已在「'+(j.name||'群組')+'」傳綁定車卡按鈕')).catch(err=>toast('傳送失敗：'+err.message)).finally(()=>renderLg());return}
   if(b.id==='grpName'){openLg(o&&!o.sample&&o.date?o.date:'');return}
   if(b.id==='btnLgClose'){$('lgModal').hidden=true;return}
   if(b.dataset.lgday){$('lgDate').value=b.dataset.lgday;renderLg();return}
