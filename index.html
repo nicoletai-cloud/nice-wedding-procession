@@ -1685,7 +1685,14 @@ function paidTextOld(x){const r=calc(x),c=x.c,ps=payState(x);const p=dparts(x.da
 function ttTitle(x){if(x.partner){const p=dparts(x.date),cities=[...new Set([x.cityA,x.cityB].filter(Boolean))].join('/');return `【${x.partner.co||'同業'}】${x.c.groom||''}-禮車${cities?'-'+cities:''}${p?'-'+p.m+'/'+p.d:''}`}const c=x.c;const nm=c.chatName||[c.groom,c.bride].filter(Boolean).join('&')||'（未填客人名稱）';const ch=c.channel&&c.channel!=='LINE'?`(${c.channel.toLowerCase()})`:'';
   const ref=x.src&&x.src.ref?'x'+x.src.ref:'';const cities=[...new Set([x.cityA,x.cityB].filter(Boolean))].join('/')||areaOf('meet')||'';const p=dparts(x.date);
   return `${ch}${nm}${ref}-禮車${cities?'-'+cities:''}${p?'-'+p.m+'/'+p.d:''}`}
-function lgName(x){const c=x.c,p=dparts(x.date);const nm=[c.groom,c.bride].filter(Boolean).join('&')||c.chatName||'客人';return `${p?p.m+'/'+p.d+' ':''}${nm} 禮車`}
+// 2026-10-14 群組名稱：用車日期＋集合地點（縣市＋區；飯店就用飯店名稱）＋代碼
+const HOTEL_RE=/飯店|酒店|旅館|旅店|會館|行館|hotel|resort|inn\b/i;
+function hotelName(c){const raw=String(c.meet||'').replace(/臺/g,'台');if(!HOTEL_RE.test(raw)&&!HOTEL_RE.test(c.meetL||''))return '';
+  const parts=raw.split(/[\s,，、()（）\[\]【】/]+/).filter(Boolean);let h=parts.find(t=>HOTEL_RE.test(t))||'';
+  h=h.replace(/^.*?(?:\d+號|\d+樓|[路街道巷弄段])(?=[^路街道巷弄段號樓]*(?:飯店|酒店|旅館|旅店|會館|行館|hotel|resort))/i,'').replace(/^\d{3,6}/,'');
+  if(!h&&HOTEL_RE.test(c.meetL||'')&&!/^(飯店|酒店)$/.test(c.meetL))h=c.meetL;return h.slice(0,16)}
+function meetPlace(c){const h=hotelName(c);if(h)return h;const a=String(c.meet||'').replace(/臺/g,'台').replace(/^\s*\d{3,6}\s*/,'');const m=a.match(new RegExp(CTY_RE+'[縣市]\\s*([^\\s\\d]{1,3}?)[區鎮鄉市]'));const cty=m?m[1]:countyOf(a),tw=m?{t:m[2]}:townOf(a);return (cty||'')+(tw?tw.t:'')||(c.meetL&&!/^(男方家|女方家)$/.test(c.meetL)?c.meetL:'')}
+function lgName(x){const c=x.c,p=dparts(x.date);return [p?p.m+'/'+p.d:'',meetPlace(c),tripCode(x)].filter(Boolean).join(' ')}
 function lgMsg(x){const c=x.c,p=dparts(x.date),L=x.memoLinks||{},ld=lead(x)||{};
   const cars=x.fleet.map(f=>[`${f.role}｜${MNAME[f.m]} ${f.color||''}｜${f.plate||'—'}`,`　${f.driver||'（未派）'}${f.lead?'（負責人）':''} ${ph(f.phone)}`.trimEnd(),f.emg?`　緊急聯絡：${ph(f.emg)}`:''].filter(Boolean).join('\n'));
   return ['各位司機好，這是本次禮車任務群組',`訂單編號：${orderNo(x)}`,`日期：${x.date?fmtDate(x.date)+'（'+WD.zh[p.w]+'）':'未定'}`,`司機集合：${c.gather||addMin(c.start,-20)||'—'}　${c.meetL?c.meetL+'：':''}${c.meet||''}`.trimEnd(),`用車時間：${c.start||'--:--'} - ${c.end||'--:--'}`,
