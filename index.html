@@ -797,9 +797,11 @@ nav.tabs button{scroll-snap-align:start}
         </div>
         <div class="card">
           <h3>行前確認 <small>用車前一週傳給客人</small></h3>
-          <div class="row" style="justify-content:space-between;margin-bottom:6px"><span class="hint" style="margin:0">空白確認訊息</span><button class="btn sm pri" data-copy="outConfirm">複製</button></div>
+          <div class="row" style="margin-bottom:10px"><button class="btn pri" id="btnCfSend">📤 傳確認按鈕給新人</button><span class="hint" style="margin:0">用官方帳號／FB／IG 傳「確認行程」按鈕，客人送出後自動帶入</span></div>
+          <div class="row" style="justify-content:space-between;margin-bottom:6px"><span class="hint" style="margin:0">傳不到時：複製文字訊息（含連結）</span><button class="btn sm" data-copy="outConfirm">複製</button></div>
           <pre class="out" id="outConfirm"></pre>
-          <label class="f" style="margin-top:12px">貼上客人的回覆<textarea id="confirmBox" rows="8" placeholder="把客人填好的整段訊息貼在這裡"></textarea></label>
+          <div id="cfSt" class="hint" style="white-space:pre-line;margin-top:8px"></div>
+          <label class="f" style="margin-top:12px">客人用文字回覆時：貼上回覆<textarea id="confirmBox" rows="8" placeholder="把客人填好的整段訊息貼在這裡"></textarea></label>
           <div class="row" style="margin-top:8px"><button class="btn pri" id="btnConfirm">帶入並比對合約</button></div>
           <div id="confirmResult" style="margin-top:10px"></div>
         </div>
@@ -932,7 +934,7 @@ async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl
     if(j.settings&&(+j.settings._ts||0)>(+S._ts||0)){const keep={driveUrl:S.driveUrl,driveKey:S.driveKey};S=Object.assign(clone(DEF_S),j.settings,keep);store('nwcw_settings',S);rebuildModels();renderPriceSettings();cur=true}
     try{if(j.shopee)setTimeout(()=>spMerge(j.shopee),0)}catch(_){}
     try{if(j.review){REV=j.review;store('nwcw_rev',REV);let up=false;Object.keys(REV).forEach(id=>{const x=DB.orders[id],r=REV[id];if(x&&r.reply&&r.reply.photo&&x.c&&x.c.photoReq!=='要'){x.c.photoReq='要';x.updated=Date.now();up=true;if(id===o.id)cur=true}});if(up)syncAgain=true;try{renderRev()}catch(_){}}}catch(_){}
-    let upN=false;FORMDATA=j.formData||FORMDATA;try{renderFormDataBtn();renderFormPlaces()}catch(e){}{const F=j.forms||{},N=j.formNames||{};Object.values(DB.orders).forEach(x=>{const k=normNo(orderNo(x)),t=F[k],nm=N[k];if(t&&!x.formAt){x.formAt=t;if(x.id===o.id)cur=true}
+    let upN=false;FORMDATA=j.formData||FORMDATA;CONFIRMS=j.confirms||CONFIRMS;try{const ch=cfAuto();if(ch.length){upN=true;if(ch.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}setTimeout(()=>toast(`已帶入 ${ch.length} 筆客人行前確認：${ch.map(x=>orderNo(x)).join('、')}`),800)}}catch(e){console.warn(e)}try{renderFormDataBtn();renderFormPlaces()}catch(e){}{const F=j.forms||{},N=j.formNames||{};Object.values(DB.orders).forEach(x=>{const k=normNo(orderNo(x)),t=F[k],nm=N[k];if(t&&!x.formAt){x.formAt=t;if(x.id===o.id)cur=true}
       if(nm&&(nm.groom||nm.bride)&&!x.c.groom&&!x.c.bride){x.c.groom=nm.groom||'';x.c.bride=nm.bride||'';x.updated=Date.now();upN=true;if(x.id===o.id)cur=true}})}
     DB.cur=o.id;store('nwcw_orders',DB);if(cur)loadOrder();else renderOrderSel();openFromHash();
     if(upN)syncAgain=true;
@@ -1437,6 +1439,43 @@ function parseForm(text){const res={};text=text.replace(/\r/g,'');
     hits.sort((a,b)=>a.i-b.i);hits.forEach((h,j)=>{let v=text.slice(h.e,j+1<hits.length?hits[j+1].i:text.length);v=v.replace(/^[\s*＊:：?？]+/,'').split('\n').map(s=>s.trim()).filter(Boolean);res[h.k]=(v.join(' ')||'').trim()})}
   for(const k in res)res[k]=(res[k]||'').trim();return res}
 const CONFIRM_TPL=['哈嘍！我們要最終確認行程嘍!','','請再次確認下面資訊：','聯絡人姓名：','聯絡人電話：','男方家地址(或集合地點):','女方家地址:','當天預計出發時間:','是否訂結一起：','女方是否有準備甘蔗、竹子：','預計幾點迎娶回男方家：','是否需要接送至餐廳：','預計幾點出發去餐廳：','餐廳地址：','','📝行程表若確定，也可一起提供喔！方便司機掌握情況'].join('\n');
+// 2026-10-14 行前確認頁：客人點連結填寫，送出後同步時自動帶入、比對合約，memo／派車單跟著更新
+const CF_LIFF='';// 行前確認 LIFF ID（建好後填上；空白＝用一般網址）
+let CONFIRMS={};
+function cfKey(id){const h=t=>{let v=0x811c9dc5;for(let i=0;i<t.length;i++){v^=t.charCodeAt(i);v=Math.imul(v,0x01000193)>>>0}return v.toString(36)};return h(String(id))+h('cf'+id)}
+function cfLink(x){const q='?no='+encodeURIComponent(orderNo(x))+'&k='+cfKey(x.id);return CF_LIFF?'https://liff.line.me/'+CF_LIFF+q:'https://love.niceweddingcar.com/wed-confirm'+q}
+function cfMsg(x){return `${rmHi(x)}🤍 婚禮快到了，我們要最終確認行程嘍！\n請點下面連結，確認當天的聯絡人、地址和時間（已先帶入您之前填的資料，有變動直接修改就好）👇\n${cfLink(x)}\n\n📝行程表若確定，也可以直接傳給我們喔！方便司機掌握情況`}
+// 單點繞圈：只有集合地點，第一圈（＋第二圈）時間；每圈抓 30 分鐘
+function applyLoop(f){const c=o.c,diffs=['行程：單點繞圈'],warn=[];o.sample=false;
+  const chg=(label,oldV,newV)=>{if(newV&&String(oldV||'')!==String(newV))diffs.push(`${label}：${oldV||'（空白）'} → ${newV}`)};
+  if(f.name){const nm=f.name.replace(/\s+/g,'');const prev=contactName(o);if(nm===c.groom)c.role='新郎';else if(nm===c.bride)c.role='新娘';else{c.role='其他';c.contact=f.name}chg('聯絡人',prev,f.name)}
+  if(f.phone){chg('電話',c.phone,f.phone);c.phone=f.phone.replace(/\s/g,'')}
+  if(f.meet){chg('集合地點',c.meet,f.meet);c.meet=f.meet;if(!c.meetL)c.meetL='男方家'}
+  if(f.combo)c.combo=f.combo;if(f.cane)c.caneNote=f.cane;
+  const t1=normTime(f.loop1),two=yesish(f.loop2YN),t2=two?normTime(f.loop2T):'';
+  if(t1){chg('第一圈',c.start,t1);c.start=t1;c.gather=addMin(t1,-20)}
+  o.flow=[{t:t1||'',who:'',seg:'A 第一圈繞圈'}].concat(two?[{t:t2||'',who:'',seg:'A 第二圈繞圈'}]:[]);o.path='A';
+  const ca=countyOf(c.meet);if(ca&&ca!==o.cityA)warn.push(`集合地點在${ca}，跟原本的${o.cityA||'未設定'}不同。`);
+  if(c.start){const last=t2||t1;let d=minutes(last)-minutes(c.start);if(d<0)d+=1440;d+=30;const endEst=addMin(c.start,d);c.end=endEst;const allow=o.hours*60+15;
+    if(d>allow){const eh=Math.ceil((d-o.hours*60)/60-1e-9);const otAmt=MODELS.reduce((a,m)=>a+num(o.cars[m])*num(S.ot[m])*eh,0);
+      warn.push(`預估用車 ${c.start} → ${endEst}（約 ${(d/60).toFixed(1)} 小時，最後一圈抓 30 分鐘），超過合約 ${hrsLabel(o.hours)}，約超時 ${eh} 小時，客人加時費約 ${money(otAmt)}。`);o._suggestH=o.hours+eh}
+    else{diffs.push(`預估用車 ${c.start} → ${endEst}，在合約 ${hrsLabel(o.hours)} 內。`);o._suggestH=null}}
+  return{diffs,warn}}
+function cfAuto(){const ch=[];Object.values(DB.orders).forEach(x=>{if(x.sample)return;const cf=CONFIRMS[normNo(orderNo(x))];if(!cf||!cf.f||!(+cf.at>(+x.cfApplyAt||0)))return;
+  const keep=o;o=x;try{const f=cf.f,r=f.mode==='loop'?applyLoop(f):applyConfirm({name:f.name,phone:f.phone,meet:f.meet,wed:f.wed,start:f.start,combo:f.combo,cane:f.cane,back:f.back,restYN:f.restYN,restT:f.restT,restAddr:f.restAddr});
+    x.cfLast={at:+cf.at,diffs:r.diffs,warn:r.warn,note:f.note||'',files:f.files||[],uid:!!cf.uid};x.cfApplyAt=+cf.at;if(!x.cfDoneAt)x.cfDoneAt=+cf.at;if(!x.cfSentAt)x.cfSentAt=+cf.at;x.updated=Date.now();DB.orders[x.id]=x;ch.push(x)}catch(e){console.warn('行前確認帶入失敗',orderNo(x),e)}finally{o=keep}});
+  return ch}
+async function cfPush(list){if(!S.driveUrl||!S.driveKey){toast('還沒設定機器人連線');return}
+  toast(`傳送中…（${list.length} 筆）`);try{await doSync()}catch(_){}
+  let j=null;try{const r=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'cfSend',ids:list.map(x=>x.id)})});j=await r.json()}catch(e){toast('傳送失敗：連不到機器人');return}
+  if(!j||!j.ok){toast('傳送失敗：'+((j&&j.error)||''));return}
+  const now=Date.now(),bad=[];(j.res||[]).forEach(r=>{const x=DB.orders[r.id];if(!x)return;if(r.ok){x.cfSentAt=now;x.cfPushErr='';x.updated=now}else{x.cfPushErr=r.err;bad.push(orderNo(x)+'：'+r.err)}});
+  store('nwcw_orders',DB);pushSync();renderOrderSel();renderAll();try{renderTodo()}catch(_){}
+  const ok=(j.res||[]).filter(r=>r.ok).length;if(!bad.length)toast(`已傳給新人 ${ok} 筆`);else alert(`已傳 ${ok} 筆，${bad.length} 筆傳不到（可改用「複製文字訊息」手動傳）：\n\n`+bad.join('\n'))}
+function renderCfSt(){const el=$('cfSt');if(!el||!o)return;const L=o.cfLast;
+  if(!L){el.textContent=(o.cfDoneAt?'已完成行前確認':o.cfSentAt?'已傳給客人（'+new Date(o.cfSentAt).toLocaleDateString('zh-TW')+'），客人還沒送出':'')+(o.cfPushErr?'\n⚠️ 上次傳送失敗：'+o.cfPushErr:'');$('confirmResult').innerHTML='';return}
+  const d=new Date(L.at);el.innerHTML=`<b style="color:var(--ok)">✅ ${L.manual?'已用貼上的回覆帶入':'客人已用確認頁送出，已自動帶入'}（${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}${L.uid?'，LINE 登入':''}）</b>`+(L.note?`<div class="sum" style="margin-top:6px">客人想提醒司機：${esc(L.note)}</div>`:'')+((L.files||[]).length?`<div style="margin-top:6px">行程表／路線圖：${L.files.map((z,i)=>`<a href="https://drive.google.com/file/d/${encodeURIComponent(z.id)}/view" target="_blank" rel="noopener">${z.pdf?'📄':'🖼️'} 檔案 ${i+1}</a>`).join('　')}</div>`:'');
+  renderConfirmResult({warn:L.warn||[],diffs:L.diffs||[]})}
 const CF=[['name',/聯絡人姓名/],['phone',/聯絡人電話/],['meet',/男方家地址|集合地點/],['wed',/女方家地址/],['start',/預計出發時間|出發時間/],['combo',/訂結一起/],['cane',/甘蔗|竹子/],['back',/迎娶回男方家|幾點迎娶回/],['restYN',/接送至餐廳/],['restT',/出發去餐廳/],['restAddr',/餐廳地址/]];
 function parseConfirm(text){const res={},lines=text.replace(/\r/g,'').split('\n');
   for(let i=0;i<lines.length;i++){const l=lines[i];const hit=CF.find(([k,re])=>re.test(l)&&!(k==='cane'&&/餐廳/.test(l))&&!(k==='start'&&/餐廳/.test(l)));if(!hit||res[hit[0]]!=null)continue;
@@ -1716,7 +1755,7 @@ function renderRefs(){renderSettle();const mEl=$('refMonth');if(!mEl.value){cons
   $('billVendorName').textContent=mv.map(v=>v.name).join('、');$('outBill').textContent=bills.join('\n\n')||'這個月沒有月結廠商的訂單。'}
 function renderOrderSel(){const list=Object.values(DB.orders).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.updated-a.updated);
   $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(selLabel(x))}</option>`).join('');renderTodoBadge();if(!$('todoModal').hidden)renderTodo()}
-function renderAll(){try{renderQx()}catch(e){}try{renderFormDataBtn()}catch(e){}renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派車頭':''].filter(Boolean),tr=[k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就派司機':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月派司機':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月派司機':'白色特斯拉：用車前一週派司機'):''].filter(Boolean);$('headHint').textContent=(rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):k.tesla&&!k.lux?'特斯拉由你擔任車頭，不用指派車頭。':'本單沒有提前指派車頭的需求。')+(tr.length?'　'+tr.join('；'):'')+(String(o.carHead||'').trim()?'　✅ 已找車頭：司機由車頭安排，用車前 3 天再確認司機資料即可。':'')}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=CONFIRM_TPL;renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
+function renderAll(){try{renderQx()}catch(e){}try{renderFormDataBtn()}catch(e){}renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派車頭':''].filter(Boolean),tr=[k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就派司機':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月派司機':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月派司機':'白色特斯拉：用車前一週派司機'):''].filter(Boolean);$('headHint').textContent=(rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):k.tesla&&!k.lux?'特斯拉由你擔任車頭，不用指派車頭。':'本單沒有提前指派車頭的需求。')+(tr.length?'　'+tr.join('；'):'')+(String(o.carHead||'').trim()?'　✅ 已找車頭：司機由車頭安排，用車前 3 天再確認司機資料即可。':'')}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=cfMsg(o);try{renderCfSt()}catch(e){}renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
   $('outQuote').textContent=quoteText(o,'zh');if($('outQuoteAdd'))$('outQuoteAdd').textContent=QUOTE_ADD;$('outOrder').textContent=orderText(o,'zh');
   renderFind();$('contractPaper').innerHTML=contractHTML(o);ctTuneFill();renderSigned();renderMemo();
   ['meet','wed','o1','o2'].forEach(k=>{$('c_'+k+'S').placeholder=shortArea(o.c[k])||'自動'});
@@ -1882,8 +1921,8 @@ function renderTodo(){if(!document.querySelector('.dr-bar[data-dr="todo"] input'
   if(todoF==='noform')B.push(['tsForm','標記已填表']);
   if(todoF==='tt')B.push(['tsTTAdd','複製補登指令'],['tsTT','標記已填 TimeTree']);
   if(todoF==='nocontract')B.push(['tsContract','標記已出合約']);
-  if(todoF==='cfsend')B.push(['tsCfCopy','複製行前確認訊息＋標記已傳'],['tsCfSent','標記已傳']);
-  if(todoF==='cfwait')B.push(['tsCfDone','標記已回填']);
+  if(todoF==='cfsend')B.push(['tsCfPush','📤 傳確認按鈕給新人'],['tsCfCopy','複製文字訊息＋標記已傳'],['tsCfSent','標記已傳']);
+  if(todoF==='cfwait')B.push(['tsCfPush','📤 再傳一次確認按鈕'],['tsCfDone','標記已回填']);
   if(todoF==='nodrv')B.push(['tsDrv','標記已派車']);
   if(todoF==='call'||todoF==='all')B.push(['tsCall','標記負責人已聯絡新人']);
   if(todoF==='nomemo')B.push(['tsMemo','標記已給 memo']);
@@ -1906,8 +1945,8 @@ function rmTexts(x){const T=tasksOf(x),out=[];if(!T.length)return out;const r=ca
       add('inq',x.need&&x.need.next&&t.why==='約定再聯繫'?`${hi}🤍 之前跟您約好這幾天再聯繫，想問問婚禮用車的部分有新的想法了嗎？\n前面提供的方案是（${cars}），需要調整或確認檔期都可以直接回覆我～`:fn>=2||(fn>=1&&!x.fv2&&false)?`${hi}，先讓您安心安排婚禮，這邊就不再頻繁打擾🤍\n之後需要調整方案，或準備確認用車時，直接回覆這段對話就可以，我們再依當時檔期協助確認～`:fn===1?t2:`${hi}🤍 想跟您確認一下，前面提供的方案（${cars}）是否符合您預想的方向呢？☺️\n如果想調整車款、台數或整體預算，告訴我想調整的部分，我再幫您整理比較～`);break}
     case 'unpaid':add('unpaid',`${hi}🤍 提醒您，訂單 ${no}（${dt}｜${cars}）的訂金 ${money(r.deposit)} 目前還沒有收到喔～\n${useEcpay(x)?`完成付款後才會為您保留車輛，請點以下連結轉帳（會產生您專屬的轉帳帳號）：\n${payLink(x)}\n\n付款後麻煩填寫訂車表單：\n${formLink(x)}`:`完成匯款後才會為您保留車輛：\n${S.bank}\n\n匯款後麻煩填寫訂車表單：\n${formLink(x)}\n\n如果已經匯款了，再麻煩告訴我們匯款帳號後五碼，我們馬上幫您確認☺️`}`);break;
     case 'noform':add('noform',`${hi}，已確認收到 ${no} 訂金 ${money(num(String(x.c.payAmt||'').replace(/[^\d.]/g,''))||r.deposit)}，謝謝🤍\n麻煩再幫我們填寫訂車表單（新人資料、行程與時間），填完我們就會提供合約：\n${formLink(x)}`);break;
-    case 'cfsend':add('cfsend',CONFIRM_TPL);break;
-    case 'cfwait':add('cfwait',`${hi}🤍 婚禮快到了，提醒您幫我們回覆前面的行前確認資料（聯絡人、地址、出發時間等），方便司機提前準備，謝謝您！`);break;
+    case 'cfsend':add('cfsend',cfMsg(x));break;
+    case 'cfwait':add('cfwait',`${hi}🤍 婚禮快到了，提醒您幫我們填一下行前確認（聯絡人、地址、出發時間等），方便司機提前準備，謝謝您！\n${cfLink(x)}`);break;
     case 'rev':add('rev',REV_ASK);break;
     case 'revlink':add('revlink',REV_LINK);break}});
   return out}
@@ -1917,10 +1956,11 @@ const clip=v=>{if(navigator.clipboard)navigator.clipboard.writeText(v).then(()=>
 function todoBatch(id){const rows=todoRows(),sel=rows.filter(r=>todoSel.has(r.x.id)).map(r=>r.x),now=Date.now();
   if(id==='tsAll'){if(todoSel.size===rows.length)todoSel.clear();else rows.forEach(r=>todoSel.add(r.x.id));renderTodo();return}
   if(!sel.length)return;
+  if(id==='tsCfPush'){cfPush(sel);return}
   if(id==='tsNames'){clip(sel.map(x=>x.c.chatName||orderNo(x)).join('\n'));return}
   if(id==='tsPtCodes'){clip(sel.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(x=>findCode(x)+'　'+(x.date||'').slice(5).replace('-','/')+' '+(x.c.groom||'')).join('\n'));return}
   if(id==='tsTTAdd'){clip(ttPromptText(sel));toast(`已複製 ${sel.length} 筆補登指令，貼給 Claude 即可`);return}
-  if(id==='tsCfCopy')clip(CONFIRM_TPL);if(id==='tsRevCopy')clip(REV_ASK);if(id==='tsRevLinkCopy')clip(REV_LINK);
+  if(id==='tsCfCopy')clip(sel.length>1?sel.map(x=>'【'+(x.c.chatName||orderNo(x))+'】\n'+cfMsg(x)).join('\n\n———\n\n'):cfMsg(sel[0]));if(id==='tsRevCopy')clip(REV_ASK);if(id==='tsRevLinkCopy')clip(REV_LINK);
   const f={tsFollow:x=>{x.followAt=now;x.followN=(+x.followN||0)+1;x.fv2=true},tsReplied:x=>{x.replyAt=now;x.followN=0;x.fv2=true},tsOrdered:x=>x.orderedAt=now,tsLost:x=>x.lost=true,tsRevive:x=>x.lost=false,tsCfCopy:x=>x.cfSentAt=now,tsCfSent:x=>x.cfSentAt=now,tsCfDone:x=>x.cfDoneAt=now,tsRevCopy:x=>x.revAskAt=now,tsRevAsked:x=>x.revAskAt=now,tsRevLinkCopy:x=>x.revLinkAt=now,tsRevSkip:x=>x.revSkip=true,tsRevDone:x=>x.revLinkAt=now,tsPhotoSent:x=>x.photoSentAt=now,tsPtPhoto:x=>x.ptPhotoAt=now,tsPhotoReq:x=>x.c.photoReq='要',tsPaid:x=>{const d=new Date();x.paid=true;if(!x.ttDone)x.ttDone=false;x.paidTs=now;x.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`},tsForm:x=>x.formAt=now,tsTT:x=>{x.ttDone=true;x.ttAt=now},tsContract:x=>x.contractDone=true,tsDrv:x=>x.drvDone=true,tsMemo:x=>x.memoDone=true,tsCall:x=>{if(tasksOf(x).some(t=>t.k==='call')){x.callAt=now;if(o&&o.id===x.id)o.callAt=now}}}[id];if(!f)return;
   sel.forEach(x=>{f(x);x.updated=now;DB.orders[x.id]=x});todoSel.clear();store('nwcw_orders',DB);pushSync();renderOrderSel();renderAll();if(!/Copy$/.test(id))toast(`已更新 ${sel.length} 張訂單`)}
 document.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.tsel){t.checked?todoSel.add(t.dataset.tsel):todoSel.delete(t.dataset.tsel);renderTodo()}else if(t.id==='todoLate')renderTodo()});
@@ -1997,7 +2037,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnFlowAuto':autoFlow(o);save();fillInputs();renderFlow();renderAll();toast('已依地點重排流程');break;
    case 'btnModelAdd':{const id='m'+Date.now().toString(36);S.models.push({id,name:'新車款',brand:'其他',abbr:''});MK.forEach(k=>S[k][id]='');S.dp[id]={h1:'',h15:'',h2:'',h3:'',ot05:'',ot15:'',ot1:'',trip:'',tripOt:''};rebuildModels();saveS();renderPriceSettings();renderCars();break}
    case 'btnBundleAdd':S.bundles.push({name:'新方案',cars:{},price:0});saveS();renderPriceSettings();break;
-   case 'btnConfirm':{const res=parseConfirm($('confirmBox').value);if(!Object.keys(res).length){$('confirmResult').innerHTML='<p class="hint">沒有認出欄位，請確認貼上的是行前確認的回覆。</p>';break}const r=applyConfirm(res);o.cfDoneAt=Date.now();save();renderOrderSel();fillInputs();renderFlow();renderAll();renderConfirmResult(r);toast('已帶入行前確認');break}
+   case 'btnCfSend':{cfPush([o]);break}
+   case 'btnConfirm':{const res=parseConfirm($('confirmBox').value);if(!Object.keys(res).length){$('confirmResult').innerHTML='<p class="hint">沒有認出欄位，請確認貼上的是行前確認的回覆。</p>';break}const r=applyConfirm(res);o.cfDoneAt=Date.now();o.cfLast={at:Date.now(),diffs:r.diffs,warn:r.warn,manual:true};save();renderOrderSel();fillInputs();renderFlow();renderAll();renderConfirmResult(r);toast('已帶入行前確認');break}
    case 'btnApplyH':{if(o._suggestH){o.hours=o._suggestH;o._suggestH=null;save();fillInputs();renderCars();renderFleet();renderAll();$('confirmResult').insertAdjacentHTML('beforeend','<p class="hint">合約時數已更新，報價、合約、memo 都已重算。</p>');t.remove()}break}
    case 'btnFormData':{const fd=FORMDATA[normNo(orderNo(o))];if(!fd||!fd.f){toast('這張單還沒有客人填寫頁回覆');break}const cols=[['no','訂單編號'],['groom','新郎姓名'],['bride','新娘姓名'],['role','主要聯絡人'],['rel','主要聯絡人身份'],['phone','主要聯絡人電話'],['start','預計開始用車時間'],['end','預計結束用車時間'],['meet','禮車集合地點'],['meetL','集合地點名稱'],['wed','迎娶地點'],['wedL','迎娶地點名稱'],['o1','其他停靠地點 1（選填）'],['o1L','其他停靠地點 1 是什麼地點？（選填）'],['o2','其他停靠地點 2（選填）'],['o2L','其他停靠地點 2 是什麼地點？（選填）'],['o3','其他停靠地點 3（選填）'],['o3L','其他停靠地點 3 是什麼地點？（選填）'],['o4','其他停靠地點 4（選填）'],['o4L','其他停靠地點 4 是什麼地點？（選填）'],['o5','其他停靠地點 5（選填）'],['o5L','其他停靠地點 5 是什麼地點？（選填）'],['route','路線說明'],['cane','車頂甘蔗固定需求'],['deco','車頭彩安排'],['decoStyle','指定車頭彩款式'],['decoSign','客製化英文名牌'],['decoFee','車頭彩費用'],['foundVia','怎麼知道好好禮車']];const cl=v=>String(v==null?'':v).replace(/[\t\n\r]+/g,' ');$('pasteBox').value=cols.map(c=>c[1]).join('\t')+'\n'+cols.map(c=>cl(fd.f[c[0]])).join('\t');$('btnParse').click();break}
     case 'btnParse':{const res=parseForm($('pasteBox').value);const n=applyForm(res);save();fillInputs();renderCars();syncFleet();renderFleet();renderFlow();renderAll();
