@@ -235,7 +235,6 @@ nav.tabs button{scroll-snap-align:start}
       <button class="btn" id="btnPartner">＋ 同業單</button>
       <button class="btn" id="btnPtSettle">同業結算</button>
       <button class="btn" id="btnDup">複製此單</button>
-      <button class="btn danger" id="btnDel">刪除</button>
       <button class="btn" id="btnDecoCal">車頭彩檔期</button>
     </div>
   </header>
@@ -667,6 +666,10 @@ nav.tabs button{scroll-snap-align:start}
       </div>
     </div>
   </section>
+  <div id="delZone" style="margin:40px 0 24px;padding-top:16px;border-top:1px dashed rgba(0,0,0,.15);text-align:center"><!-- 2026-10-15 刪除訂單移到每頁最底下，要確認兩次 -->
+    <button type="button" class="btn sm danger" id="btnDel">🗑 刪除此訂單</button>
+    <div class="hint" id="delHint" style="margin-top:6px"></div>
+  </div>
 </div>
 <div class="toast" id="toast" role="status"></div>
 
@@ -2092,7 +2095,7 @@ async function ibSet(uids,set){try{IB=await ibCall({action:'inboxSet',uids,set})
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset)return;if(t.dataset.ibsel){t.checked?ibSel.add(t.dataset.ibsel):ibSel.delete(t.dataset.ibsel);renderInbox()}else if(t.dataset.ibcat!==undefined&&t.dataset.ibcat){ibSet([t.dataset.ibcat],{cat:t.value||'其他'})}});
 
 /* ---------- clicks ---------- */
-let delArm=0;
+let delArm=0,delStep=0,delTimer=0;
 document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
   if(t.dataset.tab){showTab(t.dataset.tab);return}
   if(t.dataset.step){const m=t.dataset.step;o.cars[m]=Math.max(0,num(o.cars[m])+(+t.dataset.d));o.sample=false;syncFleet();save();renderCars();renderFleet();renderAll();return}
@@ -2153,8 +2156,11 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
     window.open(location.origin+'/nice-wedding-car/','_blank');toast('已開啟機場接送報價');break}
    case 'btnNew':{o=newOrder();DB.orders[o.id]=o;syncFleet();save();loadOrder();toast('已建立新訂單');break}
    case 'btnDup':{const n=clone(o);n.id=newOrder().id;n.sample=false;n.seq='';n._seqKey='';n._seq='';n.c=Object.assign(newOrder().c,{});n.fleet=n.fleet.map(f=>Object.assign(f,{plate:'',driver:'',phone:''}));Object.assign(n,{paid:false,paidAt:'',paidTs:'',contractUrl:'',memoLinks:null,driveFolder:'',inqAt:Date.now(),orderedAt:'',followAt:'',lost:false,formAt:'',cfSentAt:'',cfDoneAt:'',revAskAt:'',revLinkAt:'',revSkip:false,photoSentAt:'',carHead:'',balPaid:false,settled:false,sent:[],quotes:[],need:clone(newOrder().need)});o=n;DB.orders[o.id]=o;save();loadOrder();toast('已複製車款與價格到新訂單');break}
-   case 'btnDel':{if(Date.now()-delArm>3000){delArm=Date.now();t.textContent='再按一次確認刪除';setTimeout(()=>{t.textContent='刪除'},3000);break}
-     DB.deleted=DB.deleted||{};DB.deleted[o.id]=Date.now();delete DB.orders[o.id];t.textContent='刪除';const rest=Object.values(DB.orders);o=rest[0]||newOrder();DB.orders[o.id]=o;save();loadOrder();toast('已刪除');break}
+   case 'btnDel':{const h=$('delHint'),reset=()=>{delStep=0;t.textContent='🗑 刪除此訂單';h.textContent=''};clearTimeout(delTimer);
+     if(Date.now()-delArm>8000)delStep=0;delArm=Date.now();delStep++;
+     if(delStep===1){t.textContent='確認刪除 '+orderNo(o)+'？';h.textContent='刪除後整張訂單（報價、合約、派車、memo）都會消失，無法復原。';delTimer=setTimeout(reset,8000);break}
+     if(delStep===2){t.textContent='⚠️ 最後確認：真的刪除 '+orderNo(o);h.textContent='再按一次就會刪除。8 秒內沒按會自動取消。';delTimer=setTimeout(reset,8000);break}
+     DB.deleted=DB.deleted||{};DB.deleted[o.id]=Date.now();delete DB.orders[o.id];reset();const rest=Object.values(DB.orders);o=rest[0]||newOrder();DB.orders[o.id]=o;save();loadOrder();toast('已刪除');break}
    case 'btnPrint':window.print();break;
    case 'btnDrive':saveToDrive();break;
    case 'btnMemoDocs':makeMemoDocs();break;
@@ -2188,7 +2194,7 @@ function copy(text,el){const done=()=>toast('已複製');
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(done,fb);else fb()}
 let tt;function toast(s){const t=$('toast');t.textContent=s;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1600)}
 function showTab(name){document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===name));
-  document.querySelectorAll('section.tab').forEach(s=>s.hidden=s.id!=='tab-'+name);try{sessionStorage.setItem('nwcw_tab',name)}catch(_){}}
+  document.querySelectorAll('section.tab').forEach(s=>s.hidden=s.id!=='tab-'+name);{const z=$('delZone');if(z)z.hidden=name==='settings'||name==='refs';const b=$('btnDel');if(b&&delStep){delStep=0;clearTimeout(delTimer);b.textContent='🗑 刪除此訂單';$('delHint').textContent=''}}try{sessionStorage.setItem('nwcw_tab',name)}catch(_){}}
 
 /* ---------- 關鍵字搜尋：單號、客人名稱、新人、電話、地址、婚顧／廠商、備註…（空白分開可多個關鍵字） ---------- */
 (function(){const inp=$('kwQ'),box=$('kwResults');if(!inp||!box)return;let shown=[],act=-1;
@@ -2213,7 +2219,7 @@ function showTab(name){document.querySelectorAll('#tabs button').forEach(b=>b.se
   box.addEventListener('mousedown',e=>{const c=e.target.closest('[data-call]');if(c){e.preventDefault();const x=shown[+c.dataset.call];if(x){const t=Date.now();x.callAt=t;x.updated=t;DB.orders[x.id]=x;if(o&&o.id===x.id){o.callAt=t;o.updated=t}store('nwcw_orders',DB);pushSync();try{renderAll()}catch(_){}render();toast('已記錄：'+tripCode(x)+' 主禮車司機已聯絡新人')}return}
     const b=e.target.closest('button[data-i]');if(!b)return;e.preventDefault();open(shown[+b.dataset.i])});
 })();
-function loadOrder(){migrate(o);syncFleet();fillInputs();renderLangs();renderCars();renderFleet();renderFlow();renderAll()}
+function loadOrder(){if(delStep){delStep=0;clearTimeout(delTimer);const b=$('btnDel');if(b)b.textContent='🗑 刪除此訂單';const h=$('delHint');if(h)h.textContent=''}migrate(o);syncFleet();fillInputs();renderLangs();renderCars();renderFleet();renderFlow();renderAll()}
 let pendingOpen=null;
 function openFromHash(){
   try{const m=location.hash.match(/(?:^#|&)open=([^&]+)/);if(m)pendingOpen=decodeURIComponent(m[1])}catch(_){}
