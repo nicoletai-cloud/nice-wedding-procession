@@ -676,7 +676,7 @@ nav.tabs button{scroll-snap-align:start}
 
 <div id="cfModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px"><!-- 2026-10-15 行前確認清單 -->
   <div style="max-width:760px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px">
-    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">行前確認 <small>選用車日期，傳確認按鈕給新人（同業單不用）</small></h3><button class="btn sm" id="btnCfClose">關閉</button></div>
+    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">行前確認 <small>選用車日期，傳確認按鈕給新人（同業單不用）</small></h3><div class="row" style="gap:6px"><button class="btn sm" id="btnCfRecheck" title="剛貼好聊天室網址或改了聯絡管道，按這裡重新比對">🔄 重新比對</button><button class="btn sm" id="btnCfClose">關閉</button></div></div>
     <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px"><input type="date" id="cfDate" style="width:auto"><span id="cfDays" class="row" style="gap:6px;flex-wrap:wrap;align-items:center"></span></div>
     <div id="cfFilt" class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
     <div id="cfList"></div>
@@ -1348,7 +1348,8 @@ function contractHTML(x){const r=calc(x),c=x.c,rin=r.red>0   /* 2026-10-14 Nicol
   const otRows=MODELS.map(m=>`${MNAME[m]} ${money(S.ot[m])}/${short?'每 0.5 小時':'時'}`).filter((s,i)=>num(x.cars[MODELS[i]])>0);
   const caneTxt=c.caneAns?(c.caneAns+(x.cane?`（${x.cane} 台）`:'')):(x.cane?`是（${x.cane} 台）`:'');
   const pd=c.payDate?fmtDate(c.payDate):'';const pa=c.payAmt?money(num(String(c.payAmt).replace(/[^\d.]/g,''))):'';
-  const noteBits=[x.colorReq?`指定${x.colorReq}`:'',x.colorRare?'稀有車款若無法出車，將協調調度其他車款':''].filter(Boolean);
+  const hasDeco=!!(String(x.decoStyle||'').trim()||num(x.deco)>0),decoTxt=hasDeco?'司機紅包及指定車頭彩費用':'司機紅包';
+  const noteBits=[x.colorReq?`指定${x.colorReq}`:'',String(x.decoStyle||'').trim()?`指定車頭彩：${String(x.decoStyle).trim()}`:'',x.colorRare?'稀有車款若無法出車，將協調調度其他車款':''].filter(Boolean);
   const no=E(orderNo(x)),hrs=+x.hours===0?'單程接送':`${E(x.hours)} 小時`,time=String(x.ctTime||'').trim()?E(String(x.ctTime).trim()):[c.start,c.end].filter(Boolean).map(E).join(' – ');
   const addr=(v,l)=>E(v)+(l?E(`（${l}）`):'');
   const rows=[['集合地點',addr(c.meet,c.meetL)],['迎娶地點',addr(c.wed,c.wedL)]];
@@ -1375,7 +1376,7 @@ function contractHTML(x){const r=calc(x),c=x.c,rin=r.red>0   /* 2026-10-14 Nicol
   <table class="amt"><tr>${amt('租金總計',rent)}<td class="gap"></td>${amt('預付訂金',r.deposit)}<td class="gap"></td>${amt('尾款金額',rent-r.deposit)}</tr></table>
   <table class="li" style="margin-top:8pt"><tr><td>匯款日期&nbsp;&nbsp;${E(pd)}</td><td>匯款後五碼&nbsp;&nbsp;${E(c.last5)}</td><td>匯款金額&nbsp;&nbsp;${E(pa)}</td></tr></table>
   <table class="li" style="margin-top:4pt"><tr><td class="k2">加時費用</td><td>${otRows.map(E).join('&nbsp;&nbsp;&nbsp;')}</td></tr>
-   <tr><td class="k2">另付項目</td><td>${num(x.cane)>0?(rin?`司機紅包已含於租金總計；甘蔗固定 ${money(S.cane)}/車，於用車當日與尾款一併支付`:`司機紅包 ${money(S.red)}/人、甘蔗固定 ${money(S.cane)}/車，於用車當日與尾款一併支付`):(rin?'司機紅包已含於租金總計':`司機紅包 ${money(S.red)}/人，於用車當日與尾款一併支付`)}</td></tr></table>
+   <tr><td class="k2">另付項目</td><td>${num(x.cane)>0?(rin?`${decoTxt}已含於租金總計；甘蔗固定 ${money(S.cane)}/車，於用車當日與尾款一併支付`:`司機紅包 ${money(S.red)}/人、甘蔗固定 ${money(S.cane)}/車，於用車當日與尾款一併支付`):(rin?`${decoTxt}已含於租金總計`:`司機紅包 ${money(S.red)}/人，於用車當日與尾款一併支付`)}</td></tr></table>
   <div class="sec"><i>04</i>付款與用車說明</div>
   <table><tr><td style="padding-right:14pt">${ul(B.slice(0,3))}</td><td>${ul(B.slice(3))}</td></tr></table>
   <div class="mu" style="margin-top:22pt">合約注意事項與簽署欄續於第 2 頁</div>
@@ -2043,7 +2044,7 @@ let cfF='all',cfPrevList=[];const cfSel=new Set(),CFCHK={};let cfChkBusy='';
 async function cfCheckDay(d,L){const need=L.filter(x=>!CFCHK[x.id]).map(x=>x.id);if(!need.length||cfChkBusy===d||!S.driveUrl||!S.driveKey)return;cfChkBusy=d;
   try{const r=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'cfCheck',ids:need})});const j=await r.json();if(j&&j.ok)(j.res||[]).forEach(z=>{CFCHK[z.id]=z})}catch(e){}cfChkBusy='';if(!$('cfModal').hidden)renderCf()}
 function cfCanSend(x){const z=CFCHK[x.id];return !(z&&z.ok===false)&&(((x.c||{}).channel||'LINE')!=='私人LINE')}
-function openCf(d){const ds=Object.keys(cfPendingDays()).sort();$('cfDate').value=d||ds[0]||lgToday();cfF='all';cfSel.clear();$('cfModal').hidden=false;renderCf()}
+function openCf(d){Object.keys(CFCHK).forEach(k=>delete CFCHK[k]);const ds=Object.keys(cfPendingDays()).sort();$('cfDate').value=d||ds[0]||lgToday();cfF='all';cfSel.clear();$('cfModal').hidden=false;renderCf()}
 function cfStOf(x){return x.cfDoneAt?'done':x.cfSentAt?'wait':'new'}
 function renderCf(){const m=cfPendingDays(),d=$('cfDate').value,ds=Object.keys(m).sort().slice(0,8);
   $('cfDays').innerHTML=ds.length?'<span class="hint" style="margin:0">還沒傳：</span>'+ds.map(k=>{const p=dparts(k);return `<button class="btn sm${k===d?' pri':''}" data-cfday="${k}">${p?p.m+'/'+p.d:k}（${m[k]}）</button>`}).join(''):'<span class="hint" style="margin:0">之後的車趟都傳過了 ✅</span>';
@@ -2059,7 +2060,7 @@ function renderCf(){const m=cfPendingDays(),d=$('cfDate').value,ds=Object.keys(m
     const tag=st==='done'?`<span style="color:var(--ok);font-weight:700">✅ 已完成 ${dt(x.cfDoneAt)}</span>`:st==='wait'?`<span style="color:#A0453A;font-weight:700">已傳 ${dt(x.cfSentAt)}，客人還沒送出</span>`:'<span class="hint" style="margin:0">還沒傳</span>';
     const nm=c.chatName||[c.groom,c.bride].filter(Boolean).join('＆')||'未命名';
     const cb=(st==='done'||!cfCanSend(x))?'<span style="display:inline-block;width:22px"></span>':`<input type="checkbox" data-cfsel="${esc(x.id)}" style="width:auto;margin:3px 8px 0 0;flex:none"${cfSel.has(x.id)?' checked':''}>`;
-    return `<div class="card" style="padding:12px;margin-bottom:8px"><div class="row" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><div style="min-width:0;display:flex;align-items:flex-start">${cb}<div style="min-width:0"><b>${esc(tripCode(x))}｜${esc(orderNo(x))}</b>　${esc(nm)}<div class="hint" style="margin:2px 0 0">${(()=>{const z=CFCHK[x.id],pl={line:'官方 LINE',fb:'FB',ig:'IG'};const vd=(x.src&&x.src.vendor)||'';const tg=(c.channel==='私人LINE')?'<b style="color:#A0453A">⚠️ 私人 LINE，只能複製訊息自己傳</b>':!z?'<span>比對聊天室中…</span>':z.ok?`<b style="color:var(--ok)">✅ ${pl[z.plat]||z.plat}</b>${z.warn?` <span style="color:#A0453A">（${esc(z.warn)}）</span>`:''}`:`<b style="color:#A0453A">⚠️ ${esc(z.err||'找不到聊天室')}</b>${(c.channel||'LINE')==='LINE'?'：可到訂單「官方 LINE 聊天室網址」貼上這位客人的聊天室網址，或複製訊息自己傳':'，只能複製訊息自己傳'}`;return tg+(vd?`　婚顧：${esc(vd)}`:'')+'　'+esc([c.groom,c.bride].filter(Boolean).join('＆'))})()}</div><div style="margin-top:4px">${tag}${x.cfPushErr?`<div class="hint" style="color:#A0453A;margin:2px 0 0">⚠️ 上次傳送失敗：${esc(x.cfPushErr)}</div>`:''}</div></div></div>
+    return `<div class="card" style="padding:12px;margin-bottom:8px"><div class="row" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><div style="min-width:0;display:flex;align-items:flex-start">${cb}<div style="min-width:0"><b>${esc(tripCode(x))}｜${esc(orderNo(x))}</b>　${esc(nm)}<div class="hint" style="margin:2px 0 0">${(()=>{const z=CFCHK[x.id],pl={line:'官方 LINE',fb:'FB',ig:'IG'};const vd=(x.src&&x.src.vendor)||'';const tg=(c.channel==='私人LINE')?'<b style="color:#A0453A">⚠️ 私人 LINE，只能複製訊息自己傳</b>':!z?'<span>比對聊天室中…</span>':z.ok?`<b style="color:var(--ok)">✅ ${pl[z.plat]||z.plat}</b>${z.warn?` <span style="color:#A0453A">（${esc(z.warn)}）</span>`:''}`:`<b style="color:#A0453A">⚠️ ${esc(z.err||'找不到聊天室')}</b>${(c.channel||'LINE')==='LINE'?'：可到訂單「官方 LINE 聊天室網址」貼上這位客人的聊天室網址，或複製訊息自己傳':'，只能複製訊息自己傳'}`;const cn=String(c.chatName||'').trim(),vlab=vd?(cn&&cn.indexOf(vd)<0&&vd.indexOf(cn)<0?`${vd} ${cn} 訂車`:`${vd} 訂車`):'';return tg+(vlab?`　婚顧：${esc(vlab)}`:'')+'　'+esc([c.groom,c.bride].filter(Boolean).join('＆'))})()}</div><div style="margin-top:4px">${tag}${x.cfPushErr?`<div class="hint" style="color:#A0453A;margin:2px 0 0">⚠️ 上次傳送失敗：${esc(x.cfPushErr)}</div>`:''}</div></div></div>
       <div class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn sm" data-cfopen="${esc(x.id)}">開啟訂單</button>${st==='done'?'':`<button class="btn sm pri" data-cfprev="${esc(x.id)}">${st==='wait'?'📤 再傳一次':'📤 傳行前確認'}</button>`}</div></div></div>`}).join(''):`<p class="hint">${d?'這天沒有'+(cfF==='all'?'需要行前確認的車趟':'這個狀態的車趟'):'請選日期'}</p>`)+(pt?`<p class="hint">這天另有 ${pt} 趟同業單，不用行前確認。</p>`:'');
 }
 function cfPreview(list){list=(list||[]).filter(Boolean);if(!list.length)return;cfPrevList=list;
@@ -2074,11 +2075,12 @@ function cfPreview(list){list=(list||[]).filter(Boolean);if(!list.length)return;
       <div style="margin-top:6px"><button class="btn sm" data-cfcopy="${esc(x.id)}">複製文字訊息（傳不到時自己貼）＋標記已傳</button></div></div>`}).join('');
   const b=$('btnCfPrevSend');b.disabled=!can;b.textContent=can?(list.length>1?`送出（${can} 筆）`:'送出'):'沒有可以送出的';
   $('cfPrevModal').hidden=false}
-document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.closest('#cfListBtn,#btnCfClose,#btnCfPrevClose,#btnCfPrevCancel,#btnCfPrevSend,[data-cfday],[data-cff],[data-cfprev],[data-cfopen],[data-cfcopy],[data-cfall],[data-cfsendsel]');if(!b)return;e.preventDefault();
+document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.closest('#cfListBtn,#btnCfRecheck,#btnCfClose,#btnCfPrevClose,#btnCfPrevCancel,#btnCfPrevSend,[data-cfday],[data-cff],[data-cfprev],[data-cfopen],[data-cfcopy],[data-cfall],[data-cfsendsel]');if(!b)return;e.preventDefault();
   if(b.dataset.cfall){const d=$('cfDate').value,L=Object.values(DB.orders).filter(x=>cfOk(x)&&x.date===d&&cfStOf(x)!=='done'&&cfCanSend(x)&&(cfF==='all'||cfStOf(x)===cfF));if(cfSel.size===L.length)cfSel.clear();else{cfSel.clear();L.slice(0,20).forEach(x=>cfSel.add(x.id));if(L.length>20)toast('一次最多 20 筆，先選前 20 筆')}renderCf();return}
   if(b.dataset.cfsendsel){const L=[...cfSel].map(id=>DB.orders[id]).filter(Boolean);if(L.length)cfPreview(L);return}
   if(b.id==='cfListBtn'){openCf(o&&cfOk(o)&&o.date>=lgToday()?o.date:'');return}
   if(b.id==='btnCfClose'){$('cfModal').hidden=true;return}
+  if(b.id==='btnCfRecheck'){b.disabled=true;b.textContent='同步中…';try{await doSync()}catch(_){}Object.keys(CFCHK).forEach(k=>delete CFCHK[k]);cfChkBusy='';renderCf();b.disabled=false;b.textContent='🔄 重新比對';return}
   if(b.id==='btnCfPrevClose'||b.id==='btnCfPrevCancel'){$('cfPrevModal').hidden=true;return}
   if(b.dataset.cfday){$('cfDate').value=b.dataset.cfday;cfSel.clear();renderCf();return}
   if(b.dataset.cff){cfF=b.dataset.cff;cfSel.clear();renderCf();return}
