@@ -1487,7 +1487,11 @@ const CF_LIFF='2009335688-N0uyJ02P';// 行前確認 LIFF ID（建好後填上；
 let CONFIRMS={};
 function cfKey(id){const h=t=>{let v=0x811c9dc5;for(let i=0;i<t.length;i++){v^=t.charCodeAt(i);v=Math.imul(v,0x01000193)>>>0}return v.toString(36)};return h(String(id))+h('cf'+id)}
 function cfLink(x){const q='?no='+encodeURIComponent(orderNo(x))+'&k='+cfKey(x.id);return CF_LIFF?'https://liff.line.me/'+CF_LIFF+q:'https://love.niceweddingcar.com/wed-confirm'+q}
-function cfMsg(x){return `${rmHi(x)}🤍 婚禮快到了，我們要最終確認行程嘍！\n請點下面連結，確認當天的聯絡人、地址和時間（已先帶入您之前填的資料，有變動直接修改就好）👇\n${cfLink(x)}\n\n📝行程表若確定，也可以直接傳給我們喔！方便司機掌握情況${((x.c||{}).channel==='私人LINE')?'\n\n（這個連結可以轉給新人填寫，也可以由您代填；開始填寫時選擇身分即可）':''}`}
+function cfMsg(x){const c=x.c||{},lk=cfLink(x),body=`🧡 婚禮快到了，我們要最終確認行程嘍！\n請點下面連結，確認當天的聯絡人、地址和時間（已先帶入您之前填的資料，有變動直接修改就好）👇\n${lk}`;
+  /* 2026-10-15 婚顧私人 LINE 或婚顧代訂：開頭加訂單編號＋新人，稱呼「婚顧窗口 老師」；行程表改由確認頁上傳，不再另外提醒 */
+  if(c.channel==='私人LINE'||(x.src||{}).mode==='代訂'){const ag=String((x.src||{}).agent||'').trim()||rmHi(x).replace(/您好$/,''),cp=[c.groom,c.bride].filter(Boolean).join(' & ');
+    return `訂單編號：${orderNo(x)}${cp?'｜'+cp:''}\n${ag?ag+' 老師':''}您好，${body}\n\n（這個連結可以轉給新人填寫，也可以由您代填；開始填寫時選擇身分即可）`}
+  return `好好新人您好${body}`}   // 2026-10-15 官方帳號／FB／IG 傳給新人：不確定是新郎或新娘，統一稱呼「好好新人」
 // 單點繞圈：只有集合地點，第一圈（＋第二圈）時間；每圈抓 30 分鐘
 function applyLoop(f){const c=o.c,diffs=['行程：單點繞圈'],warn=[];o.sample=false;
   const chg=(label,oldV,newV)=>{if(newV&&String(oldV||'')!==String(newV))diffs.push(`${label}：${oldV||'（空白）'} → ${newV}`)};
@@ -1681,7 +1685,7 @@ function paidText(x){const tips=['我們會在用車前一週再次與您核對�
   if(!x.colorReq)tips.push('車色無法指定，一般為黑色或白色由派車人員安排。');
   tips.push('為安全起見，請勿從禮車上丟擲或施放鞭炮；如需施放，請於禮車停妥後在路邊施放，並與車輛保持距離。');
   const hi=typeof rmHi==='function'?rmHi(x):'您好';
-  return [(hi==='您好'?'':hi+'🤍 ')+(signUrlOf(x)?'已經收到訂金，請點開以下連結確認合約內容，並按下方「簽名完成合約」完成線上簽署：':'已經收到訂金，合約提供您留存：'),signUrlOf(x)||(x.contractUrl||'').trim()||'（請貼上合約連結）','',...tips.map((t,i)=>`${i+1}.${t}`)].join('\n')}
+  return [(hi==='您好'?'':hi+'🧡 ')+(signUrlOf(x)?'已經收到訂金，請點開以下連結確認合約內容，並按下方「簽名完成合約」完成線上簽署：':'已經收到訂金，合約提供您留存：'),signUrlOf(x)||(x.contractUrl||'').trim()||'（請貼上合約連結）','',...tips.map((t,i)=>`${i+1}.${t}`)].join('\n')}
 /* 後台入帳（paidAt=已入帳）等路徑不會設 ttDone；10/5 之後收訂的單一律當作還沒填 TimeTree */
 /* 2026/10/9 起不再用 TimeTree（行程改看 Google 日曆，由機器人自動寫入）；要恢復把 TT_ON 改成 true */
 const TT_ON=false;
@@ -1711,7 +1715,7 @@ function renderCallCheck(){renderFleetCall();const gc=$('grpCode');if(gc){const 
   el.innerHTML=`<span class="chip">車趟代碼 <b>${esc(tripCode(o))}</b></span><button class="btn sm" id="btnCopyTrip">複製代碼</button>`+(o.callAt?`<span class="chip">✅ 主禮車司機已電話聯絡新人（${callTime(o.callAt)} 回報）</span><button class="btn sm" id="btnCallUndo">改回未聯絡</button>`
     :`<b style="color:#A0453A">☎️ 主禮車司機還沒回報聯絡新人</b><span class="hint" style="margin:0">用車前一天 12:00 前要回報</span><button class="btn sm pri" id="btnCallDone">已聯絡新人</button>`)}
 function renderPaidAck(){renderTTCheck();renderCallCheck();const el=$('outPaidAck'),h=$('paidAckHint');if(!el)return;const nf=o.paid&&stageOf(o)==='noform';
-  if(nf){const t=(rmTexts(o).find(z=>z.k==='noform')||{}).t;el.textContent=t||'已確認收到訂金，謝謝🤍\n麻煩再幫我們填寫訂車表單，填完我們就會提供合約：\n'+formLink(o);
+  if(nf){const t=(rmTexts(o).find(z=>z.k==='noform')||{}).t;el.textContent=t||'已確認收到訂金，謝謝🧡\n麻煩再幫我們填寫訂車表單，填完我們就會提供合約：\n'+formLink(o);
     h.innerHTML='<b style="color:#A0453A">⚠️ 客人還沒填訂車表單</b>：上面這則已附表單連結，複製傳給客人。客人填完表單後，再到「3 合約」產生合約。'}
   else{el.textContent='已確認收到訂金，後續提供合約給您';h.textContent='傳合約給客人：到「3 合約」分頁預覽，確認內容後就會出現可複製的訊息。'}}
 const ctOk={};
@@ -1837,24 +1841,24 @@ function renderPriceSettings(){const ip=(g,m,k)=>{const v=k?S[g][m][k]:S[g][m];r
 
 /* ---------- 客人需求・話術・素材・報價版本 ---------- */
 const SCRIPTS=[
- ['date','問婚期','您好，歡迎詢問好好禮車 🤍\n請問婚禮預計是哪一年、幾月幾日呢？還沒確定日期也沒關係，可以先告訴我預計的月份☺️'],
- ['area','已知婚期／問地區','收到，先幫您記下婚期是【婚期】🤍\n請問當天男方出發地、女方迎娶地，分別在哪個縣市／行政區呢？'],
+ ['date','問婚期','您好，歡迎詢問好好禮車 🧡\n請問婚禮預計是哪一年、幾月幾日呢？還沒確定日期也沒關係，可以先告訴我預計的月份☺️'],
+ ['area','已知婚期／問地區','收到，先幫您記下婚期是【婚期】🧡\n請問當天男方出發地、女方迎娶地，分別在哪個縣市／行政區呢？'],
  ['after','問後續行程','接到新人後，預計會回男方家，還是直接到宴客場地呢？先提供大概地區就可以。'],
  ['cars','問車款台數','請問目前有喜歡的車款嗎？另外，您想安排一台主禮車，還是也需要搭配親友乘坐的車隊呢？'],
  ['pax','不確定台數','除了新人以外，大約還有幾位親友需要搭車呢？若有兒童或較多行李，也請一併告訴我。'],
  ['time','問時段','請問預計幾點開始用車、幾點完成最後一站呢？如果時間還沒排定，先告訴我迎娶或宴客的時間也可以。'],
  ['care','無車款方向','您比較在意婚紗上下車方便、經典正式的外型，還是整體預算呢？我可以先挑一至兩個組合給您。'],
  ['budget','預算','如果方便，也可以告訴我整組婚車希望控制在多少預算內，我會連同可能的附加費一起評估。'],
- ['mx','Model X 推薦','如果您比較在意婚紗上下車與拍照的感覺，我會先推薦 Tesla Model X 當主禮車🤍\n向上開啟的鷹翼門，方便上下車時整理裙襬，也能拍到新人與車身同框的畫面。'],
+ ['mx','Model X 推薦','如果您比較在意婚紗上下車與拍照的感覺，我會先推薦 Tesla Model X 當主禮車🧡\n向上開啟的鷹翼門，方便上下車時整理裙襬，也能拍到新人與車身同框的畫面。'],
  ['benz','賓士推薦','如果您喜歡經典、比較內斂的婚車風格，可以先看賓士 S-Class☺️ 我會依台數與預算，搭配適合的組合給您比較。'],
  ['family','跟家人討論','好的，沒問題☺️ 目前建議的是【車款台數】，依這次行程預估共 NT$【預估合計】，您可以直接把這份報價轉給家人參考。\n如果討論後想調整台數或預算，把想法告訴我，我再幫您比較。'],
  ['think','再想想','可以的☺️ 您目前主要是在考慮車款、台數，還是整體預算呢？我可以針對那一部分幫您整理。'],
  ['over','超出預算','了解，謝謝您直接告訴我☺️ 請問希望整組用車費用大約控制在多少呢？我可以先評估車款搭配，再依乘車人數確認台數是否有調整空間。'],
  ['worry','服務疑慮','我們會在婚前確認行程與細節，提前提供司機資訊，並以正裝出勤、車隊對講機及提前集合佈置，協助流程銜接。\n您最在意的是準時抵達、迎娶禮俗，還是現場配合呢？我可以針對您在意的部分說明。'],
- ['church','教會證婚','為您們即將步入婚姻感恩，也謝謝您們讓好好禮車有機會參與這個充滿祝福的日子🤍\n教會證婚雖然不像傳統迎娶有較多禮俗需要配合，但禮車的時間掌握與現場安排，同樣有細節要留意。從抵達教堂、車輛進出與新人上下車，到儀式後的拍照及離場銜接，都是我們熟悉、會提前安排好的環節。\n我們會事先確認用車流程，讓司機熟悉當天安排，並配合教會同工的引導與場地規範，讓您們安心預備，好好享受婚禮當天的喜悅☺️'],
+ ['church','教會證婚','為您們即將步入婚姻感恩，也謝謝您們讓好好禮車有機會參與這個充滿祝福的日子🧡\n教會證婚雖然不像傳統迎娶有較多禮俗需要配合，但禮車的時間掌握與現場安排，同樣有細節要留意。從抵達教堂、車輛進出與新人上下車，到儀式後的拍照及離場銜接，都是我們熟悉、會提前安排好的環節。\n我們會事先確認用車流程，讓司機熟悉當天安排，並配合教會同工的引導與場地規範，讓您們安心預備，好好享受婚禮當天的喜悅☺️'],
  ['fu1','第一次跟進','您好，想跟您確認一下，前面提供的【車款台數】是否符合您預想的方向☺️ 如果希望調整車款或整體預算，告訴我想調整的部分，我再幫您整理。'],
- ['close','收尾','您好，先讓您安心安排婚禮，這邊就不再頻繁打擾🤍 之後需要調整方案，或準備確認用車時，直接回覆這段對話就可以，我們再依當時檔期協助確認。'],
- ['flow','預約流程（文字版）','🤍 好好禮車｜預約流程\n① 確認檔期：提供婚禮日期、用車時段、行程地點、車款與台數。\n② 確認報價：客服確認車款與金額，提供報價單。\n③ 支付訂金：確認報價後匯款支付訂金，保留車輛並完成預約。\n④ 婚前確認：婚前一週確認最終行程；婚前三天確認司機資訊；用車前一天司機會再與您聯繫。\n婚禮當天，尾款與司機紅包可交給主禮車司機，或由親友於禮車服務結束後交付。']];
+ ['close','收尾','您好，先讓您安心安排婚禮，這邊就不再頻繁打擾🧡 之後需要調整方案，或準備確認用車時，直接回覆這段對話就可以，我們再依當時檔期協助確認。'],
+ ['flow','預約流程（文字版）','🧡 好好禮車｜預約流程\n① 確認檔期：提供婚禮日期、用車時段、行程地點、車款與台數。\n② 確認報價：客服確認車款與金額，提供報價單。\n③ 支付訂金：確認報價後匯款支付訂金，保留車輛並完成預約。\n④ 婚前確認：婚前一週確認最終行程；婚前三天確認司機資訊；用車前一天司機會再與您聯繫。\n婚禮當天，尾款與司機紅包可交給主禮車司機，或由親友於禮車服務結束後交付。']];
 const MATS=[
  ['p_tesla','特斯拉優惠方案（價目表）','初次報價｜偏好特斯拉或婚紗上下車'],
  ['p_benz','賓士優惠方案（價目表）','初次報價｜偏好賓士或經典風格'],
@@ -1888,7 +1892,7 @@ function renderNeed(){if(!$('needMiss'))return;const miss=needMiss();
 function scLoad(){const k=$('scKey').value,s=SCRIPTS.find(x=>x[0]===k);const t=scFill(s?s[2]:'');$('scText').value=t;scWarn()}
 function scWarn(){const m=$('scText').value.match(/【.+?】/g);$('scWarn').textContent=m?'⚠️ 還有沒填的：'+[...new Set(m)].join('、')+'（不知道的請寫「待確認」）':''}
 function logSent(k){o.sent=(o.sent||[]).concat({k,at:Date.now()});save();renderNeed()}
-const QUOTE_ADD="也補充一下這份報價包含的服務，方便您跟家人討論、比較時參考🤍\n婚禮當天需要顧及的細節很多，我們會提前確認費用、車輛與行程，讓您更安心：\n・費用清楚列明：里程、加時費及司機禮都已註明在報價中，相關計費方式事先說明，讓您掌握預算。\n・指定車色寫入合約：確認的車色會記錄在合約中，當天依約安排，不臨時更換。\n・行程提前核對：婚禮前一週會與您確認地址和時間，提供司機資料及行程表；當天由負責人帶隊，協調車隊與流程。\n・司機熟悉婚禮流程：出發前須詳讀我們的婚禮流程教案，留意迎娶、送客的時間點與相關禮俗，配合當天安排。\n希望從預訂到婚禮當天，都讓您感受到有人替您留意細節的安心☺️\n您可以先跟家人討論，有任何想比較或確認的細節，隨時問我就好。確認車款與用車安排後，跟我說一聲，我會為您開立訂單，協助完成預訂、保留禮車🤍";
+const QUOTE_ADD="也補充一下這份報價包含的服務，方便您跟家人討論、比較時參考🧡\n婚禮當天需要顧及的細節很多，我們會提前確認費用、車輛與行程，讓您更安心：\n・費用清楚列明：里程、加時費及司機禮都已註明在報價中，相關計費方式事先說明，讓您掌握預算。\n・指定車色寫入合約：確認的車色會記錄在合約中，當天依約安排，不臨時更換。\n・行程提前核對：婚禮前一週會與您確認地址和時間，提供司機資料及行程表；當天由負責人帶隊，協調車隊與流程。\n・司機熟悉婚禮流程：出發前須詳讀我們的婚禮流程教案，留意迎娶、送客的時間點與相關禮俗，配合當天安排。\n希望從預訂到婚禮當天，都讓您感受到有人替您留意細節的安心☺️\n您可以先跟家人討論，有任何想比較或確認的細節，隨時問我就好。確認車款與用車安排後，跟我說一聲，我會為您開立訂單，協助完成預訂、保留禮車🧡";
 function snapQuote(){const t=$('outQuote').textContent,Q=o.quotes||(o.quotes=[]);if(!Q.length||Q[Q.length-1].text!==t){Q.push({at:Date.now(),text:t,total:calc(o).total,v:qVer({text:t},Q.length)});if(Q.length>20)Q.shift();save()}renderNeed()}
 document.addEventListener('change',e=>{if(e.target.id==='scKey')scLoad()});
 document.addEventListener('input',e=>{if(e.target.id==='scText')scWarn()});
@@ -2007,12 +2011,12 @@ const RM_LABEL={inq:'提醒決定方案',unpaid:'提醒匯款',noform:'提醒填
 function rmHi(x){const c=x.c||{},ct=String(c.contact||'').trim();if(ct&&!/^(新郎|新娘|其他)$/.test(ct)&&((x.src&&x.src.vendor)||/婚顧|主持/.test(ct))){const n=ct.split(/[\s\/]/).pop().replace(/^(婚顧|主持人)/,'');if(n)return n+'您好'}return '您好'}
 function rmTexts(x){const T=tasksOf(x),out=[];if(!T.length)return out;const r=calc(x),no=orderNo(x),hi=rmHi(x),dt=x.date?fmtDate(x.date):'（日期未定）',cars=carsText(x),add=(k,t)=>{if(!out.some(z=>z.k===k))out.push({k,l:RM_LABEL[k],t})};
   T.forEach(t=>{switch(t.k){
-    case 'inq':{const fn=+x.followN||0,nl=dateLoad(x);const t2=`${hi}🤍 跟您更新一下 ${dt} 的檔期：`+(nl?`這天目前已經有 ${nl} 組新人預約，車輛會依訂金順序保留，如果確定想用車，建議可以先幫您把車留下來☺️`:`這天的車輛目前還可以安排，確定日期後跟我說一聲，就能先幫您保留☺️`)+`\n如果還在比較方案或有預算考量，也可以直接告訴我，我幫您看看更適合的車款組合～`;
-      add('inq',x.need&&x.need.next&&t.why==='約定再聯繫'?`${hi}🤍 之前跟您約好這幾天再聯繫，想問問婚禮用車的部分有新的想法了嗎？\n前面提供的方案是（${cars}），需要調整或確認檔期都可以直接回覆我～`:fn>=2||(fn>=1&&!x.fv2&&false)?`${hi}，先讓您安心安排婚禮，這邊就不再頻繁打擾🤍\n之後需要調整方案，或準備確認用車時，直接回覆這段對話就可以，我們再依當時檔期協助確認～`:fn===1?t2:`${hi}🤍 想跟您確認一下，前面提供的方案（${cars}）是否符合您預想的方向呢？☺️\n如果想調整車款、台數或整體預算，告訴我想調整的部分，我再幫您整理比較～`);break}
-    case 'unpaid':add('unpaid',`${hi}🤍 提醒您，訂單 ${no}（${dt}｜${cars}）的訂金 ${money(r.deposit)} 目前還沒有收到喔～\n${useEcpay(x)?`完成付款後才會為您保留車輛，請點以下連結轉帳（會產生您專屬的轉帳帳號）：\n${payLink(x)}\n\n付款後麻煩填寫訂車表單：\n${formLink(x)}`:`完成匯款後才會為您保留車輛：\n${S.bank}\n\n匯款後麻煩填寫訂車表單：\n${formLink(x)}\n\n如果已經匯款了，再麻煩告訴我們匯款帳號後五碼，我們馬上幫您確認☺️`}`);break;
-    case 'noform':add('noform',`${hi}，已確認收到 ${no} 訂金 ${money(num(String(x.c.payAmt||'').replace(/[^\d.]/g,''))||r.deposit)}，謝謝🤍\n麻煩再幫我們填寫訂車表單（新人資料、行程與時間），填完我們就會提供合約：\n${formLink(x)}`);break;
+    case 'inq':{const fn=+x.followN||0,nl=dateLoad(x);const t2=`${hi}🧡 跟您更新一下 ${dt} 的檔期：`+(nl?`這天目前已經有 ${nl} 組新人預約，車輛會依訂金順序保留，如果確定想用車，建議可以先幫您把車留下來☺️`:`這天的車輛目前還可以安排，確定日期後跟我說一聲，就能先幫您保留☺️`)+`\n如果還在比較方案或有預算考量，也可以直接告訴我，我幫您看看更適合的車款組合～`;
+      add('inq',x.need&&x.need.next&&t.why==='約定再聯繫'?`${hi}🧡 之前跟您約好這幾天再聯繫，想問問婚禮用車的部分有新的想法了嗎？\n前面提供的方案是（${cars}），需要調整或確認檔期都可以直接回覆我～`:fn>=2||(fn>=1&&!x.fv2&&false)?`${hi}，先讓您安心安排婚禮，這邊就不再頻繁打擾🧡\n之後需要調整方案，或準備確認用車時，直接回覆這段對話就可以，我們再依當時檔期協助確認～`:fn===1?t2:`${hi}🧡 想跟您確認一下，前面提供的方案（${cars}）是否符合您預想的方向呢？☺️\n如果想調整車款、台數或整體預算，告訴我想調整的部分，我再幫您整理比較～`);break}
+    case 'unpaid':add('unpaid',`${hi}🧡 提醒您，訂單 ${no}（${dt}｜${cars}）的訂金 ${money(r.deposit)} 目前還沒有收到喔～\n${useEcpay(x)?`完成付款後才會為您保留車輛，請點以下連結轉帳（會產生您專屬的轉帳帳號）：\n${payLink(x)}\n\n付款後麻煩填寫訂車表單：\n${formLink(x)}`:`完成匯款後才會為您保留車輛：\n${S.bank}\n\n匯款後麻煩填寫訂車表單：\n${formLink(x)}\n\n如果已經匯款了，再麻煩告訴我們匯款帳號後五碼，我們馬上幫您確認☺️`}`);break;
+    case 'noform':add('noform',`${hi}，已確認收到 ${no} 訂金 ${money(num(String(x.c.payAmt||'').replace(/[^\d.]/g,''))||r.deposit)}，謝謝🧡\n麻煩再幫我們填寫訂車表單（新人資料、行程與時間），填完我們就會提供合約：\n${formLink(x)}`);break;
     case 'cfsend':add('cfsend',cfMsg(x));break;
-    case 'cfwait':add('cfwait',`${hi}🤍 婚禮快到了，提醒您幫我們填一下行前確認（聯絡人、地址、出發時間等），方便司機提前準備，謝謝您！\n${cfLink(x)}`);break;
+    case 'cfwait':add('cfwait',`${hi}🧡 婚禮快到了，提醒您幫我們填一下行前確認（聯絡人、地址、出發時間等），方便司機提前準備，謝謝您！\n${cfLink(x)}`);break;
     case 'rev':add('rev',REV_ASK);break;
     case 'revlink':add('revlink',REV_LINK);break}});
   return out}
@@ -2083,7 +2087,7 @@ function renderCf(){const m=cfPendingDays(),d=$('cfDate').value,ds=Object.keys(m
       <div class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn sm" data-cfopen="${esc(x.id)}">開啟訂單</button>${st==='done'?'':`<button class="btn sm pri" data-cfprev="${esc(x.id)}">${st==='wait'?'📤 再傳一次':'📤 傳行前確認'}</button>`}</div></div></div>`}).join(''):`<p class="hint">${d?'這天沒有'+(cfF==='all'?'需要行前確認的車趟':'這個狀態的車趟'):'請選日期'}</p>`)+(pt?`<p class="hint">這天另有 ${pt} 趟同業單，不用行前確認。</p>`:'');
 }
 function cfPreview(list){list=(list||[]).filter(Boolean);if(!list.length)return;cfPrevList=list;
-  const bub=(plat)=>`<div style="background:#fff;border-radius:12px;padding:14px;border:1px solid rgba(0,0,0,.08);max-width:300px"><div style="white-space:pre-line;font-size:.95rem">我們要最終確認行程了唷🤍\n請點選下面按鈕確認行程${plat!=='LINE'?'\n\n為了整合婚禮當天的行程資訊、方便客服即時聯繫，確認頁會請您用 LINE 登入，之後的聯繫也會統一在 LINE（@niceweddingcar）喔！':''}</div><div style="margin-top:10px;background:#8a6d43;color:#fff;text-align:center;border-radius:8px;padding:7px;font-weight:700">確認行程</div></div>`;
+  const bub=(plat)=>`<div style="background:#fff;border-radius:12px;padding:14px;border:1px solid rgba(0,0,0,.08);max-width:300px"><div style="white-space:pre-line;font-size:.95rem">好好新人您好🧡 婚禮快到了，我們要最終確認行程嘍！\n請點選下面按鈕確認行程${plat!=='LINE'?'\n\n為了整合婚禮當天的行程資訊、方便客服即時聯繫，確認頁會請您用 LINE 登入，之後的聯繫也會統一在 LINE（@niceweddingcar）喔！':''}</div><div style="margin-top:10px;background:#8a6d43;color:#fff;text-align:center;border-radius:8px;padding:7px;font-weight:700">確認行程</div></div>`;
   let can=0;
   $('cfPrevBody').innerHTML=list.map(x=>{const c=x.c||{},ch=c.channel||'LINE',nm=c.chatName||'';
     const zc=CFCHK[x.id];const bad=ch==='私人LINE'?'私人 LINE 的客人，機器人傳不到，請按「複製文字訊息」自己貼給客人':!nm?'訂單沒填「客人顯示名稱」，系統找不到要傳給誰':(zc&&zc.ok===false)?(zc.err||'找不到聊天室')+'，請按「複製文字訊息」自己貼給客人':'';if(!bad)can++;
@@ -2365,9 +2369,9 @@ function shopeeTodo(r,today){const D=shopeeDates(r),u=r.date,z=r.st||{};if(z.ref
   if(!z.back){if(today>D.sendBack)return{late:true,t:`提醒客人寄回（應於 ${dShort(D.sendBack)} 前寄出）`,msg:'back'};return null}
   return{late:true,t:'已寄回，記得退押金 $2,000',msg:''}}
 function shopeeMsg(r,k){const D=shopeeDates(r),nm=decoName(r.code),u=dShort(r.date);
-  if(k==='dep')return `您好～${nm} ${u} 的檔期目前可以預約🤍\n麻煩先匯押金 $2,000 幫您保留檔期，匯款後告訴我們後五碼即可。\n押金會在車頭彩寄回、確認無誤後退還。`;
-  if(k==='ord')return `您好～已收到押金 $2,000，${nm} ${u} 的檔期已幫您保留🤍\n麻煩於 ${dShort(D.orderBy)} 前在蝦皮完成下單（下單成功我們才能安排出貨），預計 ${dShort(D.ship)} 出貨、${dShort(D.arrive)} 前送達。\n使用完畢請於 ${dShort(D.sendBack)} 前寄回，收到確認後退還押金，謝謝！`;
-  if(k==='back')return `您好～提醒您，${nm} 使用完畢請於 ${dShort(D.sendBack)} 前寄回喔，收到確認後會立即退還押金 $2,000，謝謝🤍`;
+  if(k==='dep')return `您好～${nm} ${u} 的檔期目前可以預約🧡\n麻煩先匯押金 $2,000 幫您保留檔期，匯款後告訴我們後五碼即可。\n押金會在車頭彩寄回、確認無誤後退還。`;
+  if(k==='ord')return `您好～已收到押金 $2,000，${nm} ${u} 的檔期已幫您保留🧡\n麻煩於 ${dShort(D.orderBy)} 前在蝦皮完成下單（下單成功我們才能安排出貨），預計 ${dShort(D.ship)} 出貨、${dShort(D.arrive)} 前送達。\n使用完畢請於 ${dShort(D.sendBack)} 前寄回，收到確認後退還押金，謝謝！`;
+  if(k==='back')return `您好～提醒您，${nm} 使用完畢請於 ${dShort(D.sendBack)} 前寄回喔，收到確認後會立即退還押金 $2,000，謝謝🧡`;
   return ''}
 function shopeeCtl(r,today){const z=r.st||{},td=shopeeTodo(r,today),D=shopeeDates(r);
   return `<div style="width:100%;font-size:0.867rem;margin-top:6px;line-height:1.7"><div>下單期限 ${dShort(D.orderBy)}｜出貨 ${dShort(D.ship)}｜送達 ${dShort(D.arrive)} 前｜寄回 ${dShort(D.sendBack)} 前</div>`+
