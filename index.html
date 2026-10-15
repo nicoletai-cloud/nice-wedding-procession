@@ -494,6 +494,7 @@ nav.tabs button{scroll-snap-align:start}
         <div id="fleetCall" class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2,#faf5ee)" hidden></div>
         <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 8px"><span class="hint" style="margin:0">從司機名單選：</span><select id="drvMode" style="width:auto"><option value="mc">車款＋顏色相符</option><option value="m">只看車款</option><option value="all">全部司機</option></select><select id="drvArea" style="width:auto" title="依司機居住地區篩選"><option value="">全部地區</option><option value="北部">住北部（基北北桃竹宜）</option><option value="中部">住中部（苗中彰投雲）</option><option value="南部">住南部（嘉南高屏）</option><option value="東部">住東部（花東）</option></select><input id="drvQ" type="search" placeholder="🔍 搜尋司機：姓名／車牌／電話" style="width:230px" autocomplete="off"><button class="btn sm" id="btnDrvReload">更新司機名單</button><button class="btn sm" id="btnDrvAdd">＋新增司機</button><span class="hint" style="margin:0" id="drvSt"></span></div>
         <div class="row" style="gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 8px" id="zodBar"><span class="hint" style="margin:0">避開生肖（點選後不列出）：</span><button class="btn sm" data-zod="鼠" aria-pressed="false" style="padding:2px 8px">鼠</button><button class="btn sm" data-zod="牛" aria-pressed="false" style="padding:2px 8px">牛</button><button class="btn sm" data-zod="虎" aria-pressed="false" style="padding:2px 8px">虎</button><button class="btn sm" data-zod="兔" aria-pressed="false" style="padding:2px 8px">兔</button><button class="btn sm" data-zod="龍" aria-pressed="false" style="padding:2px 8px">龍</button><button class="btn sm" data-zod="蛇" aria-pressed="false" style="padding:2px 8px">蛇</button><button class="btn sm" data-zod="馬" aria-pressed="false" style="padding:2px 8px">馬</button><button class="btn sm" data-zod="羊" aria-pressed="false" style="padding:2px 8px">羊</button><button class="btn sm" data-zod="猴" aria-pressed="false" style="padding:2px 8px">猴</button><button class="btn sm" data-zod="雞" aria-pressed="false" style="padding:2px 8px">雞</button><button class="btn sm" data-zod="狗" aria-pressed="false" style="padding:2px 8px">狗</button><button class="btn sm" data-zod="豬" aria-pressed="false" style="padding:2px 8px">豬</button><span class="hint" style="margin:0" id="zodSt"></span></div>
+        <div class="row" style="gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 8px" id="frBar"><span class="hint" style="margin:0">親友車加入車隊（填車序）：</span><input id="frIn" placeholder="例：1, 3　或　1 前導車, 3 伴娘車" style="flex:1;min-width:220px;max-width:360px"><span class="hint" style="margin:0" id="frSt"></span></div>
         <div id="drvAddBox" hidden style="border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 12px;background:var(--surface-2)">
           <div class="hint" style="margin:0 0 6px">把司機傳來的資料整段貼上（LINE 訊息、表單內容都可以），按「自動辨識」後確認欄位，再存到司機總表。</div>
           <textarea id="drvPaste" rows="4" style="width:100%" placeholder="例：林小明 0912345678 Model X 白色 6人座 REA-1234 LINE: abc123"></textarea>
@@ -1236,10 +1237,29 @@ function tipsC(x,lang){const mc=(x.fleet||[]).find(f=>f.role==='主禮車');cons
   '車両責任者が前日にご連絡します。ルートのご指定がある場合は責任者と事前にご確認いただくか、道に詳しいご親族に先導車へご同乗いただけます。各車に無線機を装備しています。'];
  return ({zh,en,ja}[lang]).filter(Boolean)}
 const TIPS_D=['前一天確實清潔車輛及充電、遵守服裝規定、調整座椅角度、注意禮貌積極協助新人及負責人完成任務、抽菸請迴避新人。','請事先將所有行程定點設定於導航中，點選上列地址連結後可跳轉至 Google Map。','安全第一：車隊行駛跟車中務必以安全為第一考量，若車隊中斷可在定點集合後再出發。','保護車輛：為避免損傷車輛，請主動協助新人開關車門及行李箱，施放鞭炮建議客人下車施放，待鞭炮結束後車隊再行駛。','遵守禮俗：迎娶中禮車不能倒車、迴轉，狹窄巷弄請特別留意注意轉彎角度。','任務當天起床、出發、到點請在群組回報。','車隊出發、任務結束請負責人在群組回報。','任務結束請確實查看車上是否有客人遺留物品並交還對講機後方可離開。'];
+/* 2026-10-15 親友車加入車隊：x.friends=[{pos,role}]，排進用車確認單／司機派車單的車序；行前確認填了會自動帶入 */
+const ZH_N='一二三四五六七八九十';
+function frDefRole(p){return p===1?'前導車':`第${ZH_N[p-1]||p}台`}
+function frList(x){return (x.friends||[]).filter(z=>+z.pos>0).map(z=>({pos:+z.pos,role:String(z.role||'').trim()})).sort((a,b)=>a.pos-b.pos)}
+function frText(x){return frList(x).map(z=>z.pos+(z.role?' '+z.role:'')).join(', ')}
+function frParse(t){const out=[],seen={};String(t||'').split(/[,，、;；\n]+/).forEach(q=>{const m=q.trim().match(/^第?\s*(\d{1,2})\s*(?:車|台)?\s*(.*)$/);if(!m)return;const p=+m[1];if(!p||seen[p])return;seen[p]=1;out.push({pos:p,role:m[2].trim()})});return out.sort((a,b)=>a.pos-b.pos)}
+function fleetWithFriends(x){const fr=frList(x),fl=x.fleet||[],res=[];let k=0;
+  for(let p=1;k<fl.length||fr.some(z=>z.pos>=p);p++){const z=fr.find(q=>q.pos===p);if(z)res.push({friend:true,pos:p,role:z.role||frDefRole(p)});else if(k<fl.length)res.push(fl[k++]);}
+  return res}
+function renderFr(){const el=$('frIn');if(!el||!o)return;if(document.activeElement!==el)el.value=frText(o);const n=frList(o).length;$('frSt').textContent=n?`共 ${n} 台，會排進用車確認單和司機派車單`:''}
+document.addEventListener('change',e=>{if(!e.target||e.target.id!=='frIn'||!o)return;o.friends=frParse(e.target.value);o.friendsManual=true;o.sample=false;save();renderFr();try{renderAll()}catch(_){}toast(o.friends.length?`已設定親友車：第 ${o.friends.map(z=>z.pos).join('、')} 車`:'已清除親友車')});
+/* 2026-10-15 忌生肖：訂單有勾避開生肖，或合約內容提到忌／生肖，確認單和派車單就在司機後面列「肖：○」 */
+function zodNeed(x){if((x.avoidZ||[]).length)return true;const c=x.c||{};return /忌|生肖|屬相/.test(Object.keys(c).map(k=>typeof c[k]==='string'?c[k]:'').join(' ')+' '+(x.flagNote||'')+' '+(x.note||''))}
+function drvOf(f){const pn=v=>String(v||'').replace(/\D/g,'').slice(-9);if(!f||!f.driver||!(typeof DRV!=='undefined'&&DRV.length))return null;return DRV.find(d=>f.phone&&pn(d.phone)&&pn(d.phone)===pn(f.phone))||DRV.find(d=>d.name===f.driver&&(!f.plate||d.plate===f.plate))||DRV.find(d=>d.name===f.driver)||null}
+function zodOfF(f){return f.zod||zodOf(drvOf(f))}
+/* 2026-10-15 司機派車單：緊急聯絡人關係＋電話（司機在禮車助手自己填的） */
+function emgLine(f){if(!f.driver)return '';const d=drvOf(f)||{};const ph=fixTel(d.emPhone)||(/^0\d{8,9}$/.test(fixTel(f.emg))?fixTel(f.emg):'');const rel=(d.emRel||f.emgRel||'').trim();
+  if(ph)return `緊急聯絡人${rel?`（${rel}）`:''}：${ph}`;return f.emg?`緊急聯絡人：${f.emg}`:''}
 function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   const cname=contactName(x),crole=c.role==='其他'?((c.rel||'').trim()?`(${c.rel.trim()})`:''):`(${lang==='en'?(c.role==='新郎'?'Groom':'Bride'):lang==='ja'?(c.role==='新郎'?'新郎':'新婦'):c.role})`;
   const p=dparts(x.date);
-  const fleet=x.fleet.map(f=>({role:roleName(f.role,lang),plate:f.plate,driver:(f.driver||'')+(f.lead?' '+t.lead:''),car:(f.up||'').trim()&&f.up.trim()!==MNAME[f.m]?`${f.up.trim()}(升等)`:MNAME[f.m],spec:`${colorName(f.color||'',lang)} ${t.seats(f.seats||S.seats[f.m])}`.trim(),phone:ph(f.phone)}));
+  const zn=lang==='zh'&&zodNeed(x);
+  const fleet=fleetWithFriends(x).map(f=>f.friend?{friend:true,role:lang==='zh'?f.role:roleName('親友車',lang),plate:roleName('親友車',lang),driver:'',car:'',spec:'',phone:''}:({role:roleName(f.role,lang),plate:f.plate,emg:who==='drv'?emgLine(f):'',driver:(f.driver||'')+(f.lead?' '+t.lead:'')+(zn&&f.driver?(zodOfF(f)?` / 肖：${zodOfF(f)}`:(who==='drv'?' / 肖：未填':'')):''),car:(f.up||'').trim()&&f.up.trim()!==MNAME[f.m]?`${f.up.trim()}(升等)`:MNAME[f.m],spec:`${colorName(f.color||'',lang)} ${t.seats(f.seats||S.seats[f.m])}`.trim(),phone:ph(f.phone)}));
   const pts=points(x).filter(pt=>pt.addr).map(pt=>({k:pt.k,title:pt.k==='A'?t.meet:pt.k==='B'?t.wed:t.other,addr:noFloor(pt.addr),label:pt.label,map:pt.map}));
   const flow=x.flow.filter(f=>f.t||f.seg).map(f=>`${f.e?`${f.t}-${f.e}`:ap(f.t)} ${f.who?f.who+' ':''}${f.seg}`.trim());
   let pay=[];
@@ -1264,7 +1284,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
     tips:who==='cust'?tipsC(x,lang):TIPS_D,tipsTitle:who==='cust'?t.tipsC:t.tipsD,pay,t}}
 function memoText(m,maps){const t=m.t,L2=[];
   L2.push(`好好禮車           ${t.orderNo}:${m.no}`,`Wedding Day ${m.wd}`,'———————',m.dateLine,`${t.gather}：${m.gather}`,`${t.contact}：${m.contact}`,`${t.boss}：${m.boss}`,'',`${t.plan}`,m.plan,m.flags,'');
-  m.fleet.forEach(f=>L2.push(`${f.role}｜${f.plate||'—'}｜${f.driver||'—'}｜${f.car} ${f.spec}｜${f.phone||'—'}`));
+  m.fleet.forEach(f=>L2.push(f.friend?`${f.role}｜${f.plate}`:`${f.role}｜${f.plate||'—'}｜${f.driver||'—'}｜${f.car} ${f.spec}｜${f.phone||'—'}${f.emg?'｜'+f.emg:''}`));
   L2.push('');m.pts.forEach(p=>{L2.push(`${p.k}. ${p.title}`,p.addr+(p.label?`\n(${p.label})`:'')+(p.map?`\n導航定位：${p.map}`:''));if(maps)L2.push(mapUrl(p.addr))});
   if(m.route)L2.push(`${t.route}：${m.route}`);
   L2.push('',`${t.flow}：`,m.path,...m.flow,'',m.tipsTitle);
@@ -1277,7 +1297,7 @@ function memoHTML(m,maps){const t=m.t;
   <div>${esc(t.gather)}：${esc(m.gather)}</div><div>${esc(t.contact)}：${esc(m.contact)}</div><div>${esc(t.boss)}：${esc(m.boss)}</div>
   <h4>${esc(t.plan)}</h4><div>${esc(m.plan)}</div><div>${esc(m.flags)}</div>
   <div class="tbl" style="margin-top:10px"><table><thead><tr><th>${esc(t.order)}</th><th>${esc(t.plate)}</th><th>${esc(t.driver)}</th><th>${esc(t.car)}</th><th>${esc(t.phone)}</th></tr></thead><tbody>
-  ${m.fleet.map(f=>`<tr><td>${esc(f.role)}</td><td>${esc(f.plate)}</td><td>${esc(f.driver)}</td><td>${esc(f.car)}<br><small>${esc(f.spec)}</small></td><td>${esc(f.phone)}</td></tr>`).join('')}</tbody></table></div>
+  ${m.fleet.map(f=>f.friend?`<tr><td>${esc(f.role)}</td><td colspan="4">${esc(f.plate)}</td></tr>`:`<tr><td>${esc(f.role)}</td><td>${esc(f.plate)}</td><td>${esc(f.driver)}</td><td>${esc(f.car)}<br><small>${esc(f.spec)}</small></td><td>${esc(f.phone)}${f.emg?`<br><small>${esc(f.emg)}</small>`:''}</td></tr>`).join('')}</tbody></table></div>
   <div class="tbl"><table style="margin-top:10px"><tbody>${m.pts.map(p=>`<tr><th style="width:130px">${esc(p.k)}. ${esc(p.title)}</th><td>${maps?`<a href="${esc(mapUrl(p.addr))}" target="_blank" rel="noopener">${esc(p.addr)}</a>`:esc(p.addr)}${p.label?`<br>(${esc(p.label)})`:''}${p.map?`<br>導航定位：<a href="${esc(p.map)}" target="_blank" rel="noopener">${esc(p.map)}</a>`:''}</td></tr>`).join('')}
   ${m.route?`<tr><th>${esc(t.route)}</th><td>${esc(m.route)}</td></tr>`:''}
   <tr><th>${esc(t.flow)}</th><td><b>${esc(m.path)}</b><br>${m.flow.map(esc).join('<br>')}</td></tr></tbody></table></div>
@@ -1518,7 +1538,8 @@ function applyLoop(f){const c=o.c,diffs=['行程：單點繞圈'],warn=[];o.samp
   return{diffs,warn}}
 function cfAuto(){const ch=[];Object.values(DB.orders).forEach(x=>{if(x.sample)return;const cf=CONFIRMS[normNo(orderNo(x))];if(!cf||!cf.f||!(+cf.at>(+x.cfApplyAt||0)))return;
   const keep=o;o=x;try{const f=cf.f,r=f.mode==='loop'?applyLoop(f):applyConfirm({name:f.name,phone:f.phone,meet:f.meet,wed:f.wed,start:f.start,combo:f.combo,cane:f.cane,back:f.back,restYN:f.restYN,restT:f.restT,restAddr:f.restAddr});
-    if(f.friend){const ft=f.friend==='有'?`${f.friendN} 台，排第 ${String(f.friendPos||'').split(',').join('、')} 車`:f.friend;if(f.friend==='有')r.warn.unshift(`親友車加入車隊：${ft}，記得排進車隊車序。`);else r.diffs.push(`親友車加入車隊：${ft}`)}   // 2026-10-15 行前確認新增親友車題目
+    if(f.friend){const ft=f.friend==='有'?`${f.friendN} 台，排第 ${String(f.friendPos||'').split(',').join('、')} 車`:f.friend;if(f.friend==='有')r.warn.unshift(`親友車加入車隊：${ft}，已自動排進用車確認單和司機派車單，請到「車隊」確認車序。`);else r.diffs.push(`親友車加入車隊：${ft}`)}   // 2026-10-15 行前確認新增親友車題目
+    if(!x.friendsManual&&f.friend){x.friends=f.friend==='有'?String(f.friendPos||'').split(',').map(v=>({pos:+v,role:''})).filter(z=>z.pos>0):[]}
     x.cfLast={at:+cf.at,diffs:r.diffs,warn:r.warn,note:f.note||'',files:f.files||[],uid:!!cf.uid,who:cf.who||'',lname:cf.lname||'',cmp:cf.cmp||null};x.cfApplyAt=+cf.at;if(!x.cfDoneAt)x.cfDoneAt=+cf.at;if(!x.cfSentAt)x.cfSentAt=+cf.at;x.updated=Date.now();DB.orders[x.id]=x;ch.push(x)}catch(e){console.warn('行前確認帶入失敗',orderNo(x),e)}finally{o=keep}});
   return ch}
 async function cfPush(list){if(!S.driveUrl||!S.driveKey){toast('還沒設定機器人連線');return}
@@ -1669,7 +1690,7 @@ function renderSum(){const r=calc(o);const rows=[];
     <div class="sub"><span>司機車資合計</span><span>${r.dok?money(r.dsum):'未設定'}</span></div>`;
   $('bundleChip').innerHTML=r.b?`<span class="chip ok">已套用 ${esc(r.b.name)}方案 ${money(r.b.price)}</span>`:(o.hours<3?`<span class="chip">${hrsLabel(o.hours)}不適用優惠方案</span>`:'')+r.miss.map(t=>`<span class="chip" style="color:var(--warn)">${esc(t)}</span>`).join('');
   $('payBox').innerHTML=o.fleet.map(f=>{const v=payOf(f);return `<div><span>${esc(f.role)}・${MNAME[f.m]}</span><span>${v==null?'未設定':money(v)}</span></div>`}).join('')+`<div class="tot"><span>合計</span><span>${r.dok?money(r.dsum):'—'}</span></div>`}
-function renderFleet(){$('fleetBody').innerHTML=o.fleet.map((f,i)=>{const dp=driverBasePay(f.m,o);return `<tr><td><b>${MNAME[f.m]}</b></td>
+function renderFleet(){try{renderFr()}catch(_){}$('fleetBody').innerHTML=o.fleet.map((f,i)=>{const dp=driverBasePay(f.m,o);return `<tr><td><b>${MNAME[f.m]}</b></td>
   <td><select data-fl="${i}.role" id="fl_r${i}">${ROLES.map(r=>`<option${r===f.role?' selected':''}>${r}</option>`).join('')}</select></td>
   <td><input data-fl="${i}.plate" id="fl_p${i}" value="${esc(f.plate)}" placeholder="ABC-1234"></td>
   <td><input data-fl="${i}.driver" id="fl_d${i}" value="${esc(f.driver)}"><div style="display:flex;gap:4px;margin-top:4px;align-items:center"><select class="drvPick" data-dp="${i}" style="font-size:0.8rem;max-width:150px">${drvOptions(f)}</select>${(f.driver||f.phone||f.plate)?`<button class="btn sm" data-drvclr="${i}" title="移除這台的司機、電話、車號、緊急聯絡" style="padding:2px 7px;color:#A0453A">✕ 移除</button>`:''}</div></td>
@@ -2472,9 +2493,9 @@ document.addEventListener('change',e=>{const t=e.target;if(t.id==='drvMode'){ren
   if(t.dataset&&t.dataset.fl&&/\.up$/.test(t.dataset.fl)){setTimeout(renderFleet,0);return}
   if(t.id==='drvArea'){try{localStorage.setItem('nwcw_drvArea',t.value)}catch(_){}renderFleet();return}
   if(t.dataset&&t.dataset.fl&&/\.(phone|emg)$/.test(t.dataset.fl)){const v=fixTel(t.value);if(v!==t.value){t.value=v;t.dispatchEvent(new Event('input',{bubbles:true}))}return}
-  if(t.classList&&t.classList.contains('drvPick')&&t.value==='__clear'){const f=o.fleet[+t.dataset.dp];if(f){const nm=f.driver;f.driver='';f.phone='';f.plate='';f.emg='';o.sample=false;save();renderFleet();renderAll();toast(`已移除 ${nm}`)}return}
+  if(t.classList&&t.classList.contains('drvPick')&&t.value==='__clear'){const f=o.fleet[+t.dataset.dp];if(f){const nm=f.driver;f.driver='';f.phone='';f.plate='';f.emg='';f.emgRel='';f.zod='';o.sample=false;save();renderFleet();renderAll();toast(`已移除 ${nm}`)}return}
   if(t.classList&&t.classList.contains('drvPick')&&t.value){const [nm,pl]=t.value.split('|');const d=DRV.find(z=>z.name===nm&&z.plate===pl);const f=o.fleet[+t.dataset.dp];if(!d||!f)return;
-    f.driver=d.name;f.phone=fixTel(d.phone)||f.phone;f.plate=d.plate||f.plate;if(!f.emg&&d.emg)f.emg=fixTel(d.emg);if(+d.seats)f.seats=+d.seats;o.sample=false;save();renderFleet();renderAll();toast(`已填入 ${d.name}`)}});
+    f.driver=d.name;f.phone=fixTel(d.phone)||f.phone;f.plate=d.plate||f.plate;if(d.emPhone){f.emg=fixTel(d.emPhone);f.emgRel=d.emRel||''}else if(!f.emg&&d.emg)f.emg=fixTel(d.emg);f.zod=zodOf(d);if(+d.seats)f.seats=+d.seats;o.sample=false;save();renderFleet();renderAll();toast(`已填入 ${d.name}`)}});
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('#btnDrvReload');if(t)loadDrivers(true)});
 /* 2026-10-15 司機搜尋：姓名／車牌／電話（有輸入時不套用車款、地區、生肖篩選） */
 let drvQT=0;document.addEventListener('input',e=>{if(e.target&&e.target.id==='drvQ'){clearTimeout(drvQT);drvQT=setTimeout(()=>{renderFleet();const sel=document.querySelector('.drvPick');},250)}});
@@ -2650,7 +2671,7 @@ const ZOD='鼠牛虎兔龍蛇馬羊猴雞狗豬';function zodOf(d){const m=Strin
 function zodSync(){const av=o.avoidZ||[];document.querySelectorAll('[data-zod]').forEach(b=>{const on=av.includes(b.dataset.zod);b.setAttribute('aria-pressed',on);b.classList.toggle('pri',on);b.style.textDecoration=on?'line-through':''});const st=$('zodSt');if(st)st.textContent=av.length?`已避開 ${av.join('、')}（沒填生肖的司機仍會列出）`:''}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-zod]');if(!b)return;const z=b.dataset.zod,av=(o.avoidZ||[]).slice(),i=av.indexOf(z);if(i>=0)av.splice(i,1);else av.push(z);o.avoidZ=av;save();renderFleet()});
 /* 換司機：清除這台 */
-document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-drvclr]');if(!b)return;const f=o.fleet[+b.dataset.drvclr];if(!f)return;const nm=f.driver;f.driver='';f.phone='';f.plate='';f.emg='';o.sample=false;save();renderFleet();renderAll();toast(nm?`已清除 ${nm}`:'已清除')});
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-drvclr]');if(!b)return;const f=o.fleet[+b.dataset.drvclr];if(!f)return;const nm=f.driver;f.driver='';f.phone='';f.plate='';f.emg='';f.emgRel='';f.zod='';o.sample=false;save();renderFleet();renderAll();toast(nm?`已清除 ${nm}`:'已清除')});
 /* 新增司機：貼上自動辨識 → 存到司機總表 */
 const DA_F=['name','zodiac','phone','lineId','plate','brand','model','color','seats','emg','city','area','note'];
 function parseDriver(raw){const t=String(raw||'').replace(/\r/g,'').replace(/[：]/g,':').replace(/[（]/g,'(').replace(/[）]/g,')'),r={};
