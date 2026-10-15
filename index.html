@@ -270,7 +270,7 @@ nav.tabs button{scroll-snap-align:start}
           <h3>用車資訊</h3>
           <div class="fields">
             <label class="f">客人顯示名稱（LINE / FB / IG）<input id="q_chat" data-b="c.chatName" placeholder="對話裡的名字"></label>
-            <label class="f">聯絡管道<select id="q_ch" data-b="c.channel"><option value="LINE">官方 LINE</option><option value="私人LINE">私人 LINE（我的個人帳號）</option><option>FB</option><option>IG</option></select></label>
+            <label class="f">聯絡管道<select id="q_ch" data-b="c.channel"><option value="LINE">官方 LINE</option><option value="私人LINE">私人 LINE（我的個人帳號）</option><option>FB</option><option>IG</option><option value="其他">私客其他管道（電話、簡訊等）</option></select></label>
             <label class="f wide">官方 LINE 聊天室網址 <small class="hint" style="margin:0">機器人比對不到客人時，到 chat.line.biz 打開這位客人的聊天室，把網址貼上</small><input id="q_linechat" data-b="c.lineChat" placeholder="https://chat.line.biz/…/chat/U…" autocomplete="off"></label>
             <div class="f" style="grid-column:1/-1"><span>同一組新人的其他對話 <small class="hint" style="margin:0">FB／IG／另一個 LINE，機器人會認成同一組客人</small></span><div id="q_chats"></div><div><button class="btn sm" id="btnChatAdd" type="button">＋ 加對話</button></div></div>
             <label class="f">用車日期<input type="date" id="q_date" data-b="date"></label>
@@ -1072,7 +1072,10 @@ function driverOtText(m,x){const d=S.dp[m]||{},h=+x.hours;if(h===0)return `${MAB
 function vendorOf(x){const v=(x.src&&x.src.vendor||'').trim();return v?(S.vendors||[]).find(d=>d.name===v)||{name:v,rate:5}:null}
 function vLabel(x){const v=(x.src&&x.src.vendor||'').trim();if(!v)return '';const r=(x.src.ref||'').trim();return v+(r&&r!==v?' '+r:'')}
 /* 訂單下拉選單：訂單編號-(來源)下訂人名稱-新郎&新娘(婚顧)-訂單狀態 */
-function selLabel(x){const c=x.c||{},ch=x.partner?'同業 '+(x.partner.co||''):({FB:'fb',IG:'ig','私人LINE':'私人LINE'}[c.channel]||'LINE'),who=x.partner?'':(c.chatName||'');
+/* 2026-10-15 私客：私人 LINE＋其他管道（電話、簡訊等），機器人都傳不到 */
+function isPrivCh(ch){return ch==='私人LINE'||ch==='其他'}
+function chName(ch){return ch==='其他'?'私客其他管道':'私人 LINE'}
+function selLabel(x){const c=x.c||{},ch=x.partner?'同業 '+(x.partner.co||''):({FB:'fb',IG:'ig','私人LINE':'私人LINE','其他':'私客其他'}[c.channel]||'LINE'),who=x.partner?'':(c.chatName||'');
   const cp=[c.groom,c.bride].filter(Boolean).join('&'),v=vLabel(x),st=x.sample?'範例':STAGE_LABEL[stageOf(x)]||'';
   return [orderNo(x),'('+ch+')'+who,cp+(v?`(${v})`:''),st].filter(t=>t&&t!=='()').join('-')}
 function coupleName(x){const c=[x.c.groom,x.c.bride].filter(Boolean).join('&'),v=vLabel(x);return c+(v?`(${v})`:'')}
@@ -1517,7 +1520,7 @@ function cfKey(id){const h=t=>{let v=0x811c9dc5;for(let i=0;i<t.length;i++){v^=t
 function cfLink(x){const q='?no='+encodeURIComponent(orderNo(x))+'&k='+cfKey(x.id);return CF_LIFF?'https://liff.line.me/'+CF_LIFF+q:'https://love.niceweddingcar.com/wed-confirm'+q}
 function cfMsg(x){const c=x.c||{},lk=cfLink(x),body=`🧡 婚禮快到了，我們要最終確認行程嘍！\n請點下面連結，確認當天的聯絡人、地址和時間（已先帶入您之前填的資料，有變動直接修改就好）👇\n${lk}`;
   /* 2026-10-15 婚顧私人 LINE 或婚顧代訂：開頭加訂單編號＋新人，稱呼「婚顧窗口 老師」；行程表改由確認頁上傳，不再另外提醒 */
-  if(c.channel==='私人LINE'||(x.src||{}).mode==='代訂'){const ag=String((x.src||{}).agent||'').trim()||rmHi(x).replace(/您好$/,''),cp=[c.groom,c.bride].filter(Boolean).join(' & ');
+  if(isPrivCh(c.channel)||(x.src||{}).mode==='代訂'){const ag=String((x.src||{}).agent||'').trim()||rmHi(x).replace(/您好$/,''),cp=[c.groom,c.bride].filter(Boolean).join(' & ');
     return `訂單編號：${orderNo(x)}${cp?'｜'+cp:''}\n${ag?ag+' 老師':''}您好，${body}\n\n（這個連結可以轉給新人填寫，也可以由您代填；開始填寫時選擇身分即可）`}
   return `好好新人您好${body}`}   // 2026-10-15 官方帳號／FB／IG 傳給新人：不確定是新郎或新娘，統一稱呼「好好新人」
 // 單點繞圈：只有集合地點，第一圈（＋第二圈）時間；每圈抓 30 分鐘
@@ -1958,7 +1961,7 @@ function revOf(x){if(REV===null)REV=store('nwcw_rev')||{};return REV[x.id]||{}}
 function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];const now=Date.now(),d=daysTo(x),T=[],ago=t=>(now-(+t||0))/DAY;
   if(x.quiet&&st!=='done'){const nd=!x.drvDone&&(!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim()));return d!==null&&d<=30&&nd?[{k:'nodrv',late:true,why:'一個月前安排車子'}]:[]}
   if(x.c&&x.c.photoReq==='要'&&!x.photoSentAt)T.push({k:'photo',late:d!==null&&d<=-3});
-  if(st==='done'){if(d>=-30&&x.paid&&!x.partner){const R=revOf(x),rp=R.reply,auto=x.date>='2026-10-12'&&(x.c&&x.c.channel)!=='私人LINE';if(x.revSkip||R.skip){}else if(rp&&rp.cls!=='pos'){if(!x.revLinkAt)T.push({k:'revcomp',late:true,why:(rp.cls==='neg'?'客人有抱怨':'看不出滿不滿意')+'：「'+String(rp.text||'').slice(0,30)+'」'})}else if(R.ask&&R.ask.ok){}else if(R.ask&&!R.ask.skip&&!x.revAskAt)T.push({k:'rev',late:true,why:'機器人沒發出去：'+R.ask.err});else if(auto&&!R.ask&&d>=-1){}else if(!x.revAskAt)T.push({k:'rev',late:d<=-2});else if(!x.revLinkAt)T.push({k:'revlink',late:false})}if(x.partner&&x.paid&&!x.lost&&d!==null&&d<0&&d>=-60&&x.date>='2026-10-05'&&!x.ptPhotoAt)T.push({k:'ptphoto',late:d<=-2});return T}
+  if(st==='done'){if(d>=-30&&x.paid&&!x.partner){const R=revOf(x),rp=R.reply,auto=x.date>='2026-10-12'&&!isPrivCh(x.c&&x.c.channel);if(x.revSkip||R.skip){}else if(rp&&rp.cls!=='pos'){if(!x.revLinkAt)T.push({k:'revcomp',late:true,why:(rp.cls==='neg'?'客人有抱怨':'看不出滿不滿意')+'：「'+String(rp.text||'').slice(0,30)+'」'})}else if(R.ask&&R.ask.ok){}else if(R.ask&&!R.ask.skip&&!x.revAskAt)T.push({k:'rev',late:true,why:'機器人沒發出去：'+R.ask.err});else if(auto&&!R.ask&&d>=-1){}else if(!x.revAskAt)T.push({k:'rev',late:d<=-2});else if(!x.revLinkAt)T.push({k:'revlink',late:false})}if(x.partner&&x.paid&&!x.lost&&d!==null&&d<0&&d>=-60&&x.date>='2026-10-05'&&!x.ptPhotoAt)T.push({k:'ptphoto',late:d<=-2});return T}
   if(st==='inq'){const nx=x.need&&x.need.next;if(nx&&daysTo({date:nx})>0){}else if(nx&&!(x.followAt>new Date(nx+'T00:00').getTime())){T.push({k:'inq',late:true,why:'約定再聯繫'})}else{const F=followPlan(x);if(F)T.push({k:'inq',late:F.due,why:F.why})}}
   if(st==='unpaid')T.push({k:'unpaid',late:ago(x.orderedAt||x.updated)>=2});
   if(ttPending(x)&&st!=='done')T.push({k:'tt',late:true});
@@ -2071,9 +2074,9 @@ let IB=[],ibF='pending';const ibSel=new Set();
 async function ibCall(body){if(!S.driveUrl||!S.driveKey)throw new Error('未設定同步');const ac=new AbortController(),to=setTimeout(()=>ac.abort(),60000);
   const r=await fetch(S.driveUrl,{signal:ac.signal,method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({token:S.driveKey},body))});const j=await r.json();clearTimeout(to);if(!j.ok)throw new Error(j.error||'失敗');return j.inbox||[]}
 /* 2026-10-14 同一組新人的其他對話（o.c.chats）：FB／IG／另一個 LINE 都連到這張單；收件匣標關聯、機器人認成同一組客人 */
-const CH_OPTS=['LINE','FB','IG','私人LINE'],REL_OPTS=['新郎','新娘','家人','婚顧','其他'];
+const CH_OPTS=['LINE','FB','IG','私人LINE','其他'],REL_OPTS=['新郎','新娘','家人','婚顧','其他'];
 function renderChats(){const el=$('q_chats');if(!el||!o)return;const L=(o.c&&o.c.chats)||[];
-  el.innerHTML=L.map((x,i)=>`<div class="row" style="gap:6px;margin:4px 0;flex-wrap:nowrap"><select data-chi="${i}:ch" style="width:auto">${CH_OPTS.map(v=>`<option value="${v}"${(x.ch||'FB')===v?' selected':''}>${v==='私人LINE'?'私人 LINE':v==='LINE'?'官方 LINE':v}</option>`).join('')}</select><input data-chi="${i}:name" value="${esc(x.name||'')}" placeholder="對話裡的名字" style="flex:1;min-width:0"><select data-chi="${i}:rel" style="width:auto"><option value="">身分</option>${REL_OPTS.map(v=>`<option${x.rel===v?' selected':''}>${v}</option>`).join('')}</select><button class="btn sm" type="button" data-chdel="${i}" title="移除">✕</button></div>`).join('')}
+  el.innerHTML=L.map((x,i)=>`<div class="row" style="gap:6px;margin:4px 0;flex-wrap:nowrap"><select data-chi="${i}:ch" style="width:auto">${CH_OPTS.map(v=>`<option value="${v}"${(x.ch||'FB')===v?' selected':''}>${v==='私人LINE'?'私人 LINE':v==='其他'?'私客其他管道':v==='LINE'?'官方 LINE':v}</option>`).join('')}</select><input data-chi="${i}:name" value="${esc(x.name||'')}" placeholder="對話裡的名字" style="flex:1;min-width:0"><select data-chi="${i}:rel" style="width:auto"><option value="">身分</option>${REL_OPTS.map(v=>`<option${x.rel===v?' selected':''}>${v}</option>`).join('')}</select><button class="btn sm" type="button" data-chdel="${i}" title="移除">✕</button></div>`).join('')}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#btnChatAdd,[data-chdel]');if(!b||!o)return;e.preventDefault();o.c.chats=(o.c.chats||[]).slice();
   if(b.id==='btnChatAdd')o.c.chats.push({ch:'FB',name:'',rel:''});else o.c.chats.splice(+b.dataset.chdel,1);save();renderChats();try{renderInbox()}catch(_){}});
 document.addEventListener('input',e=>{const t=e.target;if(!t||!t.dataset||!t.dataset.chi||!o)return;const[i,k]=t.dataset.chi.split(':'),L=o.c.chats||[];if(!L[+i])return;L[+i][k]=t.value;save()});
@@ -2096,7 +2099,7 @@ let cfF='all',cfPrevList=[];const cfSel=new Set(),CFCHK={};let cfChkBusy='';
 /* 2026-10-15 先到後台比對找不找得到聊天室（不傳送），清單上直接標出傳不到的單 */
 async function cfCheckDay(d,L){const need=L.filter(x=>!CFCHK[x.id]).map(x=>x.id);if(!need.length||cfChkBusy===d||!S.driveUrl||!S.driveKey)return;cfChkBusy=d;
   try{const r=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'cfCheck',ids:need})});const j=await r.json();if(j&&j.ok)(j.res||[]).forEach(z=>{CFCHK[z.id]=z})}catch(e){}cfChkBusy='';if(!$('cfModal').hidden)renderCf()}
-function cfCanSend(x){const z=CFCHK[x.id];return !(z&&z.ok===false)&&(((x.c||{}).channel||'LINE')!=='私人LINE')}
+function cfCanSend(x){const z=CFCHK[x.id];return !(z&&z.ok===false)&&!isPrivCh((x.c||{}).channel)}
 function openCf(d){Object.keys(CFCHK).forEach(k=>delete CFCHK[k]);const ds=Object.keys(cfPendingDays()).sort();$('cfDate').value=d||ds[0]||lgToday();cfF='all';cfSel.clear();$('cfModal').hidden=false;renderCf();cfQApi({action:'cfQueue'}).then(j=>{if(!j||!j.ok)return;const c=cfApplyQ(j.cfq);if(c.length){store('nwcw_orders',DB);try{pushSync()}catch(_){}}if(!$('cfModal').hidden)renderCf()})}
 function cfStOf(x){return x.cfDoneAt?'done':x.cfSentAt?'wait':'new'}
 function renderCf(){const m=cfPendingDays(),d=$('cfDate').value,ds=Object.keys(m).sort().slice(0,8);
@@ -2113,15 +2116,15 @@ function renderCf(){const m=cfPendingDays(),d=$('cfDate').value,ds=Object.keys(m
     const tag=st==='done'?`<span style="color:var(--ok);font-weight:700">✅ 已完成 ${dt(x.cfDoneAt)}</span>`:st==='wait'?`<span style="color:#A0453A;font-weight:700">已傳 ${dt(x.cfSentAt)}，客人還沒送出</span>`:x.cfSchedAt?`<span style="color:#8a6d43;font-weight:700">⏰ 已預約 ${cfSchedLabel(x.cfSchedAt)} 傳送</span> <button class="btn sm" data-cfunsched="${esc(x.id)}">取消預約</button>`:'<span class="hint" style="margin:0">還沒傳</span>';
     const nm=c.chatName||[c.groom,c.bride].filter(Boolean).join('＆')||'未命名';
     const cb=(st==='done'||!cfCanSend(x))?'<span style="display:inline-block;width:22px"></span>':`<input type="checkbox" data-cfsel="${esc(x.id)}" style="width:auto;margin:3px 8px 0 0;flex:none"${cfSel.has(x.id)?' checked':''}>`;
-    return `<div class="card" style="padding:12px;margin-bottom:8px"><div class="row" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><div style="min-width:0;display:flex;align-items:flex-start">${cb}<div style="min-width:0"><b>${esc(tripCode(x))}｜${esc(orderNo(x))}</b>　${esc(nm)}<div class="hint" style="margin:2px 0 0">${(()=>{const z=CFCHK[x.id],pl={line:'官方 LINE',fb:'FB',ig:'IG'};const vd=(x.src&&x.src.vendor)||'';const tg=(c.channel==='私人LINE')?'<b style="color:#A0453A">⚠️ 私人 LINE，只能複製訊息自己傳</b>':!z?'<span>比對聊天室中…</span>':z.ok?`<b style="color:var(--ok)">✅ ${pl[z.plat]||z.plat}</b>${z.warn?` <span style="color:#A0453A">（${esc(z.warn)}）</span>`:''}`:`<b style="color:#A0453A">⚠️ ${esc(z.err||'找不到聊天室')}</b>${(c.channel||'LINE')==='LINE'?'：可到訂單「官方 LINE 聊天室網址」貼上這位客人的聊天室網址，或複製訊息自己傳':'，只能複製訊息自己傳'}`;const cn=String(c.chatName||'').trim(),sr=x.src||{},ag=String(sr.agent||'').trim()||(sr.mode!=='推薦'&&cn&&cn.indexOf(vd)<0&&vd.indexOf(cn)<0?cn:''),vlab=vd?[vd,ag,sr.mode==='推薦'?'推薦（客人自己訂）':sr.mode==='代訂'?'代訂':'訂車'].filter(Boolean).join(' '):'';return tg+(vlab?`　婚顧：${esc(vlab)}`:'')+'　'+esc([c.groom,c.bride].filter(Boolean).join('＆'))})()}</div><div style="margin-top:4px">${tag}${x.cfPushErr?`<div class="hint" style="color:#A0453A;margin:2px 0 0">⚠️ 上次傳送失敗：${esc(x.cfPushErr)}</div>`:''}</div></div></div>
+    return `<div class="card" style="padding:12px;margin-bottom:8px"><div class="row" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><div style="min-width:0;display:flex;align-items:flex-start">${cb}<div style="min-width:0"><b>${esc(tripCode(x))}｜${esc(orderNo(x))}</b>　${esc(nm)}<div class="hint" style="margin:2px 0 0">${(()=>{const z=CFCHK[x.id],pl={line:'官方 LINE',fb:'FB',ig:'IG'};const vd=(x.src&&x.src.vendor)||'';const tg=isPrivCh(c.channel)?'<b style="color:#A0453A">⚠️ '+chName(c.channel)+'，只能複製訊息自己傳</b>':!z?'<span>比對聊天室中…</span>':z.ok?`<b style="color:var(--ok)">✅ ${pl[z.plat]||z.plat}</b>${z.warn?` <span style="color:#A0453A">（${esc(z.warn)}）</span>`:''}`:`<b style="color:#A0453A">⚠️ ${esc(z.err||'找不到聊天室')}</b>${(c.channel||'LINE')==='LINE'?'：可到訂單「官方 LINE 聊天室網址」貼上這位客人的聊天室網址，或複製訊息自己傳':'，只能複製訊息自己傳'}`;const cn=String(c.chatName||'').trim(),sr=x.src||{},ag=String(sr.agent||'').trim()||(sr.mode!=='推薦'&&cn&&cn.indexOf(vd)<0&&vd.indexOf(cn)<0?cn:''),vlab=vd?[vd,ag,sr.mode==='推薦'?'推薦（客人自己訂）':sr.mode==='代訂'?'代訂':'訂車'].filter(Boolean).join(' '):'';return tg+(vlab?`　婚顧：${esc(vlab)}`:'')+'　'+esc([c.groom,c.bride].filter(Boolean).join('＆'))})()}</div><div style="margin-top:4px">${tag}${x.cfPushErr?`<div class="hint" style="color:#A0453A;margin:2px 0 0">⚠️ 上次傳送失敗：${esc(x.cfPushErr)}</div>`:''}</div></div></div>
       <div class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn sm" data-cfopen="${esc(x.id)}">開啟訂單</button>${st==='done'?'':`<button class="btn sm pri" data-cfprev="${esc(x.id)}">${st==='wait'?'📤 再傳一次':'📤 傳行前確認'}</button>`}</div></div></div>`}).join(''):`<p class="hint">${d?'這天沒有'+(cfF==='all'?'需要行前確認的車趟':'這個狀態的車趟'):'請選日期'}</p>`)+(pt?`<p class="hint">這天另有 ${pt} 趟同業單，不用行前確認。</p>`:'');
 }
 function cfPreview(list){list=(list||[]).filter(Boolean);if(!list.length)return;cfPrevList=list;
   const bub=(plat)=>`<div style="background:#fff;border-radius:12px;padding:14px;border:1px solid rgba(0,0,0,.08);max-width:300px"><div style="white-space:pre-line;font-size:.95rem">好好新人您好🧡 婚禮快到了，我們要最終確認行程嘍！\n請點選下面按鈕確認行程${plat!=='LINE'?'\n\n為了整合婚禮當天的行程資訊、方便客服即時聯繫，確認頁會請您用 LINE 登入，之後的聯繫也會統一在 LINE（@niceweddingcar）喔！':''}</div><div style="margin-top:10px;background:#8a6d43;color:#fff;text-align:center;border-radius:8px;padding:7px;font-weight:700">確認行程</div></div>`;
   let can=0;
   $('cfPrevBody').innerHTML=list.map(x=>{const c=x.c||{},ch=c.channel||'LINE',nm=c.chatName||'';
-    const zc=CFCHK[x.id];const bad=ch==='私人LINE'?'私人 LINE 的客人，機器人傳不到，請按「複製文字訊息」自己貼給客人':!nm?'訂單沒填「客人顯示名稱」，系統找不到要傳給誰':(zc&&zc.ok===false)?(zc.err||'找不到聊天室')+'，請按「複製文字訊息」自己貼給客人':'';if(!bad)can++;
-    const via=ch==='FB'?'好好禮車 FB 粉專':ch==='IG'?'好好禮車 IG':ch==='私人LINE'?'私人 LINE':'官方 LINE（@niceweddingcar）';
+    const zc=CFCHK[x.id];const bad=isPrivCh(ch)?chName(ch)+' 的客人，機器人傳不到，請按「複製文字訊息」自己貼給客人':!nm?'訂單沒填「客人顯示名稱」，系統找不到要傳給誰':(zc&&zc.ok===false)?(zc.err||'找不到聊天室')+'，請按「複製文字訊息」自己貼給客人':'';if(!bad)can++;
+    const via=ch==='FB'?'好好禮車 FB 粉專':ch==='IG'?'好好禮車 IG':ch==='私人LINE'?'私人 LINE':ch==='其他'?'私客其他管道':'官方 LINE（@niceweddingcar）';
     return `<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px dashed rgba(0,0,0,.12)"><div style="margin-bottom:6px"><b>傳給：${esc(nm||'（未填）')}</b>　<span class="hint" style="margin:0">${esc(via)}｜${esc(orderNo(x))}</span></div>${bad?`<div class="hint" style="color:#A0453A;margin:0 0 6px">⚠️ ${esc(bad)}</div>`:''}${bad?'':bub(ch)}
       ${!bad&&(ch==='FB'||ch==='IG')?'<div class="hint" style="margin:6px 0 0">FB／IG 規定：客人 24 小時內有傳過訊息才能主動發送。</div>':''}
       <div class="hint" style="margin:6px 0 0;word-break:break-all">確認頁連結：<a href="${esc(cfLink(x))}" target="_blank" rel="noopener">${esc(cfLink(x))}</a></div>
@@ -2141,9 +2144,9 @@ document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.c
   if(b.dataset.cfprev){cfPreview([DB.orders[b.dataset.cfprev]]);return}
   if(b.dataset.cfopen){const x=DB.orders[b.dataset.cfopen];if(x){o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();$('cfModal').hidden=true;$('coupleModal').hidden=false}return}
   if(b.dataset.cfcopy){const x=DB.orders[b.dataset.cfcopy];if(!x)return;clip(cfMsg(x));x.cfSentAt=x.cfSentAt||Date.now();x.updated=Date.now();store('nwcw_orders',DB);try{pushSync()}catch(_){}b.textContent='✅ 已複製，已標記已傳';try{renderAll();renderTodo()}catch(_){}if(!$('cfModal').hidden)renderCf();return}
-  if(b.id==='btnCfPrevSched'){const L=cfPrevList.filter(x=>{const c=x.c||{};return (c.channel||'LINE')!=='私人LINE'&&c.chatName&&cfCanSend(x)});if(!L.length)return;const v=$('cfPrevAt').value,at=v?new Date(v).getTime():0;if(!at||at<Date.now()+60000){toast('預約時間要在現在之後');return}b.disabled=true;b.textContent='預約中…';const ok=await cfSchedule(L,at);b.disabled=false;if(ok){L.forEach(x=>cfSel.delete(x.id));$('cfPrevModal').hidden=true;if(!$('cfModal').hidden)renderCf()}else b.textContent='⏰ 預約傳送';return}
+  if(b.id==='btnCfPrevSched'){const L=cfPrevList.filter(x=>{const c=x.c||{};return !isPrivCh(c.channel)&&c.chatName&&cfCanSend(x)});if(!L.length)return;const v=$('cfPrevAt').value,at=v?new Date(v).getTime():0;if(!at||at<Date.now()+60000){toast('預約時間要在現在之後');return}b.disabled=true;b.textContent='預約中…';const ok=await cfSchedule(L,at);b.disabled=false;if(ok){L.forEach(x=>cfSel.delete(x.id));$('cfPrevModal').hidden=true;if(!$('cfModal').hidden)renderCf()}else b.textContent='⏰ 預約傳送';return}
   if(b.dataset.cfunsched){const x=DB.orders[b.dataset.cfunsched];if(!x)return;b.disabled=true;b.textContent='取消中…';const j=await cfQApi({action:'cfUnschedule',ids:[x.id]});if(j&&j.ok){x.cfSchedAt='';x.updated=Date.now();cfApplyQ(j.cfq);store('nwcw_orders',DB);try{pushSync()}catch(_){}toast('已取消預約')}else{b.disabled=false;b.textContent='取消預約';toast('取消失敗：'+((j&&j.error)||'連不到機器人'))}if(!$('cfModal').hidden)renderCf();return}
-  if(b.id==='btnCfPrevSend'){const L=cfPrevList.filter(x=>{const c=x.c||{};return (c.channel||'LINE')!=='私人LINE'&&c.chatName&&cfCanSend(x)});if(!L.length)return;b.disabled=true;b.textContent='傳送中…';await cfPush(L);L.forEach(x=>cfSel.delete(x.id));$('cfPrevModal').hidden=true;if(!$('cfModal').hidden)renderCf();return}
+  if(b.id==='btnCfPrevSend'){const L=cfPrevList.filter(x=>{const c=x.c||{};return !isPrivCh(c.channel)&&c.chatName&&cfCanSend(x)});if(!L.length)return;b.disabled=true;b.textContent='傳送中…';await cfPush(L);L.forEach(x=>cfSel.delete(x.id));$('cfPrevModal').hidden=true;if(!$('cfModal').hidden)renderCf();return}
 });
 document.addEventListener('change',e=>{const t=e.target;if(!t)return;if(t.id==='cfDate'){cfF='all';cfSel.clear();renderCf();return}if(t.dataset&&t.dataset.cfsel){if(t.checked){if(cfSel.size>=20){t.checked=false;toast('一次最多 20 筆');return}cfSel.add(t.dataset.cfsel)}else cfSel.delete(t.dataset.cfsel);renderCf()}});
 function lgOk(x){return x&&!x.sample&&!x.lost&&!!x.date&&!!(x.paid||x.partner)}
@@ -2721,7 +2724,7 @@ loadInbox();loadSigned();setInterval(()=>{if(document.visibilityState==='visible
 function renderRev(){const el=$('revSt'),cb=$('revSkipCb');if(!el||!cb||!o)return;const R=revOf(o),c=o.c||{},ch=c.channel||'LINE',t=v=>v?new Date(v).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'';
   cb.checked=!!(o.revSkip||R.skip);const L=[];
   if(o.partner){el.textContent='同業單不詢問評價。';return}
-  if(ch==='私人LINE'){L.push('⚠️ 私人 LINE 的客人，機器人傳不到，需要你自己傳。')}
+  if(isPrivCh(ch)){L.push('⚠️ '+chName(ch)+' 的客人，機器人傳不到，需要你自己傳。')}
   else{
     L.push('排程：前一天 21:00 信心喊話；用車當天 18:00 先問你有沒有缺失；'+(ch==='FB'||ch==='IG'?ch+' 客人當天 21:00':'LINE 客人隔天 12:00')+' 詢問評價。');
     if(o.date&&o.date<'2026-10-12')L.push('（10/11 以前的單不會自動發）');
