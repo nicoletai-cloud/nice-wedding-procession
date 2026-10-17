@@ -1618,20 +1618,20 @@ function cfArea(a){const s=String(a||'').replace(/臺/g,'台').replace(/^\s*\d{3
 function cfMapUrl(q,pid){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q)+(pid?'&query_place_id='+encodeURIComponent(pid):'')}
 async function cfGeoRun(){if(cfGeoBusy||!S.driveUrl||!S.driveKey)return;const td=new Date().toISOString().slice(0,10);
   const L=Object.values(DB.orders).filter(x=>x&&!x.sample&&x.cfLast&&x.date>=td&&(+x.cfGeoAt||0)<(+x.cfApplyAt||0));if(!L.length)return;cfGeoBusy=true;let n=0;
-  try{for(const x of L){const c=x.c||{},todo=CF_GEO_F.filter(([k])=>{const v=String(c[k]||'').trim();return v&&!cfHasNo(v)});x.cfGeoAt=Date.now();
+  try{for(const x of L){const c=x.c||{},todo=CF_GEO_F.filter(([k])=>{const v=String(c[k]||'').trim();return v&&!cfHasNo(v)&&!/^(待定|未定|再確認|同上|無|沒有|不需要|不用|-|—)$/.test(v)});x.cfGeoAt=Date.now();
     if(todo.length){const ctx=CF_GEO_F.map(([k])=>c[k]).concat(Object.values(x.cfPrev||{})).filter(cfHasNo).map(countyOf).filter(Boolean)[0]||'',qs=[];
       todo.forEach(([k])=>{const v=String(c[k]).trim();qs.push({k:k+'0',q:v});if(ctx&&v.indexOf(ctx)<0)qs.push({k:k+'1',q:ctx+' '+v})});
       const j=await cfQApi({action:'geo',qs});if(!j||!j.ok){x.cfGeoAt=0;continue}
       const warn=x.cfLast.warn=x.cfLast.warn||[],diffs=x.cfLast.diffs=x.cfLast.diffs||[];
       todo.forEach(([k,lb])=>{const v=String(c[k]).trim(),prev=String((x.cfPrev||{})[k]||'').trim(),R=(j.res[k+'0']||[]).concat(j.res[k+'1']||[]);
-        const cand=[];R.forEach(r=>{if(r&&r.addr&&!cand.some(z=>z.addr===r.addr))cand.push(r)});const poi=cand.filter(r=>r.poi),use=poi.length?poi:cand;
+        const cand=[];R.forEach(r=>{if(r&&r.addr&&!cand.some(z=>z.addr===r.addr))cand.push(r)});const use=cand.filter(r=>r.poi||cfHasNo(r.addr));
         const setL=()=>{const b=String(c[k+'L']||'').split('・')[0];if(String(c[k+'L']||'').indexOf(v)<0)c[k+'L']=(b?b+'・':'')+v};
         if(cfHasNo(prev)){c[k]=prev;setL();if(use.some(r=>cfArea(r.addr)===cfArea(prev))){diffs.push(`📍 ${lb}：客人填「${v}」，Google 核對跟合約地址同一區，沿用合約地址「${prev}」`)}
           else warn.push(`📍 ${lb}：客人只填「${v}」，已先沿用合約地址「${prev}」${use.length?`；但 Google 查到「${use[0].addr}」，不在同一區，請跟客人確認是哪裡`:'；Google 查不到這個名稱，請跟客人確認'}`);return}
         const addrs=[...new Set(use.map(r=>cfArea(r.addr)+'|'+r.addr))];
-        if(use.length&&addrs.length===1&&(!ctx||countyOf(use[0].addr)===ctx)){const r=use[0];c[k]=r.addr;setL();c[k+'Map']=cfMapUrl(v,r.pid);diffs.push(`📍 ${lb}：客人只填「${v}」，合約也沒有地址，已用 Google 核對帶入「${r.addr}」（含導航連結）`)}
+        if(use.length&&addrs.length===1){const r=use[0];c[k]=r.addr;setL();c[k+'Map']=cfMapUrl(v,r.pid);(ctx&&countyOf(r.addr)!==ctx?warn:diffs).push(`📍 ${lb}：客人只填「${v}」，合約也沒有地址，已用 Google 核對帶入「${r.addr}」（含導航連結）`+(ctx&&countyOf(r.addr)!==ctx?`；跟其他地點（${ctx}）不同縣市，請再確認一次`:''))}
         else if(ctx&&use.filter(r=>countyOf(r.addr)===ctx).length===1){const r=use.find(r=>countyOf(r.addr)===ctx);c[k]=r.addr;setL();c[k+'Map']=cfMapUrl(v,r.pid);warn.push(`📍 ${lb}：「${v}」有同名地點（${use.filter(z=>z!==r).map(z=>z.addr).join('／')}），已依其他地點都在${ctx}帶入「${r.addr}」，請再確認一次`)}
-        else if(!use.length)warn.push(`📍 ${lb}：客人只填「${v}」，合約沒有地址，Google 也查不到，請跟客人要完整地址`);
+        else if(!use.length)warn.push(`📍 ${lb}：客人填「${v}」，沒有門牌號碼，合約也沒有地址，Google 查不到確定的地點，請跟客人要完整地址`);
         else warn.push(`📍 ${lb}：客人只填「${v}」，Google 查到 ${use.length} 個可能的地點${ctx?`（其他地點在${ctx}）`:''}，沒有自動帶入，請確認：${use.slice(0,3).map(r=>r.addr).join('／')}`)});
       n++}
     x.updated=Date.now();DB.orders[x.id]=x}}
