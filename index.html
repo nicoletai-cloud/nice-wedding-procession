@@ -532,6 +532,10 @@ nav.tabs button{scroll-snap-align:start}
         <pre class="out" id="lgMsg"></pre>
         <div class="pubBox" style="margin-top:10px"></div>
       </div>
+      <div class="card" id="cfFlowCard"><!-- 2026-10-17 客人回填的行前確認整合進車隊與流程 -->
+        <h3>行前確認 <small>客人回填的內容，送出後已自動帶入下面的流程</small></h3>
+        <div id="cfFlowBody"></div>
+      </div>
       <div class="card">
         <h3>禮車流程</h3>
         <div class="fields" style="margin-bottom:10px">
@@ -1607,6 +1611,21 @@ function applyConfirm(res){const c=o.c,before=clone(o),diffs=[],warn=[];o.sample
       warn.push(`預估用車 ${c.start} → ${endEst}（約 ${(d/60).toFixed(1)} 小時，含最後一段 30 分鐘車程），超過合約 ${hrsLabel(o.hours)}，約加時 ${eh} 小時，客人加時費約 ${money(otAmt)}。`);o._suggestH=o.hours+eh}
     else{diffs.push(`預估用車 ${c.start} → ${endEst}，在合約 ${hrsLabel(o.hours)} 內。`);o._suggestH=null}}
   return{diffs,warn,before}}
+/* 2026-10-17 車隊與流程頁：顯示客人回填的行前確認（狀態、回答、跟合約的差異） */
+function renderCfFlow(){const card=$('cfFlowCard'),b=$('cfFlowBody');if(!card||!b||!o)return;card.hidden=isPt(o);if(card.hidden)return;
+  const cf=CONFIRMS[normNo(orderNo(o))]||null,f=cf&&cf.f,L=o.cfLast||null,tm=t=>{const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`};
+  const btns=`<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">${o.cfDoneAt?'':'<button class="btn sm pri" id="btnCfSend2">📤 傳確認按鈕給新人</button>'}<button class="btn sm" id="btnCfMore">完整行前確認／貼上文字回覆</button></div>`;
+  if(!f&&!L){b.innerHTML=`<div class="hint" style="margin:0">${o.cfSentAt?`⏳ 已傳給客人（${tm(o.cfSentAt)}），客人還沒送出`:o.cfSchedAt?`🕒 已預約 ${cfSchedLabel(o.cfSchedAt)} 傳給客人`:'還沒傳行前確認給客人'}${o.cfPushErr?`<div style="color:var(--warn)">⚠️ ${esc(o.cfPushErr)}</div>`:''}</div>`+btns;return}
+  const at=cf?+cf.at:+L.at,who=(cf&&cf.who)||(L&&L.who)||'',ln=(cf&&cf.lname)||(L&&L.lname)||'';
+  let h=`<b style="color:var(--ok)">✅ ${L&&L.manual&&!f?'已用貼上的回覆帶入':'客人已送出'}（${tm(at)}${who?'，'+(who==='agent'?'婚顧／主持人代填':'新人填寫'):''}${ln?'，LINE：'+esc(ln):''}）</b>`;
+  if(f){const loop=f.mode==='loop',fr=f.friend?(f.friend==='有'?`${f.friendN} 台，排第 ${String(f.friendPos||'').split(',').join('、')} 車`:f.friend):'';
+    const rows=(loop?[['行程','單點繞圈'],['聯絡人',[f.name,f.phone].filter(Boolean).join(' ')],['集合地點（男方家）',f.meet],['第一圈',f.loop1],['繞第二圈',f.loop2YN],['第二圈',f.loop2T]]
+      :[['聯絡人',[f.name,f.phone].filter(Boolean).join(' ')],['男方家／集合地點',f.meet],['女方家',f.wed],['出發時間',f.start],['迎娶回男方家',f.back],['接送至餐廳',f.restYN],['出發去餐廳',f.restT],['餐廳地址',f.restAddr]])
+      .concat([['訂結一起',f.combo],['甘蔗竹子',f.cane],['親友車加入車隊',fr],['備註',f.note]]).filter(r=>String(r[1]||'').trim());
+    h+=`<div class="tbl" style="margin-top:8px"><table><tbody>${rows.map(r=>`<tr><th style="white-space:nowrap;width:1%">${esc(r[0])}</th><td style="white-space:pre-wrap">${esc(r[1])}</td></tr>`).join('')}${(f.files||[]).length?`<tr><th style="white-space:nowrap">行程表</th><td>${f.files.map(z=>`<a href="https://drive.google.com/file/d/${encodeURIComponent(z.id)}/view" target="_blank" rel="noopener">${esc(z.name||(z.pdf?'PDF':'照片'))}</a>`).join('、')}</td></tr>`:''}</tbody></table></div>`}
+  if(L&&L.cmp&&(L.cmp.lines||[]).length)h+=`<div class="sum" style="margin-top:8px;border-left:3px solid #A0453A"><b style="color:#A0453A">⚠️ 跟 ${tm(L.cmp.at)}（${L.cmp.who==='agent'?'婚顧／主持人代填':L.cmp.who?'新人':'之前'}）填的不一樣，請跟客人核對：</b>${L.cmp.lines.map(z=>`<div class="sub">・${esc(z)}</div>`).join('')}</div>`;
+  if(L)h+=`<div style="margin-top:8px">${(L.warn||[]).length?`<div class="sum">${L.warn.map(w=>`<div style="color:var(--warn)">● ${esc(w)}</div>`).join('')}</div>`:'<span class="chip ok">跟合約沒有衝突</span>'}${(L.diffs||[]).length?`<div class="sum" style="margin-top:8px">${L.diffs.map(d=>`<div class="sub">${esc(d)}</div>`).join('')}</div>`:''}</div>`;
+  b.innerHTML=h+btns}
 function renderConfirmResult(r){const b=$('confirmResult');if(!r){b.innerHTML='';return}
   b.innerHTML=(r.warn.length?`<div class="sum">${r.warn.map(w=>`<div style="color:var(--warn)">● ${esc(w)}</div>`).join('')}</div>`:'<span class="chip ok">跟合約沒有衝突</span>')+
    (r.diffs.length?`<div class="sum" style="margin-top:8px">${r.diffs.map(d=>`<div class="sub">${esc(d)}</div>`).join('')}</div>`:'')+
@@ -1858,7 +1877,7 @@ function renderRefs(){renderSettle();const mEl=$('refMonth');if(!mEl.value){cons
   $('billVendorName').textContent=mv.map(v=>v.name).join('、');$('outBill').textContent=bills.join('\n\n')||'這個月沒有月結廠商的訂單。'}
 function renderOrderSel(){const list=Object.values(DB.orders).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.updated-a.updated);
   $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(selLabel(x))}</option>`).join('');renderTodoBadge();if(!$('todoModal').hidden)renderTodo()}
-function renderAll(){try{renderQx()}catch(e){}try{renderFormDataBtn()}catch(e){}renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派車頭':''].filter(Boolean),tr=[k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就派司機':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月派司機':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月派司機':'白色特斯拉：用車前一週派司機'):''].filter(Boolean);$('headHint').textContent=(rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):k.tesla&&!k.lux?'特斯拉由你擔任車頭，不用指派車頭。':'本單沒有提前指派車頭的需求。')+(tr.length?'　'+tr.join('；'):'')+(String(o.carHead||'').trim()?'　✅ 已找車頭：司機由車頭安排，用車前 3 天再確認司機資料即可。':'')}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=cfMsg(o);try{renderCfSt()}catch(e){}renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
+function renderAll(){try{renderQx()}catch(e){}try{renderFormDataBtn()}catch(e){}renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派車頭':''].filter(Boolean),tr=[k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就派司機':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月派司機':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月派司機':'白色特斯拉：用車前一週派司機'):''].filter(Boolean);$('headHint').textContent=(rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):k.tesla&&!k.lux?'特斯拉由你擔任車頭，不用指派車頭。':'本單沒有提前指派車頭的需求。')+(tr.length?'　'+tr.join('；'):'')+(String(o.carHead||'').trim()?'　✅ 已找車頭：司機由車頭安排，用車前 3 天再確認司機資料即可。':'')}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=cfMsg(o);try{renderCfSt()}catch(e){}try{renderCfFlow()}catch(e){}renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
   $('outQuote').textContent=quoteText(o,'zh');if($('outQuoteAdd'))$('outQuoteAdd').textContent=QUOTE_ADD;$('outOrder').textContent=orderText(o,'zh');
   renderFind();$('contractPaper').innerHTML=contractHTML(o);ctTuneFill();renderSigned();renderMemo();
   ['meet','wed','o1','o2'].forEach(k=>{$('c_'+k+'S').placeholder=shortArea(o.c[k])||'自動'});
@@ -2263,6 +2282,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnModelAdd':{const id='m'+Date.now().toString(36);S.models.push({id,name:'新車款',brand:'其他',abbr:''});MK.forEach(k=>S[k][id]='');S.dp[id]={h1:'',h15:'',h2:'',h3:'',ot05:'',ot15:'',ot1:'',trip:'',tripOt:''};rebuildModels();saveS();renderPriceSettings();renderCars();break}
    case 'btnBundleAdd':S.bundles.push({name:'新方案',cars:{},price:0});saveS();renderPriceSettings();break;
    case 'btnCfSend':{cfPreview([o]);break}
+   case 'btnCfSend2':{cfPreview([o]);break}
+   case 'btnCfMore':$('coupleModal').hidden=false;break;
    case 'btnConfirm':{const res=parseConfirm($('confirmBox').value);if(!Object.keys(res).length){$('confirmResult').innerHTML='<p class="hint">沒有認出欄位，請確認貼上的是行前確認的回覆。</p>';break}const r=applyConfirm(res);o.cfDoneAt=Date.now();o.cfLast={at:Date.now(),diffs:r.diffs,warn:r.warn,manual:true};save();renderOrderSel();fillInputs();renderFlow();renderAll();renderConfirmResult(r);toast('已帶入行前確認');break}
    case 'btnApplyH':{if(o._suggestH){o.hours=o._suggestH;o._suggestH=null;save();fillInputs();renderCars();renderFleet();renderAll();$('confirmResult').insertAdjacentHTML('beforeend','<p class="hint">合約時數已更新，報價、合約、memo 都已重算。</p>');t.remove()}break}
    case 'btnFormData':{const fd=FORMDATA[normNo(orderNo(o))];if(!fd||!fd.f){toast('這張單還沒有客人填寫頁回覆');break}const cols=[['no','訂單編號'],['groom','新郎姓名'],['bride','新娘姓名'],['role','主要聯絡人'],['rel','主要聯絡人身份'],['phone','主要聯絡人電話'],['start','預計開始用車時間'],['end','預計結束用車時間'],['meet','禮車集合地點'],['meetL','集合地點名稱'],['wed','迎娶地點'],['wedL','迎娶地點名稱'],['o1','其他停靠地點 1（選填）'],['o1L','其他停靠地點 1 是什麼地點？（選填）'],['o2','其他停靠地點 2（選填）'],['o2L','其他停靠地點 2 是什麼地點？（選填）'],['o3','其他停靠地點 3（選填）'],['o3L','其他停靠地點 3 是什麼地點？（選填）'],['o4','其他停靠地點 4（選填）'],['o4L','其他停靠地點 4 是什麼地點？（選填）'],['o5','其他停靠地點 5（選填）'],['o5L','其他停靠地點 5 是什麼地點？（選填）'],['route','路線說明'],['cane','車頂甘蔗固定需求'],['deco','車頭彩安排'],['decoStyle','指定車頭彩款式'],['decoSign','客製化英文名牌'],['decoFee','車頭彩費用'],['foundVia','怎麼知道好好禮車']];const cl=v=>String(v==null?'':v).replace(/[\t\n\r]+/g,' ');$('pasteBox').value=cols.map(c=>c[1]).join('\t')+'\n'+cols.map(c=>cl(fd.f[c[0]])).join('\t');$('btnParse').click();break}
