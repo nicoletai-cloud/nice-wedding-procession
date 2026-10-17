@@ -983,7 +983,7 @@ async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl
     try{if(j.review){REV=j.review;store('nwcw_rev',REV);let up=false;Object.keys(REV).forEach(id=>{const x=DB.orders[id],r=REV[id];if(x&&r.reply&&r.reply.photo&&x.c&&x.c.photoReq!=='要'){x.c.photoReq='要';x.updated=Date.now();up=true;if(id===o.id)cur=true}});if(up)syncAgain=true;try{renderRev()}catch(_){}}}catch(_){}
     let upN=false;FORMDATA=j.formData||FORMDATA;CONFIRMS=j.confirms||CONFIRMS;try{const qc=cfApplyQ(j.cfq);if(qc.length){upN=true;if(qc.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}}}catch(e){console.warn(e)}try{const ch=cfAuto();if(ch.length){upN=true;if(ch.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}setTimeout(()=>toast(`已帶入 ${ch.length} 筆客人行前確認：${ch.map(x=>orderNo(x)).join('、')}`),800)}}catch(e){console.warn(e)}try{renderFormDataBtn();renderFormPlaces()}catch(e){}{const F=j.forms||{},N=j.formNames||{};Object.values(DB.orders).forEach(x=>{const k=normNo(orderNo(x)),t=F[k],nm=N[k];if(t&&!x.formAt){x.formAt=t;if(x.id===o.id)cur=true}
       if(nm&&(nm.groom||nm.bride)&&!x.c.groom&&!x.c.bride){x.c.groom=nm.groom||'';x.c.bride=nm.bride||'';x.updated=Date.now();upN=true;if(x.id===o.id)cur=true}})}
-    DB.cur=o.id;store('nwcw_orders',DB);if(cur)loadOrder();else renderOrderSel();try{renderCfFlow()}catch(_){}openFromHash();
+    DB.cur=o.id;store('nwcw_orders',DB);if(cur)loadOrder();else renderOrderSel();try{renderCfFlow()}catch(_){}setTimeout(()=>{cfGeoRun().catch(e=>console.warn(e))},1500);openFromHash();
     if(upN)syncAgain=true;
     const d=new Date();syncStat(`已同步 ${p2(d.getHours())}:${p2(d.getMinutes())}`)}
   catch(e){syncStat('同步失敗，點我重試');console.warn(e)}finally{syncBusy=false;if(syncAgain){syncAgain=false;pushSync()}}}
@@ -1544,7 +1544,7 @@ function applyLoop(f){const c=o.c,diffs=['行程：單點繞圈'],warn=[];o.samp
     else{diffs.push(`預估用車 ${c.start} → ${endEst}，在合約 ${hrsLabel(o.hours)} 內。`);o._suggestH=null}}
   return{diffs,warn}}
 function cfAuto(){const ch=[];Object.values(DB.orders).forEach(x=>{if(x.sample)return;const cf=CONFIRMS[normNo(orderNo(x))];if(!cf||!cf.f||!(+cf.at>(+x.cfApplyAt||0)))return;
-  const keep=o;o=x;try{const f=cf.f,r=f.mode==='loop'?applyLoop(f):applyConfirm({name:f.name,phone:f.phone,meet:f.meet,wed:f.wed,start:f.start,combo:f.combo,cane:f.cane,back:f.back,restYN:f.restYN,restT:f.restT,restAddr:f.restAddr});
+  const keep=o;o=x;try{x.cfPrev={meet:x.c.meet||'',wed:x.c.wed||'',o1:x.c.o1||''};const f=cf.f,r=f.mode==='loop'?applyLoop(f):applyConfirm({name:f.name,phone:f.phone,meet:f.meet,wed:f.wed,start:f.start,combo:f.combo,cane:f.cane,back:f.back,restYN:f.restYN,restT:f.restT,restAddr:f.restAddr});
     if(f.friend){const ft=f.friend==='有'?`${f.friendN} 台，排第 ${String(f.friendPos||'').split(',').join('、')} 車`:f.friend;if(f.friend==='有')r.warn.unshift(`親友車加入車隊：${ft}，已自動排進用車確認單和司機派車單，請到「車隊」確認車序。`);else r.diffs.push(`親友車加入車隊：${ft}`)}   // 2026-10-15 行前確認新增親友車題目
     if(!x.friendsManual&&f.friend){x.friends=f.friend==='有'?String(f.friendPos||'').split(',').map(v=>({pos:+v,role:''})).filter(z=>z.pos>0):[]}
     x.cfLast={at:+cf.at,f:f,diffs:r.diffs,warn:r.warn,note:f.note||'',files:f.files||[],uid:!!cf.uid,who:cf.who||'',lname:cf.lname||'',cmp:cf.cmp||null};x.cfApplyAt=+cf.at;if(!x.cfDoneAt)x.cfDoneAt=+cf.at;if(!x.cfSentAt)x.cfSentAt=+cf.at;x.updated=Date.now();DB.orders[x.id]=x;ch.push(x)}catch(e){console.warn('行前確認帶入失敗',orderNo(x),e)}finally{o=keep}});
@@ -1611,6 +1611,32 @@ function applyConfirm(res){const c=o.c,before=clone(o),diffs=[],warn=[];o.sample
       warn.push(`預估用車 ${c.start} → ${endEst}（約 ${(d/60).toFixed(1)} 小時，含最後一段 30 分鐘車程），超過合約 ${hrsLabel(o.hours)}，約加時 ${eh} 小時，客人加時費約 ${money(otAmt)}。`);o._suggestH=o.hours+eh}
     else{diffs.push(`預估用車 ${c.start} → ${endEst}，在合約 ${hrsLabel(o.hours)} 內。`);o._suggestH=null}}
   return{diffs,warn,before}}
+/* 2026-10-17 行前確認只填地點名稱（沒有門牌）→ 先比對合約地址，再用 Google 地圖查完整地址；同名／查不到就不自動填，列出來請 Nicole 確認 */
+const CF_GEO_F=[['meet','男方家／集合地點'],['wed','女方家'],['o1','餐廳']];let cfGeoBusy=false;
+const cfHasNo=v=>/\d\s*號/.test(String(v||''));
+function cfArea(a){const s=String(a||'').replace(/臺/g,'台').replace(/^\s*\d{3,6}\s*/,'').replace(/^台灣/,'').replace(/\s/g,'');const m=s.match(/^(.{2}[縣市])(.{1,3}?[鄉鎮市區])/);return m?m[1]+m[2]:countyOf(s)}
+function cfMapUrl(q,pid){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q)+(pid?'&query_place_id='+encodeURIComponent(pid):'')}
+async function cfGeoRun(){if(cfGeoBusy||!S.driveUrl||!S.driveKey)return;const td=new Date().toISOString().slice(0,10);
+  const L=Object.values(DB.orders).filter(x=>x&&!x.sample&&x.cfLast&&x.date>=td&&(+x.cfGeoAt||0)<(+x.cfApplyAt||0));if(!L.length)return;cfGeoBusy=true;let n=0;
+  try{for(const x of L){const c=x.c||{},todo=CF_GEO_F.filter(([k])=>{const v=String(c[k]||'').trim();return v&&!cfHasNo(v)});x.cfGeoAt=Date.now();
+    if(todo.length){const ctx=CF_GEO_F.map(([k])=>c[k]).concat(Object.values(x.cfPrev||{})).filter(cfHasNo).map(countyOf).filter(Boolean)[0]||'',qs=[];
+      todo.forEach(([k])=>{const v=String(c[k]).trim();qs.push({k:k+'0',q:v});if(ctx&&v.indexOf(ctx)<0)qs.push({k:k+'1',q:ctx+' '+v})});
+      const j=await cfQApi({action:'geo',qs});if(!j||!j.ok){x.cfGeoAt=0;continue}
+      const warn=x.cfLast.warn=x.cfLast.warn||[],diffs=x.cfLast.diffs=x.cfLast.diffs||[];
+      todo.forEach(([k,lb])=>{const v=String(c[k]).trim(),prev=String((x.cfPrev||{})[k]||'').trim(),R=(j.res[k+'0']||[]).concat(j.res[k+'1']||[]);
+        const cand=[];R.forEach(r=>{if(r&&r.addr&&!cand.some(z=>z.addr===r.addr))cand.push(r)});const poi=cand.filter(r=>r.poi),use=poi.length?poi:cand;
+        const setL=()=>{const b=String(c[k+'L']||'').split('・')[0];if(String(c[k+'L']||'').indexOf(v)<0)c[k+'L']=(b?b+'・':'')+v};
+        if(cfHasNo(prev)){c[k]=prev;setL();if(use.some(r=>cfArea(r.addr)===cfArea(prev))){diffs.push(`📍 ${lb}：客人填「${v}」，Google 核對跟合約地址同一區，沿用合約地址「${prev}」`)}
+          else warn.push(`📍 ${lb}：客人只填「${v}」，已先沿用合約地址「${prev}」${use.length?`；但 Google 查到「${use[0].addr}」，不在同一區，請跟客人確認是哪裡`:'；Google 查不到這個名稱，請跟客人確認'}`);return}
+        const addrs=[...new Set(use.map(r=>cfArea(r.addr)+'|'+r.addr))];
+        if(use.length&&addrs.length===1&&(!ctx||countyOf(use[0].addr)===ctx)){const r=use[0];c[k]=r.addr;setL();c[k+'Map']=cfMapUrl(v,r.pid);diffs.push(`📍 ${lb}：客人只填「${v}」，合約也沒有地址，已用 Google 核對帶入「${r.addr}」（含導航連結）`)}
+        else if(ctx&&use.filter(r=>countyOf(r.addr)===ctx).length===1){const r=use.find(r=>countyOf(r.addr)===ctx);c[k]=r.addr;setL();c[k+'Map']=cfMapUrl(v,r.pid);warn.push(`📍 ${lb}：「${v}」有同名地點（${use.filter(z=>z!==r).map(z=>z.addr).join('／')}），已依其他地點都在${ctx}帶入「${r.addr}」，請再確認一次`)}
+        else if(!use.length)warn.push(`📍 ${lb}：客人只填「${v}」，合約沒有地址，Google 也查不到，請跟客人要完整地址`);
+        else warn.push(`📍 ${lb}：客人只填「${v}」，Google 查到 ${use.length} 個可能的地點${ctx?`（其他地點在${ctx}）`:''}，沒有自動帶入，請確認：${use.slice(0,3).map(r=>r.addr).join('／')}`)});
+      n++}
+    x.updated=Date.now();DB.orders[x.id]=x}}
+  finally{cfGeoBusy=false}
+  store('nwcw_orders',DB);pushSync();try{renderAll()}catch(_){}if(n)toast(`已核對 ${n} 筆行前確認的地點地址`)}
 /* 2026-10-17 車隊與流程頁：顯示客人回填的行前確認（狀態、回答、跟合約的差異） */
 function renderCfFlow(){const card=$('cfFlowCard'),b=$('cfFlowBody');if(!card||!b||!o)return;card.hidden=isPt(o);if(card.hidden)return;
   const cf=CONFIRMS[normNo(orderNo(o))]||null,L=o.cfLast||null,f=(cf&&cf.f)||(L&&L.f)||(L&&(L.note||(L.files||[]).length)?{note:L.note||'',files:L.files||[],_part:1}:null),tm=t=>{const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`};
