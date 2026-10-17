@@ -983,7 +983,7 @@ async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl
     try{if(j.review){REV=j.review;store('nwcw_rev',REV);let up=false;Object.keys(REV).forEach(id=>{const x=DB.orders[id],r=REV[id];if(x&&r.reply&&r.reply.photo&&x.c&&x.c.photoReq!=='要'){x.c.photoReq='要';x.updated=Date.now();up=true;if(id===o.id)cur=true}});if(up)syncAgain=true;try{renderRev()}catch(_){}}}catch(_){}
     let upN=false;FORMDATA=j.formData||FORMDATA;CONFIRMS=j.confirms||CONFIRMS;try{const qc=cfApplyQ(j.cfq);if(qc.length){upN=true;if(qc.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}}}catch(e){console.warn(e)}try{const ch=cfAuto();if(ch.length){upN=true;if(ch.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}setTimeout(()=>toast(`已帶入 ${ch.length} 筆客人行前確認：${ch.map(x=>orderNo(x)).join('、')}`),800)}}catch(e){console.warn(e)}try{renderFormDataBtn();renderFormPlaces()}catch(e){}{const F=j.forms||{},N=j.formNames||{};Object.values(DB.orders).forEach(x=>{const k=normNo(orderNo(x)),t=F[k],nm=N[k];if(t&&!x.formAt){x.formAt=t;if(x.id===o.id)cur=true}
       if(nm&&(nm.groom||nm.bride)&&!x.c.groom&&!x.c.bride){x.c.groom=nm.groom||'';x.c.bride=nm.bride||'';x.updated=Date.now();upN=true;if(x.id===o.id)cur=true}})}
-    DB.cur=o.id;store('nwcw_orders',DB);if(cur)loadOrder();else renderOrderSel();openFromHash();
+    DB.cur=o.id;store('nwcw_orders',DB);if(cur)loadOrder();else renderOrderSel();try{renderCfFlow()}catch(_){}openFromHash();
     if(upN)syncAgain=true;
     const d=new Date();syncStat(`已同步 ${p2(d.getHours())}:${p2(d.getMinutes())}`)}
   catch(e){syncStat('同步失敗，點我重試');console.warn(e)}finally{syncBusy=false;if(syncAgain){syncAgain=false;pushSync()}}}
@@ -1547,7 +1547,7 @@ function cfAuto(){const ch=[];Object.values(DB.orders).forEach(x=>{if(x.sample)r
   const keep=o;o=x;try{const f=cf.f,r=f.mode==='loop'?applyLoop(f):applyConfirm({name:f.name,phone:f.phone,meet:f.meet,wed:f.wed,start:f.start,combo:f.combo,cane:f.cane,back:f.back,restYN:f.restYN,restT:f.restT,restAddr:f.restAddr});
     if(f.friend){const ft=f.friend==='有'?`${f.friendN} 台，排第 ${String(f.friendPos||'').split(',').join('、')} 車`:f.friend;if(f.friend==='有')r.warn.unshift(`親友車加入車隊：${ft}，已自動排進用車確認單和司機派車單，請到「車隊」確認車序。`);else r.diffs.push(`親友車加入車隊：${ft}`)}   // 2026-10-15 行前確認新增親友車題目
     if(!x.friendsManual&&f.friend){x.friends=f.friend==='有'?String(f.friendPos||'').split(',').map(v=>({pos:+v,role:''})).filter(z=>z.pos>0):[]}
-    x.cfLast={at:+cf.at,diffs:r.diffs,warn:r.warn,note:f.note||'',files:f.files||[],uid:!!cf.uid,who:cf.who||'',lname:cf.lname||'',cmp:cf.cmp||null};x.cfApplyAt=+cf.at;if(!x.cfDoneAt)x.cfDoneAt=+cf.at;if(!x.cfSentAt)x.cfSentAt=+cf.at;x.updated=Date.now();DB.orders[x.id]=x;ch.push(x)}catch(e){console.warn('行前確認帶入失敗',orderNo(x),e)}finally{o=keep}});
+    x.cfLast={at:+cf.at,f:f,diffs:r.diffs,warn:r.warn,note:f.note||'',files:f.files||[],uid:!!cf.uid,who:cf.who||'',lname:cf.lname||'',cmp:cf.cmp||null};x.cfApplyAt=+cf.at;if(!x.cfDoneAt)x.cfDoneAt=+cf.at;if(!x.cfSentAt)x.cfSentAt=+cf.at;x.updated=Date.now();DB.orders[x.id]=x;ch.push(x)}catch(e){console.warn('行前確認帶入失敗',orderNo(x),e)}finally{o=keep}});
   return ch}
 async function cfPush(list){if(!S.driveUrl||!S.driveKey){toast('還沒設定機器人連線');return}
   toast(`傳送中…（${list.length} 筆）`);try{await doSync()}catch(_){}
@@ -1613,7 +1613,7 @@ function applyConfirm(res){const c=o.c,before=clone(o),diffs=[],warn=[];o.sample
   return{diffs,warn,before}}
 /* 2026-10-17 車隊與流程頁：顯示客人回填的行前確認（狀態、回答、跟合約的差異） */
 function renderCfFlow(){const card=$('cfFlowCard'),b=$('cfFlowBody');if(!card||!b||!o)return;card.hidden=isPt(o);if(card.hidden)return;
-  const cf=CONFIRMS[normNo(orderNo(o))]||null,f=cf&&cf.f,L=o.cfLast||null,tm=t=>{const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`};
+  const cf=CONFIRMS[normNo(orderNo(o))]||null,L=o.cfLast||null,f=(cf&&cf.f)||(L&&L.f)||(L&&(L.note||(L.files||[]).length)?{note:L.note||'',files:L.files||[],_part:1}:null),tm=t=>{const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`};
   const btns=`<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">${o.cfDoneAt?'':'<button class="btn sm pri" id="btnCfSend2">📤 傳確認按鈕給新人</button>'}<button class="btn sm" id="btnCfMore">完整行前確認／貼上文字回覆</button></div>`;
   if(!f&&!L){b.innerHTML=`<div class="hint" style="margin:0">${o.cfSentAt?`⏳ 已傳給客人（${tm(o.cfSentAt)}），客人還沒送出`:o.cfSchedAt?`🕒 已預約 ${cfSchedLabel(o.cfSchedAt)} 傳給客人`:'還沒傳行前確認給客人'}${o.cfPushErr?`<div style="color:var(--warn)">⚠️ ${esc(o.cfPushErr)}</div>`:''}</div>`+btns;return}
   const at=cf?+cf.at:+L.at,who=(cf&&cf.who)||(L&&L.who)||'',ln=(cf&&cf.lname)||(L&&L.lname)||'';
@@ -1621,7 +1621,7 @@ function renderCfFlow(){const card=$('cfFlowCard'),b=$('cfFlowBody');if(!card||!
   if(f){const loop=f.mode==='loop',fr=f.friend?(f.friend==='有'?`${f.friendN} 台，排第 ${String(f.friendPos||'').split(',').join('、')} 車`:f.friend):'';
     const rows=(loop?[['行程','單點繞圈'],['聯絡人',[f.name,f.phone].filter(Boolean).join(' ')],['集合地點（男方家）',f.meet],['第一圈',f.loop1],['繞第二圈',f.loop2YN],['第二圈',f.loop2T]]
       :[['聯絡人',[f.name,f.phone].filter(Boolean).join(' ')],['男方家／集合地點',f.meet],['女方家',f.wed],['出發時間',f.start],['迎娶回男方家',f.back],['接送至餐廳',f.restYN],['出發去餐廳',f.restT],['餐廳地址',f.restAddr]])
-      .concat([['訂結一起',f.combo],['甘蔗竹子',f.cane],['親友車加入車隊',fr],['備註',f.note]]).filter(r=>String(r[1]||'').trim());
+      .concat([['訂結一起',f.combo],['甘蔗竹子',f.cane],['親友車加入車隊',fr],['想提醒司機',f.note]]).filter(r=>String(r[1]||'').trim());
     h+=`<div class="tbl" style="margin-top:8px"><table><tbody>${rows.map(r=>`<tr><th style="white-space:nowrap;width:1%">${esc(r[0])}</th><td style="white-space:pre-wrap">${esc(r[1])}</td></tr>`).join('')}${(f.files||[]).length?`<tr><th style="white-space:nowrap">行程表</th><td>${f.files.map(z=>`<a href="https://drive.google.com/file/d/${encodeURIComponent(z.id)}/view" target="_blank" rel="noopener">${esc(z.name||(z.pdf?'PDF':'照片'))}</a>`).join('、')}</td></tr>`:''}</tbody></table></div>`}
   if(L&&L.cmp&&(L.cmp.lines||[]).length)h+=`<div class="sum" style="margin-top:8px;border-left:3px solid #A0453A"><b style="color:#A0453A">⚠️ 跟 ${tm(L.cmp.at)}（${L.cmp.who==='agent'?'婚顧／主持人代填':L.cmp.who?'新人':'之前'}）填的不一樣，請跟客人核對：</b>${L.cmp.lines.map(z=>`<div class="sub">・${esc(z)}</div>`).join('')}</div>`;
   if(L)h+=`<div style="margin-top:8px">${(L.warn||[]).length?`<div class="sum">${L.warn.map(w=>`<div style="color:var(--warn)">● ${esc(w)}</div>`).join('')}</div>`:'<span class="chip ok">跟合約沒有衝突</span>'}${(L.diffs||[]).length?`<div class="sum" style="margin-top:8px">${L.diffs.map(d=>`<div class="sub">${esc(d)}</div>`).join('')}</div>`:''}</div>`;
