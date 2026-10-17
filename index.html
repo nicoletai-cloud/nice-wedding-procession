@@ -664,6 +664,7 @@ nav.tabs button{scroll-snap-align:start}
             <label class="f wide row" style="gap:8px;align-items:center;flex-direction:row"><input type="checkbox" id="s_ecpayOn" style="width:auto"> 訂金改用綠界 ATM 付款連結（報價、催訂金訊息不再放銀行帳號）</label>
             <label class="f wide">綠界付款連結網址（選填，轉接站架好後填）<input data-s="payBase" id="s_payBase" placeholder="例：https://nwc-pay.xxx.workers.dev"></label>
             <label class="f wide">備用匯款帳戶（快捷按鈕用）<textarea data-s="bankAlt" id="s_bankAlt" rows="3"></textarea></label>
+            <label class="f wide">尾款匯款帳戶（服務確認單用，顯示為「禮車幹部帳戶」；空白＝用上面的匯款資訊）<textarea data-s="bankBal" id="s_bankBal" rows="3" placeholder="銀行名稱（代碼）／分行&#10;帳號：&#10;戶名："></textarea></label>
             <label class="f wide">新人表單網址<input data-s="formBase" id="s_form"></label>
             <label class="f">訂單編號欄位 entry<input data-s="formEntry" id="s_entry"></label>
             <label class="f wide">Google Drive 存檔網址（Apps Script）<input data-s="driveUrl" id="s_driveUrl" placeholder="https://script.google.com/macros/s/…/exec"></label>
@@ -1277,10 +1278,10 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   let pay=[];
   const otl=(x.otText||'').trim()||MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m])}/HR`).join(' ; ');
   if(who==='cust'){
-    if(lang==='en')pay=[`Balance ${money(r.balance,'en')} (incl. driver red envelope)`,`(Please don't wait until after the service to transfer; our accountant can't verify transfers in real time on holidays.)`,`Bank transfer details:`,S.bank,`Extra hours: ${MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m],'en')}/HR`).join(' ; ')}`];
-    else if(lang==='ja')pay=[`残金 ${money(r.balance,'ja')}（ドライバーご祝儀込み）`,`（ご利用終了後のお振込みはお控えください。休日は経理がすぐに入金確認できません）`,`お振込先：`,S.bank,`延長：${MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m],'ja')}/HR`).join(' ; ')}`];
+    if(lang==='en')pay=[`Balance ${money(r.balance,'en')} (incl. driver red envelope)`,`(Please don't wait until after the service to transfer; our accountant can't verify transfers in real time on holidays.)`,S.bankBal?`Balance transfer details (staff account):`:`Bank transfer details:`,S.bankBal||S.bank,`Extra hours: ${MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m],'en')}/HR`).join(' ; ')}`];
+    else if(lang==='ja')pay=[`残金 ${money(r.balance,'ja')}（ドライバーご祝儀込み）`,`（ご利用終了後のお振込みはお控えください。休日は経理がすぐに入金確認できません）`,S.bankBal?`残金お振込先（スタッフ口座）：`:`お振込先：`,S.bankBal||S.bank,`延長：${MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m],'ja')}/HR`).join(' ; ')}`];
     else if(r.mon)pay=[r.onsite?`當天請準備${[r.red?`司機紅包 ${money(S.red)}/台`:'',r.cane?`甘蔗固定費 ${money(r.cane)}`:''].filter(Boolean).join('、')}`:'',`加時：${otl}`].filter(Boolean);
-    else pay=[`尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`,`(請勿當天用車結束才匯款，假日會計無法即時查帳)`,`❤️匯款資訊：`,S.bank,`加時：${otl}`];
+    else pay=[`尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`,`(請勿當天用車結束才匯款，假日會計無法即時查帳)`,S.bankBal?`❤️尾款匯款資訊（禮車幹部帳戶）：`:`❤️匯款資訊：`,S.bankBal||S.bank,`加時：${otl}`];
   }else{
     const groups={};x.fleet.forEach(f=>{const v=payOf(f,x);const key=v==null?'?':v;(groups[key]=groups[key]||[]).push(f.role)});
     pay=[r.mon?(r.onsite?`收取${[r.red?`紅包 ${money(S.red)}/台`:'',r.cane?`甘蔗固定費 ${money(r.cane)}`:''].filter(Boolean).join('、')}`:'現場不用收款'):x.balPaid?(x.balRed&&r.red?`尾款客人已匯款，現場只收司機紅包 ${money(S.red)}/台（共 ${money(r.red)}）`:`尾款 ${money(r.balance)} 客人已匯款，現場不用收款`):`收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`];
@@ -1620,7 +1621,7 @@ function applyConfirm(res){const c=o.c,before=clone(o),diffs=[],warn=[];o.sample
 let MEMOS={};
 function memoOkUrl(x){return 'https://love.niceweddingcar.com/wed-memo?no='+encodeURIComponent(orderNo(x))+'&k='+cfKey(x.id)}
 function renderMemoOk(){const el=$('memoOkSt'),card=$('memoOkCard');if(!el||!o)return;card.hidden=isPt(o);const tm=t=>{const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`},bal=calc(o).balance;
-  const L=[];if(o.memoOkAt)L.push(`✅ 客人已確認無誤（${tm(o.memoOkAt)}）｜${o.balPlan==='cash'?`尾款：當天付現金 ${money(bal)}（尾款＋司機禮包一包交車隊負責人）`:o.balPlan==='transfer'?`尾款：提前匯款 ${money(bal)}（最晚用車前一天）${o.balPaid?'，已標記收到':'，還沒標記收到'}`:'月結'}`);
+  const L=[];if(o.memoOkAt)L.push(`✅ 客人已確認無誤（${tm(o.memoOkAt)}）｜${o.balPlan==='cash'?`尾款：當天付現金 ${money(bal)}（尾款＋司機禮包一包交車隊負責人）`:o.balPlan==='transfer'?`尾款：提前匯款 ${money(bal)}（最晚用車前一天）${o.balPaid?'，已標記收到':o.balInfo?`\n💸 客人已回傳匯款資訊（${tm(o.balInfo.at)}${o.balInfo.last5?'，後五碼 '+o.balInfo.last5:''}${o.balInfo.file?'，附轉帳截圖':''}），待對帳：對完請在「尾款收款方式」標記已匯`:'，客人還沒回傳匯款資訊'}`:'月結'}`);
   if(o.memoFixAt&&!(+o.memoOkAt>+o.memoFixAt))L.push(`✏️ 客人說內容要修改（${tm(o.memoFixAt)}）：${o.memoFixNote||''}\n改好後請再按一次「傳確認單給客人核對」`);
   if(o.memoSentAt&&!o.memoOkAt)L.push(`⏳ 已傳給客人（${tm(o.memoSentAt)}），客人還沒確認`);
   if(o.memoPushErr)L.push(`⚠️ 上次傳送失敗：${o.memoPushErr}（可按「複製核對連結」手動傳）`);
@@ -1635,6 +1636,7 @@ async function memoPush(){if(!S.driveUrl||!S.driveKey){toast('還沒設定機器
 function memoApply(M){const ch=[];Object.values(DB.orders).forEach(x=>{const m=M[normNo(orderNo(x))];if(!m)return;let c=false;
     if(m.ok&&+m.ok.at>(+x.memoOkAt||0)&&+m.ok.at>(+x.memoSentAt||0)){x.memoOkAt=+m.ok.at;x.balPlan=m.ok.pay;c=true}
     if(m.fix&&+m.fix.at>(+x.memoFixAt||0)&&+m.fix.at>(+x.memoSentAt||0)){x.memoFixAt=+m.fix.at;x.memoFixNote=m.fix.note||'';c=true}
+    if(m.paid&&+m.paid.at>(+(x.balInfo||{}).at||0)){x.balInfo={at:+m.paid.at,last5:m.paid.last5||'',file:m.paid.file||''};c=true}
     if(c){x.updated=Date.now();ch.push(x)}});return ch}
 /* 2026-10-17 行前確認只填地點名稱（沒有門牌）→ 先比對合約地址，再用 Google 地圖查完整地址；同名／查不到就不自動填，列出來請 Nicole 確認 */
 const CF_GEO_F=[['meet','男方家／集合地點'],['wed','女方家'],['o1','餐廳']];let cfGeoBusy=false;
@@ -2045,7 +2047,7 @@ function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];c
     else if(d<=7&&!x.memoDone&&!(x.memoLinks&&x.memoLinks.cust))T.push({k:'nomemo',late:d<=3});
     if(x.memoFixAt&&!(+x.memoOkAt>+x.memoFixAt)&&!(+x.memoSentAt>+x.memoFixAt))T.push({k:'memofix',late:true,why:x.memoFixNote||''});
     else if(x.memoSentAt&&!x.memoOkAt&&d>=0&&d<=3)T.push({k:'memowait',late:d<=2});
-    if(x.balPlan==='transfer'&&!x.balPaid&&d>=0&&d<=1)T.push({k:'balxfer',late:true,why:'客人選提前匯款，最晚用車前一天'});}
+    if(x.balPlan==='transfer'&&!x.balPaid&&d>=0&&d<=1)T.push({k:'balxfer',late:true,why:x.balInfo?'客人已回傳匯款資訊，待對帳':'客人選提前匯款，還沒回傳匯款資訊'});}
   if(x.paid&&d!==null&&d>=0&&d<=2&&!x.callAt)T.push({k:'call',late:d<=1,why:'前一天 12:00 前回報'});
   if(x.partner){if(x.partner.stage==='ask')return d!==null&&d>=0?[{k:'ptask',late:d<=30,why:'等同業確認訂車'}]:[];if(x.partner.stage==='held'&&d!==null&&d>=0)T.push({k:'ptinfo',late:d<=14,why:'同業還沒給完整派單'});
     /* 同業場次用完車：照片要傳給同業負責人（每週一整理），打勾後就完成 */
