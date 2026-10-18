@@ -11,7 +11,26 @@
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style>
+<style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}
+/* 2026-10-18 主畫面：常用 4 顆＋「更多」選單（iPhone 底部滑出） */
+.brand{align-items:center}.sync-mini{margin-left:auto;font:500 .78rem var(--f-body);color:var(--muted);background:none;border:0;padding:4px 2px;cursor:pointer;white-space:nowrap}
+header.top .orderbar{display:grid!important;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:8px;width:100%;position:relative}
+header.top .orderbar select{grid-column:auto!important;max-width:none!important;width:100%}
+header.top .orderbar .kw-search{grid-column:auto!important;min-width:0;position:relative}
+.quick{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.quick .btn,.quick .kw-date .btn{width:100%;text-align:center;padding-inline:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quick .kw-date{position:static}.quick .kw-date-pop{left:0;right:0;width:auto}
+.more-wrap{position:fixed;inset:0;z-index:2147483600}.more-wrap[hidden]{display:none!important}
+.more-dim{position:absolute;inset:0;background:rgba(0,0,0,.5)}
+.more-sheet{position:absolute;left:0;right:0;bottom:0;max-height:85vh;overflow:auto;background:var(--surface,#24201c);border-radius:18px 18px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:0 -6px 24px rgba(0,0,0,.25)}
+@media (min-width:700px){.more-sheet{left:50%;right:auto;width:560px;transform:translateX(-50%);bottom:auto;top:12vh;border-radius:18px}}
+.more-grab{width:40px;height:5px;border-radius:3px;background:var(--line,#555);margin:4px auto 6px;cursor:pointer}
+.more-g{font-size:.8rem;color:var(--accent);margin:12px 2px 6px;letter-spacing:.05em}
+.more-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.more-grid .btn{width:100%;text-align:center;padding:12px 4px;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+@media (max-width:520px){header.top .orderbar select,header.top .orderbar .kw-search{grid-column:1/-1!important}.more-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.quick .btn,.quick .kw-date .btn{min-height:44px;font-size:.95rem;box-sizing:border-box}.quick .kw-date{display:block}
+</style>
 <title>好好禮車婚禮派車</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23B8323A'/%3E%3Ctext x='32' y='48' font-size='46' text-anchor='middle' fill='%23F6D9A8' font-family='PingFang TC,Noto Sans TC,sans-serif'%3E%E5%9B%8D%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -221,32 +240,52 @@ nav.tabs button{scroll-snap-align:start}
 <body>
 <div class="wrap">
   <header class="top">
-    <div class="brand"><b>好好禮車</b><span>Wedding Dispatch</span></div>
-    <a class="nwc-hub" href="https://nicoletai-cloud.github.io/nice-hub/">‹ 入口</a>
-    <a class="nwc-hub" id="nwcAirLink" href="https://nicoletai-cloud.github.io/nice-wedding-car/">機場系統 ›</a>
-    <a class="nwc-hub" id="nwcCardsLink" href="https://nicoletai-cloud.github.io/nice-hub/cards.html?t=wed&amp;from=wed">司機 ›</a>
-    <a class="nwc-hub" id="nwcLessonLink" href="https://docs.google.com/document/d/1K6DnYwcA0rDnFsxS_l0Rqs-Nk7z1OwpHPUImlviNWJs/edit" target="_blank" rel="noopener" title="編輯司機教案（Google 文件）；改完司機在 LINE「禮車助手」看到的就是新版。司機用的連結：https://liff.line.me/2011949076-1fqUEtE2?p=lesson">司機教案 ›</a>
+    <div class="brand"><b>好好禮車</b><span>Wedding Dispatch</span><button class="sync-mini" id="btnSync" title="手機／電腦同步">同步</button></div>
     <div class="orderbar">
-      <button class="btn" id="btnNew">＋ 新訂單</button>
       <select id="orderSel" aria-label="切換訂單"></select>
-      <button type="button" class="btn sm" id="grpCode" title="這場的代碼：LINE 群組名稱、找司機都用這組；點一下複製" hidden></button>
-      <button type="button" class="btn sm" id="grpName" title="選用車日期，列出當天所有車趟的 LINE 群組名稱；可複製、勾選已建立">📋 群組名稱</button>
-      <button type="button" class="btn sm" id="cfListBtn" title="選用車日期，列出要做行前確認的車趟；按「傳行前確認」會先預覽再送出">📝 行前確認</button>
       <div class="kw-search"><input id="kwQ" placeholder="🔍 代碼、客人、新人、單號、地址、婚顧" autocomplete="off" title="輸入關鍵字列出相關訂單；貼上或輸入代碼（4～5 碼）／報價編號 Q-代碼-版本後按 Enter，直接開啟那一場"><div class="kw-results" id="kwResults" hidden></div></div>
-      <div class="kw-date"><button type="button" class="btn sm" id="kwDateBtn" title="依用車日期篩選車趟">📅 用車日</button><div class="kw-date-pop" id="kwDatePop" hidden><div class="dr-bar" data-dr="kw"></div><div class="row" style="justify-content:flex-end;margin-top:8px"><button type="button" class="btn sm pri" id="kwDateShow">列出這段日期的車趟</button></div></div></div>
-      <button class="btn sm" id="btnSync" title="手機／電腦同步">同步</button>
-      <button class="btn" id="btnInbox">訊息</button>
-      <button class="btn" id="btnTodo">待辦</button>
-      <button class="btn" id="btnRemind">提醒文字</button>
-      <button class="btn" id="btnCouple">新人資料</button>
-      <button class="btn" id="btnToAir" title="把這位客人的資料帶到機場接送報價">✈️ 轉機場接送</button>
-      <button class="btn" id="btnPartner">＋ 同業單</button>
-      <button class="btn" id="btnPtSettle">同業結算</button>
-      <button class="btn" id="btnDup">複製此單</button>
-      <button class="btn" id="btnAlbum" title="打開這張單群組收到的照片，挑要給新人的">📷 相簿</button><!-- 2026-10-18 -->
-      <button class="btn" id="btnDecoCal">車頭彩檔期</button>
+      <div class="quick"><!-- 2026-10-18 主畫面只留常用 4 顆，其他收進「更多」 -->
+        <button class="btn" id="btnTodo">待辦</button>
+        <button class="btn" id="btnInbox">訊息</button>
+        <div class="kw-date"><button type="button" class="btn sm" id="kwDateBtn" title="依用車日期篩選車趟">用車日</button><div class="kw-date-pop" id="kwDatePop" hidden><div class="dr-bar" data-dr="kw"></div><div class="row" style="justify-content:flex-end;margin-top:8px"><button type="button" class="btn sm pri" id="kwDateShow">列出這段日期的車趟</button></div></div></div>
+        <button class="btn" id="btnMore" aria-haspopup="true">更多</button>
+      </div>
     </div>
   </header>
+  <div class="more-wrap" id="moreSheet" hidden>
+    <div class="more-dim" data-moreclose="1"></div>
+    <div class="more-sheet" role="menu">
+      <div class="more-grab" data-moreclose="1"></div>
+      <div class="more-g">這張單</div>
+      <div class="more-grid">
+        <button class="btn" id="btnAlbum" title="打開這張單群組收到的照片，挑要給新人的">相簿</button>
+        <button type="button" class="btn" id="cfListBtn" title="選用車日期，列出要做行前確認的車趟">行前確認</button>
+        <button class="btn" id="btnRemind">提醒文字</button>
+        <button class="btn" id="btnCouple">新人資料</button>
+        <button type="button" class="btn" id="grpCode" title="這場的代碼：LINE 群組名稱、找司機都用這組；點一下複製" hidden></button>
+        <button type="button" class="btn" id="grpName" title="選用車日期，列出當天所有車趟的 LINE 群組名稱">群組名稱</button>
+        <button class="btn" id="btnDup">複製此單</button>
+        <button class="btn" id="btnToAir" title="把這位客人的資料帶到機場接送報價">轉機場</button>
+      </div>
+      <div class="more-g">新增</div>
+      <div class="more-grid">
+        <button class="btn" id="btnNew">新訂單</button>
+        <button class="btn" id="btnPartner">同業單</button>
+      </div>
+      <div class="more-g">工具</div>
+      <div class="more-grid">
+        <button class="btn" id="btnPtSettle">同業結算</button>
+        <button class="btn" id="btnDecoCal">車頭彩檔期</button>
+        <a class="btn" id="nwcLessonLink" href="https://docs.google.com/document/d/1K6DnYwcA0rDnFsxS_l0Rqs-Nk7z1OwpHPUImlviNWJs/edit" target="_blank" rel="noopener" title="編輯司機教案（Google 文件）；改完司機在 LINE「禮車助手」看到的就是新版。司機用的連結：https://liff.line.me/2011949076-1fqUEtE2?p=lesson">司機教案</a>
+      </div>
+      <div class="more-g">切換系統</div>
+      <div class="more-grid">
+        <a class="btn" href="https://nicoletai-cloud.github.io/nice-hub/">入口</a>
+        <a class="btn" id="nwcAirLink" href="https://nicoletai-cloud.github.io/nice-wedding-car/">機場系統</a>
+        <a class="btn" id="nwcCardsLink" href="https://nicoletai-cloud.github.io/nice-hub/cards.html?t=wed&amp;from=wed">司機</a>
+      </div>
+    </div>
+  </div>
 
   <nav class="tabs" role="tablist" id="tabs">
     <button role="tab" data-tab="quote" aria-selected="true"><span class="n">1</span>報價・下單</button>
@@ -2434,7 +2473,7 @@ function showTab(name){document.querySelectorAll('#tabs button').forEach(b=>b.se
       return `<button type="button" data-i="${i}"${i===act?' class="on"':''}>${cl}<b>${esc(tripCode(x))}｜${esc(orderNo(x))}</b>${esc(c.chatName||[c.groom,c.bride].filter(Boolean).join('＆')||'未命名')}<small>${esc([x.date,st,v?('婚顧／廠商 '+v+((x.src||{}).agent?' '+x.src.agent:'')+((x.src||{}).mode?'（'+x.src.mode+'）':'')):'',c.groom&&c.bride?c.groom+'＆'+c.bride:''].filter(Boolean).join('　'))}</small></button>`}).join(''):'<div class="empty">找不到相關訂單</div>');
     box.hidden=false}
   const dBtn=$('kwDateBtn'),dPop=$('kwDatePop');
-  window.kwDateChanged=()=>{dBtn.textContent=drOn('kw')?'📅 '+drLabel('kw'):'📅 用車日';dBtn.classList.toggle('on',drOn('kw'));act=-1;if(drOn('kw')||inp.value.trim())render();else box.hidden=true};
+  window.kwDateChanged=()=>{dBtn.textContent=drOn('kw')?drLabel('kw'):'用車日';dBtn.classList.toggle('on',drOn('kw'));act=-1;if(drOn('kw')||inp.value.trim())render();else box.hidden=true};
   dBtn.addEventListener('click',e=>{e.preventDefault();dPop.hidden=!dPop.hidden;box.hidden=true;if(!dPop.hidden)drRender('kw')});
   $('kwDateShow').addEventListener('click',e=>{e.preventDefault();dPop.hidden=true;act=-1;render()});
   document.addEventListener('mousedown',e=>{if(!dPop.hidden&&!e.target.closest('.kw-date'))dPop.hidden=true;if(!box.hidden&&!e.target.closest('.kw-search')&&!e.target.closest('.kw-date')&&document.activeElement!==inp)box.hidden=true});
@@ -2950,5 +2989,11 @@ document.addEventListener('click',async e=>{if(!e.target.closest||!e.target.clos
   }, true);
 })();
 </script>
+<script>/* 2026-10-18「更多」選單：開關；選單裡按任何功能後自動收起 */
+(function(){var w=document.getElementById('moreSheet');if(!w)return;
+document.addEventListener('click',function(e){var t=e.target;if(t.closest&&t.closest('#btnMore')){w.hidden=false;return}
+ if(w.hidden)return;if(t.dataset&&t.dataset.moreclose){w.hidden=true;return}
+ var b=t.closest&&t.closest('.more-sheet .btn');if(b)setTimeout(function(){w.hidden=true},0);});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')w.hidden=true});})();</script>
 </body>
 </html>
