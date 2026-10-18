@@ -1191,7 +1191,8 @@ function feeLines(x,lang){const t=L[lang],r=calc(x),hl=hrsLabel(x.hours),out=[];
   if(r.tax)out.push(`${t.tax} ${money(r.tax,lang)}`);
   if(r.red)out.push(`${t.red} ${mult(num(S.red),r.n,lang)}`);
   return out}
-function otRates(x,lang){const ms=MODELS.filter(m=>num(x.cars[m])>0);return ms.map(m=>`${MNAME[m]} ${money(S.ot[m],lang)}${lang==='en'?'/hr':lang==='ja'?'/時間':'/時'}`).join(lang==='en'?', ':'、')}
+function otRates(x,lang){const ms=MODELS.filter(m=>num(x.cars[m])>0),half=+x.hours>0&&+x.hours<3;   // 2026-10-18 短時數方案（90 分鐘等）加時是每 0.5 小時收一小時費用
+  return ms.map(m=>`${MNAME[m]} ${money(S.ot[m],lang)}${half?(lang==='en'?'/30 min':lang==='ja'?'/30分':'/0.5 時'):(lang==='en'?'/hr':lang==='ja'?'/時間':'/時')}`).join(lang==='en'?', ':'、')}
 
 /* ---------- messages ---------- */
 function defRoute(x){const c=x.c||{},C=!!String(c.o1||'').trim(),b=x.backHome!==false;return C?(b?['A','B','A','C']:['A','B','C']):(b?['A','B','A']:['A','B'])}
