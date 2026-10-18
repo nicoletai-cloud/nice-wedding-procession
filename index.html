@@ -536,6 +536,10 @@ nav.tabs button{scroll-snap-align:start}
         <h3>行前確認 <small>客人回填的內容，送出後已自動帶入下面的流程</small></h3>
         <div id="cfFlowBody"></div>
       </div>
+      <div class="card" id="drvNoteCard"><!-- 2026-10-18 給司機的補充：只出現在司機派車單 -->
+        <h3>給司機的補充 <small>只出現在司機派車單，客人的確認單看不到；客人行前確認填的「想提醒司機」會自動帶進來</small></h3>
+        <textarea id="d_drvNote" data-b="drvNote" rows="3" style="width:100%;box-sizing:border-box" placeholder="例：當天馬拉松交管，回程不能走北安路；停車位在社區地下室 B2"></textarea>
+      </div>
       <div class="card">
         <h3>禮車流程</h3>
         <div class="fields" style="margin-bottom:10px">
@@ -1230,11 +1234,11 @@ function autoFlow(x){const pts=points(x).filter(p=>p.addr);const ks=pts.map(p=>p
 /* ---------- memo ---------- */
 const MT={
  zh:{gather:'司機集合時間',contact:'聯絡人',boss:'禮車負責人',plan:'禮車方案',deco:'指定車頭彩',cane:'固定甘蔗',yes:'是',no:'否',tbd:'待確認',order:'車序',plate:'車號',driver:'駕駛',car:'車款',phone:'電話',
-   meet:'集合地點',wed:'迎娶地點',other:'其他地點',flow:'禮車流程',route:'路線說明',tipsC:'給新人的小提醒',tipsD:'給司機的小提醒',pay:'款項',seats:n=>`${n} 人座`,lead:'(負責人)',orderNo:'訂單編號',all:'全車隊'},
+   meet:'集合地點',wed:'迎娶地點',other:'其他地點',flow:'禮車流程',route:'路線說明',drvAdd:'給司機的補充',tipsC:'給新人的小提醒',tipsD:'給司機的小提醒',pay:'款項',seats:n=>`${n} 人座`,lead:'(負責人)',orderNo:'訂單編號',all:'全車隊'},
  en:{gather:'Driver meeting time',contact:'Contact',boss:'Fleet coordinator',plan:'Package',deco:'Custom hood decoration',cane:'Sugarcane on roof',yes:'Yes',no:'No',tbd:'TBC',order:'Role',plate:'Plate',driver:'Driver',car:'Car',phone:'Phone',
-   meet:'Meeting point',wed:'Bride pick-up',other:'Other stop',flow:'Schedule',route:'Route notes',tipsC:'Reminders for the couple',tipsD:'Driver reminders',pay:'Payment',seats:n=>`${n} seats`,lead:'(coordinator)',orderNo:'Order No.',all:'All cars'},
+   meet:'Meeting point',wed:'Bride pick-up',other:'Other stop',flow:'Schedule',route:'Route notes',drvAdd:'Notes for drivers',tipsC:'Reminders for the couple',tipsD:'Driver reminders',pay:'Payment',seats:n=>`${n} seats`,lead:'(coordinator)',orderNo:'Order No.',all:'All cars'},
  ja:{gather:'ドライバー集合時間',contact:'ご連絡先',boss:'車両責任者',plan:'プラン',deco:'指定ボンネット飾り',cane:'サトウキビ固定',yes:'あり',no:'なし',tbd:'確認中',order:'車順',plate:'ナンバー',driver:'ドライバー',car:'車種',phone:'電話',
-   meet:'集合場所',wed:'お迎え場所',other:'その他の場所',flow:'当日の流れ',route:'ルート',tipsC:'新郎新婦様へのご案内',tipsD:'ドライバーへの注意事項',pay:'お支払い',seats:n=>`${n}人乗り`,lead:'(責任者)',orderNo:'ご予約番号',all:'全車'}};
+   meet:'集合場所',wed:'お迎え場所',other:'その他の場所',flow:'当日の流れ',route:'ルート',drvAdd:'ドライバーへの補足',tipsC:'新郎新婦様へのご案内',tipsD:'ドライバーへの注意事項',pay:'お支払い',seats:n=>`${n}人乗り`,lead:'(責任者)',orderNo:'ご予約番号',all:'全車'}};
 function roleName(r,lang){return lang==='en'?(ROLE_EN[r]||r):lang==='ja'?(ROLE_JA[r]||r):r}
 function yn(v,lang){const t=MT[lang];v=(v||'').trim();return v==='是'?t.yes:v==='待確認'?t.tbd:(!v||/^(否|無|不)/.test(v))?t.no:v}
 function colorName(c,lang){if(lang==='zh')return c;const map={'白色':['White','ホワイト'],'黑色':['Black','ブラック'],'灰色':['Grey','グレー'],'紅色':['Red','レッド'],'藍色':['Blue','ブルー'],'銀色':['Silver','シルバー']};return map[c]?map[c][lang==='en'?0:1]:c}
@@ -1293,7 +1297,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   }
   return{no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(c.end)}`,gather:ap(c.gather||addMin(c.start,-20)),
     contact:(c.contact2||'').trim()?`\n${cname||''}${crole}  ${ph(c.phone)} / ${c.contact2.trim()}${(c.rel2||'').trim()?`(${c.rel2.trim()})`:''} ${ph(c.phone2)}`.trimEnd()+((c.contact3||'').trim()?`\n${c.contact3.trim()}${(c.rel3||'').trim()?`(${c.rel3.trim()})`:''} ${ph(c.phone3)}`.trimEnd():''):`${cname||''}${crole}  ${ph(c.phone)}`.trim(),boss:`${ld.driver||''} ${ph(ld.phone)}`.trim(),plan:planName(x),
-    flags:`${t.deco}：${yn(c.decoAns,lang)} / ${t.cane}：${yn(c.caneAns||(x.cane?'是':'否'),lang)}`+((x.flagNote||'').trim()?`\n*${x.flagNote.trim()}`:''),fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',
+    flags:`${t.deco}：${yn(c.decoAns,lang)} / ${t.cane}：${yn(c.caneAns||(x.cane?'是':'否'),lang)}`+((x.flagNote||'').trim()?`\n*${x.flagNote.trim()}`:''),fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',drvNote:who==='drv'?String(x.drvNote||'').trim():'',
     tips:who==='cust'?tipsC(x,lang):TIPS_D,tipsTitle:who==='cust'?t.tipsC:t.tipsD,pay,t}}
 function memoText(m,maps){return window.nwcSpace?nwcSpace(memoText0(m,maps)):memoText0(m,maps)}   // 2026-10-17 派車單／確認單文字也加中英文空格
 function memoText0(m,maps){const t=m.t,L2=[];
@@ -1301,6 +1305,7 @@ function memoText0(m,maps){const t=m.t,L2=[];
   m.fleet.forEach(f=>L2.push(f.friend?`${f.role}｜${f.plate}`:`${f.role}｜${f.plate||'—'}｜${f.driver||'—'}｜${f.car} ${f.spec}｜${f.phone||'—'}${f.emg?'｜'+f.emg:''}`));
   L2.push('');m.pts.forEach(p=>{L2.push(`${p.k}. ${p.title}`,p.addr+(p.label?`\n(${p.label})`:'')+(p.map?`\n導航定位：${p.map}`:''));if(maps)L2.push(mapUrl(p.addr))});
   if(m.route)L2.push(`${t.route}：${m.route}`);
+  if(m.drvNote)L2.push(`📌 ${t.drvAdd||'給司機的補充'}：${m.drvNote}`);
   L2.push('',`${t.flow}：`,m.path,...m.flow,'',m.tipsTitle);
   m.tips.forEach((s,i)=>L2.push(m.tipsTitle===MT.zh.tipsD?`* ${s}`:`${i+1}. ${s}`));
   L2.push('',t.pay,...m.pay);return L2.join('\n')}
@@ -1315,6 +1320,7 @@ function memoHTML0(m,maps){const t=m.t;
   ${m.fleet.map(f=>f.friend?`<tr><td>${esc(f.role)}</td><td colspan="4">${esc(f.plate)}</td></tr>`:`<tr><td>${esc(f.role)}</td><td>${esc(f.plate)}</td><td>${esc(f.driver)}</td><td>${esc(f.car)}<br><small>${esc(f.spec)}</small></td><td>${esc(f.phone)}${f.emg?`<br><small>${esc(f.emg)}</small>`:''}</td></tr>`).join('')}</tbody></table></div>
   <div class="tbl"><table style="margin-top:10px"><tbody>${m.pts.map(p=>`<tr><th style="width:130px">${esc(p.k)}. ${esc(p.title)}</th><td>${maps?`<a href="${esc(mapUrl(p.addr))}" target="_blank" rel="noopener">${esc(p.addr)}</a>`:esc(p.addr)}${p.label?`<br>(${esc(p.label)})`:''}${p.map?`<br>導航定位：<a href="${esc(p.map)}" target="_blank" rel="noopener">${esc(p.map)}</a>`:''}</td></tr>`).join('')}
   ${m.route?`<tr><th>${esc(t.route)}</th><td>${esc(m.route)}</td></tr>`:''}
+  ${m.drvNote?`<tr><th>📌 ${esc(t.drvAdd||'給司機的補充')}</th><td>${esc(m.drvNote).replace(/\n/g,'<br>')}</td></tr>`:''}
   <tr><th>${esc(t.flow)}</th><td><b>${esc(m.path)}</b><br>${m.flow.map(esc).join('<br>')}</td></tr></tbody></table></div>
   <h4>${esc(m.tipsTitle)}</h4><ol>${m.tips.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
   <h4>${esc(t.pay)}</h4><div>${m.pay.map(s=>esc(s).replace(/\n/g,'<br>')).join('<br>')}</div>`}
@@ -1555,6 +1561,7 @@ function cfAuto(){const ch=[];Object.values(DB.orders).forEach(x=>{if(x.sample)r
   const keep=o;o=x;try{x.cfPrev={meet:x.c.meet||'',wed:x.c.wed||'',o1:x.c.o1||''};const f=cf.f,r=f.mode==='loop'?applyLoop(f):applyConfirm({name:f.name,phone:f.phone,meet:f.meet,wed:f.wed,start:f.start,combo:f.combo,cane:f.cane,back:f.back,restYN:f.restYN,restT:f.restT,restAddr:f.restAddr});
     if(f.friend){const ft=f.friend==='有'?`${f.friendN} 台，排第 ${String(f.friendPos||'').split(',').join('、')} 車`:f.friend;if(f.friend==='有')r.warn.unshift(`親友車加入車隊：${ft}，已自動排進用車確認單和司機派車單，請到「車隊」確認車序。`);else r.diffs.push(`親友車加入車隊：${ft}`)}   // 2026-10-15 行前確認新增親友車題目
     if(!x.friendsManual&&f.friend){x.friends=f.friend==='有'?String(f.friendPos||'').split(',').map(v=>({pos:+v,role:''})).filter(z=>z.pos>0):[]}
+    {const nt=String(f.note||'').trim();if(nt&&String(x.drvNote||'').indexOf(nt)<0)x.drvNote=(String(x.drvNote||'').trim()?String(x.drvNote).trim()+'\n':'')+'客人行前確認：'+nt}   // 2026-10-18 客人想提醒司機的 → 給司機的補充
     x.cfLast={at:+cf.at,f:f,diffs:r.diffs,warn:r.warn,note:f.note||'',files:f.files||[],uid:!!cf.uid,who:cf.who||'',lname:cf.lname||'',cmp:cf.cmp||null};x.cfApplyAt=+cf.at;if(!x.cfDoneAt)x.cfDoneAt=+cf.at;if(!x.cfSentAt)x.cfSentAt=+cf.at;x.updated=Date.now();DB.orders[x.id]=x;ch.push(x)}catch(e){console.warn('行前確認帶入失敗',orderNo(x),e)}finally{o=keep}});
   return ch}
 async function cfPush(list){if(!S.driveUrl||!S.driveKey){toast('還沒設定機器人連線');return}
