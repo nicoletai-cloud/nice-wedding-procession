@@ -1214,15 +1214,16 @@ function quoteBody(x,lang){const r=calc(x),f=feeLines(x,lang);const rt=routeLine
  const kmL=lang==='en'?[rt?`Route: ${rt}`:'',tk?`Estimated distance: approx. ${tk} km`:'']:lang==='ja'?[rt?`ルート：${rt}`:'',tk?`予想走行距離：約 ${tk}km`:'']:[rt?`預計流程：${rt}`:'',tk?`預估里程：約 ${tk} 公里`:''];
  const kmN=oneWay?'':tk&&tk<=zb?(lang==='en'?`* Estimated ${tk} km, within ${zb} km — no mileage fee.`:lang==='ja'?`＊予想走行距離 約${tk}km（${zb}km以内）のため、距離料金はかかりません。`:`＊預估約 ${tk} 公里，在 ${zb} 公里內，不另收里程費`):lang==='en'?`* Includes up to ${zb} km; beyond that, ${money(zr,lang)} per car for every additional ${zb} km (pro-rated${zu?`, rounded up to ${money(zu,lang)}`:''}).`:lang==='ja'?`＊${zb}km以内の料金です。超過分は${zb}kmごとに1台 ${money(zr,lang)}（按分${zu?`、${money(zu,lang)}単位で切り上げ`:''}）。`:`＊用車含 ${zb} 公里內，超過加收里程費用`;const d=x.date?fmtDate(x.date)+(()=>{const p=dparts(x.date);return lang==='en'?` (${WD.en[p.w]})`:`（${WD[lang][p.w]}）`})():(lang==='en'?'TBD':lang==='ja'?'未定':'未定');
  if(lang==='en')return [`[Nice Wedding Car] Quote`,`Date: ${d}`,(+x.hours===0?'Service: one-way transfer':`Hours: ${hrsLabel(x.hours)} (within ${num(x.km)} km)`),`Vehicle(s): ${carsText(x,lang)}`,...kmL,`Charges:`,...f,`Total = ${money(r.total,lang)}`,r.deposit?`Deposit: ${money(r.deposit,lang)} (balance ${money(r.balance,lang)})`:'','',
-   kmN,x.invoice?'* Price includes 5% business tax.':'* Cash price; 5% business tax not included.',`* Overtime starts from the 16th minute, charged per started hour: ${otRates(x,lang)}`,
+   kmN,x.invoice?'* Price includes 5% business tax.':'* Cash price; 5% business tax not included.',(+x.hours>0&&+x.hours<3?`* Plans under 3 hours include no buffer time; overtime is charged per 30 minutes: ${otRates(x,lang)}`:`* Overtime starts from the 16th minute, charged per started hour: ${otRates(x,lang)}`),
    r.cane?'':`* Real sugarcane on the roof: ${money(S.cane,lang)}/car (optional)`,`* A driver red envelope of ${money(S.red,lang)}/car is customary.`].filter(s=>s!=='').join('\n');
  if(lang==='ja')return [`【好好禮車】お見積り`,`ご利用日：${d}`,(+x.hours===0?'ご利用内容：片道送迎':`ご利用時間：${hrsLabel(x.hours)}（${num(x.km)}km以内）`),`ご予約車種：${carsText(x,lang)}`,...kmL,`料金明細：`,...f,`合計 = ${money(r.total,lang)}`,r.deposit?`手付金：${money(r.deposit,lang)}（残金 ${money(r.balance,lang)}）`:'','',
-   kmN,x.invoice?'＊5%営業税込みの金額です。':'＊現金価格です（5%営業税別）。',`＊16分目から延長料金が発生し、1時間未満は1時間で計算します：${otRates(x,lang)}`,
+   kmN,x.invoice?'＊5%営業税込みの金額です。':'＊現金価格です（5%営業税別）。',(+x.hours>0&&+x.hours<3?`＊3時間未満のプランは余裕時間を含まず、延長は30分単位で計算します：${otRates(x,lang)}`:`＊16分目から延長料金が発生し、1時間未満は1時間で計算します：${otRates(x,lang)}`),
    r.cane?'':`＊車の屋根に本物のサトウキビを付ける場合：${money(S.cane,lang)}/台`].filter(s=>s!=='').join('\n');
  return [`【好好禮車 報價】`,`用車日期：${d}`,(+x.hours===0?`用車方式：單程接送`:`用車時數：${hrsLabel(x.hours)}（${num(x.km)} 公里內）`),`預約車款：${carsText(x,lang)}`,...kmL,`費用明細：`,...f,`合計=${money(r.total)}`,r.deposit?`訂金：${money(r.deposit)}（尾款 ${money(r.balance)}）`:'','',kmN,
    x.invoice?'＊以上含發票 5% 營業稅':'＊以上為現金價，不含發票 5% 營業稅',
    +x.hours===0||!otRates(x,lang)?'':`＊加時 ${otRates(x,lang)}`,
-   r.red?'':`＊不含司機紅包 ${money(S.red)}/台`].filter(s=>s!=='').join('\n')}
+   r.red?'':`＊不含司機紅包 ${money(S.red)}/台`,
+   +x.hours>0&&+x.hours<3?'\n溫馨提醒：未滿 3 小時之服務方案不含緩衝時間，若加時將以每 30 分鐘為單位計收加時費用。建議依實際行程預留充足時間，審慎選擇合適方案。':''].filter(s=>s!=='').join('\n')}
 
 /* 綠界：訂金付款連結 */
 function payLink(x){const b=String(S.payBase||'').trim().replace(/\/$/,'');return b?`${b}/p/${x.id}`:`${S.driveUrl}?action=pay&id=${encodeURIComponent(x.id)}`}
@@ -1795,7 +1796,7 @@ document.addEventListener('change',e=>{if(e.target.dataset.fl&&e.target.dataset.
   if(e.target.dataset&&e.target.dataset.settle){const x=DB.orders[e.target.dataset.settle];if(x){x.settled=e.target.checked;if(o.id===x.id)o.settled=x.settled;store('nwcw_orders',DB);renderSettle()}}});
 
 /* ---------- renderers ---------- */
-function carRow(m){const cp=cPrice(m,o.hours);const pr=blank(S.price[m])?'客人價未設定':`${money(cp.v)}／${hrsLabel(o.hours)}${cp.miss?'（暫用 3HR 價）':''}${num(S.ot[m])?`・加時 ${money(S.ot[m])}/時`:''}`;
+function carRow(m){const cp=cPrice(m,o.hours);const pr=blank(S.price[m])?'客人價未設定':`${money(cp.v)}／${hrsLabel(o.hours)}${cp.miss?'（暫用 3HR 價）':''}${num(S.ot[m])?`・加時 ${money(S.ot[m])}/${+o.hours>0&&+o.hours<3?'0.5 時':'時'}`:''}`;
   return `<div class="car"><div><div class="nm">${esc(MNAME[m]).toUpperCase()}</div><div class="pr">${pr}・${S.seats[m]||'?'} 人座</div></div>
   <div class="step"><button type="button" data-step="${m}" data-d="-1" aria-label="減少 ${esc(MNAME[m])}">−</button><output>${num(o.cars[m])}</output><button type="button" data-step="${m}" data-d="1" aria-label="增加 ${esc(MNAME[m])}">＋</button></div></div>`}
 const openBrands=new Set(['Tesla']);
