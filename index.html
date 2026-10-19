@@ -2051,7 +2051,7 @@ function hotelName(c){const raw=String(c.meet||'').replace(/臺/g,'台');if(!HOT
 function meetPlace(c){const h=hotelName(c);if(h)return h;const a=String(c.meet||'').replace(/臺/g,'台').replace(/^\s*\d{3,6}\s*/,'');const m=a.match(new RegExp(CTY_RE+'[縣市]\\s*([^\\s\\d]{1,3}?)[區鎮鄉市]'));const cty=m?m[1]:countyOf(a),tw=m?{t:m[2]}:townOf(a);return (cty||'')+(tw?tw.t:'')||(c.meetL&&!/^(男方家|女方家)$/.test(c.meetL)?c.meetL:'')}
 function lgName(x){const c=x.c,p=dparts(x.date);return [p?p.m+'/'+p.d:'',meetPlace(c),tripCode(x)].filter(Boolean).join(' ')}
 function lgMsg(x){const c=x.c,p=dparts(x.date),L=x.memoLinks||{},ld=lead(x)||{};
-  const cars=x.fleet.map(f=>[`${f.role}｜${MNAME[f.m]} ${f.color||''}｜${f.plate||'—'}`,`　${f.driver||'（未派）'}${f.lead?'（負責人）':''} ${ph(f.phone)}`.trimEnd(),f.emg?`　緊急聯絡：${ph(f.emg)}`:''].filter(Boolean).join('\n'));
+  const cars=x.fleet.map(f=>[`${f.role}｜${(f.up||'').trim()&&f.up.trim()!==MNAME[f.m]?f.up.trim()+'(升等)':MNAME[f.m]} ${f.color||''}｜${f.plate||'—'}`,`　${f.driver||'（未派）'}${f.lead?'（負責人）':''} ${ph(f.phone)}`.trimEnd(),f.emg?`　緊急聯絡：${ph(f.emg)}`:''].filter(Boolean).join('\n'));
   return ['各位司機好，這是本次禮車任務群組',`訂單編號：${orderNo(x)}`,`日期：${x.date?fmtDate(x.date)+'（'+WD.zh[p.w]+'）':'未定'}`,`司機集合：${c.gather||addMin(c.start,-20)||'—'}　${isHotel(c.meet)?'集合地點：':c.meetL?c.meetL+'：':''}${c.meet||''}`.trimEnd(),`用車時間：${c.start||'--:--'} - ${c.end||'--:--'}`,
     `派車單：${L.drv||'（按「複製訊息」會自動產生連結）'}`,'','車隊',...cars,'',`負責人：${ld.driver||'—'}`,'請大家看完派車單回覆「收到」，當天出發前在群組報到，謝謝！'].join('\n')}
 function ttMemo(x){if(x.partner)return [`同業單：${x.partner.co||''}`,`訂單編號：${orderNo(x)}`,'',x.partner.raw||''].join('\n');return [quoteText(x,'zh'),'',`訂單編號：${orderNo(x)}`,`合約：${x.driveFolder||'（合約尚未存到 Drive，存檔後會自動帶入連結）'}`].join('\n')}
