@@ -1290,11 +1290,11 @@ function autoFlow(x){const pts=points(x).filter(p=>p.addr);const ks=pts.map(p=>p
 /* ---------- memo ---------- */
 const MT={
  zh:{gather:'司機集合時間',contact:'聯絡人',boss:'禮車負責人',plan:'禮車方案',deco:'指定車頭彩',cane:'固定甘蔗',yes:'是',no:'否',tbd:'待確認',order:'車序',plate:'車號',driver:'駕駛',car:'車款',phone:'電話',
-   meet:'集合地點',wed:'迎娶地點',other:'其他地點',flow:'禮車流程',route:'路線說明',drvAdd:'給司機的補充',drvRelay:'已轉達司機',files:'客人提供的附件',tipsC:'給新人的小提醒',tipsD:'給司機的小提醒',pay:'款項',seats:n=>`${n} 人座`,lead:'(負責人)',orderNo:'訂單編號',all:'全車隊'},
+   meet:'集合地點',wed:'迎娶地點',other:'其他地點',flow:'禮車流程',route:'路線說明',drvAdd:'給司機的補充',drvRelay:'已轉達司機',files:'參考資訊',tipsC:'給新人的小提醒',tipsD:'給司機的小提醒',pay:'款項',seats:n=>`${n} 人座`,lead:'(負責人)',orderNo:'訂單編號',all:'全車隊'},
  en:{gather:'Driver meeting time',contact:'Contact',boss:'Fleet coordinator',plan:'Package',deco:'Custom hood decoration',cane:'Sugarcane on roof',yes:'Yes',no:'No',tbd:'TBC',order:'Role',plate:'Plate',driver:'Driver',car:'Car',phone:'Phone',
-   meet:'Meeting point',wed:'Bride pick-up',other:'Other stop',flow:'Schedule',route:'Route notes',drvAdd:'Notes for drivers',drvRelay:'Passed on to drivers',files:'Your attachments',tipsC:'Reminders for the couple',tipsD:'Driver reminders',pay:'Payment',seats:n=>`${n} seats`,lead:'(coordinator)',orderNo:'Order No.',all:'All cars'},
+   meet:'Meeting point',wed:'Bride pick-up',other:'Other stop',flow:'Schedule',route:'Route notes',drvAdd:'Notes for drivers',drvRelay:'Passed on to drivers',files:'Reference',tipsC:'Reminders for the couple',tipsD:'Driver reminders',pay:'Payment',seats:n=>`${n} seats`,lead:'(coordinator)',orderNo:'Order No.',all:'All cars'},
  ja:{gather:'ドライバー集合時間',contact:'ご連絡先',boss:'車両責任者',plan:'プラン',deco:'指定ボンネット飾り',cane:'サトウキビ固定',yes:'あり',no:'なし',tbd:'確認中',order:'車順',plate:'ナンバー',driver:'ドライバー',car:'車種',phone:'電話',
-   meet:'集合場所',wed:'お迎え場所',other:'その他の場所',flow:'当日の流れ',route:'ルート',drvAdd:'ドライバーへの補足',drvRelay:'ドライバーへ伝達済み',files:'ご提供の資料',tipsC:'新郎新婦様へのご案内',tipsD:'ドライバーへの注意事項',pay:'お支払い',seats:n=>`${n}人乗り`,lead:'(責任者)',orderNo:'ご予約番号',all:'全車'}};
+   meet:'集合場所',wed:'お迎え場所',other:'その他の場所',flow:'当日の流れ',route:'ルート',drvAdd:'ドライバーへの補足',drvRelay:'ドライバーへ伝達済み',files:'参考情報',tipsC:'新郎新婦様へのご案内',tipsD:'ドライバーへの注意事項',pay:'お支払い',seats:n=>`${n}人乗り`,lead:'(責任者)',orderNo:'ご予約番号',all:'全車'}};
 function roleName(r,lang){return lang==='en'?(ROLE_EN[r]||r):lang==='ja'?(ROLE_JA[r]||r):r}
 function yn(v,lang){const t=MT[lang];v=(v||'').trim();return v==='是'?t.yes:v==='待確認'?t.tbd:(!v||/^(否|無|不)/.test(v))?t.no:v}
 function colorName(c,lang){if(lang==='zh')return c;const map={'白色':['White','ホワイト'],'黑色':['Black','ブラック'],'灰色':['Grey','グレー'],'紅色':['Red','レッド'],'藍色':['Blue','ブルー'],'銀色':['Silver','シルバー']};return map[c]?map[c][lang==='en'?0:1]:c}
@@ -1365,7 +1365,7 @@ function memoText0(m,maps){const t=m.t,L2=[];
   L2.push('');m.pts.forEach(p=>{L2.push(`${p.k}. ${p.title}`,p.addr+(p.label?`\n(${p.label})`:'')+(p.map?`\n導航定位：${p.map}`:''));if(maps)L2.push(mapUrl(p.addr))});
   if(m.route)L2.push(`${t.route}：${m.route}`);
   if(m.drvNote)L2.push(`📌 ${m.drvLabel||t.drvAdd||'給司機的補充'}：${m.drvNote}`);
-  if((m.files||[]).length)L2.push(`📎 ${t.files||'客人提供的附件'}：`,...m.files.map(f=>`${f.name} ${f.url}`));
+  if((m.files||[]).length)L2.push(`📎 ${t.files||'參考資訊'}：`,...m.files.map(f=>`${f.name} ${f.url}`));
   L2.push('',`${t.flow}：`,m.path,...m.flow,'',m.tipsTitle);
   m.tips.forEach((s,i)=>L2.push(m.tipsTitle===MT.zh.tipsD?`* ${s}`:`${i+1}. ${s}`));
   L2.push('',t.pay,...m.pay);return L2.join('\n')}
@@ -1381,7 +1381,7 @@ function memoHTML0(m,maps){const t=m.t;
   <div class="tbl"><table style="margin-top:10px"><tbody>${m.pts.map(p=>`<tr><th style="width:130px">${esc(p.k)}. ${esc(p.title)}</th><td>${maps?`<a href="${esc(mapUrl(p.addr))}" target="_blank" rel="noopener">${esc(p.addr)}</a>`:esc(p.addr)}${p.label?`<br>(${esc(p.label)})`:''}${p.map?`<br>導航定位：<a href="${esc(p.map)}" target="_blank" rel="noopener">${esc(p.map)}</a>`:''}</td></tr>`).join('')}
   ${m.route?`<tr><th>${esc(t.route)}</th><td>${esc(m.route)}</td></tr>`:''}
   ${m.drvNote?`<tr><th>📌 ${esc(m.drvLabel||t.drvAdd||'給司機的補充')}</th><td>${esc(m.drvNote).replace(/\n/g,'<br>')}</td></tr>`:''}
-  ${(m.files||[]).length?`<tr><th>📎 ${esc(t.files||'客人提供的附件')}</th><td>${m.files.map(f=>`<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.name)}</a>`).join('<br>')}</td></tr>`:''}
+  ${(m.files||[]).length?`<tr><th>📎 ${esc(t.files||'參考資訊')}</th><td>${m.files.map(f=>`<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.name)}</a>`).join('<br>')}</td></tr>`:''}
   <tr><th>${esc(t.flow)}</th><td><b>${esc(m.path)}</b><br>${m.flow.map(esc).join('<br>')}</td></tr></tbody></table></div>
   <h4>${esc(m.tipsTitle)}</h4><ol>${m.tips.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
   <h4>${esc(t.pay)}</h4><div>${m.pay.map(s=>esc(s).replace(/\n/g,'<br>')).join('<br>')}</div>`}
