@@ -570,6 +570,8 @@ nav.tabs button{scroll-snap-align:start}
       <div class="card" id="drvNoteCard"><!-- 2026-10-19 給司機的補充：派車單和禮車服務確認單都會出現（確認單寫「已轉達司機」） -->
         <h3>給司機的補充 <small>派車單和禮車服務確認單都會出現（確認單上寫「已轉達司機」，客人知道有轉達）；客人行前確認填的「想提醒司機」和上傳的附件會自動帶進來</small></h3>
         <textarea id="d_drvNote" data-b="drvNote" rows="3" style="width:100%;box-sizing:border-box" placeholder="例：當天馬拉松交管，回程不能走北安路；停車位在社區地下室 B2"></textarea>
+        <h3 style="margin-top:12px">給客人的說明 <small>只放在禮車服務確認單（取代上面那段）；空白＝確認單照用上面「給司機的補充」</small></h3>
+        <textarea id="d_custMemoNote" data-b="custMemoNote" rows="3" style="width:100%;box-sizing:border-box" placeholder="例：司機會盡力配合保持隊形，但仍以行車安全及遵守交通規則為優先"></textarea>
         <div style="margin-top:10px"><div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:.95rem">附件</b><span class="hint" style="margin:0">客人提供的行程表、流程圖片；派車單和確認單都會附連結</span><label class="btn sm" style="cursor:pointer">＋ 新增附件<input type="file" id="attIn" accept="image/*,application/pdf" multiple hidden></label></div><div id="attList" class="sub" style="margin-top:6px"></div></div>
       </div>
       <div class="card">
@@ -1359,7 +1361,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   }
   return{no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(c.end)}`,gather:ap(c.gather||addMin(c.start,-20)),
     contact:(c.contact2||'').trim()?`\n${cname||''}${crole}  ${ph(c.phone)} / ${c.contact2.trim()}${(c.rel2||'').trim()?`(${c.rel2.trim()})`:''} ${ph(c.phone2)}`.trimEnd()+((c.contact3||'').trim()?`\n${c.contact3.trim()}${(c.rel3||'').trim()?`(${c.rel3.trim()})`:''} ${ph(c.phone3)}`.trimEnd():''):`${cname||''}${crole}  ${ph(c.phone)}`.trim(),boss:`${ld.driver||''} ${ph(ld.phone)}`.trim(),plan:planName(x),
-    flags:`${t.deco}：${yn(c.decoAns,lang)} / ${t.cane}：${yn(caneOf(x),lang)}`+((x.flagNote||'').trim()?`\n*${x.flagNote.trim()}`:''),fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',drvNote:String(x.drvNote||'').replace(/^[ \t]*客人行前確認[:：][ \t]*/gm,'').trim(),drvLabel:who==='drv'?(t.drvAdd||'給司機的補充'):(t.drvRelay||'已轉達司機'),files:cfFiles(x),   /* 2026-10-19 給司機的補充＋客人附件：確認單和派車單都放，客人知道有轉達 */
+    flags:`${t.deco}：${yn(c.decoAns,lang)} / ${t.cane}：${yn(caneOf(x),lang)}`+((x.flagNote||'').trim()?`\n*${x.flagNote.trim()}`:''),fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',drvNote:who==='cust'&&String(x.custMemoNote||'').trim()?String(x.custMemoNote).trim():String(x.drvNote||'').replace(/^[ \t]*客人行前確認[:：][ \t]*/gm,'').trim(),drvLabel:who==='drv'?(t.drvAdd||'給司機的補充'):(t.drvRelay||'已轉達司機'),files:cfFiles(x),   /* 2026-10-19 給司機的補充＋客人附件：確認單和派車單都放，客人知道有轉達 */
     tips:who==='cust'?tipsC(x,lang):TIPS_D,tipsTitle:who==='cust'?t.tipsC:t.tipsD,pay,t}}
 function memoText(m,maps){return window.nwcSpace?nwcSpace(memoText0(m,maps)):memoText0(m,maps)}   // 2026-10-17 派車單／確認單文字也加中英文空格
 function memoText0(m,maps){const t=m.t,L2=[];
