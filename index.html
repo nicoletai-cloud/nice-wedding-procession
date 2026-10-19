@@ -1105,6 +1105,9 @@ function fmtMDW(d,lang){const p=dparts(d);if(!p)return '（未定）';const w=WD
 const ph=s=>String(s||'').replace(/[-\s]/g,'');
 const noFloor=s=>String(s||'').replace(/(\d+號(?:之\d+)?)\s*(?:\d+|[一二三四五六七八九十]+|[Bb]\d+)\s*(?:樓|[Ff]).*$/,'$1');
 function ap(t){if(!t)return '';const [h,m]=t.split(':').map(Number);return `${p2(h)}:${p2(m)}${h<12?'am':'pm'}`}   /* 2026-10-20 Nicole：24 小時制＋am/pm（13:00pm） */
+/* 2026-10-20 Nicole：確認單用車時間＝客人填的禮車出發時間＋合約時數（含已確認的加時） */
+function ctEnd(x){const c=x.c||{},h=(+x.hours||0)+(+x.cfOtH||0);return c.start&&h>0?addMin(c.start,Math.round(h*60)):''}
+function ctOver(x){const c=x.c||{},ce=ctEnd(x);if(!ce||!c.end||c.end===ce)return 0;const d=(minutes(c.end)-minutes(c.start)+1440)%1440,lim=Math.round(((+x.hours||0)+(+x.cfOtH||0))*60);return d>lim?d-lim:0}
 function addMin(t,mins){if(!t)return '';let [h,m]=t.split(':').map(Number);let x=h*60+m+mins;x=(x+1440)%1440;return `${p2(Math.floor(x/60))}:${p2(x%60)}`}
 function hrsLabel(h){return +h===0?'單程':h+'HR'}
 function dstr(x){const p=dparts(x.date);return p?`${p.y}${p2(p.m)}${p2(p.d)}`:'YYYYMMDD'}
@@ -1413,7 +1416,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
     else pay.push(x.hours<3?'未滿 3 小時方案無緩衝，超過即以每 0.5 小時計加時':'加時 15 分鐘內不計 ; 第 16 分鐘起收加時費用',`加時：${otl}`);
     const back=r.balance-r.dsum;if(r.mon){if(r.dok&&r.dsum>r.onsite)pay.push('',`差額 ${money(r.dsum-r.onsite)} 由公司匯款`)}else if(x.balPaid)pay.push('',x.balRed&&r.red?'酬勞扣除紅包後由公司匯款':'酬勞由公司匯款');else if(!r.mon&&r.dok&&back>0)pay.push('',`匯回 ${money(back)}`);else if(!r.mon&&r.dok&&back<0)pay.push('',`差額 ${money(-back)} 由公司匯款`);
   }
-  return{who,no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(c.end)}`,gather:ap(c.gather||addMin(c.start,-20)),
+  return{who,no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(ctEnd(x)||c.end)}`,gather:ap(c.gather||addMin(c.start,-20)),
     contact:(c.contact2||'').trim()?`\n${cname||''}${crole}  ${ph(c.phone)} / ${c.contact2.trim()}${(c.rel2||'').trim()?`(${c.rel2.trim()})`:''} ${ph(c.phone2)}`.trimEnd()+((c.contact3||'').trim()?`\n${c.contact3.trim()}${(c.rel3||'').trim()?`(${c.rel3.trim()})`:''} ${ph(c.phone3)}`.trimEnd():''):`${cname||''}${crole}  ${ph(c.phone)}`.trim(),boss:`${ld.driver||''} ${ph(ld.phone)}`.trim(),plan:planName(x),
     flags:`${t.deco}：${who==='drv'&&String(x.decoDrv||'').trim()?String(x.decoDrv).trim():yn(c.decoAns,lang)} / ${t.cane}：${yn(caneOf(x),lang)}`+((x.flagNote||'').trim()?`\n*${x.flagNote.trim()}`:'')+(lang==='zh'?fireLines(x,who).map(l=>'\n*'+l).join(''):''),fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',drvNote:who==='cust'&&String(x.custMemoNote||'').trim()?String(x.custMemoNote).trim():String(x.drvNote||'').replace(/^[ \t]*客人行前確認[:：][ \t]*/gm,'').trim(),drvLabel:who==='drv'?(t.drvAdd||'給司機的補充'):(t.drvRelay||'已轉達司機'),files:cfFiles(x),   /* 2026-10-19 給司機的補充＋客人附件：確認單和派車單都放，客人知道有轉達 */
     tips:who==='cust'?tipsC(x,lang):TIPS_D,tipsTitle:who==='cust'?t.tipsC:t.tipsD,pay,t}}
@@ -1808,7 +1811,8 @@ function applyConfirm(res){const c=o.c,before=clone(o),diffs=[],warn=[];o.sample
 /* 2026-10-17 服務確認單給客人核對：存一份內容到機器人，用官方 LINE／FB／IG 傳按鈕；客人確認＋選尾款方式後同步回來 */
 let MEMOS={};
 function memoOkUrl(x){return 'https://love.niceweddingcar.com/wed-memo?no='+encodeURIComponent(orderNo(x))+'&k='+cfKey(x.id)}
-function renderMemoOk(){const el=$('memoOkSt'),card=$('memoOkCard');if(!el||!o)return;card.hidden=isPt(o);const tm=t=>{const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`},bal=calc(o).balance;
+function renderMemoOk(){const el=$('memoOkSt'),card=$('memoOkCard');if(!el||!o)return;
+  {let w=$('ctOverWarn');if(!w){w=document.createElement('div');w.id='ctOverWarn';w.style.cssText='color:#c0392b;font-weight:700;margin-top:8px;white-space:pre-line';el.parentNode.insertBefore(w,el)}const ov=ctOver(o);w.textContent=ov?`⚠️ 客人預估用車結束 ${ap(o.c.end)}，超過合約結束 ${ap(ctEnd(o))}（約 ${ov} 分鐘）：確認單寫的是合約時間 ${ap(o.c.start)}-${ap(ctEnd(o))}，請先和客人確認是否加時`:'';w.hidden=!ov}card.hidden=isPt(o);const tm=t=>{const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`},bal=calc(o).balance;
   const L=[];if(o.memoOkAt)L.push(`✅ 客人已確認無誤（${tm(o.memoOkAt)}）｜${o.balPlan==='cash'?`尾款：當天付現金 ${money(bal)}（尾款＋司機禮包一包交車隊負責人）`:o.balPlan==='transfer'?`尾款：提前匯款 ${money(bal)}（最晚用車前一天）${o.balPaid?'，已標記收到':o.balInfo?`\n💸 客人已回傳匯款資訊（${tm(o.balInfo.at)}${o.balInfo.last5?'，後五碼 '+o.balInfo.last5:''}${o.balInfo.file?'，附轉帳截圖':''}），待對帳：對完請在「尾款收款方式」標記已匯`:'，客人還沒回傳匯款資訊'}`:'月結'}`);
   if(o.memoFixAt&&!(+o.memoOkAt>+o.memoFixAt))L.push(`✏️ 客人說內容要修改（${tm(o.memoFixAt)}）：${o.memoFixNote||''}\n改好後請再按一次「傳確認單給客人核對」`);
   {const M=MEMOS&&MEMOS[normNo(orderNo(o))]||{};if(o.memoHoldAt&&!o.memoOkAt&&!(+M.sentAt>+o.memoHoldAt))L.push(`🪪 等司機綁定車卡：${tm(o.memoHoldAt)} 按了傳送，群組裡還有司機沒綁定車卡${o.memoHoldNames?`（${o.memoHoldNames}）`:''}，已 @ 他們綁定；全部綁好後系統會自動把確認單傳給客人核對（22:00–10:00 排到 10:00）`)}
