@@ -1034,6 +1034,7 @@ function save(){o.updated=Date.now();DB.cur=o.id;DB.orders[o.id]=o;store('nwcw_o
 function saveS(){if(syncReady)S._ts=Date.now();store('nwcw_settings',S);pushSync()}
 let syncReady=false,syncBusy=false,syncTimer=null,syncAgain=false;
 function syncStat(t){const el=$('btnSync');if(el)el.textContent=t}
+async function syncFresh(){for(let i=0;i<120&&syncBusy;i++)await new Promise(r=>setTimeout(r,500));await doSync()}   /* 2026-10-20 等正在跑的同步結束，再同步一次，確保拿到最新版 */
 function pushSync(){if(!syncReady)return;clearTimeout(syncTimer);syncTimer=setTimeout(doSync,1500)}
 async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl;if(!S.driveUrl||!S.driveKey){syncStat('點我設定同步');return}if(syncBusy&&Date.now()-syncBusy<120000){syncAgain=true;return}syncBusy=Date.now();syncStat('同步中…');
   try{const send={};Object.values(DB.orders).forEach(x=>{if(x.sample)return;let k=null;try{const r=calc(x),v=vendorOf(x);k={total:r.total,deposit:r.deposit,balance:r.balance,dsum:r.dsum,dok:r.dok,mon:r.mon,onsite:r.onsite,red:r.red,refAmt:r.refAmt,bill:r.bill,vendor:v?v.name:'',lux:carKind(x).lux,tesla:carKind(x).tesla}}catch(_){}send[x.id]=Object.assign({},x,{_no:orderNo(x),_trip:tripCode(x),_area:ptArea(x),_calc:k})});
@@ -1041,7 +1042,9 @@ async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl
     const res=await fetch(S.driveUrl,{signal:ac.signal,method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'sync',orders:send,deleted:DB.deleted||{},settings:S._ts?S:null})});
     const j=await res.json();clearTimeout(to);if(!j.ok)throw new Error(j.error||'失敗');
     let cur=false;DB.deleted=Object.assign({},DB.deleted||{},j.deleted||{});
-    Object.keys(j.orders||{}).forEach(id=>{const r=j.orders[id],l=DB.orders[id];if(!l||(+r.updated||0)>(+l.updated||0)){DB.orders[id]=migrate(r);if(id===o.id)cur=true}});
+    const CF=new Set(j.conflicts||[]);   /* 2026-10-20 伺服器擋下舊版覆蓋 → 這台改載入最新版 */
+    Object.keys(j.orders||{}).forEach(id=>{const r=j.orders[id],l=DB.orders[id];if(!l||(+r.updated||0)>(+l.updated||0)||CF.has(id)){DB.orders[id]=migrate(r);DB.orders[id]._base=+r.updated||0;if(id===o.id)cur=true}else if((+r.updated||0)===(+l.updated||0))l._base=+l.updated||0});
+    if(CF.size)setTimeout(()=>toast('有 '+CF.size+' 張單在別台裝置改過，已載入最新版本；剛剛在這台的修改請再改一次'),300);
     Object.keys(DB.deleted).forEach(id=>{const l=DB.orders[id];if(l&&(+l.updated||0)<=DB.deleted[id]){delete DB.orders[id];if(id===o.id)cur=true}});
     const real=Object.values(DB.orders).filter(x=>!x.sample).sort((a,b)=>(b.updated||0)-(a.updated||0));
     if(real.length){if(o.sample){o=real[0];cur=true}Object.values(DB.orders).forEach(x=>{if(x.sample)delete DB.orders[x.id]})}
@@ -1392,7 +1395,7 @@ function memoHTML0(m,maps){const t=m.t;
   <div class="tbl"><table style="margin-top:10px"><tbody>${m.pts.map(p=>`<tr><th style="width:130px">${esc(p.k)}. ${esc(p.title)}</th><td>${maps?`<a href="${esc(mapUrl(p.addr))}" target="_blank" rel="noopener">${esc(p.addr)}</a>`:esc(p.addr)}${p.label?`<br>(${esc(p.label)})`:''}${p.map?`<br>導航定位：<a href="${esc(p.map)}" target="_blank" rel="noopener">${esc(p.map)}</a>`:''}</td></tr>`).join('')}
   ${m.route?`<tr><th>${esc(t.route)}</th><td>${esc(m.route)}</td></tr>`:''}
   <tr><th>${esc(t.flow)}</th><td><b>${esc(m.path)}</b><br>${m.flow.map(esc).join('<br>')}</td></tr>
-  ${m.drvNote||(m.files||[]).length?`<tr><th>${esc(t.notes||'注意事項')}</th><td>${m.drvNote?`📌 ${esc(m.drvLabel||t.drvAdd||'給司機的補充')}：${esc(m.drvNote).replace(/\n/g,'<br>')}`:''}${m.drvNote&&(m.files||[]).length?'<br>':''}${(m.files||[]).length?`📎 ${esc(t.files||'參考資訊')}：${m.files.map((f,i)=>`<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc((t.ref||'參考資料')+' '+(i+1))}</a>`).join('、')}`:''}</td></tr>`:''}</tbody></table></div>
+  ${m.drvNote||(m.files||[]).length?`<tr><th>${esc(t.notes||'注意事項')}</th><td>${m.drvNote?`📌 ${esc(m.drvLabel||t.drvAdd||'給司機的補充')}：${esc(m.drvNote).replace(/\n/g,'<br>')}`:''}${m.drvNote&&(m.files||[]).length?'<br>':''}${(m.files||[]).length?`📎 ${esc(t.files||'參考資訊')}：<br>${m.files.map((f,i)=>{const fid=f.id||((String(f.url||'').match(/\/d\/([\w-]{20,})/)||[])[1]||''),lb=esc((t.ref||'參考資料')+' '+(i+1));return fid?`<a href="${esc(f.url)}" target="_blank" rel="noopener" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;margin:6px 8px 0 0;vertical-align:top;font-size:12px;text-decoration:none"><img src="https://drive.google.com/thumbnail?id=${esc(fid)}&amp;sz=w300" alt="${lb}" loading="lazy" onerror="this.remove()" style="width:88px;height:88px;object-fit:cover;border-radius:8px;border:1px solid #e5ddd2;background:#f4f1ec">${lb}</a>`:`<a href="${esc(f.url)}" target="_blank" rel="noopener">${lb}</a>`;}).join(' ')}`:''}</td></tr>`:''}</tbody></table></div>
   <h4>${esc(m.tipsTitle)}</h4><ol>${m.tips.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
   <h4>${esc(t.pay)}</h4><div>${m.pay.map(s=>esc(s).replace(/\n/g,'<br>')).join('<br>')}</div>`}
 
@@ -1728,17 +1731,18 @@ function renderMemoOk(){const el=$('memoOkSt'),card=$('memoOkCard');if(!el||!o)r
   if(o.memoSentAt&&!o.memoOkAt)L.push(`⏳ 已傳給客人（${tm(o.memoSentAt)}），客人還沒確認`);
   if(o.memoPushErr)L.push(`⚠️ 上次傳送失敗：${o.memoPushErr}（可按「複製核對連結」手動傳）`);
   el.textContent=L.join('\n')||'還沒傳給客人核對'}
-async function memoPush(){if(!S.driveUrl||!S.driveKey){toast('還沒設定機器人連線');return}const r=calc(o);
-  const text=memoText(memoModel(o,'cust','zh'),false);
+async function memoPush(){if(!S.driveUrl||!S.driveKey){toast('還沒設定機器人連線');return}let r=calc(o);
   if(!confirm(`要傳禮車服務確認單給客人核對嗎？\n\n客人會看到整份確認單，並選擇尾款付款方式：\n・用車當天付現金 ${money(r.balance)}（尾款＋司機禮）\n・提前匯款（最晚用車前一天）\n\n（傳之前請先確認第 6 頁的確認單內容都是最新的）`))return;
-  toast('傳送中…');try{await doSync()}catch(_){}
+  toast('傳送中…');try{await syncFresh()}catch(_){}
+  r=calc(o);const text=memoText(memoModel(o,'cust','zh'),false);   /* 2026-10-20 先同步拿到最新版再產生確認單內容（避免用到這台舊的資料） */
   let grp='';try{grp=await lgMsgReady()}catch(_){}   // 2026-10-19 客人確認後要自動發到司機群組的開場訊息（含派車單連結）
   const j=await cfQApi({action:'memoSend',items:[{id:o.id,text,bal:r.balance,mon:!!r.mon,grp}]});if(!j||!j.ok){toast('傳送失敗：'+((j&&j.error)||'連不到機器人'));return}
   const res=(j.res||[])[0]||{},now=Date.now();if(res.ok){o.memoSentAt=now;o.memoDone=true;o.memoPushErr='';o.memoOkAt=0;o.memoFixAt=0;toast('已傳給客人核對')}else{o.memoPushErr=res.err||'';alert('傳不到客人：'+(res.err||'')+'\n\n確認單內容已存好，可以按「複製核對連結」手動傳給客人。')}
   o.updated=now;save();pushSync();renderMemoOk();try{renderTodo()}catch(_){}}
 /* 2026-10-19 複製核對連結：先把最新確認單內容存到機器人（不傳 LINE），客人打開才看得到 */
-function memoLinkCopy(){const url=memoOkUrl(o),x=o;
-  const job=(async()=>{if(!S.driveUrl||!S.driveKey)throw new Error('還沒設定機器人連線');const r=calc(x),text=memoText(memoModel(x,'cust','zh'),false);try{await doSync()}catch(_){}
+function memoLinkCopy(){const url=memoOkUrl(o),xid=o.id;
+  const job=(async()=>{if(!S.driveUrl||!S.driveKey)throw new Error('還沒設定機器人連線');try{await syncFresh()}catch(_){}
+    const x=DB.orders[xid]||o,r=calc(x),text=memoText(memoModel(x,'cust','zh'),false);   /* 2026-10-20 同步完才拿最新版產生內容 */
     let grp='';try{grp=await lgMsgReady()}catch(_){}
     const j=await cfQApi({action:'memoSend',noPush:true,items:[{id:x.id,text,bal:r.balance,mon:!!r.mon,grp}]});const res=(j&&j.res||[])[0]||{};if(!j||!j.ok||!res.ok)throw new Error((res&&res.err)||(j&&j.error)||'連不到機器人');
     x.memoDone=true;x.memoPushErr='';x.updated=Date.now();save();pushSync();try{renderMemoOk()}catch(_){};return url})();
