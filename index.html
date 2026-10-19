@@ -1749,7 +1749,7 @@ function cfNoteFill(){const ch=[];Object.values(DB.orders).forEach(x=>{if(x.samp
   if(nt&&!(x.cfLast&&x.cfLast.f)&&!cfNoteIn(x,nt))x.drvNote=(String(x.drvNote||'').trim()?String(x.drvNote).trim()+'\n\n':'')+nt;
   x.updated=Date.now();DB.orders[x.id]=x;ch.push(x)});return ch.filter(x=>cfNoteIn(x,String(CONFIRMS[normNo(orderNo(x))].f.note||'').trim())&&!(x.cfLast&&x.cfLast.f))}
 function cfNoteAdd(){const cf=CONFIRMS[normNo(orderNo(o))],nt=String(((cf&&cf.f)||(o.cfLast&&o.cfLast.f)||{}).note||'').trim();if(!nt)return;if(!cfNoteIn(o,nt))o.drvNote=(String(o.drvNote||'').trim()?String(o.drvNote).trim()+'\n\n':'')+nt;o.sample=false;save();try{renderAll()}catch(_){}toast('已加進注意事項（派車單＋服務確認單），記得重新產生文件')}
-function cfAuto(){const ch=[];Object.values(DB.orders).forEach(x=>{if(x.sample)return;const cf=CONFIRMS[normNo(orderNo(x))];if(!cf||!cf.f||!(+cf.at>(+x.cfApplyAt||0)))return;
+function cfAuto(){const ch=[];Object.values(DB.orders).forEach(x=>{if(x.sample)return;const cf=CONFIRMS[normNo(orderNo(x))];if(!cf||!cf.f||!(+cf.at>(+x.cfApplyAt||0))||+x.locEditAt>=+cf.at)return;   /* 2026-10-20 你手動改過地點／流程後，同一份行前確認不再覆蓋 */
   const keep=o;o=x;try{x.cfPrev={meet:x.c.meet||'',wed:x.c.wed||'',o1:x.c.o1||''};const f=cf.f,r=f.mode==='loop'?applyLoop(f):applyConfirm({name:f.name,phone:f.phone,meet:f.meet,wed:f.wed,start:f.start,combo:f.combo,cane:f.cane,back:f.back,restYN:f.restYN,restT:f.restT,restAddr:f.restAddr});
     if(f.friend){const ft=f.friend==='有'?`${f.friendN} 台，排第 ${String(f.friendPos||'').split(',').join('、')} 車`:f.friend;if(f.friend==='有')r.warn.unshift(`親友車加入車隊：${ft}，已自動排進用車確認單和司機派車單，請到「車隊」確認車序。`);else r.diffs.push(`親友車加入車隊：${ft}`)}   // 2026-10-15 行前確認新增親友車題目
     if(f.fireYN){x.fireYN=f.fireYN;x.fire=f.fire||'';x.fireType=f.fireType||'';x.fireMode=f.mode==='loop'?'loop':'';r.diffs.push('鞭炮：'+(f.fireYN==='要放'?fireLines(x,'cust')[0].replace(/^鞭炮：/,''):f.fireYN))}   // 2026-10-20 鞭炮
@@ -1875,7 +1875,7 @@ const cfHasNo=v=>/\d\s*號/.test(String(v||''));
 function cfArea(a){const s=String(a||'').replace(/臺/g,'台').replace(/^\s*\d{3,6}\s*/,'').replace(/^台灣/,'').replace(/\s/g,'');const m=s.match(/^(.{2}[縣市])(.{1,3}?[鄉鎮市區])/);return m?m[1]+m[2]:countyOf(s)}
 function cfMapUrl(q,pid){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q)+(pid?'&query_place_id='+encodeURIComponent(pid):'')}
 async function cfGeoRun(){if(cfGeoBusy||!S.driveUrl||!S.driveKey)return;const td=new Date().toISOString().slice(0,10);
-  const L=Object.values(DB.orders).filter(x=>x&&!x.sample&&x.cfLast&&x.date>=td&&(+x.cfGeoAt||0)<(+x.cfApplyAt||0));if(!L.length)return;cfGeoBusy=true;let n=0;
+  const L=Object.values(DB.orders).filter(x=>x&&!x.sample&&x.cfLast&&x.date>=td&&(+x.cfGeoAt||0)<(+x.cfApplyAt||0)&&!(+x.locEditAt>(+x.cfApplyAt||0)));   /* 手動改過地點就不再自動核對帶入 */if(!L.length)return;cfGeoBusy=true;let n=0;
   try{for(const x of L){const c=x.c||{},todo=CF_GEO_F.filter(([k])=>{const v=String(c[k]||'').trim();return v&&!cfHasNo(v)&&!/^(待定|未定|再確認|同上|無|沒有|不需要|不用|-|—)$/.test(v)});x.cfGeoAt=Date.now();
     if(todo.length){const ctx=CF_GEO_F.map(([k])=>c[k]).concat(Object.values(x.cfPrev||{})).filter(cfHasNo).map(countyOf).filter(Boolean)[0]||'',qs=[];
       todo.forEach(([k])=>{const v=String(c[k]).trim();qs.push({k:k+'0',q:v});if(ctx&&v.indexOf(ctx)<0)qs.push({k:k+'1',q:ctx+' '+v})});
@@ -1946,7 +1946,7 @@ function fillInputs(){document.querySelectorAll('[data-b]').forEach(el=>{const v
 document.addEventListener('input',e=>{const el=e.target;
   if(el.dataset.b){let v=el.value;if(el.hasAttribute('data-num'))v=el.value===''?0:num(el.value);if(el.hasAttribute('data-bool'))v=el.value==='1';
     if(el.dataset.b==='depOverride')v=el.value===''?'':num(el.value);
-    setPath(o,el.dataset.b,v);o.sample=false;
+    setPath(o,el.dataset.b,v);o.sample=false;if(/^(c\.(meet|wed|o\d+)(L|T|Map|S)?|path)$/.test(el.dataset.b))o.locEditAt=Date.now();
     if(el.dataset.b==='src.vendor'&&v&&!(o.src&&o.src.from)){o.src.from='婚顧／廠商介紹';if($('q_from'))$('q_from').value=o.src.from}
     if(el.dataset.b==='c.meet'&&!o.cityA&&countyOf(o.c.meet)){o.cityA=countyOf(o.c.meet);$('q_cityA').value=o.cityA}
     if(el.dataset.b==='c.wed'&&!o.cityB&&countyOf(o.c.wed)){o.cityB=countyOf(o.c.wed);$('q_cityB').value=o.cityB}
@@ -1965,7 +1965,7 @@ document.addEventListener('input',e=>{const el=e.target;
   if(el.dataset.mm){const [i,k]=el.dataset.mm.split('.');S.models[+i][k]=el.value;rebuildModels();saveS();renderCars();renderAll();return}
   if(el.dataset.bd){const [i,k]=el.dataset.bd.split('.');const b=S.bundles[+i];if(k==='name')b.name=el.value;else if(k==='price')b.price=num(el.value);else if(k==='combo')b.cars=parseCombo(el.value);else b.cars[k]=num(el.value);saveS();renderAll();return}
   if(el.dataset.fl){const [i,k]=el.dataset.fl.split('.');const f=o.fleet[+i];if(k==='lead'){o.fleet.forEach(x=>x.lead=false);f.lead=el.checked}else f[k]=(k==='seats')?num(el.value):el.value;o.sample=false;save();renderAll();return}
-  if(el.dataset.fw){const [i,k]=el.dataset.fw.split('.');o.flow[+i][k]=el.value;o.sample=false;save();renderAll();return}
+  if(el.dataset.fw){const [i,k]=el.dataset.fw.split('.');o.flow[+i][k]=el.value;o.sample=false;o.locEditAt=Date.now();save();renderAll();return}
   if(el.id==='mapLinks'){o.mapLinks=el.checked;save();renderMemo()}
 });
 document.addEventListener('change',e=>{if(e.target.dataset.fl&&e.target.dataset.fl.endsWith('.role')){o.fleet.sort((a,b)=>{const r=x=>{const i=ROLES.indexOf(x.role);return i<0?9:i};return r(a)-r(b)});save();renderFleet();renderAll()}
@@ -2013,7 +2013,7 @@ function renderFleet(){try{renderFr()}catch(_){}try{setTimeout(renderEq,0)}catch
   <td style="text-align:center"><input type="radio" name="leadR" data-fl="${i}.lead" id="fl_l${i}" ${f.lead?'checked':''} style="width:auto" aria-label="負責人"></td></tr>`}).join('')||'<tr><td colspan="11" class="hint">先在「報價」選車款。</td></tr>'}
 /* 2026-10-20 Nicole：流程代號按鈕（A–D、繞圈、退一步），按了自動排好下面每一段 */
 function pbTokens(p){return String(p||'').split(/\s*[-－>＞→]\s*/).map(z=>z.trim()).filter(Boolean).map(z=>/繞圈/.test(z)?'繞圈':z.toUpperCase()).filter(z=>z==='繞圈'||/^[A-Z]$/.test(z))}
-function pbApply(ks){o.path=ks.join(' - ');const old=o.flow||[],fl=[];let n=0;const cn='一二三四五六七八九十';
+function pbApply(ks){o.locEditAt=Date.now();o.path=ks.join(' - ');const old=o.flow||[],fl=[];let n=0;const cn='一二三四五六七八九十';
   for(let i=0;i<ks.length;i++){const a=ks[i];if(a==='繞圈')continue;const nx=ks[i+1];if(nx==null)break;
     if(nx==='繞圈'){n++;fl.push(`${a} 第${cn[n-1]||n}圈繞圈`)}else fl.push(`${a} - ${nx}`)}
   o.flow=fl.map((seg,i)=>({t:old[i]?old[i].t:(i===0?(o.c.start||''):''),who:old[i]?old[i].who:'',seg}));o.sample=false;save();renderAll();try{renderFlow()}catch(_){}}
@@ -2035,7 +2035,7 @@ function renderFlowPts(){const el=$('flowPts');if(!el||!o)return;if(el.contains(
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-ptadd]');if(!b||!o)return;const n=Math.max(ptLast(o),PTN[o.id]||0,...pbTokens(o.path).filter(z=>z!=='繞圈').map(z=>PT_L.indexOf(z)));PTN[o.id]=Math.min(25,n+1);renderFlowPts()});
 document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!t.dataset.pttype||!o)return;const k=t.dataset.pttype,fd=ptField(k);
   if(t.value==='__new'){PTNEW[o.id+k]=1;o.c[fd+'T']='';save();t.blur();renderFlowPts();try{const i=$('flowPts').querySelector(`[data-b="c.${fd}T"]`);i&&i.focus()}catch(_){}return}
-  delete PTNEW[o.id+k];o.c[fd+'T']=t.value===ptDefType(k)?'':t.value;save();t.blur();renderFlowPts()});
+  delete PTNEW[o.id+k];o.c[fd+'T']=t.value===ptDefType(k)?'':t.value;o.locEditAt=Date.now();save();t.blur();renderFlowPts()});
 /* 刪除地點：後面的地點往前補（字母照順序），流程裡的字母跟著改 */
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-ptdel]');if(!b||!o)return;const k=b.dataset.ptdel,di=PT_L.indexOf(k),c=o.c;
   if(String(c[ptField(k)]||'').trim()&&!confirm(`刪除地點 ${k}（${c[ptField(k)]}）？後面的地點會往前補。`))return;
@@ -2723,7 +2723,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.copy){copy($(t.dataset.copy).textContent,$(t.dataset.copy));if(t.dataset.copy==='outQuote'){snapQuote();const qb=$('quoteAddBox');if(qb){qb.scrollIntoView({behavior:'smooth',block:'center'});qb.style.boxShadow='0 0 0 3px var(--accent,#a67c45)';setTimeout(()=>qb.style.boxShadow='',2500)}setTimeout(()=>toast('已複製報價，貼上後再按「複製補充」'),300)}if(t.dataset.copy==='outOrder'&&!o.orderedAt){o.orderedAt=Date.now();save();renderOrderSel()}if(t.dataset.copy==='outConfirm'&&!o.cfSentAt){o.cfSentAt=Date.now();save();renderOrderSel()}return}
   if(t.dataset.copytext){const v=t.dataset.copytext;if(navigator.clipboard)navigator.clipboard.writeText(v).then(()=>toast('已複製'),()=>toast('複製失敗，請點開啟後從網址列複製'));return}
   if(t.dataset.copyv){const el=$(t.dataset.copyv);if(navigator.clipboard)navigator.clipboard.writeText(el.value).then(()=>toast('已複製'),()=>{el.select();toast('已選取文字，請按複製')});else{el.select()}return}
-  if(t.dataset.fdel){o.flow.splice(+t.dataset.fdel,1);save();renderFlow();renderAll();return}
+  if(t.dataset.fdel){o.flow.splice(+t.dataset.fdel,1);o.locEditAt=Date.now();save();renderFlow();renderAll();return}
   if(t.dataset.mdel){const md=S.models[+t.dataset.mdel];if(Object.values(DB.orders).some(x=>num(x.cars[md.id])>0)){toast('有訂單用到這個車款，先把那些訂單的車數改成 0');return}
     if(t.textContent!=='確認刪除'){t.textContent='確認刪除';setTimeout(()=>{t.textContent='刪除'},3000);return}
     S.models.splice(+t.dataset.mdel,1);S.removed=(S.removed||[]).concat(md.id);rebuildModels();saveS();renderPriceSettings();renderCars();renderAll();return}
