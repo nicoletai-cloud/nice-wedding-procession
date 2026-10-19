@@ -648,7 +648,7 @@ nav.tabs button{scroll-snap-align:start}
   <!-- 回金・月結 -->
   <section class="tab" id="tab-refs" hidden>
     <div class="card" style="margin-bottom:18px"><h3>這張訂單的回金 <small>匯回同業／廠商回金，以及我的佣金</small></h3><div id="ordRef"></div></div>   <!-- 2026-10-20 這頁只看目前這張訂單 -->
-    <div class="card" style="margin-top:18px">
+    <div class="card" style="margin-top:18px" id="refRowCard">
       <h3>這張訂單的「廠商推薦」紀錄 <small>貼到工作表單的「廠商推薦」分頁</small></h3>
       <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm pri" data-copy="outRefRow">複製一列</button></div>
       <pre class="out" id="outRefRow"></pre>
@@ -2092,7 +2092,7 @@ function renderSettle(){const el=$('setDate');if(!el)return;if(!el.value){const 
   const list=Object.values(DB.orders).filter(x=>!x.sample&&x.date&&(x.date===day||x.date<day&&!x.settled&&settleInfo(x).act)).sort((a,b)=>a.date.localeCompare(b.date));
   $('setBody').innerHTML=list.map(x=>{const s=settleInfo(x);return `<tr${x.settled?' style="opacity:.55"':''}><td>${esc(x.date.slice(5).replace('-','/'))}${x.date<day?' <span class="chip" style="color:var(--warn)">未處理</span>':''}</td><td>${esc(orderNo(x))}<br><small>${esc([x.c.groom,x.c.bride].filter(Boolean).join('&'))}</small></td><td>${esc(s.st)}</td><td>${s.act?esc(s.act):'<span class="hint" style="margin:0">不用處理</span>'}</td><td style="text-align:center">${s.act?`<input type="checkbox" data-settle="${x.id}" id="st_${x.id}" ${x.settled?'checked':''} style="width:auto" aria-label="已處理">`:''}</td></tr>`}).join('')||'<tr><td colspan="5" class="hint">這天沒有任務。</td></tr>';try{renderDrvTransfers(day)}catch(err){console.warn(err)}}
 /* 2026-10-20 Nicole：回金頁只看目前這張訂單：同業單＝匯回同業＋我的回佣；一般訂單＝廠商／婚顧回金 */
-function renderOrdRef(){const el=$('ordRef');if(!el||!o)return;const row=(k,v,b)=>`<div><span>${esc(k)}</span><span${b?' style="font-weight:700"':''}>${v}</span></div>`;
+function renderOrdRef(){const el=$('ordRef');if(!el||!o)return;{const rc=$('refRowCard');if(rc)rc.hidden=isPt(o)||!vendorOf(o)}   /* 2026-10-20 同業單、沒有廠商推薦的單不顯示廠商推薦紀錄 */const row=(k,v,b)=>`<div><span>${esc(k)}</span><span${b?' style="font-weight:700"':''}>${v}</span></div>`;
   if(isPt(o)){const p=o.partner||{},k=ptCalc(o);el.innerHTML=`<div class="sum">${row('同業公司',esc(p.co||'—'))}${p.prepaid?row('同業應付我',money(k.owe)):row('司機現場收（尾款＋司機禮）',money(num(p.collect)))}${row('司機酬勞合計',money(k.pay))}${p.prepaid?'':row('司機交回我',money(k.back))}${row('匯回同業',money(k.remit),1)}<div class="tot"><span>我的回佣</span><span style="color:#2F6B4F">${money(k.profit)}</span></div></div>`;return}
   const v=vendorOf(o),r=calc(o);if(!v){el.innerHTML='<p class="hint" style="margin:0">這張單沒有廠商／婚顧推薦，不用回金。</p>';return}
   el.innerHTML=`<div class="sum">${row('廠商',esc(v.name))}${o.src&&o.src.ref?row('推薦人',esc(o.src.ref)):''}${row('方案費用',money(r.planFee))}<div class="tot"><span>${isMonthly(o)?'月結（不另付回金）':'回金'}</span><span>${isMonthly(o)?'月結':money(r.refAmt)}</span></div></div>`}
