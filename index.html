@@ -2052,8 +2052,8 @@ function meetPlace(c){const h=hotelName(c);if(h)return h;const a=String(c.meet||
 function lgName(x){const c=x.c,p=dparts(x.date);return [p?p.m+'/'+p.d:'',meetPlace(c),tripCode(x)].filter(Boolean).join(' ')}
 function lgMsg(x){const c=x.c,p=dparts(x.date),L=x.memoLinks||{},ld=lead(x)||{};
   const cars=x.fleet.map(f=>[`${f.role}｜${(f.up||'').trim()&&f.up.trim()!==MNAME[f.m]?f.up.trim()+'(升等)':MNAME[f.m]} ${f.color||''}｜${f.plate||'—'}`,`　${f.driver||'（未派）'}${f.lead?'（負責人）':''} ${ph(f.phone)}`.trimEnd(),f.emg?`　緊急聯絡：${ph(f.emg)}`:''].filter(Boolean).join('\n'));
-  return ['各位司機好，這是本次禮車任務群組',`訂單編號：${orderNo(x)}`,`日期：${x.date?fmtDate(x.date)+'（'+WD.zh[p.w]+'）':'未定'}`,`司機集合：${c.gather||addMin(c.start,-20)||'—'}　${isHotel(c.meet)?'集合地點：':c.meetL?c.meetL+'：':''}${c.meet||''}`.trimEnd(),`用車時間：${c.start||'--:--'} - ${c.end||'--:--'}`,
-    `派車單：${L.drv||'（按「複製訊息」會自動產生連結）'}`,'','車隊',...cars,'',`負責人：${ld.driver||'—'}`,'請大家看完派車單回覆「收到」，當天出發前在群組報到，謝謝！'].join('\n')}
+  /* 2026-10-20 Nicole：群組訊息改成精簡版（行程＋負責人＋回覆收到） */
+  return [`提供行程及注意事項：${L.drv||'（按「複製訊息」會自動產生連結）'}`,`本次任務由 @${ld.driver||'負責人'} 主責，請全力配合`,'','請大家看完派車單回覆「收到」，當天出發前在群組報到，謝謝！'].join('\n')}
 function ttMemo(x){if(x.partner)return [`同業單：${x.partner.co||''}`,`訂單編號：${orderNo(x)}`,'',x.partner.raw||''].join('\n');return [quoteText(x,'zh'),'',`訂單編號：${orderNo(x)}`,`合約：${x.driveFolder||'（合約尚未存到 Drive，存檔後會自動帶入連結）'}`].join('\n')}
 function ttPromptText(pick){const sv=o,L=[],now=new Date();
   const list=(pick||Object.values(DB.orders)).filter(x=>x.paid&&!x.sample&&!x.lost&&x.date&&daysTo(x)!==null&&daysTo(x)>=0).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:String(a.c.start||'').localeCompare(String(b.c.start||'')));
