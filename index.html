@@ -279,6 +279,7 @@ nav.tabs button{scroll-snap-align:start}
       <div class="more-grid">
         <button class="btn" id="btnPtSettle">同業結算</button>
         <button class="btn" id="btnDecoCal">車頭彩檔期</button>
+        <button class="btn" id="btnHosts" title="行前確認填的儀式老師／主持人名單，可以註記合作狀況">主持人</button>
         <button class="btn" id="btnAnn" title="選用車日期，禮車助手把公告發到當天的車趟群組（例：颱風出勤提醒）">群組公告</button>
         <a class="btn" id="nwcLessonLink" href="https://docs.google.com/document/d/1K6DnYwcA0rDnFsxS_l0Rqs-Nk7z1OwpHPUImlviNWJs/edit" target="_blank" rel="noopener" title="編輯司機教案（Google 文件）；改完司機在 LINE「禮車助手」看到的就是新版。司機用的連結：https://liff.line.me/2011949076-1fqUEtE2?p=lesson">司機教案</a>
       </div>
@@ -530,6 +531,7 @@ nav.tabs button{scroll-snap-align:start}
 
   <!-- 5 車隊與流程 -->
   <section class="tab" id="tab-dispatch" hidden>
+<div class="card lgTop" style="margin-bottom:14px;padding:10px 14px"><div class="row" style="gap:8px;align-items:center;flex-wrap:nowrap"><b style="white-space:nowrap">群組名稱</b><input id="lgName5" readonly style="flex:1;min-width:0"><button class="btn sm pri" data-copyv="lgName5">複製</button></div></div>   <!-- 2026-10-20 車隊與流程、派車單頁上方都能複製群組名稱 -->
     <div class="stack">
       <div class="card" id="balCard"><div class="row" style="gap:10px;align-items:center;flex-wrap:wrap"><b>尾款收款方式</b><select class="balMode" style="width:auto"><option value="">司機現場收尾款＋紅包</option><option value="all">客人已匯尾款＋紅包（司機只收加時）</option><option value="nored">客人已匯尾款，紅包現場給司機</option></select><span class="hint" style="margin:0" id="balHint"></span></div></div>
       <div class="card" id="ptCard" hidden style="border-color:#A77D4C"><h3>同業單 <small>只要選司機；不用出合約、memo、派車單</small></h3><datalist id="ptCoList"></datalist><div id="ptCardBody"></div></div>
@@ -591,6 +593,7 @@ nav.tabs button{scroll-snap-align:start}
 
   <!-- 6 memo -->
   <section class="tab" id="tab-memo" hidden>
+<div class="card lgTop" style="margin-bottom:14px;padding:10px 14px"><div class="row" style="gap:8px;align-items:center;flex-wrap:nowrap"><b style="white-space:nowrap">群組名稱</b><input id="lgName6" readonly style="flex:1;min-width:0"><button class="btn sm pri" data-copyv="lgName6">複製</button></div></div>   <!-- 2026-10-20 車隊與流程、派車單頁上方都能複製群組名稱 -->
     <div id="memoCall" class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 12px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2,#faf5ee)" hidden></div>
     <div class="row" style="margin-bottom:12px;gap:14px">
       <div class="seg" id="memoWho">
@@ -773,6 +776,14 @@ nav.tabs button{scroll-snap-align:start}
     <textarea id="annText" rows="8" placeholder="公告內容，例如：&#10;【10/25 任務出勤提醒】&#10;各位夥伴好，…" style="width:100%;margin-bottom:10px"></textarea>
     <div id="annList" style="margin-bottom:10px"></div>
     <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><button class="btn pri" id="btnAnnSend" disabled>發送</button><span class="hint" id="annMsg" style="margin:0"></span></div>
+  </div>
+</div>
+<!-- 2026-10-20 Nicole：主持人／儀式老師名單（從行前確認搜集），註記有沒有合作過、日後聯絡 -->
+<div id="hostModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
+  <div style="max-width:860px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px">
+    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">主持人 <small>行前確認填的儀式老師／主持人；註記會同步到每台裝置</small></h3><button class="btn sm" id="btnHostClose">關閉</button></div>
+    <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px" id="hostFilt"></div>
+    <div id="hostList"></div>
   </div>
 </div>
 <div id="lgModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
@@ -1367,7 +1378,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   }
   return{no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(c.end)}`,gather:ap(c.gather||addMin(c.start,-20)),
     contact:(c.contact2||'').trim()?`\n${cname||''}${crole}  ${ph(c.phone)} / ${c.contact2.trim()}${(c.rel2||'').trim()?`(${c.rel2.trim()})`:''} ${ph(c.phone2)}`.trimEnd()+((c.contact3||'').trim()?`\n${c.contact3.trim()}${(c.rel3||'').trim()?`(${c.rel3.trim()})`:''} ${ph(c.phone3)}`.trimEnd():''):`${cname||''}${crole}  ${ph(c.phone)}`.trim(),boss:`${ld.driver||''} ${ph(ld.phone)}`.trim(),plan:planName(x),
-    flags:`${t.deco}：${yn(c.decoAns,lang)} / ${t.cane}：${yn(caneOf(x),lang)}`+((x.flagNote||'').trim()?`\n*${x.flagNote.trim()}`:''),fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',drvNote:who==='cust'&&String(x.custMemoNote||'').trim()?String(x.custMemoNote).trim():String(x.drvNote||'').replace(/^[ \t]*客人行前確認[:：][ \t]*/gm,'').trim(),drvLabel:who==='drv'?(t.drvAdd||'給司機的補充'):(t.drvRelay||'已轉達司機'),files:cfFiles(x),   /* 2026-10-19 給司機的補充＋客人附件：確認單和派車單都放，客人知道有轉達 */
+    flags:`${t.deco}：${yn(c.decoAns,lang)} / ${t.cane}：${yn(caneOf(x),lang)}`+((x.flagNote||'').trim()?`\n*${x.flagNote.trim()}`:'')+(lang==='zh'?fireLines(x,who).map(l=>'\n*'+l).join(''):''),fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',drvNote:who==='cust'&&String(x.custMemoNote||'').trim()?String(x.custMemoNote).trim():String(x.drvNote||'').replace(/^[ \t]*客人行前確認[:：][ \t]*/gm,'').trim(),drvLabel:who==='drv'?(t.drvAdd||'給司機的補充'):(t.drvRelay||'已轉達司機'),files:cfFiles(x),   /* 2026-10-19 給司機的補充＋客人附件：確認單和派車單都放，客人知道有轉達 */
     tips:who==='cust'?tipsC(x,lang):TIPS_D,tipsTitle:who==='cust'?t.tipsC:t.tipsD,pay,t}}
 function memoText(m,maps){return window.nwcSpace?nwcSpace(memoText0(m,maps)):memoText0(m,maps)}   // 2026-10-17 派車單／確認單文字也加中英文空格
 function memoText0(m,maps){const t=m.t,L2=[];
@@ -1636,6 +1647,15 @@ function cfFiles(x){const cf=CONFIRMS[normNo(orderNo(x))],L=x.cfLast||{},fs=((cf
 /* 2026-10-19 集合／迎娶地點是飯店：不寫男方家／女方家，寫集合地點（開場訊息、確認單、派車單） */
 function isHotel(a){return /飯店|酒店|旅館|旅店|會館|行館|渡假村|度假村|民宿|hotel|resort|inn\b/i.test(String(a||''))}
 function caneYN(v){v=String(v||'').trim();if(!v)return '';if(/沒有|不需|不用|無|否|^no$/i.test(v))return '否';if(/有|需要|是|要/.test(v))return '是';return ''}
+/* 2026-10-20 行前確認的鞭炮、儀式老師／主持人 → 確認單／派車單的「指定車頭彩」那格下面 */
+function fireLines(x,who){const L=[],c=x.c||{},loop=x.fireMode==='loop';
+  if(x.fireYN==='要放'){const N={A:loop?'繞圈回到 A 點':'迎娶回 A 點（男方家）',B:'抵達 B 點（女方家）',C:'抵達 C 點（餐廳）'},ad={A:c.meet,B:c.wed,C:c.o1},ps=String(x.fire||'').split(',').filter(String);
+    L.push(`鞭炮：${ps.map(z=>N[z]||z).join('、')} 放炮（${x.fireType||'種類未定'}）`);
+    if(ps.some(z=>/飯店|酒店|旅館|會館|行館|渡假|度假|宴會|hotel|resort/i.test(ad[z]||'')))L.push('施放地點是飯店／會館，請依照飯店要求的地點施放');
+    if(/實體/.test(x.fireType||''))L.push(who==='drv'?'實體鞭炮：不可以從車上丟出鞭炮，請鞭炮手下車到定點施放，並與人、車保持距離':'鞭炮注意事項：不可以從車上丟出鞭炮，需下車到定點施放')}
+  else if(x.fireYN==='不放')L.push('鞭炮：不放');
+  if(who==='drv'&&x.host&&(x.host.name||x.host.phone))L.push(`儀式老師／主持人：${[x.host.name,x.host.phone].filter(Boolean).join(' ')}`);
+  return L}
 function caneOf(x){const c=x.c||{},n=caneYN(c.caneNote);if(n&&(!c.caneAns||c.caneAns==='待確認'))return n;return c.caneAns||(x.cane?'是':'否')}
 function applyLoop(f){const c=o.c,diffs=['行程：單點繞圈'],warn=[];o.sample=false;
   const chg=(label,oldV,newV)=>{if(newV&&String(oldV||'')!==String(newV))diffs.push(`${label}：${oldV||'（空白）'} → ${newV}`)};
@@ -1655,6 +1675,8 @@ function applyLoop(f){const c=o.c,diffs=['行程：單點繞圈'],warn=[];o.samp
 function cfAuto(){const ch=[];Object.values(DB.orders).forEach(x=>{if(x.sample)return;const cf=CONFIRMS[normNo(orderNo(x))];if(!cf||!cf.f||!(+cf.at>(+x.cfApplyAt||0)))return;
   const keep=o;o=x;try{x.cfPrev={meet:x.c.meet||'',wed:x.c.wed||'',o1:x.c.o1||''};const f=cf.f,r=f.mode==='loop'?applyLoop(f):applyConfirm({name:f.name,phone:f.phone,meet:f.meet,wed:f.wed,start:f.start,combo:f.combo,cane:f.cane,back:f.back,restYN:f.restYN,restT:f.restT,restAddr:f.restAddr});
     if(f.friend){const ft=f.friend==='有'?`${f.friendN} 台，排第 ${String(f.friendPos||'').split(',').join('、')} 車`:f.friend;if(f.friend==='有')r.warn.unshift(`親友車加入車隊：${ft}，已自動排進用車確認單和司機派車單，請到「車隊」確認車序。`);else r.diffs.push(`親友車加入車隊：${ft}`)}   // 2026-10-15 行前確認新增親友車題目
+    if(f.fireYN){x.fireYN=f.fireYN;x.fire=f.fire||'';x.fireType=f.fireType||'';x.fireMode=f.mode==='loop'?'loop':'';r.diffs.push('鞭炮：'+(f.fireYN==='要放'?fireLines(x,'cust')[0].replace(/^鞭炮：/,''):f.fireYN))}   // 2026-10-20 鞭炮
+    if(f.host){x.host=f.host==='有'?{name:f.hostName||'',phone:f.hostPhone||''}:null;if(f.host==='有')r.diffs.push('儀式老師／主持人：'+([f.hostName,f.hostPhone].filter(Boolean).join(' ')||'有（沒留資料）'))}
     if(!x.friendsManual&&f.friend){x.friends=f.friend==='有'?String(f.friendPos||'').split(',').map(v=>({pos:+v,role:''})).filter(z=>z.pos>0):[]}
     {const nt=String(f.note||'').trim();if(nt&&String(x.drvNote||'').indexOf(nt)<0)x.drvNote=(String(x.drvNote||'').trim()?String(x.drvNote).trim()+'\n':'')+'客人行前確認：'+nt}   // 2026-10-18 客人想提醒司機的 → 給司機的補充
     x.cfLast={at:+cf.at,f:f,diffs:r.diffs,warn:r.warn,note:f.note||'',files:f.files||[],uid:!!cf.uid,who:cf.who||'',lname:cf.lname||'',cmp:cf.cmp||null};x.cfApplyAt=+cf.at;if(!x.cfDoneAt)x.cfDoneAt=+cf.at;if(!x.cfSentAt)x.cfSentAt=+cf.at;x.updated=Date.now();DB.orders[x.id]=x;ch.push(x)}catch(e){console.warn('行前確認帶入失敗',orderNo(x),e)}finally{o=keep}});
@@ -1792,7 +1814,7 @@ function renderCfFlow(){const card=$('cfFlowCard'),b=$('cfFlowBody');if(!card||!
   if(f){const loop=f.mode==='loop',fr=f.friend?(f.friend==='有'?`${f.friendN} 台，排第 ${String(f.friendPos||'').split(',').join('、')} 車`:f.friend):'';
     const rows=(loop?[['行程','單點繞圈'],['聯絡人',[f.name,f.phone].filter(Boolean).join(' ')],['集合地點（男方家）',f.meet],['第一圈',f.loop1],['繞第二圈',f.loop2YN],['第二圈',f.loop2T]]
       :[['聯絡人',[f.name,f.phone].filter(Boolean).join(' ')],['男方家／集合地點',f.meet],['女方家',f.wed],['出發時間',f.start],['迎娶回男方家',f.back],['接送至餐廳',f.restYN],['出發去餐廳',f.restT],['餐廳地址',f.restAddr]])
-      .concat([['訂結一起',f.combo],['甘蔗竹子',f.cane],['親友車加入車隊',fr],['想提醒司機',f.note]]).filter(r=>String(r[1]||'').trim());
+      .concat([['訂結一起',f.combo],['甘蔗竹子',f.cane],['親友車加入車隊',fr],['鞭炮',f.fireYN==='要放'?fireLines({fireYN:'要放',fire:f.fire,fireType:f.fireType,fireMode:f.mode,c:o.c},'cust').join('\n'):f.fireYN],['儀式老師／主持人',f.host==='有'?([f.hostName,f.hostPhone].filter(Boolean).join(' ')||'有'):f.host],['想提醒司機',f.note]]).filter(r=>String(r[1]||'').trim());
     h+=`<div class="tbl" style="margin-top:8px"><table><tbody>${rows.map(r=>`<tr><th style="white-space:nowrap;width:1%">${esc(r[0])}</th><td style="white-space:pre-wrap">${esc(r[1])}</td></tr>`).join('')}${(f.files||[]).length?`<tr><th style="white-space:nowrap">行程表</th><td>${f.files.map(z=>`<a href="https://drive.google.com/file/d/${encodeURIComponent(z.id)}/view" target="_blank" rel="noopener">${esc(z.name||(z.pdf?'PDF':'照片'))}</a>`).join('、')}</td></tr>`:''}</tbody></table></div>`}
   if(L&&L.cmp&&(L.cmp.lines||[]).length)h+=`<div class="sum" style="margin-top:8px;border-left:3px solid #A0453A"><b style="color:#A0453A">⚠️ 跟 ${tm(L.cmp.at)}（${L.cmp.who==='agent'?'婚顧／主持人代填':L.cmp.who?'新人':'之前'}）填的不一樣，請跟客人核對：</b>${L.cmp.lines.map(z=>`<div class="sub">・${esc(z)}</div>`).join('')}</div>`;
   if(L)h+=`<div style="margin-top:8px">${(L.warn||[]).length?`<div class="sum">${L.warn.map(w=>`<div style="color:var(--warn)">● ${esc(w)}</div>`).join('')}</div>`:'<span class="chip ok">跟合約沒有衝突</span>'}${(L.diffs||[]).length?`<div class="sum" style="margin-top:8px">${L.diffs.map(d=>`<div class="sub">${esc(d)}</div>`).join('')}</div>`:''}</div>`;
@@ -2003,7 +2025,7 @@ function renderPay(){const ps=payState(o),r=ps.r,c=o.c;
    <div><span>匯款日期／後五碼</span><span>${c.payDate?fmtDate(c.payDate):'—'}／${esc(c.last5||'—')}</span></div>`;
   $('payChip').innerHTML=o.paid?`<span class="chip ok">已確認收款 ${esc(o.paidAt||'')}</span>`:ps.amt?(ps.match?'<span class="chip ok">金額相符，待確認入帳</span>':'<span class="chip" style="color:var(--warn)">金額不符，請核對</span>'):'<span class="chip">尚未填匯款資料</span>';
   $('btnPaid').hidden=!!o.paid;$('btnUnpaid').hidden=!o.paid;$('outPaid').textContent=paidText(o);renderCtSend();renderPaidAck();
-  $('ttTitle').value=ttTitle(o);$('ttWhen').textContent=`日期 ${o.date?fmtDate(o.date):'未定'}　${o.c.start||'--:--'} → ${o.c.end||'--:--'}`;$('ttMemo').textContent=ttMemo(o);$('lgName').value=lgName(o);try{renderLgCard()}catch(e){}$('lgMsg').textContent=lgMsg(o);try{renderPub()}catch(e){}}
+  $('ttTitle').value=ttTitle(o);$('ttWhen').textContent=`日期 ${o.date?fmtDate(o.date):'未定'}　${o.c.start||'--:--'} → ${o.c.end||'--:--'}`;$('ttMemo').textContent=ttMemo(o);$('lgName').value=lgName(o);['lgName5','lgName6'].forEach(i=>{const el=$(i);if(el)el.value=lgName(o)});try{renderLgCard()}catch(e){}$('lgMsg').textContent=lgMsg(o);try{renderPub()}catch(e){}}
 function refRowText(x){const r=calc(x),v=vendorOf(x);const p=dparts(x.date);
   return [p?`${p.y}/${p.m}/${p.d}`:'',orderNo(x),planName(x).replace(/^Tesla /,'').replace(/ \S*禮車方案$/,''),v?v.name:'',x.src.ref||'',money(r.planFee),v?refRate(x)+'%':'',v&&r.refAmt?money(r.refAmt):'','',isMonthly(x)?'月結':''].join('\t')}
 function renderSrc(){const v=vendorOf(o),r=calc(o);
@@ -2205,10 +2227,11 @@ function drOn(k){return !!(DR[k].f||DR[k].t)}
 function drLabel(k){const r=DR[k],f=s=>s?s.slice(5).replace('-','/'):'';if(!drOn(k))return'';return r.f&&r.t&&r.f===r.t?f(r.f):(f(r.f)||'…')+'–'+(f(r.t)||'…')}
 function drRender(k){const el=document.querySelector(`.dr-bar[data-dr="${k}"]`);if(!el)return;const r=DR[k];
   const P=[['today','今天'],['tmr','明天'],['wk','本週'],['nwk','下週'],['14','未來14天'],['mo','本月'],['nmo','下個月']];
-  el.innerHTML=`<span class="lbl">用車日</span><input type="date" data-drf="${k}" value="${r.f}"> – <input type="date" data-drt="${k}" value="${r.t}">`+P.map(([p,l])=>`<button type="button" class="btn sm" data-drp="${k}:${p}">${l}</button>`).join('')+(drOn(k)?`<button type="button" class="btn sm" data-drp="${k}:clear">清除日期</button>`:'')}
+  el.innerHTML=`<span class="lbl">用車日</span><input type="date" data-drf="${k}" value="${r.f}"> – <input type="date" data-drt="${k}" value="${r.t}"><select data-drsel="${k}" style="width:auto;flex:0 0 auto"><option value="">快速選擇</option>${P.map(([p,l])=>`<option value="${p}">${l}</option>`).join('')}${drOn(k)?'<option value="clear">清除日期</option>':''}</select>`}   /* 2026-10-20 快捷改成下拉選單，不佔版面 */
 function drChanged(k){drRender(k);if(k==='todo'){todoSel.clear();renderTodo()}else if(window.kwDateChanged)window.kwDateChanged()}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-drp]');if(!b)return;e.preventDefault();const[k,p]=b.dataset.drp.split(':');
   if(p==='clear'){DR[k].f='';DR[k].t=''}else{const[a,c]=drPreset(p);DR[k].f=a;DR[k].t=c}drChanged(k)});
+document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||!t.dataset.drsel||!t.value)return;const k=t.dataset.drsel,p=t.value;if(p==='clear'){DR[k].f='';DR[k].t=''}else{const[a,c]=drPreset(p);DR[k].f=a;DR[k].t=c}drChanged(k)});
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset)return;if(t.dataset.drf){const k=t.dataset.drf;DR[k].f=t.value;if(DR[k].t&&t.value&&DR[k].t<t.value)DR[k].t=t.value;drChanged(k)}else if(t.dataset.drt){const k=t.dataset.drt;DR[k].t=t.value;if(DR[k].f&&t.value&&DR[k].f>t.value)DR[k].f=t.value;drChanged(k)}});
 function todoRows(){const q=normNo($('todoQ').value),late=$('todoLate').checked;
   return Object.values(DB.orders).filter(x=>!x.sample).map(x=>({x,T:tasksOf(x),st:stageOf(x)})).filter(r=>{
@@ -2403,6 +2426,20 @@ function lgBind(x){const ds=(x.fleet||[]).filter(f=>String(f.driver||'').trim())
   const list=[];ds.forEach(f=>{const d=(DRV||[]).find(z=>(pn(f.phone)&&pn(z.phone)===pn(f.phone))||nz(z.name)===nz(f.driver)),ok=!!(d&&d.wc&&d.wc.bound),n=String(f.driver).trim();if(!ok)miss.push(n);
     if(!list.some(z=>z.n===n))list.push({n,ok,role:f.role||'',car:(typeof MABBR!=='undefined'&&MABBR[f.m])||'',ph:String(f.phone||(d&&d.phone)||'').trim()})});
   return {total:ds.length,miss:[...new Set(miss)],list}}
+/* 2026-10-20 主持人名單：行前確認（CONFIRMS）＋訂單上的 host 合併，同一支電話（沒電話就同名）算同一位 */
+let hostF='all';const HOST_ST=['','合作過','沒聯絡過','已聯絡','日後再聯絡'];
+function hostList(){const M={},add=(nm,ph,x)=>{nm=String(nm||'').trim();ph=String(ph||'').replace(/[^0-9+]/g,'');if(!nm&&!ph)return;const k=ph?'p'+ph:'n'+nm;const h=M[k]=M[k]||{k,name:'',phone:ph,orders:[]};if(nm&&!h.name)h.name=nm;if(x&&!h.orders.some(z=>z.id===x.id))h.orders.push({id:x.id,no:orderNo(x),date:x.date||'',who:coupleName(x)})};
+  Object.values(DB.orders).forEach(x=>{if(x.sample)return;const cf=CONFIRMS[normNo(orderNo(x))],f=cf&&cf.f;if(f&&f.host==='有')add(f.hostName,f.hostPhone,x);else if(x.host)add(x.host.name,x.host.phone,x)});
+  return Object.values(M).sort((a,b)=>Math.max(...b.orders.map(z=>+new Date(z.date)||0),0)-Math.max(...a.orders.map(z=>+new Date(z.date)||0),0))}
+function renderHosts(){const N=S.hostNotes||{},L=hostList(),st=h=>(N[h.k]||{}).st||'';
+  const cnt=k=>L.filter(h=>k==='all'||(k==='none'?!st(h):st(h)===k)).length;
+  $('hostFilt').innerHTML=[['all','全部'],['none','未註記'],...HOST_ST.filter(Boolean).map(v=>[v,v])].map(([k,l])=>`<button class="btn sm${hostF===k?' pri':''}" data-hostf="${esc(k)}">${esc(l)} ${cnt(k)}</button>`).join('');
+  const V=L.filter(h=>hostF==='all'||(hostF==='none'?!st(h):st(h)===hostF));
+  $('hostList').innerHTML=V.length?V.map(h=>{const n=N[h.k]||{};return `<div class="card" style="margin-bottom:10px;padding:12px">
+    <div class="row" style="justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><b style="font-size:17px">${esc(h.name||'（沒留名稱）')}</b>${h.phone?`<a href="tel:${esc(h.phone)}">${esc(h.phone)}</a>`:'<span class="hint" style="margin:0">沒留電話</span>'}</div>
+    <div class="sub" style="margin-top:4px">${h.orders.map(z=>`${esc(z.date?fmtDate(z.date):'日期未定')} ${esc(z.no)} ${esc(z.who||'')}`).join('<br>')}</div>
+    <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center"><select data-hostst="${esc(h.k)}" style="width:auto">${HOST_ST.map(v=>`<option value="${esc(v)}"${(n.st||'')===v?' selected':''}>${v||'未註記'}</option>`).join('')}</select><input data-hostnote="${esc(h.k)}" value="${esc(n.note||'')}" placeholder="註記（例：10/30 打電話、合作過 2 次）" style="flex:1;min-width:200px"></div></div>`}).join(''):'<p class="hint">還沒有資料。客人在行前確認填了儀式老師／主持人，就會出現在這裡。</p>'}
+document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset)return;const k=t.dataset.hostst||t.dataset.hostnote;if(!k)return;S.hostNotes=S.hostNotes||{};const n=S.hostNotes[k]=Object.assign({},S.hostNotes[k]||{});if(t.dataset.hostst!=null)n.st=t.value;else n.note=t.value.trim();n.at=Date.now();saveS();if(t.dataset.hostst!=null)renderHosts();toast('已儲存註記')});
 const LGST={};let lgBusy='',lgF='all';
 /* 車隊與流程頁「司機 LINE 群組」卡：已建立勾選、傳綁定車卡、司機綁定狀態（跟群組名稱清單共用） */
 function renderLgCard(){const el=$('lgCard');if(!el||!o)return;if(o.sample||!lgOk(o)){el.innerHTML='<span class="hint" style="margin:0">收訂後才會出現「已建立」與「傳綁定車卡」。</span>';return}
@@ -2424,6 +2461,9 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   if(b.dataset.lgbind){const x=DB.orders[b.dataset.lgbind];if(!x)return;b.disabled=true;b.textContent='傳送中…';lgCall({op:'bind',keys:lgKeys(x)}).then(j=>toast('已在「'+(j.name||'群組')+'」傳綁定車卡按鈕')).catch(err=>toast('傳送失敗：'+err.message)).finally(()=>{renderLg();try{renderLgCard()}catch(_){}});return}
   if(b.id==='grpName'){openLg(o&&!o.sample&&o.date?o.date:'');return}
   if(b.id==='btnLgClose'){$('lgModal').hidden=true;return}
+  if(b.id==='btnHosts'){hostF='all';renderHosts();$('hostModal').hidden=false;return}
+  if(b.id==='btnHostClose'){$('hostModal').hidden=true;return}
+  if(b.dataset.hostf){hostF=b.dataset.hostf;renderHosts();return}
   if(b.dataset.lgday){$('lgDate').value=b.dataset.lgday;renderLg();return}
   const x=DB.orders[b.dataset.lgcopy];if(x){const n=lgName(x);clip(n);toast('已複製群組名稱：'+n);b.textContent='✅ 已複製';b.classList.remove('pri');setTimeout(()=>{if(b.isConnected){b.textContent='複製';b.classList.add('pri')}},1800)}});
 document.addEventListener('change',e=>{const t=e.target;if(!t)return;if(t.id==='lgDate'){renderLg();return}if(!t.dataset||!t.dataset.lgdone)return;const x=DB.orders[t.dataset.lgdone];if(!x)return;
