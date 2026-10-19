@@ -1059,7 +1059,12 @@ function migrate(x){const d=newOrder();if(!x.need)x.need=clone(d.need);else for(
 /* 手機號碼被試算表吃掉開頭 0（例 933339130）→ 自動補 0 */
 function fixTel(v){const t=String(v==null?'':v).trim();return /^9\d{2}[-\s]?\d{3}[-\s]?\d{3}$/.test(t)?'0'+t:(v==null?'':v)}
 Object.values(DB.orders).forEach(migrate);
-function save(){o.updated=Date.now();DB.cur=o.id;DB.orders[o.id]=o;store('nwcw_orders',DB);pushSync()}
+/* 2026-10-20 Nicole：B（迎娶）和 C（其他地點）同一個地址 → 合併成 B，標註接在後面（例：礁溪老爺酒店・餐廳），流程的 C 改成 B */
+function ptMerge(x){const c=x&&x.c;if(!c||!c.o1||!c.wed||c.o2)return false;const k=v=>String(v||'').replace(/[\s　,，]/g,'').replace(/臺/g,'台');if(k(c.o1)!==k(c.wed))return false;
+  const bl=String(c.wedL||'').trim(),parts=String(c.o1L||'').split(/[・\-－、\s]+/).map(z=>z.trim()).filter(z=>z&&bl.indexOf(z)<0);
+  c.wedL=[bl,...parts].filter(Boolean).join('・');if(!c.wedMap&&c.o1Map)c.wedMap=c.o1Map;c.o1='';c.o1L='';c.o1Map='';c.o1S='';
+  const sw=t=>String(t||'').replace(/\bC\b/g,'B');x.path=sw(x.path);(x.flow||[]).forEach(f=>{f.seg=sw(f.seg)});return true}
+function save(){try{ptMerge(o)}catch(_){}o.updated=Date.now();DB.cur=o.id;DB.orders[o.id]=o;store('nwcw_orders',DB);pushSync()}
 function saveS(){if(syncReady)S._ts=Date.now();store('nwcw_settings',S);pushSync()}
 let syncReady=false,syncBusy=false,syncTimer=null,syncAgain=false;
 function syncStat(t){const el=$('btnSync');if(el)el.textContent=t}
@@ -1397,7 +1402,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
     pts.forEach(p=>{if((p.k==='A'||p.k==='B')&&/^(男方家|女方家)$/.test(String(p.label||'').trim())&&isHotel(p.addr))p.label=''});
     if(A&&B&&nz(A.addr)===nz(B.addr)){pts=pts.filter(p=>p.k!=='B');A.label='';const mm=String(A.addr).match(/^([^（(]+?)\s*[（(]\s*(.+?)\s*[)）]\s*$/);if(mm&&/[市縣區鄉鎮路街道段巷號]/.test(mm[2])&&!/[市縣路街號]/.test(mm[1]))A.addr=`${mm[2]}(${mm[1]})`}}
   const flow=x.flow.filter(f=>f.t||f.seg).map(f=>`${ap(f.t)} ${f.who?f.who+' ':''}${f.seg}`.trim());   /* 2026-10-20 只用禮車預計發車時間 */
-  let pay=[];
+  let pay=[],payHead=null;
   const otU=+x.hours>0&&+x.hours<3?'/0.5HR':'/HR';const otl=(x.otText||'').trim()||MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m])}${otU}`).join(' ; ');
   if(who==='cust'){
     if(lang==='en')pay=[`Balance ${money(r.balance,'en')} (incl. driver red envelope)`,`Please transfer to the account below by the day before the service, or hand the full amount to the on-site lead driver on the day. (Our accountant can't verify transfers in real time on holidays, so please don't transfer on the day of service.)`,S.bankBal?`Balance transfer details (staff account):`:`Bank transfer details:`,S.bankBal||S.bank,`Extra hours: ${MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m],'en')}${otU}`).join(' ; ')}`];
@@ -1415,8 +1420,9 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
     if(+x.hours===0)pay.push(`等候 15 分鐘未出發，每半小時：${ms.map(m=>driverOtText(m,x).replace(' 等候每 0.5HR','')).join(' ; ')}`);
     else pay.push(x.hours<3?'未滿 3 小時方案無緩衝，超過即以每 0.5 小時計加時':'加時 15 分鐘內不計 ; 第 16 分鐘起收加時費用',`加時：${otl}`);
     const back=r.balance-r.dsum;if(r.mon){if(r.dok&&r.dsum>r.onsite)pay.push('',`差額 ${money(r.dsum-r.onsite)} 由公司匯款`)}else if(x.balPaid)pay.push('',x.balRed&&r.red?'酬勞扣除紅包後由公司匯款':'酬勞由公司匯款');else if(!r.mon&&r.dok&&back>0)pay.push('',`匯回 ${money(back)}`);else if(!r.mon&&r.dok&&back<0)pay.push('',`差額 ${money(-back)} 由公司匯款`);
+    if(x.headOnly){const bk=pay[pay.length-1];payHead=[pay[0]].concat(pay.length>1&&/匯回|由公司匯款/.test(bk||'')?[bk]:[]);pay=[]}   // 2026-10-20 只有車頭的群組：派車單不列款項，另外複製給車頭
   }
-  return{who,no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(ctEnd(x)||c.end)}`,gather:ap(c.gather||addMin(c.start,-20)),
+  return{payHead,who,no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(ctEnd(x)||c.end)}`,gather:ap(c.gather||addMin(c.start,-20)),
     contact:(c.contact2||'').trim()?`\n${cname||''}${crole}  ${ph(c.phone)} / ${c.contact2.trim()}${(c.rel2||'').trim()?`(${c.rel2.trim()})`:''} ${ph(c.phone2)}`.trimEnd()+((c.contact3||'').trim()?`\n${c.contact3.trim()}${(c.rel3||'').trim()?`(${c.rel3.trim()})`:''} ${ph(c.phone3)}`.trimEnd():''):`${cname||''}${crole}  ${ph(c.phone)}`.trim(),boss:`${ld.driver||''} ${ph(ld.phone)}`.trim(),plan:planName(x),
     flags:`${t.deco}：${who==='drv'&&String(x.decoDrv||'').trim()?String(x.decoDrv).trim():yn(c.decoAns,lang)} / ${t.cane}：${yn(caneOf(x),lang)}`+((x.flagNote||'').trim()?`\n*${x.flagNote.trim()}`:'')+(lang==='zh'?fireLines(x,who).map(l=>'\n*'+l).join(''):''),fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',drvNote:who==='cust'&&String(x.custMemoNote||'').trim()?String(x.custMemoNote).trim():String(x.drvNote||'').replace(/^[ \t]*客人行前確認[:：][ \t]*/gm,'').trim(),drvLabel:who==='drv'?(t.drvAdd||'給司機的補充'):(t.drvRelay||'已轉達司機'),files:cfFiles(x),   /* 2026-10-19 給司機的補充＋客人附件：確認單和派車單都放，客人知道有轉達 */
     tips:who==='cust'?tipsC(x,lang):TIPS_D,tipsTitle:who==='cust'?t.tipsC:t.tipsD,pay,t}}
@@ -1449,7 +1455,7 @@ function memoText0(m,maps){const t=m.t,L2=[];
     if((m.files||[]).length)L2.push(`📎 ${t.files||'參考資訊'}：`+m.files.map((f,i)=>`${t.ref||'參考資料'} ${i+1} ${f.url}`).join('、'));}   /* 2026-10-19 同一行不換行 */   /* 不顯示檔名；確認單網頁會把這行變成「參考資料 1」連結 */
   L2.push('',m.tipsTitle);
   m.tips.forEach((s,i)=>L2.push(m.tipsTitle===MT.zh.tipsD?`* ${s}`:`${i+1}. ${s}`));
-  L2.push('',t.pay,...m.pay);return L2.join('\n')}
+  if(m.pay.length)L2.push('',t.pay,...m.pay);return L2.join('\n')}
 function memoHTML(m,maps){return window.nwcSpace?nwcSpace(memoHTML0(m,maps)):memoHTML0(m,maps)}   // 2026-10-17 派車單／確認單文字也加中英文空格
 function memoHTML0(m,maps){const t=m.t;
   return `<div class="dh"><b>好好禮車</b><span>${esc(t.orderNo)}:${esc(m.no)}</span></div>
@@ -1464,7 +1470,7 @@ function memoHTML0(m,maps){const t=m.t;
   <tr><th>${esc(t.flow)}</th><td><b>${esc(m.path)}</b><br>${m.flow.map(esc).join('<br>')}</td></tr>
   ${m.drvNote||(m.files||[]).length?`<tr><th>${esc(t.notes||'注意事項')}</th><td>${m.drvNote?`（${esc(m.drvLabel||t.drvAdd||'給司機的補充')}）<br>${esc(noteItems(m.drvNote).join('\n')).replace(/\n/g,'<br>')}`:''}${m.drvNote&&(m.files||[]).length?'<br>':''}${(m.files||[]).length?`📎 ${esc(t.files||'參考資訊')}：<br>${m.files.map((f,i)=>{const fid=f.id||((String(f.url||'').match(/\/d\/([\w-]{20,})/)||[])[1]||''),lb=esc((t.ref||'參考資料')+' '+(i+1));return fid?`<a href="${esc(f.url)}" target="_blank" rel="noopener" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;margin:6px 8px 0 0;vertical-align:top;font-size:12px;text-decoration:none"><img src="https://drive.google.com/thumbnail?id=${esc(fid)}&amp;sz=w300" alt="${lb}" loading="lazy" onerror="this.remove()" style="width:88px;height:88px;object-fit:cover;border-radius:8px;border:1px solid #e5ddd2;background:#f4f1ec">${lb}</a>`:`<a href="${esc(f.url)}" target="_blank" rel="noopener">${lb}</a>`;}).join(' ')}`:''}</td></tr>`:''}</tbody></table></div>
   <h4>${esc(m.tipsTitle)}</h4><ol>${m.tips.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
-  <h4>${esc(t.pay)}</h4><div>${m.pay.map(s=>esc(s).replace(/\n/g,'<br>')).join('<br>')}</div>`}
+  ${m.pay.length?`<h4>${esc(t.pay)}</h4><div>${m.pay.map(s=>esc(s).replace(/\n/g,'<br>')).join('<br>')}</div>`:''}`}
 
 /* ---------- 找司機 ---------- */
 function renderFind(){const ms=[...new Set(o.fleet.map(f=>f.m))];if(o.findM&&!ms.includes(o.findM))o.findM='';
@@ -1592,7 +1598,7 @@ function memoBlocks(m){const t=m.t,B=[];B.push({t:'title',text:`好好禮車　�
   {t:'table',rows:[[t.order,t.plate,t.driver,t.car,t.phone],...m.fleet.map(f=>[f.role||'',f.plate||'',f.driver||'',`${f.car}\n${f.spec}`,f.phone||''])]});
   m.pts.forEach(p=>{B.push({t:'h',text:`${p.k}. ${p.title}`},{t:'p',text:p.addr});if(p.label)B.push({t:'p',text:`(${p.label})`})});
   if(m.route)B.push({t:'h',text:t.route},{t:'p',text:m.route});
-  B.push({t:'h',text:`${t.flow}：${m.path||''}`},...m.flow.map(f=>({t:'p',text:f})),{t:'h',text:m.tipsTitle},...m.tips.map(x=>({t:'li',text:x})),{t:'h',text:t.pay});
+  B.push({t:'h',text:`${t.flow}：${m.path||''}`},...m.flow.map(f=>({t:'p',text:f})),{t:'h',text:m.tipsTitle},...m.tips.map(x=>({t:'li',text:x})));if(m.pay.length)B.push({t:'h',text:t.pay});
   m.pay.forEach(x=>String(x).split('\n').forEach(l=>B.push({t:'p',text:l})));return B}
 function tplModel(x,who){const m=memoModel(x,who,'zh'),r=calc(x);const mc=(x.fleet||[]).find(f=>f.role==='主禮車');
   return{no:m.no,wd:m.wd,dateLine:m.dateLine,gather:m.gather,contact:m.contact.replace(/\n/g,'\r'),boss:m.boss,plan:m.plan,flags:m.flags.split(' / ').slice(0,2).join(' / '),fleet:m.fleet,pts:m.pts,path:m.path,flow:m.flow,route:(m.route||'').replace(/\n/g,'\r'),pay:m.pay,
@@ -1743,6 +1749,7 @@ function cfAuto(){const ch=[];Object.values(DB.orders).forEach(x=>{if(x.sample)r
     if(f.host){x.host=f.host==='有'?{name:f.hostName||'',phone:f.hostPhone||''}:null;if(f.host==='有')r.diffs.push('儀式老師／主持人：'+([f.hostName,f.hostPhone].filter(Boolean).join(' ')||'有（沒留資料）'))}
     if(!x.friendsManual&&f.friend){x.friends=f.friend==='有'?String(f.friendPos||'').split(',').map(v=>({pos:+v,role:''})).filter(z=>z.pos>0):[]}
     {const nt=String(f.note||'').trim();if(nt&&String(x.drvNote||'').indexOf(nt)<0)x.drvNote=(String(x.drvNote||'').trim()?String(x.drvNote).trim()+'\n\n':'')+nt}   // 2026-10-18 客人想提醒司機的 → 給司機的補充
+    try{if(ptMerge(x))r.diffs.push('迎娶地點和餐廳同一個地址，已合併成 B')}catch(_){}
     x.cfNoteChk=+cf.at;x.cfLast={at:+cf.at,f:f,diffs:r.diffs,warn:r.warn,note:f.note||'',files:f.files||[],uid:!!cf.uid,who:cf.who||'',lname:cf.lname||'',cmp:cf.cmp||null};x.cfApplyAt=+cf.at;if(!x.cfDoneAt)x.cfDoneAt=+cf.at;if(!x.cfSentAt)x.cfSentAt=+cf.at;x.updated=Date.now();DB.orders[x.id]=x;ch.push(x)}catch(e){console.warn('行前確認帶入失敗',orderNo(x),e)}finally{o=keep}});
   return ch}
 async function cfPush(list){if(!S.driveUrl||!S.driveKey){toast('還沒設定機器人連線');return}
@@ -1812,6 +1819,8 @@ function applyConfirm(res){const c=o.c,before=clone(o),diffs=[],warn=[];o.sample
 let MEMOS={};
 function memoOkUrl(x){return 'https://love.niceweddingcar.com/wed-memo?no='+encodeURIComponent(orderNo(x))+'&k='+cfKey(x.id)}
 function renderMemoOk(){const el=$('memoOkSt'),card=$('memoOkCard');if(!el||!o)return;
+  try{const tm6=$('tab-memo');let hc=$('hoPayCard');if(!hc&&tm6){hc=document.createElement('div');hc.id='hoPayCard';hc.className='card';hc.style.marginTop='14px';tm6.appendChild(hc)}   /* 2026-10-20 只有車頭的群組：款項資訊另外複製給車頭 */
+    if(hc){const ph=o.headOnly?(memoModel(o,'drv','zh').payHead||[]):[];hc.hidden=!ph.length;if(ph.length){const tx=[`${orderNo(o)} 款項資訊`,...ph].join('\n');hc.innerHTML=`<div class="row" style="justify-content:space-between;align-items:center;gap:8px"><b>款項資訊（給車頭）</b><button class="btn sm pri" data-copytext="${esc(tx)}">複製</button></div><pre class="out" style="white-space:pre-wrap;margin-top:8px">${esc(tx)}</pre><div class="hint" style="margin:6px 0 0">此群組只有車頭，派車單不列款項；這段請另外貼給車頭。</div>`}}}catch(e){console.warn(e)}
   {let w=$('ctOverWarn');if(!w){w=document.createElement('div');w.id='ctOverWarn';w.style.cssText='color:#c0392b;font-weight:700;margin-top:8px;white-space:pre-line';el.parentNode.insertBefore(w,el)}const ov=ctOver(o);w.textContent=ov?`⚠️ 客人預估用車結束 ${ap(o.c.end)}，超過合約結束 ${ap(ctEnd(o))}（約 ${ov} 分鐘）：確認單寫的是合約時間 ${ap(o.c.start)}-${ap(ctEnd(o))}，請先和客人確認是否加時`:'';w.hidden=!ov}card.hidden=isPt(o);const tm=t=>{const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`},bal=calc(o).balance;
   const L=[];if(o.memoOkAt)L.push(`✅ 客人已確認無誤（${tm(o.memoOkAt)}）｜${o.balPlan==='cash'?`尾款：當天付現金 ${money(bal)}（尾款＋司機禮包一包交車隊負責人）`:o.balPlan==='transfer'?`尾款：提前匯款 ${money(bal)}（最晚用車前一天）${o.balPaid?'，已標記收到':o.balInfo?`\n💸 客人已回傳匯款資訊（${tm(o.balInfo.at)}${o.balInfo.last5?'，後五碼 '+o.balInfo.last5:''}${o.balInfo.file?'，附轉帳截圖':''}），待對帳：對完請在「尾款收款方式」標記已匯`:'，客人還沒回傳匯款資訊'}`:'月結'}`);
   if(o.memoFixAt&&!(+o.memoOkAt>+o.memoFixAt))L.push(`✏️ 客人說內容要修改（${tm(o.memoFixAt)}）：${o.memoFixNote||''}\n改好後請再按一次「傳確認單給客人核對」`);
