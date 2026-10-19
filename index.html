@@ -2951,9 +2951,14 @@ function renderPub(){if(!o)return;const t=o.pubAt?new Date(o.pubAt).toLocaleStri
 document.addEventListener('change',e=>{const t=e.target;if(!t||!t.hasAttribute||!t.hasAttribute('data-pub')||!o)return;o.pubAt=t.checked?Date.now():0;save();renderPub();toast(t.checked?'已標記：派車單已發佈，負責人看得到這趟':'已取消：負責人看不到這趟')});
 /* 2026-10-20 同業司機派車單：同業原始派單 → 最上面加「★匯回 $X」（尾款－司機酬勞合計），每台車那行加「實拿$酬勞」；其他照同業原文 */
 function ptDrvGen(x){const p=x.partner||{},k=ptCalc(x);const L=String(p.raw||'').split('\n'),used={};
-  (x.fleet||[]).forEach(f=>{const nm=String(MNAME[f.m]||f.m||'').trim();if(!nm)return;const re=new RegExp(nm.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s*'),'i');
-    const c=L.map((l,i)=>i).filter(i=>!used[i]&&re.test(L[i])&&!/實拿/.test(L[i]));if(!c.length)return;const i=c.find(z=>/\$/.test(L[z]))??c[0];used[i]=1;
-    L[i]=L[i].replace(re,m=>`${m} 實拿$${num(payOf(f,x))}`)});
+  /* 2026-10-20 每台車那行：原文已有「實拿$N」就改成司機酬勞，沒有就加上；同車款多台寫在同一行時用「$酬勞*台數」 */
+  const G={};(x.fleet||[]).forEach(f=>{const nm=String(MNAME[f.m]||f.m||'').trim();if(!nm)return;(G[nm]=G[nm]||[]).push(num(payOf(f,x)))});
+  Object.keys(G).forEach(nm=>{const re=new RegExp(nm.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s*'),'i'),pays=G[nm],same=pays.every(v=>v===pays[0]);
+    const c=L.map((l,i)=>i).filter(i=>!used[i]&&re.test(L[i])&&/\$|實拿|超時|加時/.test(L[i]));if(!c.length)return;
+    const n=pays.length,one=c.length===1||n===1;
+    (one?[c[0]]:c.slice(0,n)).forEach((i,k)=>{used[i]=1;const mult=one&&n>1;const v=mult?(same?pays[0]:pays[0]):pays[Math.min(k,n-1)];
+      if(/實拿\s*\$?\s*[\d,]+/.test(L[i]))L[i]=L[i].replace(/(實拿\s*\$?\s*)[\d,]+/,(m,a)=>a+v);
+      else L[i]=L[i].replace(re,m=>`${m} 實拿$${v}${mult?'*'+n:''}`)})});
   /* 2026-10-20 Nicole：同業原文本來就有「匯回 $X」→ 改成 X＋我的回佣（不另外加一行）；沒有才在最上面加「★匯回」 */
   const ri=L.findIndex(l=>/匯回[^\d\n]*\$?\s*[\d,]+/.test(l));
   if(ri>=0){L[ri]=L[ri].replace(/(匯回[^\d\n]*\$?\s*)([\d,]+)/,(m,a,v)=>{const n=num(v.replace(/,/g,''))+k.profit;return a+(/,/.test(v)?n.toLocaleString('en-US'):String(n))});return L.join('\n')}
