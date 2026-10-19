@@ -1515,6 +1515,7 @@ function memoBlocks(m){const t=m.t,B=[];B.push({t:'title',text:`好好禮車　�
   m.pay.forEach(x=>String(x).split('\n').forEach(l=>B.push({t:'p',text:l})));return B}
 function tplModel(x,who){const m=memoModel(x,who,'zh'),r=calc(x);const mc=(x.fleet||[]).find(f=>f.role==='主禮車');
   return{no:m.no,wd:m.wd,dateLine:m.dateLine,gather:m.gather,contact:m.contact.replace(/\n/g,'\r'),boss:m.boss,plan:m.plan,flags:m.flags.split(' / ').slice(0,2).join(' / '),fleet:m.fleet,pts:m.pts,path:m.path,flow:m.flow,route:(m.route||'').replace(/\n/g,'\r'),pay:m.pay,
+    drvNote:m.drvNote||'',drvLabel:m.drvLabel||'',files:(m.files||[]).map(f=>({id:f.id,name:f.name,url:f.url})),   /* 2026-10-19 Google 文件版也放給司機的補充＋客人附件 */
     xTip:mc?mc.m==='X':num(x.cars.X)>0,bank:S.bank,monthly:!!r.mon}}
 function normPath(p){return String(p||'').toUpperCase().split(/\s*[-－>＞→、,，\s]\s*/).filter(k=>/^[A-D]$/.test(k)).join(' - ')}
 function qxOn(){const c=o.c||{};return !!(o._qx||String(c.o2||'').trim()||String(c.o2L||'').trim())}
