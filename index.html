@@ -932,10 +932,6 @@ nav.tabs button{scroll-snap-align:start}
           <div class="row" style="justify-content:space-between;margin:10px 0 6px"><span class="hint" style="margin:0" id="photoSt"></span><span class="row" style="gap:6px"><button class="btn sm" id="btnPhotoCopy">複製並標記已傳</button><button class="btn sm pri" id="btnPhotoBot">用機器人傳給客人</button></span></div>
           <pre class="out" id="outPhoto"></pre>
         </div>
-        <div class="card">
-          <h3>小抄</h3>
-          <p class="hint" style="margin:0">集合時間預設為開始用車前 20 分鐘。短地區會自動從地址轉成「彰化大村」這種格式，只用在找司機訊息；合約和 memo 一律用完整地址。</p>
-        </div>
       </div>
     </div>
   </div>
@@ -1355,7 +1351,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   }
   return{no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(c.end)}`,gather:ap(c.gather||addMin(c.start,-20)),
     contact:(c.contact2||'').trim()?`\n${cname||''}${crole}  ${ph(c.phone)} / ${c.contact2.trim()}${(c.rel2||'').trim()?`(${c.rel2.trim()})`:''} ${ph(c.phone2)}`.trimEnd()+((c.contact3||'').trim()?`\n${c.contact3.trim()}${(c.rel3||'').trim()?`(${c.rel3.trim()})`:''} ${ph(c.phone3)}`.trimEnd():''):`${cname||''}${crole}  ${ph(c.phone)}`.trim(),boss:`${ld.driver||''} ${ph(ld.phone)}`.trim(),plan:planName(x),
-    flags:`${t.deco}：${yn(c.decoAns,lang)} / ${t.cane}：${yn(c.caneAns||(x.cane?'是':'否'),lang)}`+((x.flagNote||'').trim()?`\n*${x.flagNote.trim()}`:''),fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',drvNote:who==='drv'?String(x.drvNote||'').trim():'',
+    flags:`${t.deco}：${yn(c.decoAns,lang)} / ${t.cane}：${yn(caneOf(x),lang)}`+((x.flagNote||'').trim()?`\n*${x.flagNote.trim()}`:''),fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',drvNote:who==='drv'?String(x.drvNote||'').trim():'',
     tips:who==='cust'?tipsC(x,lang):TIPS_D,tipsTitle:who==='cust'?t.tipsC:t.tipsD,pay,t}}
 function memoText(m,maps){return window.nwcSpace?nwcSpace(memoText0(m,maps)):memoText0(m,maps)}   // 2026-10-17 派車單／確認單文字也加中英文空格
 function memoText0(m,maps){const t=m.t,L2=[];
@@ -1420,7 +1416,7 @@ function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr)
   const pk=Object.keys(pg),hl=hrsLabel(x.hours);
   const payOne=v=>v==='?'?'（待定）':+x.hours===0?`實拿 ${money(+v)}（單程接送・綁彩）`:`${money(+v)}/${hl}${r.red?'（含紅包）':''}`;
   const payL=pk.length===1?payOne(pk[0]):pk.map(v=>`${[...pg[v]].join('、')} ${payOne(v)}`).join('；');
-  const cane=c.caneAns||(x.cane?'是':'否'),deco=(c.decoAns||'').trim();
+  const cane=caneOf(x),deco=(c.decoAns||'').trim();
   /* 找司機訊息只放司機需要知道的：方案備註（同業單才帶同業的備註）；內部備註（婚顧、回金、報價、訂金…）不給司機看 */
   const note=(x.partner?(x.note||''):(x.flagNote||'')).trim(),noteShow=note&&!/^指定.{0,4}色$/.test(note);
   return [`代碼：${findCode(x)}`,`${fmtMDW(x.date,'zh')} ${ap(c.start)||'--:--'}-${ap(c.end)||'--:--'}`,`集合時間：${ap(c.gather||addMin(c.start,-20))||'待定'}`,'地點：',...pts.map((p,i)=>{const rd=roadOf(x.c[p.f]);let ar=areaOf(p.f)||({meet:x.cityA,wed:x.cityB})[p.f]||'';if(!ar){/* 沒寫縣市也查不到鄉鎮：沿用路線裡前後站的縣市 */const cty=q=>q?countyOf(x.c[q.f]||'')||({meet:x.cityA,wed:x.cityB})[q.f]||'':'';const seq=String(x.path||'').toUpperCase().match(/[A-D]/g)||[];const j=seq.lastIndexOf(p.k);const byK=k=>pts.find(q=>q.k===k);const cand=j>=0?[byK(seq[j+1]),byK(seq[j-1])]:[];ar=[...cand,...pts.slice(i+1),...pts.slice(0,i).reverse()].map(cty).find(Boolean)||''}return `${p.k}. ${ar||'（地區待確認）'}${rd?' '+rd:''}`}),
@@ -1457,7 +1453,7 @@ function contractHTML(x){const r=calc(x),c=x.c,rin=r.red>0   /* 2026-10-14 Nicol
   const cars=MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MBRAND[m]==='Tesla'?'Tesla ':''}${MNAME[m]} × ${num(x.cars[m])}`);
   const short=+x.hours>0&&x.hours<3;
   const otRows=MODELS.map(m=>`${MNAME[m]} ${money(S.ot[m])}/${short?'每 0.5 小時':'時'}`).filter((s,i)=>num(x.cars[MODELS[i]])>0);
-  const caneTxt=c.caneAns?(c.caneAns+(x.cane?`（${x.cane} 台）`:'')):(x.cane?`是（${x.cane} 台）`:'');
+  const cv=caneOf(x),caneTxt=(c.caneAns||caneYN(c.caneNote))?(cv+(x.cane?`（${x.cane} 台）`:'')):(x.cane?`是（${x.cane} 台）`:'');
   const pd=c.payDate?fmtDate(c.payDate):'';const pa=c.payAmt?money(num(String(c.payAmt).replace(/[^\d.]/g,''))):'';
   const hasDeco=!!(String(x.decoStyle||'').trim()||num(x.deco)>0),decoTxt=hasDeco?'司機紅包及指定車頭彩費用':'司機紅包';
   const noteBits=[x.colorReq?`指定${x.colorReq}`:'',String(x.decoStyle||'').trim()?`指定車頭彩：${String(x.decoStyle).trim()}`:'',x.colorRare?'稀有車款若無法出車，將協調調度其他車款':''].filter(Boolean);
@@ -1600,12 +1596,15 @@ function cfMsg(x){const c=x.c||{},lk=cfLink(x),body=`🧡 婚禮快到了，我�
     return `訂單編號：${orderNo(x)}${cp?'｜'+cp:''}\n${ag?ag+' 老師':''}您好，${body}\n\n（這個連結可以轉給新人填寫，也可以由您代填；開始填寫時選擇身分即可）`}
   return `好好新人您好${body}`}   // 2026-10-15 官方帳號／FB／IG 傳給新人：不確定是新郎或新娘，統一稱呼「好好新人」
 // 單點繞圈：只有集合地點，第一圈（＋第二圈）時間；每圈抓 30 分鐘
+/* 2026-10-19 行前確認的「甘蔗竹子」回答：沒有→否、有→是（派車單／memo 不再顯示甘蔗待確認） */
+function caneYN(v){v=String(v||'').trim();if(!v)return '';if(/沒有|不需|不用|無|否|^no$/i.test(v))return '否';if(/有|需要|是|要/.test(v))return '是';return ''}
+function caneOf(x){const c=x.c||{},n=caneYN(c.caneNote);if(n&&(!c.caneAns||c.caneAns==='待確認'))return n;return c.caneAns||(x.cane?'是':'否')}
 function applyLoop(f){const c=o.c,diffs=['行程：單點繞圈'],warn=[];o.sample=false;
   const chg=(label,oldV,newV)=>{if(newV&&String(oldV||'')!==String(newV))diffs.push(`${label}：${oldV||'（空白）'} → ${newV}`)};
   if(f.name){const nm=f.name.replace(/\s+/g,'');const prev=contactName(o);if(nm===c.groom)c.role='新郎';else if(nm===c.bride)c.role='新娘';else{c.role='其他';c.contact=f.name}chg('聯絡人',prev,f.name)}
   if(f.phone){chg('電話',c.phone,f.phone);c.phone=f.phone.replace(/\s/g,'')}
   if(f.meet){chg('集合地點',c.meet,f.meet);c.meet=f.meet;if(!c.meetL)c.meetL='男方家'}
-  if(f.combo)c.combo=f.combo;if(f.cane)c.caneNote=f.cane;
+  if(f.combo)c.combo=f.combo;if(f.cane){c.caneNote=f.cane;const cv=caneYN(f.cane);if(cv)c.caneAns=cv}
   const t1=normTime(f.loop1),two=yesish(f.loop2YN),t2=two?normTime(f.loop2T):'';
   if(t1){chg('第一圈',c.start,t1);c.start=t1;c.gather=addMin(t1,-20)}
   o.flow=[{t:t1||'',who:'',seg:'A 第一圈繞圈'}].concat(two?[{t:t2||'',who:'',seg:'A 第二圈繞圈'}]:[]);o.path='A';
@@ -1666,7 +1665,7 @@ function applyConfirm(res){const c=o.c,before=clone(o),diffs=[],warn=[];o.sample
   if(res.wed){chg('女方家',c.wed,res.wed);c.wed=res.wed;if(!c.wedL)c.wedL='女方家'}
   const st=normTime(res.start);if(st){chg('出發時間',c.start,st);c.start=st;c.gather=addMin(st,-20)}
   if(res.combo){c.combo=res.combo}
-  if(res.cane){c.caneNote=res.cane}
+  if(res.cane){c.caneNote=res.cane;const cv=caneYN(res.cane);if(cv)c.caneAns=cv}
   const back=normTime(res.back);const restT=normTime(res.restT);const rest=yesish(res.restYN)||(!!res.restAddr&&!/^(否|不|無|沒|n\/?a)/i.test(res.restAddr));
   if(rest&&res.restAddr&&!/^(否|不|無|沒|n\/?a)/i.test(res.restAddr)){chg('餐廳',c.o1,res.restAddr);c.o1=res.restAddr;c.o1L='餐廳'}
   // rebuild flow
