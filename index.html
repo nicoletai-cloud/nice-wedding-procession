@@ -1438,7 +1438,7 @@ function memoText0(m,maps){const t=m.t,L2=[];
     const pl=p.map&&!isRouteUrl(p.map);L2.push(m.who==='cust'?`${p.k}. ${p.title}：${pl?`[${q.a}](${p.map})`:q.a}${q.s}`:`${p.k}. ${p.title}：${q.a}${q.s}`+(pl?`\n導航定位：${p.map}`:''));if(maps)L2.push(mapUrl(p.addr))});
   const routes=m.pts.filter(p=>p.map&&isRouteUrl(p.map)).map(p=>p.map);
   if(m.route)L2.push(`${t.route}：${m.route}`);
-  L2.push('',`${t.flow}：`,m.path,...m.flow);
+  L2.push('',`${t.flow}：${m.path||''}`,...m.flow);
   /* 2026-10-19 Nicole：已轉達司機、參考資訊放在禮車流程下面，項目叫「注意事項」 */
   if(m.drvNote||(m.files||[]).length||routes.length){L2.push('',`${t.notes||'注意事項'}${m.drvNote?`（${m.drvLabel||t.drvAdd||'給司機的補充'}）`:''}：`);if(m.drvNote)L2.push('',...noteItems(m.drvNote));
     routes.forEach((u,i)=>L2.push(m.who==='cust'?`🗺 [路線參考${routes.length>1?' '+(i+1):''}](${u})`:`🗺 路線參考${routes.length>1?' '+(i+1):''}：${u}`));
@@ -1589,7 +1589,7 @@ function memoBlocks(m){const t=m.t,B=[];B.push({t:'title',text:`好好禮車　�
   {t:'table',rows:[[t.order,t.plate,t.driver,t.car,t.phone],...m.fleet.map(f=>[f.role||'',f.plate||'',f.driver||'',`${f.car}\n${f.spec}`,f.phone||''])]});
   m.pts.forEach(p=>{B.push({t:'h',text:`${p.k}. ${p.title}`},{t:'p',text:p.addr});if(p.label)B.push({t:'p',text:`(${p.label})`})});
   if(m.route)B.push({t:'h',text:t.route},{t:'p',text:m.route});
-  B.push({t:'h',text:`${t.flow}：`},{t:'p',text:m.path},...m.flow.map(f=>({t:'p',text:f})),{t:'h',text:m.tipsTitle},...m.tips.map(x=>({t:'li',text:x})),{t:'h',text:t.pay});
+  B.push({t:'h',text:`${t.flow}：${m.path||''}`},...m.flow.map(f=>({t:'p',text:f})),{t:'h',text:m.tipsTitle},...m.tips.map(x=>({t:'li',text:x})),{t:'h',text:t.pay});
   m.pay.forEach(x=>String(x).split('\n').forEach(l=>B.push({t:'p',text:l})));return B}
 function tplModel(x,who){const m=memoModel(x,who,'zh'),r=calc(x);const mc=(x.fleet||[]).find(f=>f.role==='主禮車');
   return{no:m.no,wd:m.wd,dateLine:m.dateLine,gather:m.gather,contact:m.contact.replace(/\n/g,'\r'),boss:m.boss,plan:m.plan,flags:m.flags.split(' / ').slice(0,2).join(' / '),fleet:m.fleet,pts:m.pts,path:m.path,flow:m.flow,route:(m.route||'').replace(/\n/g,'\r'),pay:m.pay,
