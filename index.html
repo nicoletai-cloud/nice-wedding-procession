@@ -261,28 +261,34 @@ nav.tabs button{scroll-snap-align:start}
     <div class="more-dim" data-moreclose="1"></div>
     <div class="more-sheet" role="menu">
       <div class="more-grab" data-moreclose="1"></div>
-      <div class="more-g">這張單</div>
+      <div class="more-g">這張訂單</div>   <!-- 2026-10-20 Nicole：功能分成「這張訂單」和「總查詢」 -->
       <div class="more-grid">
         <button class="btn" id="btnAlbum" title="打開這張單群組收到的照片，挑要給新人的">相簿</button>
-        <button type="button" class="btn" id="cfListBtn" title="選用車日期，列出要做行前確認的車趟">行前確認</button>
         <button class="btn" id="btnRemind">提醒文字</button>
         <button class="btn" id="btnCouple">新人資料</button>
         <button type="button" class="btn" id="grpCode" title="這場的代碼：LINE 群組名稱、找司機都用這組；點一下複製" hidden></button>
-        <button type="button" class="btn" id="grpName" title="選用車日期，列出當天所有車趟的 LINE 群組名稱">群組名稱</button>
         <button class="btn" id="btnDup">複製此單</button>
         <button class="btn" id="btnToAir" title="把這位客人的資料帶到機場接送報價">轉機場</button>
+      </div>
+      <div class="more-g">總查詢</div>
+      <div class="more-grid">
+        <button type="button" class="btn" id="cfListBtn" title="選用車日期，列出要做行前確認的車趟">行前確認</button>
+        <button type="button" class="btn" id="grpName" title="選用車日期，列出當天所有車趟的 LINE 群組名稱">群組名稱</button>
+        <button class="btn" id="btnSettle">每日帳款</button>
+        <button class="btn" id="btnBill">月結</button>
+        <button class="btn" id="btnPtSettle">同業結算</button>
+        <button class="btn" id="btnDecoCal">車頭彩檔期</button>
+        <button class="btn" id="btnHosts" title="行前確認填的儀式老師／主持人名單，可以註記合作狀況">主持人</button>
+        <button class="btn" id="btnAnn" title="選用車日期，禮車助手把公告發到當天的車趟群組（例：颱風出勤提醒）">群組公告</button>
       </div>
       <div class="more-g">新增</div>
       <div class="more-grid">
         <button class="btn" id="btnNew">新訂單</button>
         <button class="btn" id="btnPartner">同業單</button>
       </div>
-      <div class="more-g">工具</div>
+      <div class="more-g">設定</div>
       <div class="more-grid">
-        <button class="btn" id="btnPtSettle">同業結算</button>
-        <button class="btn" id="btnDecoCal">車頭彩檔期</button>
-        <button class="btn" id="btnHosts" title="行前確認填的儀式老師／主持人名單，可以註記合作狀況">主持人</button>
-        <button class="btn" id="btnAnn" title="選用車日期，禮車助手把公告發到當天的車趟群組（例：颱風出勤提醒）">群組公告</button>
+        <button class="btn" id="btnPriceSet">價目設定</button>
         <a class="btn" id="nwcLessonLink" href="https://docs.google.com/document/d/1K6DnYwcA0rDnFsxS_l0Rqs-Nk7z1OwpHPUImlviNWJs/edit" target="_blank" rel="noopener" title="編輯司機教案（Google 文件）；改完司機在 LINE「禮車助手」看到的就是新版。司機用的連結：https://liff.line.me/2011949076-1fqUEtE2?p=lesson">司機教案</a>
       </div>
       <div class="more-g">切換系統</div>
@@ -301,8 +307,8 @@ nav.tabs button{scroll-snap-align:start}
     <button role="tab" data-tab="find"><span class="n">4</span>找司機</button>
     <button role="tab" data-tab="dispatch"><span class="n">5</span>車隊與流程</button>
     <button role="tab" data-tab="memo"><span class="n">6</span>派車單／服務確認單</button>
-    <button role="tab" data-tab="refs"><span class="n">7</span>回金・月結</button>
-    <button role="tab" data-tab="settings"><span class="n">8</span>價目設定</button>
+    <button role="tab" data-tab="refs"><span class="n">7</span>回金</button>
+    <button role="tab" data-tab="settings" hidden><span class="n">8</span>價目設定</button>
   </nav>
 
   <div class="sample" id="sampleBar" hidden>
@@ -641,25 +647,7 @@ nav.tabs button{scroll-snap-align:start}
 
   <!-- 回金・月結 -->
   <section class="tab" id="tab-refs" hidden>
-    <div class="card" style="margin-bottom:18px">
-      <h3>任務結束帳款 <small>選日期看當天要處理的款項；之前沒處理完的也會列出來，處理好打勾</small></h3>
-      <div class="row" style="margin-bottom:8px"><label class="f" style="max-width:200px">日期<input type="date" id="setDate"></label></div>
-      <div class="tbl"><table style="min-width:680px"><thead><tr><th>日期</th><th>訂單</th><th>尾款</th><th>要處理的款項</th><th>完成</th></tr></thead><tbody id="setBody"></tbody></table></div>
-      <div id="setDrv" style="margin-top:14px"></div>
-    </div>
-    <div class="row" style="margin-bottom:12px"><label class="f" style="max-width:200px">月份<input type="month" id="refMonth"></label></div>
-    <div class="grid">
-      <div class="card">
-        <h3>本月回金 <small>依用車日期</small></h3>
-        <div class="tbl"><table style="min-width:520px"><thead><tr><th>日期</th><th>訂單編號</th><th>廠商</th><th>推薦人</th><th>方案費用</th><th>回金</th></tr></thead><tbody id="refBody"></tbody></table></div>
-        <div class="sum" id="refSum" style="margin-top:10px"></div>
-      </div>
-      <div class="card">
-        <h3>月結請款 <small id="billVendorName"></small></h3>
-        <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm pri" data-copy="outBill">複製</button></div>
-        <pre class="out" id="outBill"></pre>
-      </div>
-    </div>
+    <div class="card" style="margin-bottom:18px"><h3>這張訂單的回金 <small>匯回同業／廠商回金，以及我的佣金</small></h3><div id="ordRef"></div></div>   <!-- 2026-10-20 這頁只看目前這張訂單 -->
     <div class="card" style="margin-top:18px">
       <h3>這張訂單的「廠商推薦」紀錄 <small>貼到工作表單的「廠商推薦」分頁</small></h3>
       <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm pri" data-copy="outRefRow">複製一列</button></div>
@@ -787,6 +775,34 @@ nav.tabs button{scroll-snap-align:start}
     <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">主持人 <small>行前確認填的儀式老師／主持人；註記會同步到每台裝置</small></h3><button class="btn sm" id="btnHostClose">關閉</button></div>
     <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px" id="hostFilt"></div>
     <div id="hostList"></div>
+  </div>
+</div>
+<div id="settleModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
+  <div style="max-width:980px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px">
+    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">每日帳款 <small>任務結束要處理的款項、本月回金</small></h3><button class="btn sm" data-mclose="settleModal">關閉</button></div>
+    <div class="card" style="margin-bottom:18px">
+      <h3>任務結束帳款 <small>選日期看當天要處理的款項；之前沒處理完的也會列出來，處理好打勾</small></h3>
+      <div class="row" style="margin-bottom:8px"><label class="f" style="max-width:200px">日期<input type="date" id="setDate"></label></div>
+      <div class="tbl"><table style="min-width:680px"><thead><tr><th>日期</th><th>訂單</th><th>尾款</th><th>要處理的款項</th><th>完成</th></tr></thead><tbody id="setBody"></tbody></table></div>
+      <div id="setDrv" style="margin-top:14px"></div>
+    </div>
+    <div class="row" style="margin-bottom:12px"><label class="f" style="max-width:200px">月份<input type="month" id="refMonth"></label></div>
+      <div class="card">
+        <h3>本月回金 <small>依用車日期</small></h3>
+        <div class="tbl"><table style="min-width:520px"><thead><tr><th>日期</th><th>訂單編號</th><th>廠商</th><th>推薦人</th><th>方案費用</th><th>回金</th></tr></thead><tbody id="refBody"></tbody></table></div>
+        <div class="sum" id="refSum" style="margin-top:10px"></div>
+      </div>
+  </div>
+</div>
+<div id="billModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
+  <div style="max-width:980px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px">
+    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">月結請款 <small>目前只有幸福故事館</small></h3><button class="btn sm" data-mclose="billModal">關閉</button></div>
+    <div class="row" style="margin-bottom:12px"><label class="f" style="max-width:200px">月份<input type="month" id="billMonth"></label></div>
+      <div class="card">
+        <h3>月結請款 <small id="billVendorName"></small></h3>
+        <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm pri" data-copy="outBill">複製</button></div>
+        <pre class="out" id="outBill"></pre>
+      </div>
   </div>
 </div>
 <div id="lgModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
@@ -1876,7 +1892,7 @@ document.addEventListener('input',e=>{const el=e.target;
     save();renderAll();return}
   if(el.id==='s_vp'){S.vprices=S.vprices||{};S.vprices['幸福故事館']=el.value;saveS();renderAll();return}
   if(el.id==='s_vendors'){S.vendors=el.value.split('\n').map(l=>{const m=l.split(/[=＝]/);if(!m[0].trim())return null;const rest=(m[1]||'');return{name:m[0].trim(),rate:num(rest),monthly:/月結/.test(rest)}}).filter(Boolean);saveS();renderAll();return}
-  if(el.id==='refMonth'){renderRefs();return}
+  if(el.id==='refMonth'||el.id==='billMonth'){renderRefs();return}
   if(el.id==='setDate'){renderSettle();return}
   if(el.id==='s_cc'){const cc={};el.value.split('\n').forEach(l=>{const m=l.split(/[=＝:：]/);if(m.length>=2&&m[0].trim())cc[m[0].trim().replace(/臺/g,'台')]=m[1].trim().toUpperCase()});S.cc=cc;saveS();renderAll();return}
   if(el.dataset.s){const k=el.dataset.s;S[k]=el.type==='number'?num(el.value):el.value;saveS();renderAll();return}
@@ -2075,13 +2091,19 @@ function renderDrvTransfers(day){const el=$('setDrv');if(!el)return;const {pay,b
 function renderSettle(){const el=$('setDate');if(!el)return;if(!el.value){const d=new Date();el.value=`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`}const day=el.value;
   const list=Object.values(DB.orders).filter(x=>!x.sample&&x.date&&(x.date===day||x.date<day&&!x.settled&&settleInfo(x).act)).sort((a,b)=>a.date.localeCompare(b.date));
   $('setBody').innerHTML=list.map(x=>{const s=settleInfo(x);return `<tr${x.settled?' style="opacity:.55"':''}><td>${esc(x.date.slice(5).replace('-','/'))}${x.date<day?' <span class="chip" style="color:var(--warn)">未處理</span>':''}</td><td>${esc(orderNo(x))}<br><small>${esc([x.c.groom,x.c.bride].filter(Boolean).join('&'))}</small></td><td>${esc(s.st)}</td><td>${s.act?esc(s.act):'<span class="hint" style="margin:0">不用處理</span>'}</td><td style="text-align:center">${s.act?`<input type="checkbox" data-settle="${x.id}" id="st_${x.id}" ${x.settled?'checked':''} style="width:auto" aria-label="已處理">`:''}</td></tr>`}).join('')||'<tr><td colspan="5" class="hint">這天沒有任務。</td></tr>';try{renderDrvTransfers(day)}catch(err){console.warn(err)}}
-function renderRefs(){renderSettle();const mEl=$('refMonth');if(!mEl.value){const d=new Date();mEl.value=`${d.getFullYear()}-${p2(d.getMonth()+1)}`}const ym=mEl.value;
+/* 2026-10-20 Nicole：回金頁只看目前這張訂單：同業單＝匯回同業＋我的回佣；一般訂單＝廠商／婚顧回金 */
+function renderOrdRef(){const el=$('ordRef');if(!el||!o)return;const row=(k,v,b)=>`<div><span>${esc(k)}</span><span${b?' style="font-weight:700"':''}>${v}</span></div>`;
+  if(isPt(o)){const p=o.partner||{},k=ptCalc(o);el.innerHTML=`<div class="sum">${row('同業公司',esc(p.co||'—'))}${p.prepaid?row('同業應付我',money(k.owe)):row('司機現場收（尾款＋司機禮）',money(num(p.collect)))}${row('司機酬勞合計',money(k.pay))}${p.prepaid?'':row('司機交回我',money(k.back))}${row('匯回同業',money(k.remit),1)}<div class="tot"><span>我的回佣</span><span style="color:#2F6B4F">${money(k.profit)}</span></div></div>`;return}
+  const v=vendorOf(o),r=calc(o);if(!v){el.innerHTML='<p class="hint" style="margin:0">這張單沒有廠商／婚顧推薦，不用回金。</p>';return}
+  el.innerHTML=`<div class="sum">${row('廠商',esc(v.name))}${o.src&&o.src.ref?row('推薦人',esc(o.src.ref)):''}${row('方案費用',money(r.planFee))}<div class="tot"><span>${isMonthly(o)?'月結（不另付回金）':'回金'}</span><span>${isMonthly(o)?'月結':money(r.refAmt)}</span></div></div>`}
+function renderRefs(){try{renderOrdRef()}catch(e){console.warn(e)}renderSettle();const mEl=$('refMonth');if(!mEl.value){const d=new Date();mEl.value=`${d.getFullYear()}-${p2(d.getMonth()+1)}`}const ym=mEl.value;
   const list=Object.values(DB.orders).filter(x=>!x.sample&&x.date&&x.date.slice(0,7)===ym&&vendorOf(x)).sort((a,b)=>a.date.localeCompare(b.date));
   $('refBody').innerHTML=list.map(x=>{const r=calc(x),v=vendorOf(x);return `<tr><td>${esc(x.date.slice(5).replace('-','/'))}</td><td>${esc(orderNo(x))}</td><td>${esc(v.name)}</td><td>${esc(x.src.ref||'')}</td><td>${money(r.planFee)}</td><td>${isMonthly(x)?'月結':money(r.refAmt)}</td></tr>`}).join('')||'<tr><td colspan="6" class="hint">這個月沒有廠商推薦的訂單。</td></tr>';
   const by={};list.filter(x=>!isMonthly(x)).forEach(x=>{const k=vendorOf(x).name+(x.src.ref?' / '+x.src.ref:'');by[k]=(by[k]||0)+calc(x).refAmt});
   $('refSum').innerHTML=Object.keys(by).map(k=>`<div><span>${esc(k)}</span><span>${money(by[k])}</span></div>`).join('')+(Object.keys(by).length?`<div class="tot"><span>本月應付回金</span><span>${money(Object.values(by).reduce((a,b)=>a+b,0))}</span></div>`:'');
-  const mv=(S.vendors||[]).filter(v=>v.monthly);const bills=mv.map(v=>{const os=list.filter(x=>vendorOf(x).name===v.name);if(!os.length)return '';const tot=os.reduce((a,x)=>a+calc(x).bill,0);
-    return [`【好好禮車】${ym.replace('-','年')}月 請款明細｜${v.name}`,...os.map(x=>`${x.date.slice(5).replace('-','/')} ${orderNo(x)} ${[x.c.groom,x.c.bride].filter(Boolean).join('&')} ${planName(x).replace(/^Tesla /,'').replace(/ \S*禮車方案$/,'')} ${money(calc(x).bill)}`),`合計：${money(tot)}`,`（司機紅包、甘蔗固定費由司機現場收取，不列入請款）`,'',`匯款資訊：`,S.bank].join('\n')}).filter(Boolean);
+  const bEl=$('billMonth');if(bEl&&!bEl.value)bEl.value=ym;const bym=bEl?bEl.value:ym,blist=Object.values(DB.orders).filter(x=>!x.sample&&x.date&&x.date.slice(0,7)===bym&&vendorOf(x)).sort((a,b)=>a.date.localeCompare(b.date));   /* 2026-10-20 月結獨立視窗 */
+  const mv=(S.vendors||[]).filter(v=>v.monthly);const bills=mv.map(v=>{const os=blist.filter(x=>vendorOf(x).name===v.name);if(!os.length)return '';const tot=os.reduce((a,x)=>a+calc(x).bill,0);
+    return [`【好好禮車】${bym.replace('-','年')}月 請款明細｜${v.name}`,...os.map(x=>`${x.date.slice(5).replace('-','/')} ${orderNo(x)} ${[x.c.groom,x.c.bride].filter(Boolean).join('&')} ${planName(x).replace(/^Tesla /,'').replace(/ \S*禮車方案$/,'')} ${money(calc(x).bill)}`),`合計：${money(tot)}`,`（司機紅包、甘蔗固定費由司機現場收取，不列入請款）`,'',`匯款資訊：`,S.bank].join('\n')}).filter(Boolean);
   $('billVendorName').textContent=mv.map(v=>v.name).join('、');$('outBill').textContent=bills.join('\n\n')||'這個月沒有月結廠商的訂單。'}
 function renderOrderSel(){const list=Object.values(DB.orders).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.updated-a.updated);
   $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(selLabel(x))}</option>`).join('');renderTodoBadge();if(!$('todoModal').hidden)renderTodo()}
@@ -2947,6 +2969,10 @@ function renderPtCard(){try{renderBalHint()}catch(_){}try{renderPtMemo()}catch(e
    <details style="margin-top:8px"><summary class="hint" style="cursor:pointer;margin:0">同業原始派單內容</summary><pre class="out" style="margin-top:6px">${esc(p.raw||'')}</pre></details>`;try{renderPub()}catch(e){}
   $('ptCoList').innerHTML=ptCos().map(c=>`<option value="${esc(c)}">`).join('')}
 document.addEventListener('input',e=>{const t=e.target;if(!t.dataset||!t.dataset.pt||!isPt(o))return;const k=t.dataset.pt;o.partner[k]=t.type==='checkbox'?t.checked:t.type==='number'?num(t.value):t.value;if(k==='co'){o.c.chatName=`【${t.value.trim()}】${o.c.groom||''}`}save();if(k!=='co'&&k!=='drvSheet')renderPtCard();renderOrderSel()});
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#btnSettle,#btnBill,#btnPriceSet,[data-mclose]');if(!b)return;   /* 2026-10-20 每日帳款／月結／價目設定移到「更多」 */
+  if(b.dataset.mclose){$(b.dataset.mclose).hidden=true;return}try{const ms=$('moreSheet');if(ms)ms.hidden=true}catch(_){}
+  if(b.id==='btnPriceSet'){showTab('settings');try{window.scrollTo(0,0)}catch(_){}return}
+  renderRefs();$(b.id==='btnSettle'?'settleModal':'billModal').hidden=false});
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#btnPtDrvCopy,#btnPtCustCopy,#btnPtDrvRegen,#btnPtDrvPost');if(!b||!o||!isPt(o))return;const p=o.partner;
   if(b.id==='btnPtDrvPost'){const t=String(String(p.drvSheet||'').trim()?p.drvSheet:ptDrvGen(o)).trim();if(!t){toast('還沒有內容');return}if(!confirm('由禮車助手把這份司機派車單發到這趟的 LINE 群組？'))return;b.disabled=true;b.textContent='發送中…';
     lgCall({op:'notice',keys:lgKeys(o),text:t}).then(j=>{o.pubAt=o.pubAt||Date.now();save();try{renderPub()}catch(_){}toast('已發到群組「'+(j.name||'')+'」')}).catch(e=>toast('沒發出去：'+e.message)).finally(()=>{b.disabled=false;b.textContent='禮車助手發到群組'});return}   /* 2026-10-20 同業司機派車單：禮車助手發到群組 */
