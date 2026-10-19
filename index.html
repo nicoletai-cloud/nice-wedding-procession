@@ -592,9 +592,11 @@ nav.tabs button{scroll-snap-align:start}
       </div>
       <div class="card">
         <h3>禮車流程</h3>
-        <div class="fields" style="margin-bottom:10px">
+        <div id="flowPts" style="margin-bottom:12px"></div>   <!-- 2026-10-20 Nicole：A–D 地點名稱、地址可以在這裡改；下面附客人原本填的 -->
+        <div class="fields" style="margin-bottom:6px">
           <label class="f">流程代號<input id="d_path" data-b="path" placeholder="A - B - A"></label>
         </div>
+        <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px"><button class="btn sm" type="button" data-pb="A">A</button><button class="btn sm" type="button" data-pb="B">B</button><button class="btn sm" type="button" data-pb="C">C</button><button class="btn sm" type="button" data-pb="D">D</button><button class="btn sm" type="button" data-pb="loop">- 繞圈 -</button><button class="btn sm" type="button" data-pb="undo">⌫ 退一步</button><button class="btn sm" type="button" data-pb="clear">清除</button></div>
         <div class="flow" id="flowList"></div>
         <div class="row" style="margin-top:8px"><button class="btn sm" id="btnFlowAdd">＋ 加一段</button><button class="btn sm" id="btnFlowAuto">依地點重排</button></div>
         <p class="hint">每段寫「時間＋哪幾台車＋A - B」，例如 10:00 伴娘車 B - A。留空車輛＝全車隊。</p>
@@ -1999,7 +2001,18 @@ function renderFleet(){try{renderFr()}catch(_){}try{setTimeout(renderEq,0)}catch
   <td><input type="number" data-fl="${i}.seats" id="fl_s${i}" value="${esc(f.seats)}" style="width:62px"></td>
   <td><input type="number" data-fl="${i}.pay" id="fl_y${i}" value="${esc(f.pay)}" placeholder="${dp==null?'未設定':dp}" style="width:96px"></td>
   <td style="text-align:center"><input type="radio" name="leadR" data-fl="${i}.lead" id="fl_l${i}" ${f.lead?'checked':''} style="width:auto" aria-label="負責人"></td></tr>`}).join('')||'<tr><td colspan="11" class="hint">先在「報價」選車款。</td></tr>'}
-function renderFlow(){$('flowList').innerHTML=o.flow.map((f,i)=>`<div class="fr"><div class="tt"><input type="time" data-fw="${i}.t" id="fw_t${i}" value="${esc(f.t)}" aria-label="時間"></div>
+/* 2026-10-20 Nicole：流程代號按鈕（A–D、繞圈、退一步），按了自動排好下面每一段 */
+function pbTokens(p){return String(p||'').split(/\s*[-－>＞→]\s*/).map(z=>z.trim()).filter(Boolean).map(z=>/繞圈/.test(z)?'繞圈':z.toUpperCase()).filter(z=>z==='繞圈'||/^[A-D]$/.test(z))}
+function pbApply(ks){o.path=ks.join(' - ');const old=o.flow||[],fl=[];let n=0;const cn='一二三四五六七八九十';
+  for(let i=0;i<ks.length;i++){const a=ks[i];if(a==='繞圈')continue;const nx=ks[i+1];if(nx==null)break;
+    if(nx==='繞圈'){n++;fl.push(`${a} 第${cn[n-1]||n}圈繞圈`)}else fl.push(`${a} - ${nx}`)}
+  o.flow=fl.map((seg,i)=>({t:old[i]?old[i].t:(i===0?(o.c.start||''):''),who:old[i]?old[i].who:'',seg}));o.sample=false;save();renderAll();try{renderFlow()}catch(_){}}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-pb]');if(!b||!o)return;const k=b.dataset.pb;let ks=pbTokens(o.path);
+  if(k==='clear')ks=[];else if(k==='undo')ks.pop();else if(k==='loop'){if(!ks.length||ks.at(-1)==='繞圈')return;ks.push('繞圈',ks.at(-1))}else{if(ks.at(-1)===k)return;ks.push(k)}pbApply(ks)});
+function renderFlowPts(){const el=$('flowPts');if(!el||!o)return;if(el.contains(document.activeElement))return;const c=o.c||{},f=((o.cfLast||{}).f)||{};
+  const cu={A:f.meet,B:f.wed,C:f.restAddr,D:''},P=[['A','meet','集合地點'],['B','wed','迎娶地點'],['C','o1','其他地點'],['D','o2','其他地點']];
+  el.innerHTML=P.map(([k,fd,tt])=>`<div style="margin-top:8px"><div class="row" style="gap:6px;align-items:center;flex-wrap:wrap"><b style="width:86px;white-space:nowrap">${k}. ${tt}</b><input data-b="c.${fd}L" value="${esc(c[fd+'L']||'')}" placeholder="地點名稱（例：江山萬里社區 - 男方家）" style="flex:1;min-width:180px"><input data-b="c.${fd}" value="${esc(c[fd]||'')}" placeholder="地址" style="flex:2;min-width:220px"></div>${String(cu[k]||'').trim()?`<div class="hint" style="margin:2px 0 0 92px">客人填：${esc(cu[k])}</div>`:''}</div>`).join('')}
+function renderFlow(){try{renderFlowPts()}catch(e){console.warn(e)}$('flowList').innerHTML=o.flow.map((f,i)=>`<div class="fr"><div class="tt"><input type="time" data-fw="${i}.t" id="fw_t${i}" value="${esc(f.t)}" aria-label="時間"></div>
   <input class="who" data-fw="${i}.who" id="fw_w${i}" value="${esc(f.who)}" placeholder="全車隊" aria-label="車輛">
   <input class="sg" data-fw="${i}.seg" id="fw_s${i}" value="${esc(f.seg)}" placeholder="A - B" aria-label="路段">
   <button class="btn sm" data-fdel="${i}" aria-label="刪除這段">✕</button></div>`).join('')}
