@@ -32,6 +32,11 @@ header.top .orderbar .kw-search{grid-column:auto!important;min-width:0;position:
 .more-grid .btn{width:100%;text-align:center;padding:12px 4px;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
 @media (max-width:520px){header.top .orderbar select,header.top .orderbar .kw-search{grid-column:1/-1!important}.more-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .quick .btn,.quick .kw-date .btn{min-height:44px;font-size:.95rem;box-sizing:border-box}.quick .kw-date{display:block}
+.flowGrid{display:grid;grid-template-columns:1fr;gap:14px}
+.cfSide{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface-2,#faf5ee)}
+.cfSide summary{cursor:pointer}
+.cfSide .tbl{margin-top:8px;max-height:70vh;overflow:auto}
+@media (min-width:1000px){.flowGrid{grid-template-columns:minmax(300px,38%) 1fr}.cfSide{position:sticky;top:70px;align-self:start}}
 </style>
 <title>好好禮車婚禮派車</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23B8323A'/%3E%3Ctext x='32' y='48' font-size='46' text-anchor='middle' fill='%23F6D9A8' font-family='PingFang TC,Noto Sans TC,sans-serif'%3E%E5%9B%8D%3C/text%3E%3C/svg%3E">
@@ -592,6 +597,9 @@ nav.tabs button{scroll-snap-align:start}
       </div>
       <div class="card">
         <h3>禮車流程</h3>
+        <div class="flowGrid"><!-- 2026-10-20 Nicole：左邊看客人填的完整行前確認，右邊改流程 -->
+        <details class="cfSide" open><summary><b>客人填的行前確認</b> <small style="color:var(--muted)">（對照用）</small></summary><div id="cfSide"></div></details>
+        <div class="flowEdit">
         <div id="flowPts" style="margin-bottom:12px"></div>   <!-- 2026-10-20 Nicole：A–D 地點名稱、地址可以在這裡改；下面附客人原本填的 -->
         <div class="fields" style="margin-bottom:6px">
           <label class="f">流程代號<input id="d_path" data-b="path" placeholder="A - B - A"></label>
@@ -600,6 +608,7 @@ nav.tabs button{scroll-snap-align:start}
         <div class="flow" id="flowList"></div>
         <div class="row" style="margin-top:8px"><button class="btn sm" id="btnFlowAdd">＋ 加一段</button><button class="btn sm" id="btnFlowAuto">依地點重排</button></div>
         <p class="hint">每段寫「時間＋哪幾台車＋A - B」，例如 10:00 伴娘車 B - A。留空車輛＝全車隊。</p>
+        </div></div>
       </div>
     </div>
   </section>
@@ -1896,10 +1905,14 @@ async function cfGeoRun(){if(cfGeoBusy||!S.driveUrl||!S.driveKey)return;const td
   finally{cfGeoBusy=false}
   store('nwcw_orders',DB);pushSync();try{renderAll()}catch(_){}if(n)toast(`已核對 ${n} 筆行前確認的地點地址`)}
 /* 2026-10-17 車隊與流程頁：顯示客人回填的行前確認（狀態、回答、跟合約的差異） */
+function cfSideFill(){const sd=$('cfSide');if(!sd||!o)return;const tb=$('cfFlowBody')&&$('cfFlowBody').querySelector('.tbl');
+  if(!tb){sd.innerHTML='<div class="hint" style="margin:6px 0 0">客人還沒填行前確認</div>';return}const cl=tb.cloneNode(true);cl.querySelectorAll('button,[id]').forEach(e=>{if(e.tagName==='BUTTON')e.remove();else e.removeAttribute('id')});
+  const L=o.cfLast||{},cmp=L.cmp&&(L.cmp.lines||[]).length?`<div class="sub" style="color:#A0453A;margin-top:6px">⚠️ 跟之前填的不一樣：${L.cmp.lines.map(esc).join('；')}</div>`:'';
+  sd.innerHTML=cl.outerHTML+cmp}
 function renderCfFlow(){const card=$('cfFlowCard'),b=$('cfFlowBody');if(!card||!b||!o)return;card.hidden=isPt(o);if(card.hidden)return;
   const cf=CONFIRMS[normNo(orderNo(o))]||null,L=o.cfLast||null,f=(cf&&cf.f)||(L&&L.f)||(L&&(L.note||(L.files||[]).length)?{note:L.note||'',files:L.files||[],_part:1}:null),tm=t=>{const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`};
   const btns=`<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">${o.cfDoneAt?'':'<button class="btn sm pri" id="btnCfSend2">📤 傳確認按鈕給新人</button>'}<button class="btn sm" id="btnCfMore">完整行前確認／貼上文字回覆</button></div>`;
-  if(!f&&!L){b.innerHTML=`<div class="hint" style="margin:0">${o.cfSentAt?`⏳ 已傳給客人（${tm(o.cfSentAt)}），客人還沒送出`:o.cfSchedAt?`🕒 已預約 ${cfSchedLabel(o.cfSchedAt)} 傳給客人`:'還沒傳行前確認給客人'}${o.cfPushErr?`<div style="color:var(--warn)">⚠️ ${esc(o.cfPushErr)}</div>`:''}</div>`+btns;return}
+  if(!f&&!L){b.innerHTML=`<div class="hint" style="margin:0">${o.cfSentAt?`⏳ 已傳給客人（${tm(o.cfSentAt)}），客人還沒送出`:o.cfSchedAt?`🕒 已預約 ${cfSchedLabel(o.cfSchedAt)} 傳給客人`:'還沒傳行前確認給客人'}${o.cfPushErr?`<div style="color:var(--warn)">⚠️ ${esc(o.cfPushErr)}</div>`:''}</div>`+btns;cfSideFill();return}
   const at=cf?+cf.at:+L.at,who=(cf&&cf.who)||(L&&L.who)||'',ln=(cf&&cf.lname)||(L&&L.lname)||'';
   let h=`<b style="color:var(--ok)">✅ ${L&&L.manual&&!f?'已用貼上的回覆帶入':'客人已送出'}（${tm(at)}${who?'，'+(who==='agent'?'婚顧／主持人代填':'新人填寫'):''}${ln?'，LINE：'+esc(ln):''}）</b>`;
   if(f){const loop=f.mode==='loop',fr=f.friend?(f.friend==='有'?`${f.friendN} 台，排第 ${String(f.friendPos||'').split(',').join('、')} 車`:f.friend):'';
@@ -1909,7 +1922,7 @@ function renderCfFlow(){const card=$('cfFlowCard'),b=$('cfFlowBody');if(!card||!
     h+=`<div class="tbl" style="margin-top:8px"><table><tbody>${rows.map(r=>`<tr><th style="white-space:nowrap;width:1%">${esc(r[0])}</th><td style="white-space:pre-wrap">${esc(r[1])}${r[0]==='想提醒司機'?(ntIn?'<div class="sub" style="color:var(--ok);white-space:normal">✅ 已在注意事項（派車單、服務確認單都看得到）</div>':'<div style="color:var(--warn);white-space:normal;margin-top:4px">⚠️ 還沒放進注意事項，派車單看不到 <button class="btn sm" id="btnCfNoteAdd">加進注意事項</button></div>'):''}</td></tr>`).join('')}${(f.files||[]).length?`<tr><th style="white-space:nowrap">行程表</th><td>${f.files.map(z=>`<a href="https://drive.google.com/file/d/${encodeURIComponent(z.id)}/view" target="_blank" rel="noopener">${esc(z.name||(z.pdf?'PDF':'照片'))}</a>`).join('、')}</td></tr>`:''}</tbody></table></div>`}
   if(L&&L.cmp&&(L.cmp.lines||[]).length)h+=`<div class="sum" style="margin-top:8px;border-left:3px solid #A0453A"><b style="color:#A0453A">⚠️ 跟 ${tm(L.cmp.at)}（${L.cmp.who==='agent'?'婚顧／主持人代填':L.cmp.who?'新人':'之前'}）填的不一樣，請跟客人核對：</b>${L.cmp.lines.map(z=>`<div class="sub">・${esc(z)}</div>`).join('')}</div>`;
   if(L)h+=`<div style="margin-top:8px">${cfWarnShow(L.warn).length?`<div class="sum">${cfWarnShow(L.warn).map(w=>`<div style="color:var(--warn)">● ${esc(w)}</div>`).join('')}</div>`:'<span class="chip ok">跟合約沒有衝突</span>'}${(L.diffs||[]).length?`<div class="sum" style="margin-top:8px">${L.diffs.map(d=>`<div class="sub">${esc(d)}</div>`).join('')}</div>`:''}</div>`;
-  b.innerHTML=h+btns}
+  b.innerHTML=h+btns;cfSideFill()}
 function renderConfirmResult(r){const b=$('confirmResult');if(!r){b.innerHTML='';return}
   b.innerHTML=(r.warn.length?`<div class="sum">${r.warn.map(w=>`<div style="color:var(--warn)">● ${esc(w)}</div>`).join('')}</div>`:'<span class="chip ok">跟合約沒有衝突</span>')+
    (r.diffs.length?`<div class="sum" style="margin-top:8px">${r.diffs.map(d=>`<div class="sub">${esc(d)}</div>`).join('')}</div>`:'')+
