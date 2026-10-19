@@ -2651,7 +2651,9 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnUnpaid':o.paid=false;o.paidAt='';o.paidTs='';save();renderAll();renderOrderSel();break;
    case 'btnResetS':{const keep={bank:S.bank,phone:S.phone,email:S.email,formBase:S.formBase,formEntry:S.formEntry};S=Object.assign(clone(DEF_S),keep);saveS();renderPriceSettings();fillInputs();renderCars();renderAll();$('resetMsg').textContent='已恢復預設價目';break}
   }});
-$('orderSel').addEventListener('change',e=>{o=DB.orders[e.target.value];save();loadOrder()});
+/* 2026-10-20 Nicole：選好訂單後，已派好司機→停在派車單；還在等派司機→停在找司機（還沒出合約的單照原本） */
+function autoTab(x){try{if(!x||x.sample||x.lost)return;const st=stageOf(x);if(!x.partner&&st!=='ready'&&st!=='done')return;const noDrv=!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim());showTab(noDrv?'find':'memo')}catch(e){console.warn(e)}}
+$('orderSel').addEventListener('change',e=>{o=DB.orders[e.target.value];save();loadOrder();autoTab(o)});
 function copy(text,el){const done=()=>toast('已複製');
   const fb=()=>{const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);try{document.execCommand('copy')?done():toast('已選取文字，請按複製')}catch(_){toast('已選取文字，請按複製')}};
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(done,fb);else fb()}
@@ -2675,7 +2677,7 @@ function showTab(name){document.querySelectorAll('#tabs button').forEach(b=>b.se
   dBtn.addEventListener('click',e=>{e.preventDefault();dPop.hidden=!dPop.hidden;box.hidden=true;if(!dPop.hidden)drRender('kw')});
   $('kwDateShow').addEventListener('click',e=>{e.preventDefault();dPop.hidden=true;act=-1;render()});
   document.addEventListener('mousedown',e=>{if(!dPop.hidden&&!e.target.closest('.kw-date'))dPop.hidden=true;if(!box.hidden&&!e.target.closest('.kw-search')&&!e.target.closest('.kw-date')&&document.activeElement!==inp)box.hidden=true});
-  function open(x){box.hidden=true;inp.blur();o=x;save();loadOrder();try{window.scrollTo(0,0)}catch(e){}}
+  function open(x){box.hidden=true;inp.blur();o=x;save();loadOrder();autoTab(o);try{window.scrollTo(0,0)}catch(e){}}
   inp.addEventListener('input',e=>{if(e.inputType==='insertFromPaste'&&kwCodeOpen(inp.value)){inp.value='';box.hidden=true;inp.blur();return}act=-1;render()});inp.addEventListener('focus',()=>{if(inp.value.trim()||drOn('kw'))render()});
   inp.addEventListener('blur',()=>setTimeout(()=>{box.hidden=true},200));
   inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&act<0&&kwCodeOpen(inp.value)){e.preventDefault();inp.value='';box.hidden=true;inp.blur();return}if(box.hidden||!shown.length)return;if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();act=(act+(e.key==='ArrowDown'?1:-1)+shown.length)%shown.length;render()}else if(e.key==='Enter'){e.preventDefault();open(shown[act>=0?act:0])}else if(e.key==='Escape')box.hidden=true});
