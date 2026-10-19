@@ -1344,7 +1344,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
     if(lang==='en')pay=[`Balance ${money(r.balance,'en')} (incl. driver red envelope)`,`Please transfer to the account below by the day before the service, or hand the full amount to the on-site lead driver on the day. (Our accountant can't verify transfers in real time on holidays, so please don't transfer on the day of service.)`,S.bankBal?`Balance transfer details (staff account):`:`Bank transfer details:`,S.bankBal||S.bank,`Extra hours: ${MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m],'en')}${otU}`).join(' ; ')}`];
     else if(lang==='ja')pay=[`残金 ${money(r.balance,'ja')}（ドライバーご祝儀込み）`,`ご利用前日までに下記口座へお振込みいただくか、当日現場責任者へまとめてお渡しください（休日は経理がすぐに入金確認できないため、当日のお振込みはお控えください）`,S.bankBal?`残金お振込先（スタッフ口座）：`:`お振込先：`,S.bankBal||S.bank,`延長：${MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m],'ja')}${otU}`).join(' ; ')}`];
     else if(r.mon)pay=[r.onsite?`當天請準備${[r.red?`司機紅包 ${money(S.red)}/台`:'',r.cane?`甘蔗固定費 ${money(r.cane)}`:''].filter(Boolean).join('、')}`:'',`加時：${otl}`].filter(Boolean);
-    else pay=[`尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`,`請於用車前一日前匯款到以下帳號，或是當天一整包交給現場負責人 (假日會計無法即時查帳，請勿用車當日匯款)`,'',S.bankBal?`匯款資訊 [幹部帳戶]`:`匯款資訊`,S.bankBal||S.bank,'',`加時：${otl}`];   // 2026-10-19 Nicole 指定文字
+    else pay=[`尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`,`請於用車前一日前匯款到以下帳號，或是當天一整包現金交給現場負責人 (假日會計無法即時查帳，請勿用車當日匯款)`,'',S.bankBal?`匯款資訊 [幹部帳戶]`:`匯款資訊`,S.bankBal||S.bank,'',`加時：${otl}`];   // 2026-10-19 Nicole 指定文字
   }else{
     const groups={};x.fleet.forEach(f=>{const v=payOf(f,x);const key=v==null?'?':v;(groups[key]=groups[key]||[]).push(f.role)});
     pay=[r.mon?(r.onsite?`收取${[r.red?`紅包 ${money(S.red)}/台`:'',r.cane?`甘蔗固定費 ${money(r.cane)}`:''].filter(Boolean).join('、')}`:'現場不用收款'):x.balPaid?(x.balRed&&r.red?`尾款客人已匯款，現場只收司機紅包 ${money(S.red)}/台（共 ${money(r.red)}）`:`尾款 ${money(r.balance)} 客人已匯款，現場不用收款`):`收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`];
@@ -1720,6 +1720,15 @@ async function memoPush(){if(!S.driveUrl||!S.driveKey){toast('還沒設定機器
   const j=await cfQApi({action:'memoSend',items:[{id:o.id,text,bal:r.balance,mon:!!r.mon}]});if(!j||!j.ok){toast('傳送失敗：'+((j&&j.error)||'連不到機器人'));return}
   const res=(j.res||[])[0]||{},now=Date.now();if(res.ok){o.memoSentAt=now;o.memoDone=true;o.memoPushErr='';o.memoOkAt=0;o.memoFixAt=0;toast('已傳給客人核對')}else{o.memoPushErr=res.err||'';alert('傳不到客人：'+(res.err||'')+'\n\n確認單內容已存好，可以按「複製核對連結」手動傳給客人。')}
   o.updated=now;save();pushSync();renderMemoOk();try{renderTodo()}catch(_){}}
+/* 2026-10-19 複製核對連結：先把最新確認單內容存到機器人（不傳 LINE），客人打開才看得到 */
+function memoLinkCopy(){const url=memoOkUrl(o),x=o;
+  const job=(async()=>{if(!S.driveUrl||!S.driveKey)throw new Error('還沒設定機器人連線');const r=calc(x),text=memoText(memoModel(x,'cust','zh'),false);try{await doSync()}catch(_){}
+    const j=await cfQApi({action:'memoSend',noPush:true,items:[{id:x.id,text,bal:r.balance,mon:!!r.mon}]});const res=(j&&j.res||[])[0]||{};if(!j||!j.ok||!res.ok)throw new Error((res&&res.err)||(j&&j.error)||'連不到機器人');
+    x.memoDone=true;x.memoPushErr='';x.updated=Date.now();save();pushSync();try{renderMemoOk()}catch(_){};return url})();
+  toast('存確認單內容中…');
+  const done=()=>toast('已複製核對連結（確認單內容已更新，客人打開就看得到）'),fail=e=>{toast('確認單內容沒存成功：'+(e&&e.message||e));};
+  if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){navigator.clipboard.write([new ClipboardItem({'text/plain':job.then(u=>new Blob([u],{type:'text/plain'}))})]).then(done,e=>{job.then(u=>prompt('複製這個連結',u),fail)});}
+  else job.then(u=>navigator.clipboard.writeText(u).then(done,()=>prompt('複製這個連結',u)),fail);}
 function memoApply(M){const ch=[];Object.values(DB.orders).forEach(x=>{const m=M[normNo(orderNo(x))];if(!m)return;let c=false;
     if(m.ok&&+m.ok.at>(+x.memoOkAt||0)&&+m.ok.at>(+x.memoSentAt||0)){x.memoOkAt=+m.ok.at;x.balPlan=m.ok.pay;c=true}
     if(m.fix&&+m.fix.at>(+x.memoFixAt||0)&&+m.fix.at>(+x.memoSentAt||0)){x.memoFixAt=+m.fix.at;x.memoFixNote=m.fix.note||'';c=true}
@@ -2465,7 +2474,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnCfSend':{cfPreview([o]);break}
    case 'btnCfSend2':{cfPreview([o]);break}
    case 'btnMemoSend':{memoPush();break}
-   case 'btnMemoLink':{navigator.clipboard.writeText(memoOkUrl(o)).then(()=>toast('已複製核對連結（客人要先收到確認單內容：請先按一次「傳確認單給客人核對」）'),()=>prompt('複製這個連結',memoOkUrl(o)));break}
+   case 'btnMemoLink':{memoLinkCopy();break}
    case 'btnCfMore':$('coupleModal').hidden=false;break;
    case 'btnConfirm':{const res=parseConfirm($('confirmBox').value);if(!Object.keys(res).length){$('confirmResult').innerHTML='<p class="hint">沒有認出欄位，請確認貼上的是行前確認的回覆。</p>';break}const r=applyConfirm(res);o.cfDoneAt=Date.now();o.cfLast={at:Date.now(),diffs:r.diffs,warn:r.warn,manual:true};save();renderOrderSel();fillInputs();renderFlow();renderAll();renderConfirmResult(r);toast('已帶入行前確認');break}
    case 'btnApplyH':{if(o._suggestH){o.hours=o._suggestH;o._suggestH=null;save();fillInputs();renderCars();renderFleet();renderAll();$('confirmResult').insertAdjacentHTML('beforeend','<p class="hint">合約時數已更新，報價、合約、memo 都已重算。</p>');t.remove()}break}
