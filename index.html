@@ -1784,7 +1784,7 @@ function cfApplyQ(q){if(!q)return [];const inJob={},ch=[];(q.jobs||[]).forEach(j
 function renderCfSt(){const el=$('cfSt');if(!el||!o)return;const L=o.cfLast;
   if(!L){el.textContent=(o.cfDoneAt?'已完成行前確認':o.cfSentAt?'已傳給客人（'+new Date(o.cfSentAt).toLocaleDateString('zh-TW')+'），客人還沒送出':'')+(o.cfPushErr?'\n⚠️ 上次傳送失敗：'+o.cfPushErr:'');$('confirmResult').innerHTML='';return}
   const d=new Date(L.at);el.innerHTML=`<b style="color:var(--ok)">✅ ${L.manual?'已用貼上的回覆帶入':'客人已用確認頁送出，已自動帶入'}（${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}${L.uid?'，LINE 登入':''}）</b>`+(L.who?`<div style="margin-top:4px">填寫的人：<b>${L.who==='agent'?'婚顧／主持人代填':'新人'}</b>${L.lname?`（LINE：${esc(L.lname)}）`:''}</div>`:'')+(L.cmp&&(L.cmp.lines||[]).length?`<div class="sum" style="margin-top:6px;border-left:3px solid #A0453A"><b style="color:#A0453A">⚠️ 跟 ${(()=>{const z=new Date(L.cmp.at);return (z.getMonth()+1)+'/'+z.getDate()+' '+p2(z.getHours())+':'+p2(z.getMinutes())})()}（${L.cmp.who==='agent'?'婚顧／主持人代填':L.cmp.who?'新人':'上次'}）填的不一樣，請跟客人核對：</b><br>${L.cmp.lines.map(esc).join('<br>')}</div>`:'')+(L.note?`<div class="sum" style="margin-top:6px">客人想提醒司機：${esc(L.note)}</div>`:'')+((L.files||[]).length?`<div style="margin-top:6px">行程表／路線圖：${L.files.map((z,i)=>`<a href="https://drive.google.com/file/d/${encodeURIComponent(z.id)}/view" target="_blank" rel="noopener">${z.pdf?'📄':'🖼️'} 檔案 ${i+1}</a>`).join('　')}</div>`:'');
-  renderConfirmResult({warn:L.warn||[],diffs:L.diffs||[]})}
+  renderConfirmResult({warn:cfWarnShow(L.warn),diffs:L.diffs||[]})}
 const CF=[['name',/聯絡人姓名/],['phone',/聯絡人電話/],['meet',/男方家地址|集合地點/],['wed',/女方家地址/],['start',/預計出發時間|出發時間/],['combo',/訂結一起/],['cane',/甘蔗|竹子/],['back',/迎娶回男方家|幾點迎娶回/],['restYN',/接送至餐廳/],['restT',/出發去餐廳/],['restAddr',/餐廳地址/]];
 const toHalf=v=>String(v==null?'':v).replace(/[\uFF10-\uFF19\uFF21-\uFF3A\uFF41-\uFF5A\uFF03\uFF04\uFF05\uFF06\uFF0B\uFF0D\uFF0E\uFF0F\uFF20\uFF3F]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/\u3000/g,' ');   // 2026-10-17 貼上的客人回覆：全形英數字轉半形
 function parseConfirm(text){text=toHalf(text);const res={},lines=text.replace(/\r/g,'').split('\n');
@@ -1794,6 +1794,11 @@ function parseConfirm(text){text=toHalf(text);const res={},lines=text.replace(/\
     res[hit[0]]=v}
   return res}
 function yesish(v){return /^(是|有|要|需要|y|yes|ok|對|好)/i.test((v||'').trim())&&!/不|沒|否|無/.test(v)}
+/* 2026-10-20 Nicole：台北、新北算同縣市（所有訂單） */
+function sameCty(a,b){const g=v=>/^(台北|新北)$/.test(String(v||'').replace(/臺/g,'台'))?'雙北':String(v||'');return g(a)===g(b)}
+function cfWarnShow(list,x){x=x||o;const tp=v=>/^(台北|新北)$/.test(v);let all=false;try{const cs=points(x).map(p=>countyOf(p.addr)).filter(Boolean);all=cs.length>0&&cs.every(tp)}catch(_){}
+  return (list||[]).filter(w=>!/跟原本的未設定不同/.test(w)&&!/^(集合|迎娶)地點在(台北|新北)，跟原本的(台北|新北)不同/.test(w)&&!(all&&/^(餐廳在.{2,3}，跟男女方不同縣市|行程跨縣市，)/.test(w)))
+    .map(w=>w.replace(/；跟其他地點（(台北|新北)）不同縣市，請再確認一次/,(m0,c1)=>/(台北|新北|臺北)市/.test(w)?'':m0))}
 function minutes(t){if(!t)return null;const [h,m]=t.split(':').map(Number);return h*60+m}
 function applyConfirm(res){const c=o.c,before=clone(o),diffs=[],warn=[];o.sample=false;
   const chg=(label,oldV,newV)=>{if(newV&&String(oldV||'')!==String(newV))diffs.push(`${label}：${oldV||'（空白）'} → ${newV}`)};
@@ -1882,8 +1887,8 @@ async function cfGeoRun(){if(cfGeoBusy||!S.driveUrl||!S.driveKey)return;const td
         if(cfHasNo(prev)){c[k]=prev;setL();if(use.some(r=>cfArea(r.addr)===cfArea(prev))){diffs.push(`📍 ${lb}：客人填「${v}」，Google 核對跟合約地址同一區，沿用合約地址「${prev}」`)}
           else warn.push(`📍 ${lb}：客人只填「${v}」，已先沿用合約地址「${prev}」${use.length?`；但 Google 查到「${use[0].addr}」，不在同一區，請跟客人確認是哪裡`:'；Google 查不到這個名稱，請跟客人確認'}`);return}
         const addrs=[...new Set(use.map(r=>cfArea(r.addr)+'|'+r.addr))];
-        if(use.length&&addrs.length===1){const r=use[0];c[k]=r.addr;setL();c[k+'Map']=cfMapUrl(v,r.pid);(ctx&&countyOf(r.addr)!==ctx?warn:diffs).push(`📍 ${lb}：客人只填「${v}」，合約也沒有地址，已用 Google 核對帶入「${r.addr}」（含導航連結）`+(ctx&&countyOf(r.addr)!==ctx?`；跟其他地點（${ctx}）不同縣市，請再確認一次`:''))}
-        else if(ctx&&use.filter(r=>countyOf(r.addr)===ctx).length===1){const r=use.find(r=>countyOf(r.addr)===ctx);c[k]=r.addr;setL();c[k+'Map']=cfMapUrl(v,r.pid);warn.push(`📍 ${lb}：「${v}」有同名地點（${use.filter(z=>z!==r).map(z=>z.addr).join('／')}），已依其他地點都在${ctx}帶入「${r.addr}」，請再確認一次`)}
+        if(use.length&&addrs.length===1){const r=use[0];c[k]=r.addr;setL();c[k+'Map']=cfMapUrl(v,r.pid);(ctx&&!sameCty(countyOf(r.addr),ctx)?warn:diffs).push(`📍 ${lb}：客人只填「${v}」，合約也沒有地址，已用 Google 核對帶入「${r.addr}」（含導航連結）`+(ctx&&!sameCty(countyOf(r.addr),ctx)?`；跟其他地點（${ctx}）不同縣市，請再確認一次`:''))}
+        else if(ctx&&use.filter(r=>sameCty(countyOf(r.addr),ctx)).length===1){const r=use.find(r=>sameCty(countyOf(r.addr),ctx));c[k]=r.addr;setL();c[k+'Map']=cfMapUrl(v,r.pid);warn.push(`📍 ${lb}：「${v}」有同名地點（${use.filter(z=>z!==r).map(z=>z.addr).join('／')}），已依其他地點都在${ctx}帶入「${r.addr}」，請再確認一次`)}
         else if(!use.length)warn.push(`📍 ${lb}：客人填「${v}」，沒有門牌號碼，合約也沒有地址，Google 查不到確定的地點，請跟客人要完整地址`);
         else warn.push(`📍 ${lb}：客人只填「${v}」，Google 查到 ${use.length} 個可能的地點${ctx?`（其他地點在${ctx}）`:''}，沒有自動帶入，請確認：${use.slice(0,3).map(r=>r.addr).join('／')}`)});
       n++}
@@ -1903,7 +1908,7 @@ function renderCfFlow(){const card=$('cfFlowCard'),b=$('cfFlowBody');if(!card||!
       .concat([['訂結一起',f.combo],['甘蔗竹子',f.cane],['親友車加入車隊',fr],['鞭炮',f.fireYN==='要放'?fireLines({fireYN:'要放',fire:f.fire,fireType:f.fireType,fireMode:f.mode,c:o.c},'cust').join('\n'):f.fireYN],['儀式老師／主持人',f.host==='有'?([f.hostName,f.hostPhone].filter(Boolean).join(' ')||'有'):f.host],['想提醒司機',f.note]]).filter(r=>String(r[1]||'').trim());const ntIn=cfNoteIn(o,String(f.note||'').trim());
     h+=`<div class="tbl" style="margin-top:8px"><table><tbody>${rows.map(r=>`<tr><th style="white-space:nowrap;width:1%">${esc(r[0])}</th><td style="white-space:pre-wrap">${esc(r[1])}${r[0]==='想提醒司機'?(ntIn?'<div class="sub" style="color:var(--ok);white-space:normal">✅ 已在注意事項（派車單、服務確認單都看得到）</div>':'<div style="color:var(--warn);white-space:normal;margin-top:4px">⚠️ 還沒放進注意事項，派車單看不到 <button class="btn sm" id="btnCfNoteAdd">加進注意事項</button></div>'):''}</td></tr>`).join('')}${(f.files||[]).length?`<tr><th style="white-space:nowrap">行程表</th><td>${f.files.map(z=>`<a href="https://drive.google.com/file/d/${encodeURIComponent(z.id)}/view" target="_blank" rel="noopener">${esc(z.name||(z.pdf?'PDF':'照片'))}</a>`).join('、')}</td></tr>`:''}</tbody></table></div>`}
   if(L&&L.cmp&&(L.cmp.lines||[]).length)h+=`<div class="sum" style="margin-top:8px;border-left:3px solid #A0453A"><b style="color:#A0453A">⚠️ 跟 ${tm(L.cmp.at)}（${L.cmp.who==='agent'?'婚顧／主持人代填':L.cmp.who?'新人':'之前'}）填的不一樣，請跟客人核對：</b>${L.cmp.lines.map(z=>`<div class="sub">・${esc(z)}</div>`).join('')}</div>`;
-  if(L)h+=`<div style="margin-top:8px">${(L.warn||[]).length?`<div class="sum">${L.warn.map(w=>`<div style="color:var(--warn)">● ${esc(w)}</div>`).join('')}</div>`:'<span class="chip ok">跟合約沒有衝突</span>'}${(L.diffs||[]).length?`<div class="sum" style="margin-top:8px">${L.diffs.map(d=>`<div class="sub">${esc(d)}</div>`).join('')}</div>`:''}</div>`;
+  if(L)h+=`<div style="margin-top:8px">${cfWarnShow(L.warn).length?`<div class="sum">${cfWarnShow(L.warn).map(w=>`<div style="color:var(--warn)">● ${esc(w)}</div>`).join('')}</div>`:'<span class="chip ok">跟合約沒有衝突</span>'}${(L.diffs||[]).length?`<div class="sum" style="margin-top:8px">${L.diffs.map(d=>`<div class="sub">${esc(d)}</div>`).join('')}</div>`:''}</div>`;
   b.innerHTML=h+btns}
 function renderConfirmResult(r){const b=$('confirmResult');if(!r){b.innerHTML='';return}
   b.innerHTML=(r.warn.length?`<div class="sum">${r.warn.map(w=>`<div style="color:var(--warn)">● ${esc(w)}</div>`).join('')}</div>`:'<span class="chip ok">跟合約沒有衝突</span>')+
