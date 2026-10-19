@@ -565,6 +565,7 @@ nav.tabs button{scroll-snap-align:start}
           <thead><tr><th>車款</th><th>車序</th><th>車號</th><th>司機</th><th>電話</th><th>緊急聯絡 <small>只放 LINE 群組</small></th><th>升等為 <small>沒升等留空</small></th><th>顏色</th><th>座位</th><th>司機車資</th><th>負責人</th></tr></thead>
           <tbody id="fleetBody"></tbody>
         </table></div>
+        <div id="eqWarn" style="margin-top:8px"></div>
       </div>
       <div class="card" hidden>
         <h3>TimeTree 行程 <small>標題＝客人顯示名稱，FB／IG 會註明；內容＝報價＋合約連結</small></h3>
@@ -765,6 +766,7 @@ nav.tabs button{scroll-snap-align:start}
     <div class="row" style="justify-content:space-between;flex-wrap:nowrap;gap:8px;margin-bottom:6px"><h3 style="margin:0;white-space:nowrap">群組公告</h3><button class="btn sm" id="btnAnnClose">關閉</button></div>
     <p class="hint" style="margin:0 0 10px">禮車助手會用自己的名義，把公告發到勾選的車趟群組。發出去就收不回，請先確認文字。</p>
     <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px"><input type="date" id="annDate" style="width:auto"><span id="annDays" class="row" style="gap:6px;flex-wrap:wrap"></span></div>
+    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px"><select id="annTpl" style="width:auto"></select><button class="btn sm" id="btnAnnTplSave">存成模板</button><button class="btn sm" id="btnAnnTplDel">刪除這個類別</button><span class="hint" id="annTplMsg" style="margin:0">內容裡寫 {日期} 會自動換成選的用車日</span></div>
     <textarea id="annText" rows="8" placeholder="公告內容，例如：&#10;【10/25 任務出勤提醒】&#10;各位夥伴好，…" style="width:100%;margin-bottom:10px"></textarea>
     <div id="annList" style="margin-bottom:10px"></div>
     <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><button class="btn pri" id="btnAnnSend" disabled>發送</button><span class="hint" id="annMsg" style="margin:0"></span></div>
@@ -1327,6 +1329,14 @@ document.addEventListener('input',e=>{const t=e.target;if(!t||!t.dataset)return;
   if(t.id==='q_color'||t.id==='q_colorQty')setTimeout(()=>{if(applyColorReq(o)){save();renderFleet()}},0)});
 document.addEventListener('change',e=>{const t=e.target;if(t&&(t.id==='q_color'||t.id==='q_colorQty'))setTimeout(()=>{if(applyColorReq(o)){save();renderFleet()}},0)});
 function payOf(f,x){return f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x||o)}
+/* 2026-10-20 Nicole：負責人對講機要夠（客人預約幾台車就要幾支，親友車不算）；客人要固定甘蔗時主禮車要有甘蔗固定器；主禮車要有車頭彩。資料來自司機在禮車助手填的車卡 */
+function eqIssues(x){const out=[];if(!x||x.sample||x.lost)return out;const F=x.fleet||[];if(!F.length)return out;
+  const ld=F.find(f=>f.lead&&String(f.driver||'').trim());
+  if(ld){const d=drvOf(ld),need=F.length;if(d){const r=String(d.radios==null?'':d.radios).trim();if(r==='')out.push(`負責人 ${ld.driver} 車卡沒填對講機數量（需要 ${need} 支）`);else if(+r<need)out.push(`負責人 ${ld.driver} 只有 ${+r} 支對講機，需要 ${need} 支`)}}
+  const mc=F.find(f=>f.role==='主禮車'&&String(f.driver||'').trim());
+  if(mc){const d=drvOf(mc);if(d){const t=String(d.tools||'');if(!t.trim())out.push(`主禮車 ${mc.driver} 車卡沒填裝備（車頭彩／甘蔗固定器）`);else{if(t.indexOf('車頭彩')<0)out.push(`主禮車 ${mc.driver} 沒有車頭彩`);if(caneOf(x)==='是'&&!/甘蔗/.test(t))out.push(`客人要固定甘蔗，主禮車 ${mc.driver} 沒有甘蔗固定器`)}}}
+  return out}
+function renderEq(){const el=$('eqWarn');if(!el||!o)return;const E=eqIssues(o);el.innerHTML=E.length?`<div class="sum" style="border-left:3px solid var(--warn)">${E.map(t=>`<div style="color:var(--warn)">⚠️ ${esc(t)}</div>`).join('')}</div>`:''}
 function lead(x){return x.fleet.find(f=>f.lead)||x.fleet.find(f=>f.role==='主禮車')||x.fleet[0]}
 
 /* ---------- locations / flow ---------- */
@@ -1953,7 +1963,7 @@ function renderSum(){const r=calc(o);const rows=[];
     <div class="sub"><span>司機車資合計</span><span>${r.dok?money(r.dsum):'未設定'}</span></div>`;
   $('bundleChip').innerHTML=r.b?`<span class="chip ok">已套用 ${esc(r.b.name)}方案 ${money(r.b.price)}</span>`:(o.hours<3?`<span class="chip">${hrsLabel(o.hours)}不適用優惠方案</span>`:'')+r.miss.map(t=>`<span class="chip" style="color:var(--warn)">${esc(t)}</span>`).join('');
   $('payBox').innerHTML=o.fleet.map(f=>{const v=payOf(f);return `<div><span>${esc(f.role)}・${MNAME[f.m]}</span><span>${v==null?'未設定':money(v)}</span></div>`}).join('')+`<div class="tot"><span>合計</span><span>${r.dok?money(r.dsum):'—'}</span></div>`}
-function renderFleet(){try{renderFr()}catch(_){}$('fleetBody').innerHTML=o.fleet.map((f,i)=>{const dp=driverBasePay(f.m,o);return `<tr><td><b>${MNAME[f.m]}</b></td>
+function renderFleet(){try{renderFr()}catch(_){}try{setTimeout(renderEq,0)}catch(_){}$('fleetBody').innerHTML=o.fleet.map((f,i)=>{const dp=driverBasePay(f.m,o);return `<tr><td><b>${MNAME[f.m]}</b></td>
   <td><select data-fl="${i}.role" id="fl_r${i}">${ROLES.map(r=>`<option${r===f.role?' selected':''}>${r}</option>`).join('')}</select></td>
   <td><input data-fl="${i}.plate" id="fl_p${i}" value="${esc(f.plate)}" placeholder="ABC-1234"></td>
   <td><input data-fl="${i}.driver" id="fl_d${i}" value="${esc(f.driver)}"><div style="display:flex;gap:4px;margin-top:4px;align-items:center"><select class="drvPick" data-dp="${i}" style="font-size:0.8rem;max-width:150px">${drvOptions(f)}</select>${(f.driver||f.phone||f.plate)?`<button class="btn sm" data-drvclr="${i}" title="移除這台的司機、電話、車號、緊急聯絡" style="padding:2px 7px;color:#A0453A">✕ 移除</button>`:''}</div></td>
@@ -2212,13 +2222,13 @@ document.addEventListener('input',e=>{if(e.target.id==='scText')scWarn()});
 const DAY=864e5;
 const normNo=s=>String(s||'').replace(/\s/g,'').toUpperCase();
 function daysTo(x){const p=dparts(x.date);if(!p)return null;const t=new Date();t.setHours(0,0,0,0);return Math.round((new Date(p.y,p.m-1,p.d)-t)/DAY)}
-const ST={inq:'詢價追銷',unpaid:'開單未付款',tt:'收訂未填 TimeTree',noform:'付款未填表',nocontract:'填表未出合約',cfsend:'一週前核對行程',cfwait:'行前確認未回',nodrv:'未派司機',nomemo:'未給服務確認單',memowait:'確認單客人未確認',memofix:'確認單客人要修改',balxfer:'尾款匯款未到',call:'主禮車未聯絡新人',ptask:'同業詢問未確認',ptinfo:'同業留車待補資料',head:'待指派車頭',rev:'用車後追評價',revlink:'正評待傳評價連結',revcomp:'評價回覆待處理',photo:'待傳照片',ptphoto:'同業照片未傳'};
+const ST={equip:'禮車裝備不足',inq:'詢價追銷',unpaid:'開單未付款',tt:'收訂未填 TimeTree',noform:'付款未填表',nocontract:'填表未出合約',cfsend:'一週前核對行程',cfwait:'行前確認未回',nodrv:'未派司機',nomemo:'未給服務確認單',memowait:'確認單客人未確認',memofix:'確認單客人要修改',balxfer:'尾款匯款未到',call:'主禮車未聯絡新人',ptask:'同業詢問未確認',ptinfo:'同業留車待補資料',head:'待指派車頭',rev:'用車後追評價',revlink:'正評待傳評價連結',revcomp:'評價回覆待處理',photo:'待傳照片',ptphoto:'同業照片未傳'};
 if(!TT_ON)delete ST.tt;
 const REV_ASK='請問司機服務還滿意嗎？\n\n如果您對我們的服務感到滿意，誠摯邀請您抽空寫幾句話留下寶貴評價，或是對司機的鼓勵。這將成為我們成長的最大動力，也能讓更多人了解我們的用心服務。';
 const REV_LINK='感謝您選擇🧡好好禮車🧡，讓我們能有機會在您最重要的這天一起留下美好回憶！ 希望可以幫我們複製上面評價後，貼在下方連結處：\n\n👉 在 Google 本地商家留下評價：https://goo.gl/maps/WsAvwhXy1eQPqk5f6\n\n👉 或者至 Facebook 粉絲專頁評論：https://www.facebook.com/niceweddingcar\n\n非常感謝您的鼓勵與支持，每一句肯定都將讓我們更加努力、持續提升服務品質。\n\n再次祝福您新婚快樂，百年好合💍✨！ 期待未來如果有機場接送或包車旅遊需求， 都能再有機會為您服務！ （＊好好新人享有 95 折優惠）';
 const PHOTO_TPL='提供司機不專業側拍給兩位下載 (連結將在一週後失效)：\n';
 const STAGE_LABEL={sample:'範例',lost:'訂單流失',done:'已完成',inq:'詢價',unpaid:'開單未付款',noform:'已收訂',nocontract:'已填表',ready:'已出合約'};
-const ST_TAB={head:'find',inq:'quote',unpaid:'couple',noform:'couple',nocontract:'contract',nodrv:'find',nomemo:'memo',memowait:'memo',memofix:'memo',balxfer:'memo'};
+const ST_TAB={equip:'dispatch',head:'find',inq:'quote',unpaid:'couple',noform:'couple',nocontract:'contract',nodrv:'find',nomemo:'memo',memowait:'memo',memofix:'memo',balxfer:'memo'};
 function stageOf(x){if(x.sample)return'sample';if(x.lost)return'lost';const d=daysTo(x);if(d!==null&&d<0)return'done';
   const ct=x.contractUrl||x.contractDone;if(!x.orderedAt&&!x.paid&&!ct)return'inq';if(!x.paid)return'unpaid';if(!x.formAt&&!ct)return'noform';if(!ct)return'nocontract';return'ready'}
 function carKind(x){const used=MODELS.filter(m=>num(x.cars[m])>0);return{lux:used.some(m=>cPrice(m,x.hours).v>=10000),tesla:used.some(m=>((S.models.find(z=>z.id===m)||{}).brand||'')==='Tesla')}}
@@ -2247,6 +2257,7 @@ function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];c
   if(st==='nocontract')T.push({k:'nocontract',late:ago(x.formAt)>=2});
   if(st!=='inq'&&!String(x.carHead||'').trim()){const R=headNeed(x,d);if(R.length)T.push({k:'head',late:R.some(r=>r.late),why:R.map(r=>r.why).join('、')})}
   if(x.paid&&d!==null){
+    {const E=eqIssues(x);if(E.length&&d>=0)T.push({k:'equip',late:d<=7,why:E.join('；')})}   /* 2026-10-20 對講機／車頭彩／甘蔗固定器 */
     if(!x.partner&&d<=7&&!x.cfSentAt&&!x.cfDoneAt)T.push({k:'cfsend',late:d<=5});
     if(!x.partner&&x.cfSentAt&&!x.cfDoneAt)T.push({k:'cfwait',late:d<=5});
     if(!x.drvDone&&(!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim()))){const hd=String(x.carHead||'').trim();if(hd){if(d!==null&&d<=3)T.push({k:'nodrv',late:true,why:'車頭已安排，確認司機資料'})}else{const tr=teslaDrvRule(x,d);T.push(tr?{k:'nodrv',late:d<=14||tr.late,why:tr.why}:{k:'nodrv',late:d<=14})}}
@@ -2442,7 +2453,12 @@ document.addEventListener('change',e=>{const t=e.target;if(!t)return;if(t.id==='
 /* ===== 2026-10-19 群組公告 ===== */
 const ANNST={},ANNSENT={},annSel=new Set();let annAsked='';
 function annDays(){const t=lgToday(),m={};Object.values(DB.orders).forEach(x=>{if(lgOk(x)&&x.date>=t)m[x.date]=(m[x.date]||0)+1});return m}
-function openAnn(d){const m=annDays(),ds=Object.keys(m).sort();$('annDate').value=d||ds[0]||lgToday();try{if(!$('annText').value)$('annText').value=localStorage.getItem('nwcw_ann_draft')||''}catch(_){}$('annModal').hidden=false;annSel.clear();renderAnn()}
+/* 2026-10-20 Nicole：群組公告模板（颱風／雨天／婚禮大日…），存在設定裡，各裝置同步 */
+const ANN_CATS=['颱風公告','雨天公告','婚禮大日公告'];
+function annTpls(){const T=S.annTpl||{};const ks=ANN_CATS.concat(Object.keys(T).filter(k=>ANN_CATS.indexOf(k)<0));return{T,ks}}
+function renderAnnTpl(){const el=$('annTpl');if(!el)return;const{T,ks}=annTpls(),cur=el.value;el.innerHTML='<option value="">公告類別…</option>'+ks.map(k=>`<option value="${esc(k)}">${esc(k)}${String(T[k]||'').trim()?'':'（還沒有內容）'}</option>`).join('')+'<option value="__new">＋ 新增類別</option>';if(cur&&ks.indexOf(cur)>=0)el.value=cur}
+function annFill(t){const d=$('annDate').value,p=dparts(d),ds=p?`${p.m}/${p.d}（${WD.zh[p.w]}）`:d;return String(t||'').replace(/\{日期\}/g,ds)}
+function openAnn(d){const m=annDays(),ds=Object.keys(m).sort();$('annDate').value=d||ds[0]||lgToday();try{if(!$('annText').value)$('annText').value=localStorage.getItem('nwcw_ann_draft')||''}catch(_){}$('annModal').hidden=false;annSel.clear();renderAnnTpl();renderAnn()}
 function annOrders(){const d=$('annDate').value;return Object.values(DB.orders).filter(x=>lgOk(x)&&x.date===d).sort((a,b)=>String((a.c&&a.c.start)||'').localeCompare(String((b.c&&b.c.start)||'')))}
 function renderAnn(){const m=annDays(),d=$('annDate').value,ds=Object.keys(m).sort().slice(0,8);
   $('annDays').innerHTML=ds.map(k=>{const p=dparts(k);return `<button class="btn sm${k===d?' pri':''}" data-annday="${k}">${p?p.m+'/'+p.d:k}（${m[k]}）</button>`}).join('');
@@ -2462,6 +2478,18 @@ document.addEventListener('click',e=>{const b=e.target&&e.target.closest?e.targe
   if(b.dataset.annday){$('annDate').value=b.dataset.annday;annSel.clear();renderAnn();return}
   if(b.id==='btnAnnSend'){if(b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='確定發送到 '+annSel.size+' 個群組？再按一次';clearTimeout(b._t);b._t=setTimeout(()=>{b.dataset.arm='';annBtn()},6000);return}clearTimeout(b._t);annSend();return}});
 document.addEventListener('change',e=>{const t=e.target;if(!t)return;if(t.id==='annDate'){annSel.clear();renderAnn();return}if(t.dataset&&t.dataset.annsel){if(t.checked)annSel.add(t.dataset.annsel);else annSel.delete(t.dataset.annsel);const b=$('btnAnnSend');b.dataset.arm='';annBtn()}});
+document.addEventListener('change',e=>{const t=e.target;if(!t||t.id!=='annTpl')return;let k=t.value;if(!k)return;
+  if(k==='__new'){const n=(prompt('新的公告類別名稱（例：寒流公告）')||'').trim();if(!n){renderAnnTpl();return}S.annTpl=Object.assign({},S.annTpl||{});if(!(n in S.annTpl))S.annTpl[n]='';saveS();renderAnnTpl();t.value=n;k=n}
+  const tx=String((S.annTpl||{})[k]||''),cur=$('annText').value.trim();
+  if(!tx.trim()){$('annTplMsg').textContent='「'+k+'」還沒有內容：把公告寫在下面，再按「存成模板」';return}
+  if(cur&&cur!==annFill(tx).trim()&&!confirm('要用「'+k+'」模板取代目前寫的內容嗎？'))return;
+  $('annText').value=annFill(tx);try{localStorage.setItem('nwcw_ann_draft',$('annText').value)}catch(_){}$('annTplMsg').textContent='已帶入「'+k+'」，發送前請確認日期和內容';const b=$('btnAnnSend');b.dataset.arm='';annBtn()});
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#btnAnnTplSave,#btnAnnTplDel');if(!b)return;let k=$('annTpl').value;
+  if(b.id==='btnAnnTplDel'){if(!k||k==='__new')return;if(!confirm('確定刪除「'+k+'」的模板內容？'))return;S.annTpl=Object.assign({},S.annTpl||{});delete S.annTpl[k];saveS();$('annTpl').value='';renderAnnTpl();$('annTplMsg').textContent='已刪除「'+k+'」';return}
+  const t=$('annText').value.trim();if(!t){toast('先在下面寫好公告內容');return}
+  if(!k||k==='__new'){k=(prompt('存成哪個類別？（例：颱風公告／雨天公告／婚禮大日公告）',ANN_CATS[0])||'').trim();if(!k)return}
+  const ex=String((S.annTpl||{})[k]||'').trim();if(ex&&ex!==t&&!confirm('「'+k+'」已經有模板，要用目前的內容取代嗎？'))return;
+  S.annTpl=Object.assign({},S.annTpl||{},{[k]:t});saveS();renderAnnTpl();$('annTpl').value=k;$('annTplMsg').textContent='已存成「'+k+'」模板（日期可改成 {日期}，之後會自動帶入）';toast('已存成模板：'+k)});
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='annText'){try{localStorage.setItem('nwcw_ann_draft',e.target.value)}catch(_){}const b=$('btnAnnSend');b.dataset.arm='';annBtn()}});
 function lgOk(x){return x&&!x.sample&&!x.lost&&!!x.date&&!!(x.paid||x.partner)}
 function lgToday(){const t=new Date();return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0')}
@@ -2964,12 +2992,13 @@ function renderBalHint(){const h=$('balHint');if(!h)return;const bc=$('balCard')
 /* 已在群組發佈派車單：勾了負責人才能在 LINE「我已聯絡新人」看到這趟（預排的單不會被司機看到） */
 /* 2026-10-20 Nicole：發派車單時一起把禮車教案發到群組，並追蹤每位司機都讀過（同業單、好好禮車訂單都一樣） */
 const LSNST={};
-function lsnAuto(x){if(!x||x.lsnSentAt)return;lgCall({op:'lesson',keys:lgKeys(x)}).then(j=>{x.lsnSentAt=Date.now();save();LSNST[x.id]=Object.assign(j,{t:Date.now()});toast('已在「'+(j.name||'群組')+'」發禮車教案');renderLsn()}).catch(e=>{LSNST[x.id]={err:e.message,t:Date.now()};toast('禮車教案沒發出去：'+e.message);renderLsn()})}
+function lsnAuto(x){if(!x||x.lsnSentAt)return;lgCall({op:'lesson',keys:lgKeys(x)}).then(j=>{x.lsnSentAt=Date.now();save();LSNST[x.id]=Object.assign(j,{t:Date.now()});toast(j.queued?'現在是司機休息時間，禮車教案會在 10:00 發到「'+(j.name||'群組')+'」':'已在「'+(j.name||'群組')+'」發禮車教案');renderLsn()}).catch(e=>{LSNST[x.id]={err:e.message,t:Date.now()};toast('禮車教案沒發出去：'+e.message);renderLsn()})}
 function lsnLoad(x,force){if(!x||!x.pubAt)return;const c=LSNST[x.id];if(!force&&c&&(c.busy||Date.now()-c.t<60000))return;LSNST[x.id]=Object.assign(c||{},{busy:1,t:Date.now()});lgCall({op:'lessonSt',keys:lgKeys(x)}).then(j=>{LSNST[x.id]=Object.assign(j,{t:Date.now()});renderLsn()}).catch(e=>{LSNST[x.id]={err:e.message,t:Date.now()};renderLsn()})}
 function renderLsn(){if(!o)return;const bx=document.querySelectorAll('.lsnBox');if(!bx.length)return;let h='';
   if(!o.pubAt)h='<div class="hint" style="margin:0">📘 勾選「已發送派車單」或客人確認後系統發派車單時，會接著把禮車教案發到司機群組，並追蹤每位司機本週都讀過。</div>';
   else{const st=LSNST[o.id];if(!st||(st.busy&&!('sent' in st)&&!st.err)){h='<div class="hint" style="margin:0">📘 讀取教案閱讀狀況中…</div>';lsnLoad(o)}
     else if(st.err)h=`<div class="hint" style="margin:0;color:var(--warn)">📘 教案：${esc(st.err)}</div><div class="row" style="gap:6px;margin-top:6px"><button class="btn sm" data-lsn="send">發教案到群組</button><button class="btn sm" data-lsn="re">重新整理</button></div>`;
+    else if(!st.sent&&st.queued)h=`<div>🕙 ${st.queued==='pub'?'派車單和禮車教案':'禮車教案'}已排在 10:00 發到司機群組（22:00–10:00 不打擾司機休息）</div>`;
     else if(!st.sent)h=`<div style="color:var(--warn)">📘 這趟群組還沒發禮車教案</div><div class="row" style="gap:6px;margin-top:6px"><button class="btn sm pri" data-lsn="send">發教案到群組</button></div>`;
     else{const n=st.read.length+st.unread.length,t=new Date(+st.sent).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
       h=st.all?`<div style="color:var(--ok);font-weight:600">✅ 所有司機都已詳讀禮車教案（${st.read.length}/${n}）</div><div class="hint" style="margin:2px 0 0">${esc(st.read.join('、'))}・教案 ${esc(t)} 發出</div>`
@@ -2978,7 +3007,7 @@ function renderLsn(){if(!o)return;const bx=document.querySelectorAll('.lsnBox');
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-lsn]');if(!b||!o)return;const k=b.dataset.lsn,x=o;
   if(k==='re'){lsnLoad(x,true);renderLsn();return}
   if(k==='send'&&x.lsnSentAt&&!confirm('教案已經發過了，確定要再發一次？（本週已讀過的司機不用再讀）'))return;
-  b.disabled=true;b.textContent='傳送中…';lgCall({op:k==='nag'?'lessonNag':'lesson',keys:lgKeys(x)}).then(j=>{if(k==='send'){x.lsnSentAt=Date.now();save()}LSNST[x.id]=Object.assign(j,{t:Date.now()});toast(k==='nag'?(j.none?'大家都讀完了':'已在群組 @ 還沒讀的人'):'已發禮車教案到「'+(j.name||'群組')+'」');renderLsn()}).catch(er=>{toast('沒發出去：'+er.message);b.disabled=false;renderLsn()})});
+  b.disabled=true;b.textContent='傳送中…';lgCall({op:k==='nag'?'lessonNag':'lesson',keys:lgKeys(x)}).then(j=>{if(k==='send'){x.lsnSentAt=Date.now();save()}LSNST[x.id]=Object.assign(j,{t:Date.now()});toast(k==='nag'?(j.none?'大家都讀完了':'已在群組 @ 還沒讀的人'):j.queued?'現在是司機休息時間，教案會在 10:00 發':'已發禮車教案到「'+(j.name||'群組')+'」');renderLsn()}).catch(er=>{toast('沒發出去：'+er.message);b.disabled=false;renderLsn()})});
 function renderPub(){if(!o)return;const t=o.pubAt?new Date(o.pubAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';document.querySelectorAll('.pubBox').forEach(b=>{b.innerHTML=`<label style="display:flex;gap:8px;align-items:center;font-weight:600;cursor:pointer"><input type="checkbox" data-pub ${o.pubAt?'checked':''} style="width:20px;height:20px"> 已在群組發佈派車單 ${t?`<span class="hint" style="margin:0;font-weight:400">（${esc(t)}）</span>`:''}</label><div class="hint" style="margin:4px 0 0">勾選後，這趟的負責人才看得到 LINE「我已聯絡新人」的發文工具；預排、還沒公布的單不要勾。</div><div class="lsnBox" style="margin-top:10px"></div>`});renderLsn()}
 document.addEventListener('change',e=>{const t=e.target;if(!t||!t.hasAttribute||!t.hasAttribute('data-pub')||!o)return;o.pubAt=t.checked?Date.now():0;save();renderPub();toast(t.checked?'已標記：派車單已發佈，負責人看得到這趟':'已取消：負責人看不到這趟');if(t.checked)lsnAuto(o)});
 /* 2026-10-20 同業司機派車單：同業原始派單 → 最上面加「★匯回 $X」（尾款－司機酬勞合計），每台車那行加「實拿$酬勞」；其他照同業原文 */
