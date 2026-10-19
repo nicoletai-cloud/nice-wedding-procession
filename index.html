@@ -2111,7 +2111,7 @@ function renderRefs(){try{renderOrdRef()}catch(e){console.warn(e)}renderSettle()
   const mv=(S.vendors||[]).filter(v=>v.monthly);const bills=mv.map(v=>{const os=blist.filter(x=>vendorOf(x).name===v.name);if(!os.length)return '';const tot=os.reduce((a,x)=>a+calc(x).bill,0);
     return [`【好好禮車】${bym.replace('-','年')}月 請款明細｜${v.name}`,...os.map(x=>`${x.date.slice(5).replace('-','/')} ${orderNo(x)} ${[x.c.groom,x.c.bride].filter(Boolean).join('&')} ${planName(x).replace(/^Tesla /,'').replace(/ \S*禮車方案$/,'')} ${money(calc(x).bill)}`),`合計：${money(tot)}`,`（司機紅包、甘蔗固定費由司機現場收取，不列入請款）`,'',`匯款資訊：`,S.bank].join('\n')}).filter(Boolean);
   $('billVendorName').textContent=mv.map(v=>v.name).join('、');$('outBill').textContent=bills.join('\n\n')||'這個月沒有月結廠商的訂單。'}
-function renderOrderSel(){const list=Object.values(DB.orders).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.updated-a.updated);
+function renderOrderSel(){const list=Object.values(DB.orders).filter(x=>!x.lost||x.id===o.id).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.updated-a.updated);
   $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(selLabel(x))}</option>`).join('');renderTodoBadge();if(!$('todoModal').hidden)renderTodo()}
 /* 2026-10-19 手動新增附件（客人傳在 LINE 的流程圖等）：存到 Drive，檔名含「_行程表_」，產生 memo 連結時會開成知道連結可檢視 */
 function renderAttach(){const el=$('attList');if(!el||!o)return;const cf=cfFiles(Object.assign({},o,{attach:[]})),A=o.attach||[];
@@ -2205,7 +2205,7 @@ if(!TT_ON)delete ST.tt;
 const REV_ASK='請問司機服務還滿意嗎？\n\n如果您對我們的服務感到滿意，誠摯邀請您抽空寫幾句話留下寶貴評價，或是對司機的鼓勵。這將成為我們成長的最大動力，也能讓更多人了解我們的用心服務。';
 const REV_LINK='感謝您選擇🧡好好禮車🧡，讓我們能有機會在您最重要的這天一起留下美好回憶！ 希望可以幫我們複製上面評價後，貼在下方連結處：\n\n👉 在 Google 本地商家留下評價：https://goo.gl/maps/WsAvwhXy1eQPqk5f6\n\n👉 或者至 Facebook 粉絲專頁評論：https://www.facebook.com/niceweddingcar\n\n非常感謝您的鼓勵與支持，每一句肯定都將讓我們更加努力、持續提升服務品質。\n\n再次祝福您新婚快樂，百年好合💍✨！ 期待未來如果有機場接送或包車旅遊需求， 都能再有機會為您服務！ （＊好好新人享有 95 折優惠）';
 const PHOTO_TPL='提供司機不專業側拍給兩位下載 (連結將在一週後失效)：\n';
-const STAGE_LABEL={sample:'範例',lost:'失單',done:'已完成',inq:'詢價',unpaid:'開單未付款',noform:'已收訂',nocontract:'已填表',ready:'已出合約'};
+const STAGE_LABEL={sample:'範例',lost:'訂單流失',done:'已完成',inq:'詢價',unpaid:'開單未付款',noform:'已收訂',nocontract:'已填表',ready:'已出合約'};
 const ST_TAB={head:'find',inq:'quote',unpaid:'couple',noform:'couple',nocontract:'contract',nodrv:'find',nomemo:'memo',memowait:'memo',memofix:'memo',balxfer:'memo'};
 function stageOf(x){if(x.sample)return'sample';if(x.lost)return'lost';const d=daysTo(x);if(d!==null&&d<0)return'done';
   const ct=x.contractUrl||x.contractDone;if(!x.orderedAt&&!x.paid&&!ct)return'inq';if(!x.paid)return'unpaid';if(!x.formAt&&!ct)return'noform';if(!ct)return'nocontract';return'ready'}
@@ -2249,7 +2249,7 @@ function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];c
     return T.filter(t=>t.k==='tt'||t.k==='nodrv'||t.k==='call'||t.k==='ptinfo'||t.k==='ptphoto')}
   return T}
 /* 2026-10-20 搜尋／用車日清單：下一步（待辦第一項，不含聯絡新人）或目前完成到哪一步 */
-function kwStatus(x){const st=stageOf(x);if(st==='sample')return null;if(st==='lost')return{t:'失單',ok:true};
+function kwStatus(x){const st=stageOf(x);if(st==='sample')return null;if(st==='lost')return{t:'訂單流失',ok:true};
   const T=tasksOf(x).filter(t=>t.k!=='call');if(T.length){const t=T.find(z=>z.late)||T[0];return{t:'下一步：'+(ST[t.k]||t.k)}}
   if(st==='done')return{t:'✅ 已完成',ok:true};const M=MEMOS&&MEMOS[normNo(orderNo(x))]||{};
   if(x.callAt)return{t:'✅ 負責人已聯絡新人',ok:true};if(x.pubAt||M.pub)return{t:'✅ 已發送司機派車單',ok:true};
@@ -2293,12 +2293,12 @@ function renderTodo(){if(!document.querySelector('.dr-bar[data-dr="todo"] input'
   /* 跟同業有關的待辦集中在「🤝 同業」一區（Nicole 2026-10-13） */
   const PT_K=['ptask','ptinfo','ptphoto'];
   $('todoChips').innerHTML=chip('all','全部待辦',all.filter(r=>r.T.length).length,all.filter(r=>r.T.some(t=>t.late)).length)+Object.keys(ST).filter(k=>PT_K.indexOf(k)<0).map(k=>chip(k,ST[k],cnt(k),lc(k))).join('')
-    +chip('lost','失單',all.filter(r=>r.st==='lost').length,0)+chip('done','已完成',all.filter(r=>r.st==='done').length,0);
+    +chip('lost','訂單流失',all.filter(r=>r.st==='lost').length,0)+chip('done','已完成',all.filter(r=>r.st==='done').length,0);
   if($('todoPtChips')){$('todoPtChips').innerHTML=PT_K.map(k=>chip(k,ST[k],cnt(k),lc(k))).join('');const mj=$('mjBox'),pb=$('todoPtBox');if(mj&&pb&&mj.parentNode!==pb){mj.style.marginBottom='0';pb.appendChild(mj)}}
   const rows=todoRows();[...todoSel].forEach(id=>{if(!rows.some(r=>r.x.id===id))todoSel.delete(id)});
   const B=[['tsAll',todoSel.size&&todoSel.size===rows.length?'取消全選':'全選'],['tsNames','複製客人名稱']];
-  if(todoF==='inq')B.push(['tsFollow','標記已追銷'],['tsReplied','客人有回覆'],['tsOrdered','標記已開單'],['tsLost','標記失單']);
-  if(todoF==='unpaid')B.push(['tsPaid','標記已收訂金'],['tsLost','標記失單']);
+  if(todoF==='inq')B.push(['tsFollow','標記已追銷'],['tsReplied','客人有回覆'],['tsOrdered','標記已開單'],['tsLost','標記訂單流失']);
+  if(todoF==='unpaid')B.push(['tsPaid','標記已收訂金'],['tsLost','標記訂單流失']);
   if(todoF==='noform')B.push(['tsForm','標記已填表']);
   if(todoF==='tt')B.push(['tsTTAdd','複製補登指令'],['tsTT','標記已填 TimeTree']);
   if(todoF==='nocontract')B.push(['tsContract','標記已出合約']);
@@ -2638,7 +2638,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
     case 'btnPtConfirm':{const d=new Date();o.paid=true;o.paidTs=Date.now();o.paidAt=`${d.getMonth()+1}/${d.getDate()} 同業`;o.ttDone=false;o.partner.stage='held';save();renderAll();toast('已確認留車，轉成正式訂單；之後再貼完整派單');break}
     case 'btnPtFill':ptOpenFill(o);break;
     case 'btnPtTargetOff':ptTarget='';ptResetMode();break;
-    case 'btnPtLost':o.lost=true;save();renderAll();renderOrderSel();toast('已標記失單');break;
+    case 'btnPtLost':o.lost=true;save();renderAll();renderOrderSel();toast('已標記訂單流失');break;
     case 'btnPtReparse':{const r=parsePartner((o.partner||{}).raw||'');if(!r.cars.length){toast('原始派單裡還是抓不到車款，請到「1 報價・下單」手動填台數');break}
       r.cars.forEach(k=>{if(!k.m)k.m=ptEnsureModel(k.name)});o.cars={X:0,S:0,Y:0,'3':0};r.cars.forEach(k=>{o.cars[k.m]=(o.cars[k.m]||0)+1});
       const cols=[...new Set(r.cars.map(k=>k.color).filter(Boolean))];o.colorReq=cols.length===1&&r.cars.every(k=>k.color)&&['白色','黑色','紅色'].includes(cols[0])?cols[0]:'';
@@ -2662,18 +2662,20 @@ function showTab(name){document.querySelectorAll('#tabs button').forEach(b=>b.se
   document.querySelectorAll('section.tab').forEach(s=>s.hidden=s.id!=='tab-'+name);{const z=$('delZone');if(z)z.hidden=name==='settings'||name==='refs';const b=$('btnDel');if(b&&delStep){delStep=0;clearTimeout(delTimer);b.textContent='🗑 刪除此訂單';$('delHint').textContent=''}}try{sessionStorage.setItem('nwcw_tab',name)}catch(_){}}
 
 /* ---------- 關鍵字搜尋：單號、客人名稱、新人、電話、地址、婚顧／廠商、備註…（空白分開可多個關鍵字） ---------- */
-(function(){const inp=$('kwQ'),box=$('kwResults');if(!inp||!box)return;let shown=[],act=-1;
+(function(){const inp=$('kwQ'),box=$('kwResults');if(!inp||!box)return;let shown=[],act=-1,kwF='valid';
   const hay=x=>JSON.stringify(x).toLowerCase()+' '+String(tripCode(x)+' '+orderNo(x)).toLowerCase();
   function render(){const terms=inp.value.trim().toLowerCase().split(/\s+/).filter(Boolean),dOn=drOn('kw');if(!terms.length&&!dOn){box.hidden=true;return}
-    shown=Object.values(DB.orders).filter(x=>!x.sample&&drIn('kw',x)).filter(x=>{const h=hay(x),hd=h.replace(/[\s-]/g,'');return terms.every(t=>{const td=t.replace(/[\s-]/g,'');return h.includes(t)||(/^\d{3,}$/.test(td)&&hd.includes(td))})})
+    const base=Object.values(DB.orders).filter(x=>!x.sample&&drIn('kw',x)),grp=x=>{const st=stageOf(x);return st==='lost'?'lost':st==='inq'?'inq':'valid'};   /* 2026-10-20 預設只列有效訂單；詢價中、訂單流失另外篩選 */
+    const KF=[['valid','有效訂單'],['inq','詢價中'],['lost','訂單流失'],['all','全部']],kc={valid:0,inq:0,lost:0,all:base.length};base.forEach(x=>kc[grp(x)]++);
+    shown=base.filter(x=>kwF==='all'||grp(x)===kwF).filter(x=>{const h=hay(x),hd=h.replace(/[\s-]/g,'');return terms.every(t=>{const td=t.replace(/[\s-]/g,'');return h.includes(t)||(/^\d{3,}$/.test(td)&&hd.includes(td))})})
       .sort((a,b)=>dOn?String(a.date||'').localeCompare(String(b.date||''))||String(orderNo(a)).localeCompare(String(orderNo(b))):String(b.date||'').localeCompare(String(a.date||'')));
     const tot=shown.length;shown=shown.slice(0,dOn?200:20);
-    box.innerHTML=(dOn?`<div class="kw-head">📅 用車日 ${esc(drLabel('kw'))}${terms.length?'＋關鍵字':''}：共 ${tot} 趟${tot>shown.length?'（只列前 '+shown.length+' 趟）':''}</div>`:'')+(shown.length?shown.map((x,i)=>{const c=x.c||{},v=(x.src&&x.src.vendor)||'',st=STAGE_LABEL[stageOf(x)]||'';
+    box.innerHTML=(dOn?`<div class="kw-head">用車日 ${esc(drLabel('kw'))}${terms.length?'＋關鍵字':''}：共 ${tot} 趟${tot>shown.length?'（只列前 '+shown.length+' 趟）':''}</div>`:'')+`<div class="kw-head" style="display:flex;gap:6px;flex-wrap:wrap">${KF.map(([k,l])=>`<span role="button" data-kwf="${k}" style="cursor:pointer;padding:2px 10px;border-radius:999px;border:1px solid var(--line);${kwF===k?'background:#A7804F;color:#fff;border-color:#A7804F':''}">${l} ${kc[k]}</span>`).join('')}</div>`+(shown.length?shown.map((x,i)=>{const c=x.c||{},v=(x.src&&x.src.vendor)||'',st=STAGE_LABEL[stageOf(x)]||'';
       const ks=kwStatus(x),cl=ks?`<span class="kw-call${ks.ok?' ok':''}">${esc(ks.t)}</span>`:'';   // 2026-10-20 顯示這張單的下一步或已完成到哪
       return `<button type="button" data-i="${i}"${i===act?' class="on"':''}>${cl}<b>${esc(tripCode(x))}｜${esc(orderNo(x))}</b>${esc(c.chatName||[c.groom,c.bride].filter(Boolean).join('＆')||'未命名')}<small>${esc([x.date,st,v?('婚顧／廠商 '+v+((x.src||{}).agent?' '+x.src.agent:'')+((x.src||{}).mode?'（'+x.src.mode+'）':'')):'',c.groom&&c.bride?c.groom+'＆'+c.bride:''].filter(Boolean).join('　'))}</small></button>`}).join(''):'<div class="empty">找不到相關訂單</div>');
     box.hidden=false}
   const dBtn=$('kwDateBtn'),dPop=$('kwDatePop');
-  window.kwDateChanged=()=>{dBtn.textContent=drOn('kw')?drLabel('kw'):'用車日';dBtn.classList.toggle('on',drOn('kw'));act=-1;if(drOn('kw')||inp.value.trim())render();else box.hidden=true};
+  window.kwDateChanged=()=>{kwF='valid';dBtn.textContent=drOn('kw')?drLabel('kw'):'用車日';dBtn.classList.toggle('on',drOn('kw'));act=-1;if(drOn('kw')||inp.value.trim())render();else box.hidden=true};
   dBtn.addEventListener('click',e=>{e.preventDefault();dPop.hidden=!dPop.hidden;box.hidden=true;if(!dPop.hidden)drRender('kw')});
   $('kwDateShow').addEventListener('click',e=>{e.preventDefault();dPop.hidden=true;act=-1;render()});
   document.addEventListener('mousedown',e=>{if(!dPop.hidden&&!e.target.closest('.kw-date'))dPop.hidden=true;if(!box.hidden&&!e.target.closest('.kw-search')&&!e.target.closest('.kw-date')&&document.activeElement!==inp)box.hidden=true});
@@ -2681,7 +2683,7 @@ function showTab(name){document.querySelectorAll('#tabs button').forEach(b=>b.se
   inp.addEventListener('input',e=>{if(e.inputType==='insertFromPaste'&&kwCodeOpen(inp.value)){inp.value='';box.hidden=true;inp.blur();return}act=-1;render()});inp.addEventListener('focus',()=>{if(inp.value.trim()||drOn('kw'))render()});
   inp.addEventListener('blur',()=>setTimeout(()=>{box.hidden=true},200));
   inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&act<0&&kwCodeOpen(inp.value)){e.preventDefault();inp.value='';box.hidden=true;inp.blur();return}if(box.hidden||!shown.length)return;if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();act=(act+(e.key==='ArrowDown'?1:-1)+shown.length)%shown.length;render()}else if(e.key==='Enter'){e.preventDefault();open(shown[act>=0?act:0])}else if(e.key==='Escape')box.hidden=true});
-  box.addEventListener('mousedown',e=>{const c=e.target.closest('[data-call]');if(c){e.preventDefault();const x=shown[+c.dataset.call];if(x){const t=Date.now();x.callAt=t;x.updated=t;DB.orders[x.id]=x;if(o&&o.id===x.id){o.callAt=t;o.updated=t}store('nwcw_orders',DB);pushSync();try{renderAll()}catch(_){}render();toast('已記錄：'+tripCode(x)+' 主禮車司機已聯絡新人')}return}
+  box.addEventListener('mousedown',e=>{{const f=e.target.closest('[data-kwf]');if(f){e.preventDefault();kwF=f.dataset.kwf;act=-1;render();return}}const c=e.target.closest('[data-call]');if(c){e.preventDefault();const x=shown[+c.dataset.call];if(x){const t=Date.now();x.callAt=t;x.updated=t;DB.orders[x.id]=x;if(o&&o.id===x.id){o.callAt=t;o.updated=t}store('nwcw_orders',DB);pushSync();try{renderAll()}catch(_){}render();toast('已記錄：'+tripCode(x)+' 主禮車司機已聯絡新人')}return}
     const b=e.target.closest('button[data-i]');if(!b)return;e.preventDefault();open(shown[+b.dataset.i])});
 })();
 function loadOrder(){if(delStep){delStep=0;clearTimeout(delTimer);const b=$('btnDel');if(b)b.textContent='🗑 刪除此訂單';const h=$('delHint');if(h)h.textContent=''}migrate(o);syncFleet();fillInputs();renderLangs();renderCars();renderFleet();renderFlow();renderAll()}
