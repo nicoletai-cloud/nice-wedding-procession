@@ -1350,7 +1350,7 @@ function lead(x){return x.fleet.find(f=>f.lead)||x.fleet.find(f=>f.role==='主�
 /* 2026-10-20 Nicole：地點 A–Z：A＝集合(meet)、B＝迎娶(wed)、C＝o1、D＝o2、E＝o3…Z＝o24 */
 const PT_L='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 function ptField(k){const i=PT_L.indexOf(k);return i===0?'meet':i===1?'wed':i>1?'o'+(i-1):''}
-function ptLast(x){const c=x.c||{};let n=0;for(let i=0;i<26;i++){const f=ptField(PT_L[i]);if(String(c[f]||'').trim()||String(c[f+'L']||'').trim())n=i}return n}
+function ptLast(x){const c=x.c||{};let n=0;for(let i=0;i<26;i++){const f=ptField(PT_L[i]);const v=String(c[f]||'').trim();if(v&&!/^(待定|未定|待確認|待補|[-—－])$/.test(v))n=i}return n}   /* 只看地址（標註預設有男方家／女方家，不算） */
 function points(x){const c=x.c,pts=[];for(let i=0;i<26;i++){const k=PT_L[i],f=ptField(k);if(c[f]||i<2)pts.push({k,addr:c[f],label:c[f+'L'],map:(c[f+'Map']||'').trim(),title:i===0?'集合地點':i===1?'迎娶地點':'其他地點',f})}return pts}
 function autoFlow(x){const pts=points(x).filter(p=>p.addr);const ks=pts.map(p=>p.k);const c=x.c;
   if(ks.length<2){x.path=ks[0]||'';x.flow=[{t:c.start||'',who:'',seg:ks[0]||''}];return}
