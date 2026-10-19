@@ -567,8 +567,8 @@ nav.tabs button{scroll-snap-align:start}
         <h3>行前確認 <small>客人回填的內容，送出後已自動帶入下面的流程</small></h3>
         <div id="cfFlowBody"></div>
       </div>
-      <div class="card" id="drvNoteCard"><!-- 2026-10-18 給司機的補充：只出現在司機派車單 -->
-        <h3>給司機的補充 <small>只出現在司機派車單，客人的確認單看不到；客人行前確認填的「想提醒司機」會自動帶進來</small></h3>
+      <div class="card" id="drvNoteCard"><!-- 2026-10-19 給司機的補充：派車單和禮車服務確認單都會出現（確認單寫「已轉達司機」） -->
+        <h3>給司機的補充 <small>派車單和禮車服務確認單都會出現（確認單上寫「已轉達司機」，客人知道有轉達）；客人行前確認填的「想提醒司機」和上傳的附件會自動帶進來</small></h3>
         <textarea id="d_drvNote" data-b="drvNote" rows="3" style="width:100%;box-sizing:border-box" placeholder="例：當天馬拉松交管，回程不能走北安路；停車位在社區地下室 B2"></textarea>
       </div>
       <div class="card">
@@ -1289,11 +1289,11 @@ function autoFlow(x){const pts=points(x).filter(p=>p.addr);const ks=pts.map(p=>p
 /* ---------- memo ---------- */
 const MT={
  zh:{gather:'司機集合時間',contact:'聯絡人',boss:'禮車負責人',plan:'禮車方案',deco:'指定車頭彩',cane:'固定甘蔗',yes:'是',no:'否',tbd:'待確認',order:'車序',plate:'車號',driver:'駕駛',car:'車款',phone:'電話',
-   meet:'集合地點',wed:'迎娶地點',other:'其他地點',flow:'禮車流程',route:'路線說明',drvAdd:'給司機的補充',tipsC:'給新人的小提醒',tipsD:'給司機的小提醒',pay:'款項',seats:n=>`${n} 人座`,lead:'(負責人)',orderNo:'訂單編號',all:'全車隊'},
+   meet:'集合地點',wed:'迎娶地點',other:'其他地點',flow:'禮車流程',route:'路線說明',drvAdd:'給司機的補充',drvRelay:'已轉達司機',files:'客人提供的附件',tipsC:'給新人的小提醒',tipsD:'給司機的小提醒',pay:'款項',seats:n=>`${n} 人座`,lead:'(負責人)',orderNo:'訂單編號',all:'全車隊'},
  en:{gather:'Driver meeting time',contact:'Contact',boss:'Fleet coordinator',plan:'Package',deco:'Custom hood decoration',cane:'Sugarcane on roof',yes:'Yes',no:'No',tbd:'TBC',order:'Role',plate:'Plate',driver:'Driver',car:'Car',phone:'Phone',
-   meet:'Meeting point',wed:'Bride pick-up',other:'Other stop',flow:'Schedule',route:'Route notes',drvAdd:'Notes for drivers',tipsC:'Reminders for the couple',tipsD:'Driver reminders',pay:'Payment',seats:n=>`${n} seats`,lead:'(coordinator)',orderNo:'Order No.',all:'All cars'},
+   meet:'Meeting point',wed:'Bride pick-up',other:'Other stop',flow:'Schedule',route:'Route notes',drvAdd:'Notes for drivers',drvRelay:'Passed on to drivers',files:'Your attachments',tipsC:'Reminders for the couple',tipsD:'Driver reminders',pay:'Payment',seats:n=>`${n} seats`,lead:'(coordinator)',orderNo:'Order No.',all:'All cars'},
  ja:{gather:'ドライバー集合時間',contact:'ご連絡先',boss:'車両責任者',plan:'プラン',deco:'指定ボンネット飾り',cane:'サトウキビ固定',yes:'あり',no:'なし',tbd:'確認中',order:'車順',plate:'ナンバー',driver:'ドライバー',car:'車種',phone:'電話',
-   meet:'集合場所',wed:'お迎え場所',other:'その他の場所',flow:'当日の流れ',route:'ルート',drvAdd:'ドライバーへの補足',tipsC:'新郎新婦様へのご案内',tipsD:'ドライバーへの注意事項',pay:'お支払い',seats:n=>`${n}人乗り`,lead:'(責任者)',orderNo:'ご予約番号',all:'全車'}};
+   meet:'集合場所',wed:'お迎え場所',other:'その他の場所',flow:'当日の流れ',route:'ルート',drvAdd:'ドライバーへの補足',drvRelay:'ドライバーへ伝達済み',files:'ご提供の資料',tipsC:'新郎新婦様へのご案内',tipsD:'ドライバーへの注意事項',pay:'お支払い',seats:n=>`${n}人乗り`,lead:'(責任者)',orderNo:'ご予約番号',all:'全車'}};
 function roleName(r,lang){return lang==='en'?(ROLE_EN[r]||r):lang==='ja'?(ROLE_JA[r]||r):r}
 function yn(v,lang){const t=MT[lang];v=(v||'').trim();return v==='是'?t.yes:v==='待確認'?t.tbd:(!v||/^(否|無|不)/.test(v))?t.no:v}
 function colorName(c,lang){if(lang==='zh')return c;const map={'白色':['White','ホワイト'],'黑色':['Black','ブラック'],'灰色':['Grey','グレー'],'紅色':['Red','レッド'],'藍色':['Blue','ブルー'],'銀色':['Silver','シルバー']};return map[c]?map[c][lang==='en'?0:1]:c}
@@ -1332,7 +1332,9 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   const p=dparts(x.date);
   const zn=lang==='zh'&&zodNeed(x);
   const fleet=fleetWithFriends(x).map(f=>f.friend?{friend:true,role:lang==='zh'?f.role:roleName('親友車',lang),plate:roleName('親友車',lang),driver:'',car:'',spec:'',phone:''}:({role:roleName(f.role,lang),plate:f.plate,emg:who==='drv'?emgLine(f):'',driver:(f.driver||'')+(f.lead?' '+t.lead:'')+(zn&&f.driver?(zodOfF(f)?` / 肖：${zodOfF(f)}`:(who==='drv'?' / 肖：未填':'')):''),car:(f.up||'').trim()&&f.up.trim()!==MNAME[f.m]?`${f.up.trim()}(升等)`:MNAME[f.m],spec:`${colorName(f.color||'',lang)} ${t.seats(f.seats||S.seats[f.m])}`.trim(),phone:ph(f.phone)}));
-  const pts=points(x).filter(pt=>pt.addr).map(pt=>({k:pt.k,title:pt.k==='A'?t.meet:pt.k==='B'?t.wed:t.other,addr:noFloor(pt.addr),label:pt.label,map:pt.map}));
+  let pts=points(x).filter(pt=>pt.addr).map(pt=>({k:pt.k,title:pt.k==='A'?t.meet:pt.k==='B'?t.wed:t.other,addr:noFloor(pt.addr),label:pt.label,map:pt.map}));
+  {/* 2026-10-19 A、B 同一地點：只列「A. 集合地點：地址(地點名稱)」，不寫男方家／女方家 */const nz=v=>String(v||'').replace(/[\s　]/g,'').replace(/[（]/g,'(').replace(/[）]/g,')').replace(/臺/g,'台'),A=pts.find(p=>p.k==='A'),B=pts.find(p=>p.k==='B');
+    if(A&&B&&nz(A.addr)===nz(B.addr)){pts=pts.filter(p=>p.k!=='B');A.label='';const mm=String(A.addr).match(/^([^（(]+?)\s*[（(]\s*(.+?)\s*[)）]\s*$/);if(mm&&/[市縣區鄉鎮路街道段巷號]/.test(mm[2])&&!/[市縣路街號]/.test(mm[1]))A.addr=`${mm[2]}(${mm[1]})`}}
   const flow=x.flow.filter(f=>f.t||f.seg).map(f=>`${f.e?`${f.t}-${f.e}`:ap(f.t)} ${f.who?f.who+' ':''}${f.seg}`.trim());
   let pay=[];
   const otl=(x.otText||'').trim()||MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m])}/HR`).join(' ; ');
@@ -1352,7 +1354,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   }
   return{no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(c.end)}`,gather:ap(c.gather||addMin(c.start,-20)),
     contact:(c.contact2||'').trim()?`\n${cname||''}${crole}  ${ph(c.phone)} / ${c.contact2.trim()}${(c.rel2||'').trim()?`(${c.rel2.trim()})`:''} ${ph(c.phone2)}`.trimEnd()+((c.contact3||'').trim()?`\n${c.contact3.trim()}${(c.rel3||'').trim()?`(${c.rel3.trim()})`:''} ${ph(c.phone3)}`.trimEnd():''):`${cname||''}${crole}  ${ph(c.phone)}`.trim(),boss:`${ld.driver||''} ${ph(ld.phone)}`.trim(),plan:planName(x),
-    flags:`${t.deco}：${yn(c.decoAns,lang)} / ${t.cane}：${yn(caneOf(x),lang)}`+((x.flagNote||'').trim()?`\n*${x.flagNote.trim()}`:''),fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',drvNote:who==='drv'?String(x.drvNote||'').trim():'',
+    flags:`${t.deco}：${yn(c.decoAns,lang)} / ${t.cane}：${yn(caneOf(x),lang)}`+((x.flagNote||'').trim()?`\n*${x.flagNote.trim()}`:''),fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',drvNote:String(x.drvNote||'').trim(),drvLabel:who==='drv'?(t.drvAdd||'給司機的補充'):(t.drvRelay||'已轉達司機'),files:cfFiles(x),   /* 2026-10-19 給司機的補充＋客人附件：確認單和派車單都放，客人知道有轉達 */
     tips:who==='cust'?tipsC(x,lang):TIPS_D,tipsTitle:who==='cust'?t.tipsC:t.tipsD,pay,t}}
 function memoText(m,maps){return window.nwcSpace?nwcSpace(memoText0(m,maps)):memoText0(m,maps)}   // 2026-10-17 派車單／確認單文字也加中英文空格
 function memoText0(m,maps){const t=m.t,L2=[];
@@ -1360,7 +1362,8 @@ function memoText0(m,maps){const t=m.t,L2=[];
   m.fleet.forEach(f=>L2.push(f.friend?`${f.role}｜${f.plate}`:`${f.role}｜${f.plate||'—'}｜${f.driver||'—'}｜${f.car} ${f.spec}｜${f.phone||'—'}${f.emg?'｜'+f.emg:''}`));
   L2.push('');m.pts.forEach(p=>{L2.push(`${p.k}. ${p.title}`,p.addr+(p.label?`\n(${p.label})`:'')+(p.map?`\n導航定位：${p.map}`:''));if(maps)L2.push(mapUrl(p.addr))});
   if(m.route)L2.push(`${t.route}：${m.route}`);
-  if(m.drvNote)L2.push(`📌 ${t.drvAdd||'給司機的補充'}：${m.drvNote}`);
+  if(m.drvNote)L2.push(`📌 ${m.drvLabel||t.drvAdd||'給司機的補充'}：${m.drvNote}`);
+  if((m.files||[]).length)L2.push(`📎 ${t.files||'客人提供的附件'}：`,...m.files.map(f=>`${f.name} ${f.url}`));
   L2.push('',`${t.flow}：`,m.path,...m.flow,'',m.tipsTitle);
   m.tips.forEach((s,i)=>L2.push(m.tipsTitle===MT.zh.tipsD?`* ${s}`:`${i+1}. ${s}`));
   L2.push('',t.pay,...m.pay);return L2.join('\n')}
@@ -1375,7 +1378,8 @@ function memoHTML0(m,maps){const t=m.t;
   ${m.fleet.map(f=>f.friend?`<tr><td>${esc(f.role)}</td><td colspan="4">${esc(f.plate)}</td></tr>`:`<tr><td>${esc(f.role)}</td><td>${esc(f.plate)}</td><td>${esc(f.driver)}</td><td>${esc(f.car)}<br><small>${esc(f.spec)}</small></td><td>${esc(f.phone)}${f.emg?`<br><small>${esc(f.emg)}</small>`:''}</td></tr>`).join('')}</tbody></table></div>
   <div class="tbl"><table style="margin-top:10px"><tbody>${m.pts.map(p=>`<tr><th style="width:130px">${esc(p.k)}. ${esc(p.title)}</th><td>${maps?`<a href="${esc(mapUrl(p.addr))}" target="_blank" rel="noopener">${esc(p.addr)}</a>`:esc(p.addr)}${p.label?`<br>(${esc(p.label)})`:''}${p.map?`<br>導航定位：<a href="${esc(p.map)}" target="_blank" rel="noopener">${esc(p.map)}</a>`:''}</td></tr>`).join('')}
   ${m.route?`<tr><th>${esc(t.route)}</th><td>${esc(m.route)}</td></tr>`:''}
-  ${m.drvNote?`<tr><th>📌 ${esc(t.drvAdd||'給司機的補充')}</th><td>${esc(m.drvNote).replace(/\n/g,'<br>')}</td></tr>`:''}
+  ${m.drvNote?`<tr><th>📌 ${esc(m.drvLabel||t.drvAdd||'給司機的補充')}</th><td>${esc(m.drvNote).replace(/\n/g,'<br>')}</td></tr>`:''}
+  ${(m.files||[]).length?`<tr><th>📎 ${esc(t.files||'客人提供的附件')}</th><td>${m.files.map(f=>`<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.name)}</a>`).join('<br>')}</td></tr>`:''}
   <tr><th>${esc(t.flow)}</th><td><b>${esc(m.path)}</b><br>${m.flow.map(esc).join('<br>')}</td></tr></tbody></table></div>
   <h4>${esc(m.tipsTitle)}</h4><ol>${m.tips.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
   <h4>${esc(t.pay)}</h4><div>${m.pay.map(s=>esc(s).replace(/\n/g,'<br>')).join('<br>')}</div>`}
@@ -1606,6 +1610,8 @@ function cfMsg(x){const c=x.c||{},lk=cfLink(x),body=`🧡 婚禮快到了，我�
   return `好好新人您好${body}`}   // 2026-10-15 官方帳號／FB／IG 傳給新人：不確定是新郎或新娘，統一稱呼「好好新人」
 // 單點繞圈：只有集合地點，第一圈（＋第二圈）時間；每圈抓 30 分鐘
 /* 2026-10-19 行前確認的「甘蔗竹子」回答：沒有→否、有→是（派車單／memo 不再顯示甘蔗待確認） */
+/* 2026-10-19 客人在行前確認頁上傳的行程表（Drive 檔案；產生 memo 連結時系統會開成知道連結可檢視） */
+function cfFiles(x){const cf=CONFIRMS[normNo(orderNo(x))],L=x.cfLast||{},fs=(cf&&cf.f&&cf.f.files)||(L.f&&L.f.files)||L.files||[];return fs.filter(z=>z&&z.id).map(z=>({id:z.id,name:z.name||(z.pdf?'PDF':'照片'),url:'https://drive.google.com/file/d/'+encodeURIComponent(z.id)+'/view'}))}
 function caneYN(v){v=String(v||'').trim();if(!v)return '';if(/沒有|不需|不用|無|否|^no$/i.test(v))return '否';if(/有|需要|是|要/.test(v))return '是';return ''}
 function caneOf(x){const c=x.c||{},n=caneYN(c.caneNote);if(n&&(!c.caneAns||c.caneAns==='待確認'))return n;return c.caneAns||(x.cane?'是':'否')}
 function applyLoop(f){const c=o.c,diffs=['行程：單點繞圈'],warn=[];o.sample=false;
