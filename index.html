@@ -777,9 +777,9 @@ nav.tabs button{scroll-snap-align:start}
   </div>
 </div>
 <!-- 2026-10-19 手機版精簡：標題一行、分類只顯示有訊息的（橫向滑動）、沒有訊息時不顯示批次按鈕、視窗填滿畫面 -->
-<style>#inboxModal .ibBox{max-width:980px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px}
+<style>#inboxModal .ibBox,#annModal .ibBox{max-width:980px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px}
 #ibChips{gap:6px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-bottom:10px;padding-bottom:2px}#ibChips::-webkit-scrollbar{display:none}#ibChips .btn{flex:0 0 auto;white-space:nowrap}
-@media (max-width:820px){#inboxModal{padding:10px 8px!important}#inboxModal .ibBox{padding:14px 12px;min-height:calc(100vh - 20px);min-height:calc(100dvh - 20px)}}</style>
+@media (max-width:820px){#inboxModal,#annModal{padding:10px 8px!important}#inboxModal .ibBox,#annModal .ibBox{padding:14px 12px;min-height:calc(100vh - 20px);min-height:calc(100dvh - 20px)}}</style>
 <div id="inboxModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
   <div class="ibBox">
     <div class="row" style="justify-content:space-between;flex-wrap:nowrap;gap:8px;margin-bottom:10px"><h3 style="margin:0;white-space:nowrap">LINE 訊息</h3><div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm" id="btnInboxReload">重新整理</button><button class="btn sm" id="btnInboxClose">關閉</button></div></div>
@@ -2302,7 +2302,7 @@ function renderAnn(){const m=annDays(),d=$('annDate').value,ds=Object.keys(m).so
   const A=annOrders();
   if(A.length&&annAsked!==d&&A.some(x=>!ANNST[x.id])){annAsked=d;lgCall({op:'status',trips:A.map(x=>({id:x.id,keys:lgKeys(x)}))}).then(j=>{Object.keys(j.st||{}).forEach(id=>{ANNST[id]=j.st[id];if(j.st[id].ok&&!ANNSENT[id])annSel.add(id)});renderAnn()}).catch(err=>{$('annMsg').textContent='查詢群組失敗：'+err.message;annAsked=''})}
   $('annList').innerHTML=A.length?A.map(x=>{const g=ANNST[x.id],c=x.c||{},who=x.partner?'同業 '+(x.partner.co||''):([c.groom,c.bride].filter(Boolean).join('＆')||c.chatName||''),sent=ANNSENT[x.id];
-    const st=sent?'<span style="color:#4E8A4E">已發送 '+sent+'</span>':!g?'查詢群組中…':g.ok?esc(g.name):'<span style="color:#C0453A">找不到群組（還沒建群組，或禮車助手不在群組裡）</span>';
+    const st=sent?'<span style="color:#4E8A4E">已發送 '+sent+'</span>':!g?'查詢群組中…（約 20 秒）':g.ok?esc(g.name):'<span style="color:#C0453A">找不到群組（還沒建群組，或禮車助手不在群組裡）</span>';
     return `<label class="todo-row" style="align-items:center;gap:10px${g&&!g.ok?';opacity:.6':''}"><input type="checkbox" data-annsel="${esc(x.id)}" style="width:auto"${annSel.has(x.id)?' checked':''}${g&&g.ok?'':' disabled'}><div class="m" style="flex:1;min-width:0"><div><b>${esc(lgName(x))}</b></div><div class="sub">${who?esc(who)+'｜':''}${st}</div></div></label>`}).join(''):'<p class="hint">這天沒有車趟。</p>';
   annBtn()}
 function annBtn(){const b=$('btnAnnSend'),n=annSel.size,t=$('annText').value.trim();b.disabled=!n||!t;if(b.dataset.arm!=='1')b.textContent=n?'發送到 '+n+' 個群組':'發送'}
