@@ -2039,7 +2039,7 @@ function renderFleet(){try{renderFr()}catch(_){}try{setTimeout(renderEq,0)}catch
   <td style="text-align:center"><input type="radio" name="leadR" data-fl="${i}.lead" id="fl_l${i}" ${f.lead?'checked':''} style="width:auto" aria-label="負責人"></td></tr>`}).join('')||'<tr><td colspan="11" class="hint">先在「報價」選車款。</td></tr>'}
 /* 2026-10-20 Nicole：流程代號按鈕（A–D、繞圈、退一步），按了自動排好下面每一段 */
 function pbTokens(p){return String(p||'').split(/\s*[-－>＞→]\s*/).map(z=>z.trim()).filter(Boolean).map(z=>/繞圈/.test(z)?'繞圈':z.toUpperCase()).filter(z=>z==='繞圈'||/^[A-Z]$/.test(z))}
-function pbApply(ks){o.locEditAt=Date.now();o.path=ks.join(' - ');const old=o.flow||[],fl=[];let n=0;const cn='一二三四五六七八九十';
+function pbApply(ks){o.locEditAt=Date.now();o.path=ks.join(' - ');{const dp=$('d_path');if(dp)dp.value=o.path}const old=o.flow||[],fl=[];let n=0;const cn='一二三四五六七八九十';
   for(let i=0;i<ks.length;i++){const a=ks[i];if(a==='繞圈')continue;const nx=ks[i+1];if(nx==null)break;
     if(nx==='繞圈'){n++;fl.push(`${a} 第${cn[n-1]||n}圈繞圈`)}else fl.push(`${a} - ${nx}`)}
   o.flow=fl.map((seg,i)=>({t:old[i]?old[i].t:(i===0?(o.c.start||''):''),who:old[i]?old[i].who:'',seg}));o.sample=false;save();renderAll();try{renderFlow()}catch(_){}}
