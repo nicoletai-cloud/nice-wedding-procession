@@ -1449,7 +1449,7 @@ function memoText0(m,maps){const t=m.t,L2=[];
   if(m.route)L2.push(`${t.route}：${m.route}`);
   L2.push('',`${t.flow}：${m.path||''}`,...m.flow);
   /* 2026-10-19 Nicole：已轉達司機、參考資訊放在禮車流程下面，項目叫「注意事項」 */
-  if(m.drvNote||(m.files||[]).length||routes.length){L2.push('',`${t.notes||'注意事項'}${m.drvNote?`（${m.drvLabel||t.drvAdd||'給司機的補充'}）`:''}：`);if(m.drvNote)L2.push('',...noteItems(m.drvNote));
+  if(m.drvNote||(m.files||[]).length||routes.length){L2.push('',`${t.notes||'注意事項'}${m.drvNote?`（${m.drvLabel||t.drvAdd||'給司機的補充'}）`:''}：`);if(m.drvNote){const ni=noteItems(m.drvNote);L2.push(...(ni.length>1?['']:[]),...ni)}   /* 2026-10-20 Nicole：只有一項時標題下不空行；多項編號才空一行 */
     routes.forEach((u,i)=>L2.push(m.who==='cust'?`🗺 [路線參考${routes.length>1?' '+(i+1):''}](${u})`:`🗺 路線參考${routes.length>1?' '+(i+1):''}：${u}`));
 
     if((m.files||[]).length)L2.push(`📎 ${t.files||'參考資訊'}：`+m.files.map((f,i)=>`${t.ref||'參考資料'} ${i+1} ${f.url}`).join('、'));}   /* 2026-10-19 同一行不換行 */   /* 不顯示檔名；確認單網頁會把這行變成「參考資料 1」連結 */
