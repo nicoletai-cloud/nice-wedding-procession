@@ -2210,6 +2210,14 @@ function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];c
     if(x.paid&&!x.lost&&d!==null&&d<0&&d>=-60&&x.date>='2026-10-05'&&!x.ptPhotoAt)T.push({k:'ptphoto',late:d<=-2});
     return T.filter(t=>t.k==='tt'||t.k==='nodrv'||t.k==='call'||t.k==='ptinfo'||t.k==='ptphoto')}
   return T}
+/* 2026-10-20 搜尋／用車日清單：下一步（待辦第一項，不含聯絡新人）或目前完成到哪一步 */
+function kwStatus(x){const st=stageOf(x);if(st==='sample')return null;if(st==='lost')return{t:'失單',ok:true};
+  const T=tasksOf(x).filter(t=>t.k!=='call');if(T.length){const t=T.find(z=>z.late)||T[0];return{t:'下一步：'+(ST[t.k]||t.k)}}
+  if(st==='done')return{t:'✅ 已完成',ok:true};const M=MEMOS&&MEMOS[normNo(orderNo(x))]||{};
+  if(x.callAt)return{t:'✅ 負責人已聯絡新人',ok:true};if(x.pubAt||M.pub)return{t:'✅ 已發送司機派車單',ok:true};
+  if(x.memoOkAt||M.ok)return{t:'✅ 客人已確認服務確認單',ok:true};if(x.memoSentAt)return{t:'✅ 已傳服務確認單',ok:true};
+  if((x.fleet||[]).length&&x.fleet.every(f=>String(f.driver||'').trim()))return{t:'✅ 已派司機',ok:true};
+  if(x.cfDoneAt)return{t:'✅ 行前確認已回',ok:true};return{t:'✅ '+(STAGE_LABEL[st]||''),ok:true}}
 let todoF='all';const todoSel=new Set();
 /* ---- 用車日期篩選（待辦＋上方搜尋共用） ---- */
 const DR={todo:{f:'',t:''},kw:{f:'',t:''}};
@@ -2621,7 +2629,7 @@ function showTab(name){document.querySelectorAll('#tabs button').forEach(b=>b.se
       .sort((a,b)=>dOn?String(a.date||'').localeCompare(String(b.date||''))||String(orderNo(a)).localeCompare(String(orderNo(b))):String(b.date||'').localeCompare(String(a.date||'')));
     const tot=shown.length;shown=shown.slice(0,dOn?200:20);
     box.innerHTML=(dOn?`<div class="kw-head">📅 用車日 ${esc(drLabel('kw'))}${terms.length?'＋關鍵字':''}：共 ${tot} 趟${tot>shown.length?'（只列前 '+shown.length+' 趟）':''}</div>`:'')+(shown.length?shown.map((x,i)=>{const c=x.c||{},v=(x.src&&x.src.vendor)||'',st=STAGE_LABEL[stageOf(x)]||'';
-      const dd=daysTo(x),cl=x.paid&&dd!==null&&dd>=0?(x.callAt?'<span class="kw-call ok">☎️ 已聯絡新人</span>':`<span class="kw-call" data-call="${i}">☎️ 按這裡標記已聯絡新人</span>`):'';
+      const ks=kwStatus(x),cl=ks?`<span class="kw-call${ks.ok?' ok':''}">${esc(ks.t)}</span>`:'';   // 2026-10-20 顯示這張單的下一步或已完成到哪
       return `<button type="button" data-i="${i}"${i===act?' class="on"':''}>${cl}<b>${esc(tripCode(x))}｜${esc(orderNo(x))}</b>${esc(c.chatName||[c.groom,c.bride].filter(Boolean).join('＆')||'未命名')}<small>${esc([x.date,st,v?('婚顧／廠商 '+v+((x.src||{}).agent?' '+x.src.agent:'')+((x.src||{}).mode?'（'+x.src.mode+'）':'')):'',c.groom&&c.bride?c.groom+'＆'+c.bride:''].filter(Boolean).join('　'))}</small></button>`}).join(''):'<div class="empty">找不到相關訂單</div>');
     box.hidden=false}
   const dBtn=$('kwDateBtn'),dPop=$('kwDatePop');
