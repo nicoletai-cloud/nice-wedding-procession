@@ -1403,7 +1403,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   const p=dparts(x.date);
   const zn=lang==='zh'&&zodNeed(x);
   const fleet=fleetWithFriends(x).map(f=>f.friend?{friend:true,role:lang==='zh'?f.role:roleName('親友車',lang),plate:roleName('親友車',lang),driver:'',car:'',spec:'',phone:''}:({role:roleName(f.role,lang),plate:f.plate,emg:who==='drv'?emgLine(f):'',driver:(f.driver||'')+(f.lead?' '+t.lead:'')+(zn&&f.driver?(zodOfF(f)?` / 肖：${zodOfF(f)}`:(who==='drv'?' / 肖：未填':'')):''),car:(f.up||'').trim()&&f.up.trim()!==MNAME[f.m]?`${f.up.trim()}(升等)`:MNAME[f.m],spec:`${colorName(f.color||'',lang)} ${t.seats(f.seats||S.seats[f.m])}`.trim(),phone:ph(f.phone)}));
-  let pts=points(x).filter(pt=>pt.addr).map(pt=>({k:pt.k,title:pt.k==='A'?t.meet:pt.k==='B'?t.wed:t.other,addr:noFloor(pt.addr),label:pt.label,map:pt.map}));
+  let pts=points(x).filter(pt=>pt.addr).map(pt=>({k:pt.k,title:lang==='zh'&&String((c[ptField(pt.k)+'T'])||'').trim()?String(c[ptField(pt.k)+'T']).trim():pt.k==='A'?t.meet:pt.k==='B'?t.wed:t.other,   /* 2026-10-20 地點類型可選 */addr:noFloor(pt.addr),label:pt.label,map:pt.map}));
   {/* 2026-10-20 Nicole：地址待定、或流程沒用到的地點不列出（例：繞圈單 B 待定） */const pk=String(x.path||'').toUpperCase().match(/\b[A-Z]\b/g)||[];pts=pts.filter(p=>p.k==='A'||(!/^(待定|未定|待確認|待補|[-—－])$/.test(String(p.addr).trim())&&(!pk.length||pk.includes(p.k))))}
   {/* 2026-10-19 A、B 同一地點：只列「A. 集合地點：地址(地點名稱)」，不寫男方家／女方家 */const nz=v=>String(v||'').replace(/[\s　]/g,'').replace(/[（]/g,'(').replace(/[）]/g,')').replace(/臺/g,'台'),A=pts.find(p=>p.k==='A'),B=pts.find(p=>p.k==='B');
     pts.forEach(p=>{if((p.k==='A'||p.k==='B')&&/^(男方家|女方家)$/.test(String(p.label||'').trim())&&isHotel(p.addr))p.label=''});
@@ -2014,12 +2014,31 @@ function pbApply(ks){o.path=ks.join(' - ');const old=o.flow||[],fl=[];let n=0;co
   o.flow=fl.map((seg,i)=>({t:old[i]?old[i].t:(i===0?(o.c.start||''):''),who:old[i]?old[i].who:'',seg}));o.sample=false;save();renderAll();try{renderFlow()}catch(_){}}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-pb]');if(!b||!o)return;const k=b.dataset.pb;let ks=pbTokens(o.path);
   if(k==='clear')ks=[];else if(k==='undo')ks.pop();else if(k==='loop'){if(!ks.length||ks.at(-1)==='繞圈')return;ks.push('繞圈',ks.at(-1))}else{if(ks.at(-1)===k)return;ks.push(k)}pbApply(ks)});
-const PTN={};   /* 這次畫面上多顯示到第幾個地點（按「新增地點」） */
+const PTN={},PTNEW={};   /* PTN：畫面上多顯示到第幾個地點；PTNEW：正在自訂地點名稱的字母 */
+const PT_TYPES=['集合地點','迎娶地點','證婚地點','宴客地點','入門地點','其他地點'];
+function ptDefType(k){return k==='A'?'集合地點':k==='B'?'迎娶地點':'其他地點'}
 function renderFlowPts(){const el=$('flowPts');if(!el||!o)return;if(el.contains(document.activeElement))return;const c=o.c||{},f=((o.cfLast||{}).f)||{};
   const cu={A:f.meet,B:f.wed,C:f.restAddr},n=Math.max(ptLast(o),PTN[o.id]||0),pk=pbTokens(o.path).filter(z=>z!=='繞圈').map(z=>PT_L.indexOf(z)),N=Math.min(25,Math.max(n,...pk,0));
-  el.innerHTML=PT_L.slice(0,N+1).split('').map((k,i)=>{const fd=ptField(k),tt=i===0?'集合地點':i===1?'迎娶地點':'其他地點';return `<div style="margin-top:8px"><div class="row" style="gap:6px;align-items:center;flex-wrap:wrap"><b style="width:86px;white-space:nowrap">${k}. ${tt}</b><input data-b="c.${fd}L" value="${esc(c[fd+'L']||'')}" placeholder="地點名稱（例：江山萬里社區 - 男方家）" style="flex:1;min-width:180px"><input data-b="c.${fd}" value="${esc(c[fd]||'')}" placeholder="地址" style="flex:2;min-width:220px"></div>${String(cu[k]||'').trim()?`<div class="hint" style="margin:2px 0 0 92px">客人填：${esc(cu[k])}</div>`:''}</div>`}).join('')+(N<25?`<button class="btn sm" type="button" data-ptadd="1" style="margin-top:8px">＋ 新增地點（${PT_L[N+1]}）</button>`:'');
+  el.innerHTML=PT_L.slice(0,N+1).split('').map((k,i)=>{const fd=ptField(k),ty=String(c[fd+'T']||'').trim()||ptDefType(k),custom=PTNEW[o.id+k]||!PT_TYPES.includes(ty);
+    return `<div style="margin-top:8px"><div class="row" style="gap:6px;align-items:center;flex-wrap:wrap"><b style="width:22px;flex:none">${k}.</b>
+    <select data-pttype="${k}" style="width:130px;flex:none">${PT_TYPES.map(t=>`<option${!custom&&t===ty?' selected':''}>${t}</option>`).join('')}<option value="__new"${custom?' selected':''}>新增地點名稱…</option></select>
+    ${custom?`<input data-b="c.${fd}T" value="${esc(PT_TYPES.includes(ty)?'':ty)}" placeholder="地點名稱（例：祭祖地點）" style="width:150px;flex:none">`:''}
+    <input data-b="c.${fd}" value="${esc(c[fd]||'')}" placeholder="地址" style="flex:2;min-width:220px">
+    <input data-b="c.${fd}L" value="${esc(c[fd+'L']||'')}" placeholder="說明（例：男方家、江山萬里社區）" style="flex:1;min-width:150px">
+    ${N>0?`<button class="btn sm" type="button" data-ptdel="${k}" aria-label="刪除地點 ${k}" style="flex:none">✕</button>`:''}</div>${String(cu[k]||'').trim()?`<div class="hint" style="margin:2px 0 0 28px">客人填：${esc(cu[k])}</div>`:''}</div>`}).join('')+(N<25?`<button class="btn sm" type="button" data-ptadd="1" style="margin-top:8px">＋ 新增地點（${PT_L[N+1]}）</button>`:'');
   const pb=$('pbBtns');if(pb)pb.innerHTML=PT_L.slice(0,N+1).split('').map(k=>`<button class="btn sm" type="button" data-pb="${k}">${k}</button>`).join('')+'<button class="btn sm" type="button" data-pb="loop">- 繞圈 -</button><button class="btn sm" type="button" data-pb="undo">⌫ 退一步</button><button class="btn sm" type="button" data-pb="clear">清除</button>'}
-document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-ptadd]');if(!b||!o)return;const n=Math.max(ptLast(o),PTN[o.id]||0,...pbTokens(o.path).filter(z=>z!=='繞圈').map(z=>PT_L.indexOf(z)));PTN[o.id]=Math.min(25,n+1);renderFlowPts();try{const ins=$('flowPts').querySelectorAll('input');ins[ins.length-2]&&ins[ins.length-2].focus()}catch(_){}});
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-ptadd]');if(!b||!o)return;const n=Math.max(ptLast(o),PTN[o.id]||0,...pbTokens(o.path).filter(z=>z!=='繞圈').map(z=>PT_L.indexOf(z)));PTN[o.id]=Math.min(25,n+1);renderFlowPts()});
+document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!t.dataset.pttype||!o)return;const k=t.dataset.pttype,fd=ptField(k);
+  if(t.value==='__new'){PTNEW[o.id+k]=1;o.c[fd+'T']='';save();t.blur();renderFlowPts();try{const i=$('flowPts').querySelector(`[data-b="c.${fd}T"]`);i&&i.focus()}catch(_){}return}
+  delete PTNEW[o.id+k];o.c[fd+'T']=t.value===ptDefType(k)?'':t.value;save();t.blur();renderFlowPts()});
+/* 刪除地點：後面的地點往前補（字母照順序），流程裡的字母跟著改 */
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-ptdel]');if(!b||!o)return;const k=b.dataset.ptdel,di=PT_L.indexOf(k),c=o.c;
+  if(String(c[ptField(k)]||'').trim()&&!confirm(`刪除地點 ${k}（${c[ptField(k)]}）？後面的地點會往前補。`))return;
+  const SUF=['','L','T','Map','S'];for(let j=di;j<25;j++){const a=ptField(PT_L[j]),bb=ptField(PT_L[j+1]);SUF.forEach(x=>{c[a+x]=c[bb+x]||''})}SUF.forEach(x=>{c[ptField('Z')+x]=''});
+  Object.keys(PTNEW).forEach(z=>{if(z.indexOf(o.id)===0)delete PTNEW[z]});PTN[o.id]=Math.max(0,Math.max(ptLast(o),(PTN[o.id]||0)-1));
+  let ks=pbTokens(o.path).filter(z=>z!==k).map(z=>z==='繞圈'?z:PT_L.indexOf(z)>di?PT_L[PT_L.indexOf(z)-1]:z);
+  ks=ks.filter((z,i)=>!(i>0&&z===ks[i-1])&&!(z==='繞圈'&&(i===0||ks[i-1]==='繞圈')));while(ks.at(-1)==='繞圈')ks.pop();
+  b.blur();pbApply(ks);renderFlowPts();toast(`已刪除地點 ${k}`)});
 function renderFlow(){try{renderFlowPts()}catch(e){console.warn(e)}$('flowList').innerHTML=o.flow.map((f,i)=>`<div class="fr"><div class="tt"><input type="time" data-fw="${i}.t" id="fw_t${i}" value="${esc(f.t)}" aria-label="時間"></div>
   <input class="who" data-fw="${i}.who" id="fw_w${i}" value="${esc(f.who)}" placeholder="全車隊" aria-label="車輛">
   <input class="sg" data-fw="${i}.seg" id="fw_s${i}" value="${esc(f.seg)}" placeholder="A - B" aria-label="路段">
