@@ -1078,7 +1078,17 @@ function ptMerge(x){const c=x&&x.c;if(!c||!c.o1||!c.wed||c.o2)return false;const
   const bl=String(c.wedL||'').trim(),parts=String(c.o1L||'').split(/[・\-－、\s]+/).map(z=>z.trim()).filter(z=>z&&bl.indexOf(z)<0);
   c.wedL=[bl,...parts].filter(Boolean).join('・');if(!c.wedMap&&c.o1Map)c.wedMap=c.o1Map;c.o1='';c.o1L='';c.o1Map='';c.o1S='';
   const sw=t=>String(t||'').replace(/\bC\b/g,'B');x.path=sw(x.path);(x.flow||[]).forEach(f=>{f.seg=sw(f.seg)});return true}
-function save(){try{ptMerge(o)}catch(_){}o.updated=Date.now();DB.cur=o.id;DB.orders[o.id]=o;store('nwcw_orders',DB);pushSync()}
+/* 2026-10-20 Nicole：第 5 頁地點／流程改完按「儲存」才寫進系統（之前只是草稿，可以取消） */
+let FDRAFT=null;
+function fdBegin(){if(!o)return;if(FDRAFT&&FDRAFT.id!==o.id)fdCommit(true);if(FDRAFT)return;FDRAFT={id:o.id,bak:clone({c:o.c,path:o.path,flow:o.flow,locEditAt:o.locEditAt||0})};setTimeout(renderFdBar,0)}
+function fdCommit(quiet){if(!FDRAFT)return;const x=DB.orders[FDRAFT.id];FDRAFT=null;if(x){x.locEditAt=Date.now();x.updated=Date.now();DB.orders[x.id]=x;store('nwcw_orders',DB);pushSync()}if(!quiet)toast('流程已儲存，確認單和派車單已更新');try{renderAll();renderFlow()}catch(_){}renderFdBar()}
+function fdCancel(){if(!FDRAFT)return;const x=DB.orders[FDRAFT.id],b=FDRAFT.bak;FDRAFT=null;if(x){x.c=b.c;x.path=b.path;x.flow=b.flow;x.locEditAt=b.locEditAt;DB.orders[x.id]=x;if(o&&o.id===x.id)o=x}toast('已取消修改');try{fillInputs();renderAll();renderFlow()}catch(_){}renderFdBar()}
+function renderFdBar(){if(FDRAFT&&o&&FDRAFT.id!==o.id){fdCommit(true);toast('上一張單的流程修改已自動儲存');return}const fe=document.querySelector('.flowEdit');if(!fe)return;let b=$('fdBar');if(!b){b=document.createElement('div');b.id='fdBar';b.style.cssText='position:sticky;bottom:8px;z-index:5;margin-top:12px;padding:10px 12px;border-radius:10px;background:#fff4e5;border:1px solid #e0b070;display:flex;gap:8px;align-items:center;flex-wrap:wrap';fe.appendChild(b)}
+  const on=!!(FDRAFT&&o&&FDRAFT.id===o.id);b.hidden=!on;if(on)b.innerHTML='<b style="flex:1;min-width:180px;color:#8a5a00">流程有修改，還沒儲存</b><button class="btn sm" type="button" data-fd="cancel">取消</button><button class="btn sm pri" type="button" data-fd="save">儲存</button>'}
+['input','change','click'].forEach(ev=>document.addEventListener(ev,e=>{const t=e.target;if(!t||!t.closest)return;if(t.closest('#fdBar'))return;if(!t.closest('.flowEdit'))return;if(ev==='click'&&!t.closest('button'))return;fdBegin()},true));
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-fd]');if(!b)return;if(b.dataset.fd==='save')fdCommit();else fdCancel()});
+window.addEventListener('beforeunload',e=>{if(FDRAFT){e.preventDefault();e.returnValue=''}});
+function save(){try{ptMerge(o)}catch(_){}if(FDRAFT&&o&&FDRAFT.id===o.id){o.updated=Date.now();DB.orders[o.id]=o;setTimeout(renderFdBar,0);return}o.updated=Date.now();DB.cur=o.id;DB.orders[o.id]=o;store('nwcw_orders',DB);pushSync()}
 function saveS(){if(syncReady)S._ts=Date.now();store('nwcw_settings',S);pushSync()}
 let syncReady=false,syncBusy=false,syncTimer=null,syncAgain=false;
 function syncStat(t){const el=$('btnSync');if(el)el.textContent=t}
@@ -2061,7 +2071,7 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   let ks=pbTokens(o.path).filter(z=>z!==k).map(z=>z==='繞圈'?z:PT_L.indexOf(z)>di?PT_L[PT_L.indexOf(z)-1]:z);
   ks=ks.filter((z,i)=>!(i>0&&z===ks[i-1])&&!(z==='繞圈'&&(i===0||ks[i-1]==='繞圈')));while(ks.at(-1)==='繞圈')ks.pop();
   b.blur();pbApply(ks);renderFlowPts();toast(`已刪除地點 ${k}`)});
-function renderFlow(){try{renderFlowPts()}catch(e){console.warn(e)}$('flowList').innerHTML=o.flow.map((f,i)=>`<div class="fr"><div class="tt"><input type="time" data-fw="${i}.t" id="fw_t${i}" value="${esc(f.t)}" aria-label="時間"></div>
+function renderFlow(){try{renderFlowPts()}catch(e){console.warn(e)}setTimeout(renderFdBar,0);$('flowList').innerHTML=o.flow.map((f,i)=>`<div class="fr"><div class="tt"><input type="time" data-fw="${i}.t" id="fw_t${i}" value="${esc(f.t)}" aria-label="時間"></div>
   <input class="who" data-fw="${i}.who" id="fw_w${i}" value="${esc(f.who)}" placeholder="全車隊" aria-label="車輛">
   <input class="sg" data-fw="${i}.seg" id="fw_s${i}" value="${esc(f.seg)}" placeholder="A - B" aria-label="路段">
   <button class="btn sm" data-fdel="${i}" aria-label="刪除這段">✕</button></div>`).join('')}
