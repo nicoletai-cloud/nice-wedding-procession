@@ -1182,8 +1182,14 @@ function vLabel(x){const v=(x.src&&x.src.vendor||'').trim();if(!v)return '';cons
 /* 2026-10-15 私客：私人 LINE＋其他管道（電話、簡訊等），機器人都傳不到 */
 function isPrivCh(ch){return ch==='私人LINE'||ch==='其他'}
 function chName(ch){return ch==='其他'?'私客其他管道':'私人 LINE'}
+/* 2026-10-20 Nicole：訂單清單後面寫目前進度（同業單不寫已出合約） */
+function progLabel(x){const st=stageOf(x);if(st==='lost'||st==='done')return STAGE_LABEL[st];const noDrv=!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim());
+  if(x.partner){const g=x.partner.stage;if(g==='ask')return '同業詢問中';if(g==='held')return '待同業補派單';if(noDrv)return '未派司機';return x.pubAt?'已發派車單':'派車單未發'}
+  if(st!=='ready')return STAGE_LABEL[st]||'';const M=(typeof MEMOS!=='undefined'&&MEMOS[normNo(orderNo(x))])||{};
+  if(x.callAt)return '負責人已聯絡新人';if(x.pubAt||M.pub)return '已發派車單';if(x.memoOkAt||M.ok)return '客人已確認確認單';if(x.memoSentAt)return '等客人確認服務確認單';
+  if(noDrv)return '未派司機';if(x.cfDoneAt)return '行前確認已回';if(x.cfSentAt)return '等客人回行前確認';return '已出合約'}
 function selLabel(x){const c=x.c||{},ch=x.partner?'同業 '+(x.partner.co||''):({FB:'fb',IG:'ig','私人LINE':'私人LINE','其他':'私客其他'}[c.channel]||'LINE'),who=x.partner?'':(c.chatName||'');
-  const cp=[c.groom,c.bride].filter(Boolean).join('&'),v=vLabel(x),st=x.sample?'範例':STAGE_LABEL[stageOf(x)]||'';
+  const cp=[c.groom,c.bride].filter(Boolean).join('&'),v=vLabel(x),st=x.sample?'範例':progLabel(x);
   return [orderNo(x),'('+ch+')'+who,cp+(v?`(${v})`:''),st].filter(t=>t&&t!=='()').join('-')}
 function coupleName(x){const c=[x.c.groom,x.c.bride].filter(Boolean).join('&'),v=vLabel(x);return c+(v?`(${v})`:'')}
 function refRate(x){const v=vendorOf(x);if(!v)return 0;return x.src.rate!==''&&x.src.rate!=null?num(x.src.rate):num(v.rate)}
