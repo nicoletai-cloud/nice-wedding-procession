@@ -1982,7 +1982,7 @@ function renderMj(){const d=$('mjDate'),out=$('mjOut');if(!d||!out)return;if(!d.
 document.addEventListener('input',e=>{if(e.target.id==='mjDate')renderMj()});
 document.addEventListener('toggle',e=>{if(e.target.id==='mjBox'&&e.target.open)renderMj()},true);
 function callTime(t){const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`}
-const preDispatch=x=>!!(x&&(x.memoSentAt||x.memoDone)&&!x.pubAt);   // 2026-10-19 服務確認單已傳客人、派車單還沒發到司機群組
+const preDispatch=x=>!!(x&&!x.partner&&(x.memoSentAt||x.memoDone)&&!x.pubAt);   /* 2026-10-20 同業單沒有服務確認單流程 */   // 2026-10-19 服務確認單已傳客人、派車單還沒發到司機群組
 function renderFleetCall(){['fleetCall','memoCall'].forEach(id=>{const f=$(id);if(!f)return;if(!o||o.sample){f.hidden=true;return}f.hidden=false;
   f.innerHTML=preDispatch(o)&&!o.callAt?`<b style="color:var(--muted)">📨 等客人確認服務確認單</b><span class="hint" style="margin:0">客人確認後系統會自動把派車單發到司機群組，之後才需要負責人聯絡新人</span>`:o.callAt?`<span class="chip">✅ 負責人已聯絡新人（${callTime(o.callAt)}）</span><button class="btn sm" data-fcall="undo">改回未聯絡</button>`
     :`<b style="color:#A0453A">☎️ 負責人還沒回報聯絡新人</b><span class="hint" style="margin:0">用車前一天 12:00 前要回報</span><button class="btn sm pri" data-fcall="done">負責人已聯絡新人</button>`})}
