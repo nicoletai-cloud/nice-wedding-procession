@@ -563,16 +563,6 @@ nav.tabs button{scroll-snap-align:start}
         <div id="ttCheck2" class="row" style="margin-top:10px;gap:8px;align-items:center"></div>
         <div id="callCheck" class="row" style="margin-top:10px;gap:8px;align-items:center;flex-wrap:wrap" hidden></div>
       </div>
-      <div class="card">
-        <h3>司機 LINE 群組 <small>建群後貼開場訊息；緊急聯絡人只出現在這裡</small></h3>
-        <div class="fields">
-          <label class="f wide">群組名稱<div class="row" style="flex-wrap:nowrap"><input id="lgName" readonly style="flex:1"><button class="btn sm pri" data-copyv="lgName">複製</button></div></label>
-        </div>
-        <div id="lgCard" style="margin-top:8px"></div>
-        <div class="row" style="justify-content:space-between;margin:10px 0 6px"><span class="hint" style="margin:0">開場訊息</span><button class="btn sm pri" data-copy="lgMsg">複製訊息</button></div>
-        <pre class="out" id="lgMsg"></pre>
-        <div class="pubBox" style="margin-top:10px"></div>
-      </div>
       <div class="card" id="cfFlowCard"><!-- 2026-10-17 客人回填的行前確認整合進車隊與流程 -->
         <h3>行前確認 <small>客人回填的內容，送出後已自動帶入下面的流程</small></h3>
         <div id="cfFlowBody"></div>
@@ -610,6 +600,17 @@ nav.tabs button{scroll-snap-align:start}
       <h3>memo 連結 <small>Google 文件，知道連結的人可檢視；資料改了再按一次，連結不變</small></h3>
       <div class="row"><button class="btn pri" id="btnMemoDocs">產生／更新派車單＋服務確認單連結</button><span class="hint" id="memoDocMsg" style="margin:0"></span></div>
       <div class="sum" id="memoLinks" style="margin-top:10px"></div>
+    </div>
+    <!-- 2026-10-19 開場訊息從「車隊與流程」移到這裡，跟派車單連結放一起 -->
+    <div class="card" style="margin-bottom:18px">
+      <h3>司機 LINE 群組 <small>建群後貼開場訊息；按「複製訊息」會自動產生／更新派車單連結；緊急聯絡人只出現在這裡</small></h3>
+      <div class="fields">
+        <label class="f wide">群組名稱<div class="row" style="flex-wrap:nowrap"><input id="lgName" readonly style="flex:1"><button class="btn sm pri" data-copyv="lgName">複製</button></div></label>
+      </div>
+      <div id="lgCard" style="margin-top:8px"></div>
+      <div class="row" style="justify-content:space-between;margin:10px 0 6px"><span class="hint" style="margin:0">開場訊息</span><button class="btn sm pri" data-copy="lgMsg">複製訊息</button></div>
+      <pre class="out" id="lgMsg"></pre>
+      <div class="pubBox" style="margin-top:10px"></div>
     </div>
     <div class="card" style="margin-bottom:18px" id="memoOkCard"><!-- 2026-10-17 傳服務確認單給客人核對＋選尾款付款方式 -->
       <h3>給客人核對 <small>客人核對內容、按確認，並選尾款付款方式（當天現金／最晚前一天匯款）</small></h3>
@@ -1542,8 +1543,16 @@ async function makeMemoDocs(){const btn=$('btnMemoDocs');if(!S.driveUrl||!S.driv
   btn.disabled=true;$('memoDocMsg').textContent='建立中，約需 10 秒…';
   try{const no=orderNo(o);const docs=['cust','drv'].map(k=>({key:k,name:k==='drv'?`訂單編號:${no}-司機端`:`禮車服務確認單｜訂單編號:${no}`,model:tplModel(o,k)}));
     const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'memo',orderNo:no,couple:coupleName(o),docs})});
-    const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');o.memoLinks=j.links;o.driveFolder=o.driveFolder||j.folder;save();renderMemoLinks();$('memoDocMsg').textContent='已更新';toast('memo 連結已更新')}
-  catch(e){$('memoDocMsg').textContent='失敗：'+e.message}finally{btn.disabled=false}}
+    const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');o.memoLinks=j.links;o.memoSig=memoSig(o);o.driveFolder=o.driveFolder||j.folder;save();renderMemoLinks();$('memoDocMsg').textContent='已更新';toast('memo 連結已更新');return true}
+  catch(e){$('memoDocMsg').textContent='失敗：'+e.message;return false}finally{btn.disabled=false}}
+/* 2026-10-19 派車單內容的指紋：車隊、流程改過就知道要更新文件 */
+function memoSig(x){try{const t=JSON.stringify([tplModel(x,'cust'),tplModel(x,'drv')]);let h=0;for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))|0;return String(h)}catch(_){return ''}}
+/* 2026-10-19 複製開場訊息：還沒有派車單連結、或車隊流程改過 → 先自動產生／更新，再複製（Safari 用 ClipboardItem 保留點擊權限） */
+async function lgMsgReady(){const L=o.memoLinks||{};if(!L.drv||o.memoSig!==memoSig(o)){toast(L.drv?'車隊或流程有改，更新派車單中…':'產生派車單連結中，約 10 秒…');const ok=await makeMemoDocs();if(!ok)throw new Error('派車單連結產生失敗')}const t=lgMsg(o);$('lgMsg').textContent=t;return t}
+function copyLgMsg(){const el=$('lgMsg'),after=()=>{if(o&&!o.pubAt){o.pubAt=Date.now();save();try{renderPub()}catch(e){}}toast('已複製開場訊息（含派車單連結），並標記「已在群組發佈派車單」')};
+  const need=!(o.memoLinks||{}).drv||o.memoSig!==memoSig(o);if(!need){copy(el.textContent,el);after();return}
+  if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){const p=lgMsgReady().then(t=>new Blob([t],{type:'text/plain'}));navigator.clipboard.write([new ClipboardItem({'text/plain':p})]).then(after,err=>{p.then(()=>toast('連結已產生，請再按一次「複製訊息」'),e=>toast(e.message))});return}
+  lgMsgReady().then(t=>{copy(t,el);after()},e=>toast(e.message))}
 function drvLinkText(du){return ['提供行程及注意事項：',du,'','感謝大家的支援，','雖然大部分的人都不是第一次出任務了，','但為了讓客人有一致的服務體驗，','請每一位詳細閱讀以下教案內容：',(S.lessonUrl||'（請到「價目設定」填司機教案網址）')+' (請勿外傳)','',
   '* 左上角點選三條線後有每一個職責需要留意的內容，請務必詳讀。','* 負責人可點選綠色按鈕複製發文模板。','* 內容會持續更新，請務必每次任務前都詳細閱讀。','* 詳讀完畢請在此回覆。'].join('\n')}
 function upText(x){const g={};(x.fleet||[]).forEach(f=>{const u=(f.up||'').trim();if(u&&u!==MNAME[f.m])(g[u]=g[u]||[]).push(f.role)});const k=Object.keys(g);if(!k.length)return '';
@@ -1931,7 +1940,7 @@ function lgName(x){const c=x.c,p=dparts(x.date);return [p?p.m+'/'+p.d:'',meetPla
 function lgMsg(x){const c=x.c,p=dparts(x.date),L=x.memoLinks||{},ld=lead(x)||{};
   const cars=x.fleet.map(f=>[`${f.role}｜${MNAME[f.m]} ${f.color||''}｜${f.plate||'—'}`,`　${f.driver||'（未派）'}${f.lead?'（負責人）':''} ${ph(f.phone)}`.trimEnd(),f.emg?`　緊急聯絡：${ph(f.emg)}`:''].filter(Boolean).join('\n'));
   return ['各位司機好，這是本次禮車任務群組',`訂單編號：${orderNo(x)}`,`日期：${x.date?fmtDate(x.date)+'（'+WD.zh[p.w]+'）':'未定'}`,`司機集合：${c.gather||addMin(c.start,-20)||'—'}　${c.meetL?c.meetL+'：':''}${c.meet||''}`.trimEnd(),`用車時間：${c.start||'--:--'} - ${c.end||'--:--'}`,
-    `派車單：${L.drv||'（請先到「派車單／服務確認單」產生連結）'}`,'','車隊',...cars,'',`負責人：${ld.driver||'—'}`,'請大家看完派車單回覆「收到」，當天出發前在群組報到，謝謝！'].join('\n')}
+    `派車單：${L.drv||'（按「複製訊息」會自動產生連結）'}`,'','車隊',...cars,'',`負責人：${ld.driver||'—'}`,'請大家看完派車單回覆「收到」，當天出發前在群組報到，謝謝！'].join('\n')}
 function ttMemo(x){if(x.partner)return [`同業單：${x.partner.co||''}`,`訂單編號：${orderNo(x)}`,'',x.partner.raw||''].join('\n');return [quoteText(x,'zh'),'',`訂單編號：${orderNo(x)}`,`合約：${x.driveFolder||'（合約尚未存到 Drive，存檔後會自動帶入連結）'}`].join('\n')}
 function ttPromptText(pick){const sv=o,L=[],now=new Date();
   const list=(pick||Object.values(DB.orders)).filter(x=>x.paid&&!x.sample&&!x.lost&&x.date&&daysTo(x)!==null&&daysTo(x)>=0).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:String(a.c.start||'').localeCompare(String(b.c.start||'')));
@@ -2415,7 +2424,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.tb){todoBatch(t.dataset.tb);return}
   if(t.dataset.tcall){e.preventDefault();const x=DB.orders[t.dataset.tcall];if(x){const now=Date.now();x.callAt=now;x.updated=now;if(o&&o.id===x.id){o.callAt=now;o.updated=now}store('nwcw_orders',DB);pushSync();try{renderAll()}catch(_){}renderTodo();toast('已記錄：'+orderNo(x)+' 負責人已聯絡新人')}return}
   if(t.dataset.topen){e.preventDefault();const x=DB.orders[t.dataset.topen];if(x){const k=(tasksOf(x)[0]||{}).k;o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();$('todoModal').hidden=true;if(k==='cfsend'||k==='cfwait'||k==='photo')$('coupleModal').hidden=false;else if(ST_TAB[k])showTab(ST_TAB[k])}return}
-  if(t.dataset.copy){copy($(t.dataset.copy).textContent,$(t.dataset.copy));if(t.dataset.copy==='lgMsg'&&o&&!o.pubAt){o.pubAt=Date.now();save();try{renderPub()}catch(e){}setTimeout(()=>toast('已複製，並標記「已在群組發佈派車單」'),400)}if(t.dataset.copy==='outQuote'){snapQuote();const qb=$('quoteAddBox');if(qb){qb.scrollIntoView({behavior:'smooth',block:'center'});qb.style.boxShadow='0 0 0 3px var(--accent,#a67c45)';setTimeout(()=>qb.style.boxShadow='',2500)}setTimeout(()=>toast('已複製報價，貼上後再按「複製補充」'),300)}if(t.dataset.copy==='outOrder'&&!o.orderedAt){o.orderedAt=Date.now();save();renderOrderSel()}if(t.dataset.copy==='outConfirm'&&!o.cfSentAt){o.cfSentAt=Date.now();save();renderOrderSel()}return}
+  if(t.dataset.copy==='lgMsg'){copyLgMsg();return}
+  if(t.dataset.copy){copy($(t.dataset.copy).textContent,$(t.dataset.copy));if(t.dataset.copy==='outQuote'){snapQuote();const qb=$('quoteAddBox');if(qb){qb.scrollIntoView({behavior:'smooth',block:'center'});qb.style.boxShadow='0 0 0 3px var(--accent,#a67c45)';setTimeout(()=>qb.style.boxShadow='',2500)}setTimeout(()=>toast('已複製報價，貼上後再按「複製補充」'),300)}if(t.dataset.copy==='outOrder'&&!o.orderedAt){o.orderedAt=Date.now();save();renderOrderSel()}if(t.dataset.copy==='outConfirm'&&!o.cfSentAt){o.cfSentAt=Date.now();save();renderOrderSel()}return}
   if(t.dataset.copytext){const v=t.dataset.copytext;if(navigator.clipboard)navigator.clipboard.writeText(v).then(()=>toast('已複製'),()=>toast('複製失敗，請點開啟後從網址列複製'));return}
   if(t.dataset.copyv){const el=$(t.dataset.copyv);if(navigator.clipboard)navigator.clipboard.writeText(el.value).then(()=>toast('已複製'),()=>{el.select();toast('已選取文字，請按複製')});else{el.select()}return}
   if(t.dataset.fdel){o.flow.splice(+t.dataset.fdel,1);save();renderFlow();renderAll();return}
