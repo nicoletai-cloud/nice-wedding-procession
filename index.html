@@ -128,8 +128,9 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .brand-grp[open] summary{margin-bottom:6px}
 .brand-grp .cars{margin-bottom:4px}
 .flow{display:grid;gap:6px}
-.flow .fr{display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,1fr) auto;gap:6px}
-@media (max-width:520px){.flow .fr{grid-template-columns:96px minmax(0,1fr) auto}.flow .fr .who{grid-column:2/3}.flow .fr .sg{grid-column:1/3}}
+.flow .fr{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1.3fr) 44px;gap:6px;align-items:center}.flow .fr .tt{display:flex;gap:4px;align-items:center}.flow .fr .tt input{width:140px}   /* 2026-10-20 只留一格時間（舊資料有「到」才顯示第二格） */   /* 2026-10-20 時間欄加寬，看得到完整時間 */
+.flow .fr input[type=time]{min-width:0}
+@media (max-width:620px){.flow .fr{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px}.flow .fr>:nth-child(1){grid-column:1/3}.flow .fr>:nth-child(4){grid-column:3/4;grid-row:1}.flow .fr .tt input{width:auto;flex:1}}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:0.933rem;opacity:0;transition:opacity .2s;pointer-events:none;z-index:200}
 .toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
@@ -1922,7 +1923,7 @@ function renderFleet(){try{renderFr()}catch(_){}$('fleetBody').innerHTML=o.fleet
   <td><input type="number" data-fl="${i}.seats" id="fl_s${i}" value="${esc(f.seats)}" style="width:62px"></td>
   <td><input type="number" data-fl="${i}.pay" id="fl_y${i}" value="${esc(f.pay)}" placeholder="${dp==null?'未設定':dp}" style="width:96px"></td>
   <td style="text-align:center"><input type="radio" name="leadR" data-fl="${i}.lead" id="fl_l${i}" ${f.lead?'checked':''} style="width:auto" aria-label="負責人"></td></tr>`}).join('')||'<tr><td colspan="11" class="hint">先在「報價」選車款。</td></tr>'}
-function renderFlow(){$('flowList').innerHTML=o.flow.map((f,i)=>`<div class="fr"><input type="time" data-fw="${i}.t" id="fw_t${i}" value="${esc(f.t)}" aria-label="時間"><input type="time" data-fw="${i}.e" id="fw_e${i}" value="${esc(f.e||'')}" aria-label="到（可留空）" title="到（可留空）">
+function renderFlow(){$('flowList').innerHTML=o.flow.map((f,i)=>`<div class="fr"><div class="tt"><input type="time" data-fw="${i}.t" id="fw_t${i}" value="${esc(f.t)}" aria-label="時間">${f.e?`<span>到</span><input type="time" data-fw="${i}.e" id="fw_e${i}" value="${esc(f.e)}" aria-label="到" title="到（清空就不顯示）">`:''}</div>
   <input class="who" data-fw="${i}.who" id="fw_w${i}" value="${esc(f.who)}" placeholder="全車隊" aria-label="車輛">
   <input class="sg" data-fw="${i}.seg" id="fw_s${i}" value="${esc(f.seg)}" placeholder="A - B" aria-label="路段">
   <button class="btn sm" data-fdel="${i}" aria-label="刪除這段">✕</button></div>`).join('')}
