@@ -276,6 +276,7 @@ nav.tabs button{scroll-snap-align:start}
       <div class="more-grid">
         <button class="btn" id="btnPtSettle">同業結算</button>
         <button class="btn" id="btnDecoCal">車頭彩檔期</button>
+        <button class="btn" id="btnAnn" title="選用車日期，禮車助手把公告發到當天的車趟群組（例：颱風出勤提醒）">群組公告</button>
         <a class="btn" id="nwcLessonLink" href="https://docs.google.com/document/d/1K6DnYwcA0rDnFsxS_l0Rqs-Nk7z1OwpHPUImlviNWJs/edit" target="_blank" rel="noopener" title="編輯司機教案（Google 文件）；改完司機在 LINE「禮車助手」看到的就是新版。司機用的連結：https://liff.line.me/2011949076-1fqUEtE2?p=lesson">司機教案</a>
       </div>
       <div class="more-g">切換系統</div>
@@ -754,6 +755,17 @@ nav.tabs button{scroll-snap-align:start}
     <div class="row" style="justify-content:flex-end;gap:8px;margin-top:14px"><button class="btn" id="btnCfPrevCancel">取消</button><button class="btn pri" id="btnCfPrevSend">立即傳送</button></div>
     <div class="row" style="justify-content:flex-end;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;border-top:1px dashed rgba(0,0,0,.12);padding-top:10px"><span class="hint" style="margin:0">或預約時間：</span><input type="datetime-local" id="cfPrevAt" style="min-width:230px;max-width:260px"><button class="btn" id="btnCfPrevSched">⏰ 預約傳送</button></div>
     <div class="hint" style="margin:6px 0 0;text-align:right">預約後電腦可以關掉，時間到由機器人傳（最多晚 5 分鐘）。傳之前客人若已完成或已傳過會自動跳過。</div>
+  </div>
+</div>
+<!-- 2026-10-19 群組公告：選日期 → 勾群組 → 禮車助手發公告（按兩次確認才發，發出去收不回） -->
+<div id="annModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
+  <div class="ibBox" style="max-width:760px">
+    <div class="row" style="justify-content:space-between;flex-wrap:nowrap;gap:8px;margin-bottom:6px"><h3 style="margin:0;white-space:nowrap">群組公告</h3><button class="btn sm" id="btnAnnClose">關閉</button></div>
+    <p class="hint" style="margin:0 0 10px">禮車助手會用自己的名義，把公告發到勾選的車趟群組。發出去就收不回，請先確認文字。</p>
+    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px"><input type="date" id="annDate" style="width:auto"><span id="annDays" class="row" style="gap:6px;flex-wrap:wrap"></span></div>
+    <textarea id="annText" rows="8" placeholder="公告內容，例如：&#10;【10/25 任務出勤提醒】&#10;各位夥伴好，…" style="width:100%;margin-bottom:10px"></textarea>
+    <div id="annList" style="margin-bottom:10px"></div>
+    <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><button class="btn pri" id="btnAnnSend" disabled>發送</button><span class="hint" id="annMsg" style="margin:0"></span></div>
   </div>
 </div>
 <div id="lgModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
@@ -2280,6 +2292,30 @@ document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.c
   if(b.id==='btnCfPrevSend'){const L=cfPrevList.filter(x=>{const c=x.c||{};return !isPrivCh(c.channel)&&c.chatName&&cfCanSend(x)});if(!L.length)return;b.disabled=true;b.textContent='傳送中…';await cfPush(L);L.forEach(x=>cfSel.delete(x.id));$('cfPrevModal').hidden=true;if(!$('cfModal').hidden)renderCf();return}
 });
 document.addEventListener('change',e=>{const t=e.target;if(!t)return;if(t.id==='cfDate'){cfF='all';cfSel.clear();renderCf();return}if(t.dataset&&t.dataset.cfsel){if(t.checked){if(cfSel.size>=20){t.checked=false;toast('一次最多 20 筆');return}cfSel.add(t.dataset.cfsel)}else cfSel.delete(t.dataset.cfsel);renderCf()}});
+/* ===== 2026-10-19 群組公告 ===== */
+const ANNST={},ANNSENT={},annSel=new Set();let annAsked='';
+function annDays(){const t=lgToday(),m={};Object.values(DB.orders).forEach(x=>{if(lgOk(x)&&x.date>=t)m[x.date]=(m[x.date]||0)+1});return m}
+function openAnn(d){const m=annDays(),ds=Object.keys(m).sort();$('annDate').value=d||ds[0]||lgToday();try{if(!$('annText').value)$('annText').value=localStorage.getItem('nwcw_ann_draft')||''}catch(_){}$('annModal').hidden=false;annSel.clear();renderAnn()}
+function annOrders(){const d=$('annDate').value;return Object.values(DB.orders).filter(x=>lgOk(x)&&x.date===d).sort((a,b)=>String((a.c&&a.c.start)||'').localeCompare(String((b.c&&b.c.start)||'')))}
+function renderAnn(){const m=annDays(),d=$('annDate').value,ds=Object.keys(m).sort().slice(0,8);
+  $('annDays').innerHTML=ds.map(k=>{const p=dparts(k);return `<button class="btn sm${k===d?' pri':''}" data-annday="${k}">${p?p.m+'/'+p.d:k}（${m[k]}）</button>`}).join('');
+  const A=annOrders();
+  if(A.length&&annAsked!==d&&A.some(x=>!ANNST[x.id])){annAsked=d;lgCall({op:'status',trips:A.map(x=>({id:x.id,keys:lgKeys(x)}))}).then(j=>{Object.keys(j.st||{}).forEach(id=>{ANNST[id]=j.st[id];if(j.st[id].ok&&!ANNSENT[id])annSel.add(id)});renderAnn()}).catch(err=>{$('annMsg').textContent='查詢群組失敗：'+err.message;annAsked=''})}
+  $('annList').innerHTML=A.length?A.map(x=>{const g=ANNST[x.id],c=x.c||{},who=x.partner?'同業 '+(x.partner.co||''):([c.groom,c.bride].filter(Boolean).join('＆')||c.chatName||''),sent=ANNSENT[x.id];
+    const st=sent?'<span style="color:#4E8A4E">已發送 '+sent+'</span>':!g?'查詢群組中…':g.ok?esc(g.name):'<span style="color:#C0453A">找不到群組（還沒建群組，或禮車助手不在群組裡）</span>';
+    return `<label class="todo-row" style="align-items:center;gap:10px${g&&!g.ok?';opacity:.6':''}"><input type="checkbox" data-annsel="${esc(x.id)}" style="width:auto"${annSel.has(x.id)?' checked':''}${g&&g.ok?'':' disabled'}><div class="m" style="flex:1;min-width:0"><div><b>${esc(lgName(x))}</b></div><div class="sub">${who?esc(who)+'｜':''}${st}</div></div></label>`}).join(''):'<p class="hint">這天沒有車趟。</p>';
+  annBtn()}
+function annBtn(){const b=$('btnAnnSend'),n=annSel.size,t=$('annText').value.trim();b.disabled=!n||!t;if(b.dataset.arm!=='1')b.textContent=n?'發送到 '+n+' 個群組':'發送'}
+async function annSend(){const t=$('annText').value.trim(),A=annOrders().filter(x=>annSel.has(x.id));if(!t||!A.length)return;const b=$('btnAnnSend');b.disabled=true;let ok=0;const bad=[];
+  for(const x of A){$('annMsg').textContent='發送中 '+(ok+bad.length+1)+'/'+A.length+'…';try{await lgCall({op:'notice',keys:lgKeys(x),text:t});ok++;ANNSENT[x.id]=new Date().toTimeString().slice(0,5);annSel.delete(x.id)}catch(err){bad.push(lgName(x)+'：'+err.message)}}
+  $('annMsg').textContent='已發送 '+ok+' 個群組'+(bad.length?'；失敗：'+bad.join('、'):'');b.dataset.arm='';renderAnn();toast('群組公告已發送 '+ok+' 個群組')}
+document.addEventListener('click',e=>{const b=e.target&&e.target.closest?e.target.closest('button'):null;if(!b)return;
+  if(b.id==='btnAnn'){openAnn();return}
+  if(b.id==='btnAnnClose'){$('annModal').hidden=true;return}
+  if(b.dataset.annday){$('annDate').value=b.dataset.annday;annSel.clear();renderAnn();return}
+  if(b.id==='btnAnnSend'){if(b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='確定發送到 '+annSel.size+' 個群組？再按一次';clearTimeout(b._t);b._t=setTimeout(()=>{b.dataset.arm='';annBtn()},6000);return}clearTimeout(b._t);annSend();return}});
+document.addEventListener('change',e=>{const t=e.target;if(!t)return;if(t.id==='annDate'){annSel.clear();renderAnn();return}if(t.dataset&&t.dataset.annsel){if(t.checked)annSel.add(t.dataset.annsel);else annSel.delete(t.dataset.annsel);const b=$('btnAnnSend');b.dataset.arm='';annBtn()}});
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='annText'){try{localStorage.setItem('nwcw_ann_draft',e.target.value)}catch(_){}const b=$('btnAnnSend');b.dataset.arm='';annBtn()}});
 function lgOk(x){return x&&!x.sample&&!x.lost&&!!x.date&&!!(x.paid||x.partner)}
 function lgToday(){const t=new Date();return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0')}
 function lgPending(){const t=lgToday(),m={};Object.values(DB.orders).forEach(x=>{if(lgOk(x)&&x.date>=t&&!x.lgAt)m[x.date]=(m[x.date]||0)+1});return m}
