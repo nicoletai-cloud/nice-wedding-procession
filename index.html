@@ -2516,11 +2516,16 @@ function drOn(k){return !!(DR[k].f||DR[k].t)}
 function drLabel(k){const r=DR[k],f=s=>s?s.slice(5).replace('-','/'):'';if(!drOn(k))return'';return r.f&&r.t&&r.f===r.t?f(r.f):(f(r.f)||'…')+'–'+(f(r.t)||'…')}
 function drRender(k){const el=document.querySelector(`.dr-bar[data-dr="${k}"]`);if(!el)return;const r=DR[k];
   const P=[['today','今天'],['tmr','明天'],['wk','本週'],['nwk','下週'],['14','未來14天'],['mo','本月'],['nmo','下個月']];
-  el.innerHTML=`<span class="lbl">用車日</span><input type="date" data-drf="${k}" value="${r.f}"> – <input type="date" data-drt="${k}" value="${r.t}"><select data-drsel="${k}" style="width:auto;flex:0 0 auto"><option value="">快速選擇</option>${P.map(([p,l])=>`<option value="${p}">${l}</option>`).join('')}${drOn(k)?'<option value="clear">清除日期</option>':''}</select>`}   /* 2026-10-20 快捷改成下拉選單，不佔版面 */
+  /* 2026-10-20 Nicole：預設列出近一個月行事曆上有禮車任務的日期，沒有合適的才用區間 */
+  const t0=new Date();t0.setHours(0,0,0,0);const t1=new Date(t0);t1.setDate(t1.getDate()+30);const a0=drYmd(t0),a1=drYmd(t1),cnt={};
+  Object.values(DB.orders).forEach(x=>{if(!x||x.sample||!x.date||x.date<a0||x.date>a1)return;try{if(stageOf(x)==='lost')return}catch(_){}cnt[x.date]=(cnt[x.date]||0)+1});
+  const days=Object.keys(cnt).sort(),one=r.f&&r.f===r.t?r.f:'',WD='日一二三四五六';
+  const dOpt=days.map(d=>`<option value="d:${d}"${one===d?' selected':''}>${d.slice(5).replace('-','/')}（${WD[new Date(d+'T00:00').getDay()]}）${cnt[d]} 單</option>`).join('');
+  el.innerHTML=`<span class="lbl">用車日</span><select data-drsel="${k}" style="width:auto;flex:0 0 auto;max-width:100%"><option value="">${days.length?'選有禮車的日期':'近一個月沒有禮車'}</option>${days.length?`<optgroup label="近一個月有禮車">${dOpt}</optgroup>`:''}<optgroup label="區間">${P.map(([p,l])=>`<option value="${p}">${l}</option>`).join('')}</optgroup>${drOn(k)?'<option value="clear">清除日期</option>':''}</select><span style="font-size:.85rem;color:var(--muted)">或自訂區間</span><input type="date" data-drf="${k}" value="${r.f}"> – <input type="date" data-drt="${k}" value="${r.t}">`}   /* 2026-10-20 快捷改成下拉選單，不佔版面 */
 function drChanged(k){drRender(k);if(k==='todo'){todoSel.clear();renderTodo()}else if(window.kwDateChanged)window.kwDateChanged()}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-drp]');if(!b)return;e.preventDefault();const[k,p]=b.dataset.drp.split(':');
   if(p==='clear'){DR[k].f='';DR[k].t=''}else{const[a,c]=drPreset(p);DR[k].f=a;DR[k].t=c}drChanged(k)});
-document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||!t.dataset.drsel||!t.value)return;const k=t.dataset.drsel,p=t.value;if(p==='clear'){DR[k].f='';DR[k].t=''}else{const[a,c]=drPreset(p);DR[k].f=a;DR[k].t=c}drChanged(k)});
+document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||!t.dataset.drsel||!t.value)return;const k=t.dataset.drsel,p=t.value;if(p==='clear'){DR[k].f='';DR[k].t=''}else if(p.indexOf('d:')===0){DR[k].f=DR[k].t=p.slice(2)}else{const[a,c]=drPreset(p);DR[k].f=a;DR[k].t=c}drChanged(k)});
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset)return;if(t.dataset.drf){const k=t.dataset.drf;DR[k].f=t.value;if(DR[k].t&&t.value&&DR[k].t<t.value)DR[k].t=t.value;drChanged(k)}else if(t.dataset.drt){const k=t.dataset.drt;DR[k].t=t.value;if(DR[k].f&&t.value&&DR[k].f>t.value)DR[k].f=t.value;drChanged(k)}});
 function todoRows(){const q=normNo($('todoQ').value),late=$('todoLate').checked;
   return Object.values(DB.orders).filter(x=>!x.sample).map(x=>({x,T:tasksOf(x),st:stageOf(x)})).filter(r=>{
