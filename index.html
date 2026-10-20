@@ -2164,6 +2164,7 @@ function renderFlowPts(){const el=$('flowPts');if(!el||!o)return;if(el.contains(
     ${custom?`<input data-b="c.${fd}T" value="${esc(PT_TYPES.includes(ty)?'':ty)}" placeholder="地點名稱（例：祭祖地點）" style="width:150px;flex:none">`:''}
     <input data-b="c.${fd}" value="${esc(c[fd]||'')}" placeholder="地址" style="flex:2;min-width:220px">
     <input data-b="c.${fd}L" value="${esc(c[fd+'L']||'')}" placeholder="說明（例：男方家、江山萬里社區）" style="flex:1;min-width:150px">
+    ${i>0?`<button class="btn sm" type="button" data-ptmv="${k}:-1" aria-label="地點 ${k} 往上移" title="往上移" style="flex:none">▲</button>`:''}${i<N?`<button class="btn sm" type="button" data-ptmv="${k}:1" aria-label="地點 ${k} 往下移" title="往下移" style="flex:none">▼</button>`:''}
     ${N>0?`<button class="btn sm" type="button" data-ptdel="${k}" aria-label="刪除地點 ${k}" style="flex:none">✕</button>`:''}</div>
     <div class="row" style="gap:6px;align-items:center;margin:4px 0 0 28px"><input data-b="c.${fd}Map" value="${esc(c[fd+'Map']||'')}" placeholder="Google 地圖連結（選填；貼上後確認單地址可點開導航）" inputmode="url" style="flex:1;min-width:0;font-size:.9em">${String(c[fd+'Map']||'').trim()?`<a class="btn sm" href="${esc(c[fd+'Map'])}" target="_blank" rel="noopener" style="flex:none">開啟</a>`:''}</div>${String(cu[k]||'').trim()?`<div class="hint" style="margin:2px 0 0 28px">客人填：${esc(cu[k])}</div>`:''}</div>`}).join('')+(N<25?`<button class="btn sm" type="button" data-ptadd="1" style="margin-top:8px">＋ 新增地點（${PT_L[N+1]}）</button>`:'');
   const used=new Set(pbTokens(o.path)),nx=N<25&&PT_L.slice(0,N+1).split('').every(k=>used.has(k))?PT_L[N+1]:'';   /* 2026-10-20 A–C 都選過就多一個 D 可以選（選了會自動多出 D 地點） */
@@ -2172,6 +2173,13 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!t.dataset.pttype||!o)return;const k=t.dataset.pttype,fd=ptField(k);
   if(t.value==='__new'){PTNEW[o.id+k]=1;o.c[fd+'T']='';save();t.blur();renderFlowPts();try{const i=$('flowPts').querySelector(`[data-b="c.${fd}T"]`);i&&i.focus()}catch(_){}return}
   delete PTNEW[o.id+k];o.c[fd+'T']=t.value===ptDefType(k)?'':t.value;o.locEditAt=Date.now();save();t.blur();renderFlowPts()});
+/* 2026-10-20 Nicole：地點可以上下移動；移動後字母照新順序重排（例：D 移到 A 下面 → D 變 B、原本 B 變 C…），流程裡的字母跟著改 */
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-ptmv]');if(!b||!o)return;const[k,dd]=b.dataset.ptmv.split(':'),i=PT_L.indexOf(k),j=i+(+dd);if(j<0||j>25)return;const c=o.c,k2=PT_L[j];
+  const SUF=['','L','T','Map','S'],fa=ptField(k),fb=ptField(k2),tyA=String(c[fa+'T']||'').trim()||ptDefType(k),tyB=String(c[fb+'T']||'').trim()||ptDefType(k2);
+  SUF.forEach(x=>{const t=c[fa+x]||'';c[fa+x]=c[fb+x]||'';c[fb+x]=t});
+  c[fa+'T']=tyB===ptDefType(k)?'':tyB;c[fb+'T']=tyA===ptDefType(k2)?'':tyA;   /* 地點類型跟著地點走 */
+  Object.keys(PTNEW).forEach(z=>{if(z.indexOf(o.id)===0)delete PTNEW[z]});PTN[o.id]=Math.max(PTN[o.id]||0,j,i);
+  const ks=pbTokens(o.path).map(z=>z===k?k2:z===k2?k:z);b.blur();pbApply(ks);renderFlowPts();toast(`地點 ${k} 移到 ${k2}`)});
 /* 刪除地點：後面的地點往前補（字母照順序），流程裡的字母跟著改 */
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-ptdel]');if(!b||!o)return;const k=b.dataset.ptdel,di=PT_L.indexOf(k),c=o.c;
   if(String(c[ptField(k)]||'').trim()&&!confirm(`刪除地點 ${k}（${c[ptField(k)]}）？後面的地點會往前補。`))return;
