@@ -40,6 +40,12 @@ header.top .orderbar .kw-search{grid-column:auto!important;min-width:0;position:
 .cfSide th{white-space:nowrap!important;width:auto!important;min-width:7.5em;vertical-align:top}
 .cfSide table{table-layout:auto;width:100%}
 @media (min-width:1000px){.flowGrid{grid-template-columns:minmax(380px,1fr) minmax(0,1fr)}.cfSide{position:sticky;top:70px;align-self:start}}
+.ft{width:100%;border-collapse:collapse;font-size:14px;line-height:1.45;margin:6px 0;white-space:normal;word-break:break-word}
+.ft th,.ft td{border:1px solid var(--line,#e4dbce);padding:6px 6px;text-align:left;vertical-align:top}
+.ft th{background:var(--soft,#f3ece2);font-weight:600;white-space:nowrap;font-size:13px}
+.ft td.nw{white-space:nowrap;font-weight:600}
+.ft a.tel,.ft a[href^="tel"]{white-space:nowrap}
+.ft .em{color:var(--muted,#7a7066);font-size:12.5px;margin-top:3px}
 </style>
 <title>好好禮車婚禮派車</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23B8323A'/%3E%3Ctext x='32' y='48' font-size='46' text-anchor='middle' fill='%23F6D9A8' font-family='PingFang TC,Noto Sans TC,sans-serif'%3E%E5%9B%8D%3C/text%3E%3C/svg%3E">
@@ -1704,7 +1710,7 @@ async function drvPush(x){if(!x||isPt(x)||!drvIsWeb(x)||!S.driveUrl||!S.driveKey
   await gasCall({action:'memo',orderNo:orderNo(x),couple:coupleName(x),docs:[],drvText:t});x.drvSentSig=h;x.updated=Date.now();DB.orders[x.id]=x;store('nwcw_orders',DB);pushSync();try{if(o&&o.id===x.id)renderMemo()}catch(_){}return true}
 function drvView(x,m){const text=memoText(m,false),c=x.c||{},p=dparts(x.date),web=drvIsWeb(x),fresh=web&&hs32(drvMemoText(x))===x.drvSentSig;
   const tel=v=>v.replace(/(^|[^\d\/=])(09\d{8})(?!\d)/g,(_,a,n)=>`${a}<a href="tel:${n}" style="color:inherit;text-decoration:underline dotted">${n}</a>`);
-  const body=text.split('\n').map(l=>{const mm=l.match(/^([A-Z][.．] [^：\n]{1,12}：)(.+)$/);if(!mm||/https?:/.test(mm[2]))return esc(l);const ad=mm[2].replace(/[（(][^）)]*[）)]\s*$/,'').trim()||mm[2];return esc(mm[1])+`<a href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(ad)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">${esc(mm[2])}</a>`}).join('\n')
+  const body=fleetTbl(text.split('\n').map(l=>{const mm=l.match(/^([A-Z][.．] [^：\n]{1,12}：)(.+)$/);if(!mm||/https?:/.test(mm[2]))return esc(l);const ad=mm[2].replace(/[（(][^）)]*[）)]\s*$/,'').trim()||mm[2];return esc(mm[1])+`<a href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(ad)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">${esc(mm[2])}</a>`}).join('\n'))
     .replace(/(參考資料|Reference|参考資料) ?(\d+) (https:\/\/\S+?)(?=[\s、，,]|$)/g,(_,w,n,u)=>`<a href="${u}" target="_blank" rel="noopener" style="color:#8a6d43">${w} ${n}</a>`).replace(/(^|[\s：:])(https:\/\/[^\s<、，]+)/g,(_,a,u)=>`${a}<a href="${u}" target="_blank" rel="noopener" style="color:#8a6d43;word-break:break-all">${u}</a>`);
   const head=`訂單編號：${esc(orderNo(x))}${x.date?'｜用車日期：'+(p?p.y+'/'+p.m+'/'+p.d:x.date):''}${[c.groom,c.bride].filter(Boolean).length?'<br>'+esc([c.groom,c.bride].filter(Boolean).join(' & ')):''}`;
   return `<div class="hint" style="margin:0 0 10px">${web?(fresh?`以下是司機打開派車單網址看到的內容　<a href="${esc(x.memoLinks.drv)}" target="_blank" rel="noopener">開啟派車單網頁</a>`:`<b style="color:#c0392b">內容有改過，派車單網頁更新中…（網址不變，約幾秒後司機就會看到新版）</b>　<a href="${esc(x.memoLinks.drv)}" target="_blank" rel="noopener">開啟派車單網頁</a>`):'還沒產生派車單網址：按「複製訊息」或「更新連結」後產生；以下是司機打開後會看到的內容'}</div>
@@ -2158,8 +2164,30 @@ function cvPre(t){let hit=false;const L=String(t||'').split('\n').map(l=>{const 
     const bm=l.match(/^(\s*(?:禮車負責人|Coordinator|責任者)\s*[：:]\s*)(.*)$/);if(bm){const nm=bm[2].replace(/[\s　]*\+?\d[\d\-\s]{7,}\d/g,'').trim(),cj=/^[\u4e00-\u9fff]{2,4}$/.test(nm);return bm[1]+(cj?nm.charAt(0)+'○'.repeat(nm.length-1):nm.split(/\s+/)[0])+'（確認後提供全名與聯絡電話）'}return l});
   if(hit){const pA=L.findIndex(l=>/^[A-Z][.．]\s/.test(l)),i=L.reduce((a,l,n)=>(l.indexOf('｜')>=0&&(pA<0||n<pA))?n:a,-1);if(i>=0)L.splice(i+1,0,'車牌號碼會在您確認後的「正式用車確認單」提供')}return L.join('\n')}
 function cvShare(t){const L=String(t||'').split('\n'),i=L.findIndex(l=>/^(款項|Payment|お支払い)$/.test(l.trim()));return(i>=0?L.slice(0,i):L).join('\n').replace(/\s+$/,'')}
+/* 2026-10-20 Nicole：車隊那幾行（車序｜車號｜駕駛｜車款｜電話｜緊急聯絡人）改用表格顯示；導航定位長網址改成短連結 */
+function fleetTbl(h){
+  var L = String(h || '').split('\n'), out = [], buf = [];
+  var flush = function(){
+    if (!buf.length) return;
+    var rows = buf.map(function(l){ return l.split('｜').map(function(s){ return s.trim(); }); }), n = Math.max.apply(null, rows.map(function(r){ return r.length; }));
+    var hd = n <= 2 ? ['車序', '車款'] : n <= 5 ? ['車序', '司機', '車號／車款'] : ['車序', '司機', '車號／車款', '緊急聯絡'];
+    out.push('<table class="ft"><thead><tr>' + hd.map(function(x){ return '<th>' + x + '</th>'; }).join('') + '</tr></thead><tbody>' + rows.map(function(r){
+      if (n <= 2) return '<tr><td class="nw">' + r[0] + '</td><td>' + (r[1] || '') + '</td></tr>';
+      var drv = (r[2] || '') + (r[4] ? '<br>' + r[4] : ''), car = (r[1] || '') + (r[3] ? '<div class="em">' + r[3] + '</div>' : '');
+      if (n <= 5) return '<tr><td class="nw">' + r[0] + '</td><td>' + drv + '</td><td>' + car + '</td></tr>';
+      var em = r.slice(5).join(' '), er = em.replace(/^緊急聯絡人?/, '').trim().match(/^[（(]([^）)]*)[）)]\s*[:：]\s*(.+)$/);
+      return '<tr><td class="nw">' + r[0] + '</td><td>' + drv + '</td><td>' + car + '</td><td>' + (er ? '<div class="em">' + er[1] + '</div>' + er[2] : em) + '</td></tr>';
+    }).join('') + '</tbody></table>');
+    buf = [];
+  };
+  L.forEach(function(l){ if (/^[^｜\s<>]{1,8}車\s*｜/.test(l) && l.split('｜').length >= 2) buf.push(l); else { flush(); out.push(l); } });
+  flush();
+  return out.join('\n').replace(/\n?(<table class="ft">[\s\S]*?<\/table>)\n?/g, '$1')
+    .replace(/導航定位：(https:\/\/[^\s<]+)/g, '導航定位：<a href="$1" target="_blank" rel="noopener" style="color:#8a6d43;text-decoration:underline">開啟 Google 地圖</a>');
+}
+
 function custView(x,m){const text=memoText(m,false),ok=!!x.memoOkAt&&!(+x.memoFixAt>+x.memoOkAt)&&!(+x.memoSentAt>+x.memoOkAt),c=x.c||{},p=dparts(x.date),tm=t=>{const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`};
-  const body=esc(ok?cvShare(text):cvPre(text)).replace(/\[([^\]\n]+)\]\((https:\/\/[^)\s]+)\)/g,(_,t,u)=>`<a href="${u}" target="_blank" rel="noopener" style="color:#8a6d43;text-decoration:underline">${t}</a>`).replace(/(參考資料|Reference|参考資料) ?(\d+) (https:\/\/\S+?)(?=[\s、，,]|$)/g,(_,w,n,u)=>`<a href="${u}" target="_blank" rel="noopener" style="color:#8a6d43">${w} ${n}</a>`).replace(/(https:\/\/[^\s<、，]+)/g,(u,_,i,all)=>all.slice(Math.max(0,i-6),i).indexOf('href=')>=0?u:`<a href="${u}" target="_blank" rel="noopener" style="color:#8a6d43;word-break:break-all">${u}</a>`);
+  const body=fleetTbl(esc(ok?cvShare(text):cvPre(text))).replace(/\[([^\]\n]+)\]\((https:\/\/[^)\s]+)\)/g,(_,t,u)=>`<a href="${u}" target="_blank" rel="noopener" style="color:#8a6d43;text-decoration:underline">${t}</a>`).replace(/(參考資料|Reference|参考資料) ?(\d+) (https:\/\/\S+?)(?=[\s、，,]|$)/g,(_,w,n,u)=>`<a href="${u}" target="_blank" rel="noopener" style="color:#8a6d43">${w} ${n}</a>`).replace(/(https:\/\/[^\s<、，]+)/g,(u,_,i,all)=>all.slice(Math.max(0,i-6),i).indexOf('href=')>=0?u:`<a href="${u}" target="_blank" rel="noopener" style="color:#8a6d43;word-break:break-all">${u}</a>`);
   const head=`訂單編號：${esc(orderNo(x))}${x.date?'｜用車日期：'+(p?p.y+'/'+p.m+'/'+p.d:x.date):''}${[c.groom,c.bride].filter(Boolean).length?'<br>'+esc([c.groom,c.bride].filter(Boolean).join(' & ')):''}`;
   const shareUrl='https://love.niceweddingcar.com/wed-memo?no='+encodeURIComponent(orderNo(x))+'&s='+cfKey('share:'+x.id);
   return `<div class="hint" style="margin:0 0 10px">${ok?`客人已確認（${tm(x.memoOkAt)}）：以下是客人收到的「正式用車確認單」，可轉發給主持人、家人（不含款項）　<a href="${shareUrl}" target="_blank" rel="noopener">開啟客人頁面</a>`:x.memoSentAt?(()=>{const old=String(x.memoSentText||'');if(!old)return `客人還沒確認：${tm(x.memoSentAt)} 已傳出，以下是目前系統的最新內容（傳出後如果有改過，客人手上的是舊版本，要更新請重傳確認單）`;const ol=new Set(old.split('\n').map(l=>l.trim())),df=text.split('\n').map(l=>l.trim()).filter(l=>l&&!ol.has(l));return df.length?`<b style="color:#c0392b">⚠️ ${tm(x.memoSentAt)} 傳出後內容有改過，客人看到的還是舊版本；要讓客人看到新內容，請重傳確認單。</b><br>改過的地方：${esc(df.slice(0,4).join('／'))}${df.length>4?' 等':''}<br>以下是目前最新內容`:`客人還沒確認：以下是客人目前看到的待核對內容（${tm(x.memoSentAt)} 傳出）`})():'還沒傳給客人：以下是客人收到後會看到的待核對內容'}</div>
