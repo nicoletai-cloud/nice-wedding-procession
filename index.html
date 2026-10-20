@@ -415,8 +415,7 @@ nav.tabs button{scroll-snap-align:start}
             <label class="f">指定車頭彩費用<input type="number" id="q_deco" data-b="deco" data-num min="0" placeholder="800–1000"></label>
             <label class="f">指定車頭彩款式<select id="q_decoStyle" data-b="decoStyle"></select></label>
             <div class="f wide" id="decoHint" style="font-size:0.867rem;line-height:1.6"></div>
-            <label class="f">加項名稱<input id="q_x0n" data-b="extras.0.n" placeholder="例：指定路線"></label>
-            <label class="f">加項金額<input type="number" id="q_x0a" data-b="extras.0.a" data-num></label>
+            <div class="f wide xList" data-xw="1"></div>
             <label class="f">折扣名稱<input id="q_dn" data-b="discName" placeholder="例：早鳥"></label>
             <label class="f">折扣金額<input type="number" id="q_da" data-b="discAmt" data-num min="0"></label>
             <label class="f">司機禮／紅包<select id="q_red" data-b="red" data-bool><option value="1">含 $600/台</option><option value="0">不含</option></select></label>
@@ -551,6 +550,7 @@ nav.tabs button{scroll-snap-align:start}
 <div class="card lgTop" style="margin-bottom:14px;padding:10px 14px"><div class="row" style="gap:8px;align-items:center;flex-wrap:nowrap"><b style="white-space:nowrap">群組名稱</b><input id="lgName5" readonly style="flex:1;min-width:0"><button class="btn sm pri" data-copyv="lgName5">複製</button></div></div>   <!-- 2026-10-20 車隊與流程、派車單頁上方都能複製群組名稱 -->
     <div class="stack">
       <div class="card" id="balCard"><div class="row" style="gap:10px;align-items:center;flex-wrap:wrap"><b>尾款收款方式</b><select class="balMode" style="width:auto"><option value="">司機現場收尾款＋紅包</option><option value="all">客人已匯尾款＋紅包（司機只收加時）</option><option value="nored">客人已匯尾款，紅包現場給司機</option></select><span class="hint" style="margin:0" id="balHint"></span></div></div>
+      <div class="card" id="xCard5"><h3>加項 <small>客人傳過行前確認後才加的款項，填在這裡會列在尾款（尾款 $X+項目 $Y=$Z）</small></h3><div class="xList" data-xw="5"></div></div>
       <div class="card" id="ptCard" hidden style="border-color:#A77D4C"><h3>同業單 <small>只要選司機；不用出合約、memo、派車單</small></h3><datalist id="ptCoList"></datalist><div id="ptCardBody"></div></div>
       <div class="card">
         <h3>車隊 <small>車序、車號、司機</small></h3>
@@ -1244,19 +1244,27 @@ function calc(x){
   // driver pay
   const fl=fleetOf(x);let dsum=0,dok=fl.length>0;
   fl.forEach(f=>{const v=f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x);if(v==null)dok=false;else dsum+=v});
-  let deposit;
+  let deposit;const dTot=total-sumX(x,lateX(x));   // 2026-10-20 出發前新增的款項不算進訂金，全部列在尾款
   if(x.depOverride!==''&&x.depOverride!=null)deposit=num(x.depOverride);
   else if(isMonthly(x))deposit=0;
-  else if(S.depMode==='driver'&&dok&&dsum<total)deposit=total-dsum;
-  else deposit=ceil100(total*num(S.depPct)/100);
+  else if(S.depMode==='driver'&&dok&&dsum<dTot)deposit=dTot-dsum;
+  else deposit=ceil100(dTot*num(S.depPct)/100);
   const planFee=base+ot-disc;const refAmt=Math.round(planFee*refRate(x)/100);
   const mon=isMonthly(x);const onsite=red+cane;const bill=total-onsite;
   return{colorAdd,planFee,refAmt,mon,onsite,bill,vb,n,b,eh,miss,base,listBase,ot,zone,cane,deco,extras,red,disc,tax,total,deposit,balance:mon?onsite:total-deposit,rent:total-red,dsum,dok}}
 
 /* 2026-10-20 尾款有加時：寫成「$11,000+加時 1HR $1,200+$800*2=$13,800」 */
-function balExpr(x,r){const cfOt=!!x.cfOtH||((x.cfLast&&x.cfLast.warn)||[]).some(w=>/超過合約/.test(w));   /* 2026-10-20 只有客人行前確認的用車時間超過合約時才列算式 */
-  if(!cfOt||!(r.ot>0)||r.mon||r.balance-r.ot<=0)return money(r.balance);const parts=MODELS.filter(m=>num(x.cars[m])>0&&num(S.ot[m])>0).map(m=>money(num(S.ot[m]))+(num(x.cars[m])>1?'*'+num(x.cars[m]):''));
-  const per=parts.join('+'),ex=r.eh>1?`(${per})*${r.eh}`:per;return `${money(r.balance-r.ot)}+加時 ${r.eh}HR ${ex}=${money(r.balance)}`}
+/* 2026-10-20 Nicole：出發前新增的款項（訂金後才加）列在尾款：「尾款 $11,000+指定路線 $1,000=$12,000」；客人匯完尾款後才加的 → 用車當天交給現場負責人 */
+function xAmt(x,e){const a=num(e.a);return x.invoice?Math.round(a*1.05):a}
+function lateX(x){return (x.extras||[]).filter(e=>e&&e.late&&num(e.a))}
+function postX(x){if(!x.balPaid)return[];return lateX(x).filter(e=>!x.balPaidTs||+e.at>+x.balPaidTs)}
+function sumX(x,L){return L.reduce((a,e)=>a+xAmt(x,e),0)}
+function xTxt(x,L){return L.map(e=>`${String(e.n||'加項').trim()} ${money(xAmt(x,e))}`).join('、')}
+function balExpr(x,r){const cfOt=!!x.cfOtH||((x.cfLast&&x.cfLast.warn)||[]).some(w=>/超過合約/.test(w));   /* 2026-10-20 只有客人行前確認的用車時間超過合約時才列加時算式 */
+  if(r.mon)return money(r.balance);const parts=[];let sub=0;
+  if(cfOt&&r.ot>0){const ps=MODELS.filter(m=>num(x.cars[m])>0&&num(S.ot[m])>0).map(m=>money(num(S.ot[m]))+(num(x.cars[m])>1?'*'+num(x.cars[m]):''));const per=ps.join('+');parts.push(`加時 ${r.eh}HR ${r.eh>1?`(${per})*${r.eh}`:per}`);sub+=r.ot}
+  lateX(x).forEach(e=>{parts.push(`${String(e.n||'加項').trim()} ${money(xAmt(x,e))}`);sub+=xAmt(x,e)});
+  if(!parts.length||r.balance-sub<=0)return money(r.balance);return `${money(r.balance-sub)}+${parts.join('+')}=${money(r.balance)}`}
 function qtyWord(q,lang){if(lang==='en')return '×'+q;if(lang==='ja')return q+'台';return (ZHN[q]||q)+'台'}
 function carsText(x,lang){const parts=MODELS.filter(m=>num(x.cars[m])>0).map((m,i,arr)=>((MBRAND[m]==='Tesla'&&(i===0||MBRAND[arr[i-1]]!=='Tesla'))?'Tesla ':'')+MNAME[m]+(lang==='en'?' ':' ')+qtyWord(num(x.cars[m]),lang));return parts.join(lang==='en'?', ':'、')||'—'}
 function planName(x){const r=calc(x);const parts=MODELS.filter(m=>num(x.cars[m])>0).map(m=>MABBR[m]+(num(x.cars[m])>1?'*'+num(x.cars[m]):''));
@@ -1438,18 +1446,18 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
     if(lang==='en')pay=[`Balance ${money(r.balance,'en')} (incl. driver red envelope)`,`Please transfer to the account below by the day before the service, or hand the full amount to the on-site lead driver on the day. (Our accountant can't verify transfers in real time on holidays, so please don't transfer on the day of service.)`,S.bankBal?`Balance transfer details (staff account):`:`Bank transfer details:`,S.bankBal||S.bank,`Extra hours: ${MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m],'en')}${otU}`).join(' ; ')}`];
     else if(lang==='ja')pay=[`残金 ${money(r.balance,'ja')}（ドライバーご祝儀込み）`,`ご利用前日までに下記口座へお振込みいただくか、当日現場責任者へまとめてお渡しください（休日は経理がすぐに入金確認できないため、当日のお振込みはお控えください）`,S.bankBal?`残金お振込先（スタッフ口座）：`:`お振込先：`,S.bankBal||S.bank,`延長：${MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m],'ja')}${otU}`).join(' ; ')}`];
     else if(r.mon)pay=[r.onsite?`當天請準備${[r.red?`司機紅包 ${money(S.red)}/台`:'',r.cane?`甘蔗固定費 ${money(r.cane)}`:''].filter(Boolean).join('、')}`:'',`加時：${otl}`].filter(Boolean);
-    else if(x.balPaid)pay=x.balRed&&r.red?[`尾款已收到，謝謝您`,`司機禮 ${money(r.red)} 請於用車當天交給現場負責人`,'',`加時：${otl}`]:[`尾款 ${money(r.balance)} 已收到，謝謝您`,'',`加時：${otl}`];   // 2026-10-19 款項依客人選擇自動改寫
-    else if(x.balPlan==='cash')pay=[`尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`,`您選擇用車當天付現金：請將尾款及司機禮包成一包交給現場負責人`,'',`加時：${otl}`];
-    else if(x.balPlan==='transfer')pay=[`尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`,`您選擇提前匯款：請於用車前一日前匯款到以下帳號 (假日會計無法即時查帳，請勿用車當日匯款)`,'',S.bankBal?`匯款資訊 [幹部帳戶]`:`匯款資訊`,S.bankBal||S.bank,'',`加時：${otl}`];
+    else if(x.balPaid){const px=postX(x),ps=sumX(x,px);pay=x.balRed&&r.red?[`尾款已收到，謝謝您`,`司機禮 ${money(r.red)}${px.length?'、'+xTxt(x,px):''} 請於用車當天交給現場負責人`,'',`加時：${otl}`]:[`尾款 ${money(r.balance-ps)} 已收到，謝謝您`,...(px.length?[`另有 ${xTxt(x,px)}，請於用車當天交給現場負責人`]:[]),'',`加時：${otl}`]}   // 2026-10-19 款項依客人選擇自動改寫
+    else if(x.balPlan==='cash')pay=[`尾款 ${balExpr(x,r)}${r.red?'(含司機禮)':''}`,`您選擇用車當天付現金：請將尾款及司機禮包成一包交給現場負責人`,'',`加時：${otl}`];
+    else if(x.balPlan==='transfer')pay=[`尾款 ${balExpr(x,r)}${r.red?'(含司機禮)':''}`,`您選擇提前匯款：請於用車前一日前匯款到以下帳號 (假日會計無法即時查帳，請勿用車當日匯款)`,'',S.bankBal?`匯款資訊 [幹部帳戶]`:`匯款資訊`,S.bankBal||S.bank,'',`加時：${otl}`];
     else pay=[`尾款 ${balExpr(x,r)}${r.red?'(含司機禮)':''}`,`請於用車前一日前匯款到以下帳號，或是當天一整包現金交給現場負責人 (假日會計無法即時查帳，請勿用車當日匯款)`,'',S.bankBal?`匯款資訊 [幹部帳戶]`:`匯款資訊`,S.bankBal||S.bank,'',`加時：${otl}`];   // 2026-10-19 Nicole 指定文字
   }else{
     const groups={};x.fleet.forEach(f=>{const v=payOf(f,x);const key=v==null?'?':v;(groups[key]=groups[key]||[]).push(f.role)});
-    pay=[r.mon?(r.onsite?`收取${[r.red?`紅包 ${money(S.red)}/台`:'',r.cane?`甘蔗固定費 ${money(r.cane)}`:''].filter(Boolean).join('、')}`:'現場不用收款'):x.balPaid?(x.balRed&&r.red?`尾款客人已匯款，現場只收司機紅包 ${money(S.red)}/台（共 ${money(r.red)}）`:`尾款 ${money(r.balance)} 客人已匯款，現場不用收款`):x.balPlan==='transfer'?`客人選提前匯款；若當天還沒入帳，請收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`:`收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}${x.balPlan==='cash'?'・客人付現金':''}`];
+    pay=[r.mon?(r.onsite?`收取${[r.red?`紅包 ${money(S.red)}/台`:'',r.cane?`甘蔗固定費 ${money(r.cane)}`:''].filter(Boolean).join('、')}`:'現場不用收款'):x.balPaid?(postX(x).length?(x.balRed&&r.red?`尾款客人已匯款，現場收司機紅包 ${money(S.red)}/台（共 ${money(r.red)}）＋${xTxt(x,postX(x))}`:`尾款 ${money(r.balance-sumX(x,postX(x)))} 客人已匯款，現場另收 ${xTxt(x,postX(x))}`):x.balRed&&r.red?`尾款客人已匯款，現場只收司機紅包 ${money(S.red)}/台（共 ${money(r.red)}）`:`尾款 ${money(r.balance)} 客人已匯款，現場不用收款`):x.balPlan==='transfer'?`客人選提前匯款；若當天還沒入帳，請收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`:`收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}${x.balPlan==='cash'?'・客人付現金':''}`];
     Object.keys(groups).forEach(v=>{const roles=[...new Set(groups[v])].join('＋');pay.push(+x.hours===0?`${roles} 實拿${v==='?'?'（未設定）':money(+v)}（單程接送・綁彩）`:`${roles} ${v==='?'?'（未設定）':money(+v)}/${hrsLabel(x.hours)}${r.red?'(含紅包)':''}`)});
     const ms=MODELS.filter(m=>num(x.cars[m])>0);
     if(+x.hours===0)pay.push(`等候 15 分鐘未出發，每半小時：${ms.map(m=>driverOtText(m,x).replace(' 等候每 0.5HR','')).join(' ; ')}`);
     else pay.push(x.hours<3?'未滿 3 小時方案無緩衝，超過即以每 0.5 小時計加時':'加時 15 分鐘內不計 ; 第 16 分鐘起收加時費用',`加時：${otl}`);
-    const back=r.balance-r.dsum;if(r.mon){if(r.dok&&r.dsum>r.onsite)pay.push('',`差額 ${money(r.dsum-r.onsite)} 由公司匯款`)}else if(x.balPaid)pay.push('',x.balRed&&r.red?'酬勞扣除紅包後由公司匯款':'酬勞由公司匯款');else if(!r.mon&&r.dok&&back>0)pay.push('',`匯回 ${money(back)}`);else if(!r.mon&&r.dok&&back<0)pay.push('',`差額 ${money(-back)} 由公司匯款`);
+    const back=r.balance-r.dsum;if(r.mon){if(r.dok&&r.dsum>r.onsite)pay.push('',`差額 ${money(r.dsum-r.onsite)} 由公司匯款`)}else if(x.balPaid)pay.push('',(x.balRed&&r.red?'酬勞扣除紅包後由公司匯款':'酬勞由公司匯款')+(postX(x).length?`；現場另收的 ${money(sumX(x,postX(x)))} 匯回公司`:''));else if(!r.mon&&r.dok&&back>0)pay.push('',`匯回 ${money(back)}`);else if(!r.mon&&r.dok&&back<0)pay.push('',`差額 ${money(-back)} 由公司匯款`);
     if(x.headOnly){const bk=pay[pay.length-1];payHead=[pay[0]].concat(pay.length>1&&/匯回|由公司匯款/.test(bk||'')?[bk]:[]);pay=[]}   // 2026-10-20 只有車頭的群組：派車單不列款項，另外複製給車頭
   }
   return{payHead,who,no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(ctEnd(x)||c.end)}`,gather:ap(c.gather||addMin(c.start,-20)),
@@ -1857,7 +1865,10 @@ function memoOkUrl(x){return 'https://love.niceweddingcar.com/wed-memo?no='+enco
 function renderMemoOk(){const el=$('memoOkSt'),card=$('memoOkCard');if(!el||!o)return;
   try{const tm6=$('tab-memo');let hc=$('hoPayCard');if(!hc&&tm6){hc=document.createElement('div');hc.id='hoPayCard';hc.className='card';hc.style.marginTop='14px';tm6.appendChild(hc)}   /* 2026-10-20 只有車頭的群組：款項資訊另外複製給車頭 */
     if(hc){const ph=o.headOnly?(memoModel(o,'drv','zh').payHead||[]):[];hc.hidden=!ph.length;if(ph.length){const tx=[`${orderNo(o)} 款項資訊`,...ph].join('\n');hc.innerHTML=`<div class="row" style="justify-content:space-between;align-items:center;gap:8px"><b>款項資訊（給車頭）</b><button class="btn sm pri" data-copytext="${esc(tx)}">複製</button></div><pre class="out" style="white-space:pre-wrap;margin-top:8px">${esc(tx)}</pre><div class="hint" style="margin:6px 0 0">此群組只有車頭，派車單不列款項；這段請另外貼給車頭。</div>`}}}catch(e){console.warn(e)}
-  {let w=$('ctOverWarn');if(!w){w=document.createElement('div');w.id='ctOverWarn';w.style.cssText='color:#c0392b;font-weight:700;margin-top:8px;white-space:pre-line';el.parentNode.insertBefore(w,el)}const ov=ctOver(o);w.textContent=ov?`⚠️ 客人預估用車結束 ${ap(o.c.end)}，超過合約結束 ${ap(ctEnd(o))}（約 ${ov} 分鐘）：確認單寫的是合約時間 ${ap(o.c.start)}-${ap(ctEnd(o))}，請先和客人確認是否加時`:'';w.hidden=!ov}card.hidden=isPt(o);const tm=t=>{const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`},bal=calc(o).balance;
+  {let w=$('ctOverWarn');if(!w){w=document.createElement('div');w.id='ctOverWarn';w.style.cssText='color:#c0392b;font-weight:700;margin-top:8px;white-space:pre-line';el.parentNode.insertBefore(w,el)}const ov=ctOver(o);w.textContent=ov?`⚠️ 客人預估用車結束 ${ap(o.c.end)}，超過合約結束 ${ap(ctEnd(o))}（約 ${ov} 分鐘）：確認單寫的是合約時間 ${ap(o.c.start)}-${ap(ctEnd(o))}，請先和客人確認是否加時`:'';w.hidden=!ov}
+  {let w=$('xStaleWarn');if(!w){w=document.createElement('div');w.id='xStaleWarn';w.style.cssText='color:#c0392b;font-weight:700;margin-top:8px;white-space:pre-line';el.parentNode.insertBefore(w,el)}   /* 2026-10-20 確認單傳出／客人確認後才新增款項 → 提醒重傳 */
+    const ts=+o.memoSentAt||0,L=ts?(o.extras||[]).filter(e=>num(e.a)&&+e.at>ts):[];w.textContent=L.length?`⚠️ 確認單傳出後新增款項：${xTxt(o,L)}\n${o.memoOkAt?'客人確認的是舊的尾款金額，':'客人看到的還是舊的尾款金額，'}要讓客人看到新金額，請重傳確認單請客人再確認一次`:'';w.hidden=!L.length}
+  card.hidden=isPt(o);const tm=t=>{const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`},bal=calc(o).balance;
   const L=[];if(o.memoOkAt)L.push(`✅ 客人已確認無誤（${tm(o.memoOkAt)}）｜${o.balPlan==='cash'?`尾款：當天付現金 ${money(bal)}（尾款＋司機禮包一包交車隊負責人）`:o.balPlan==='transfer'?`尾款：提前匯款 ${money(bal)}（最晚用車前一天）${o.balPaid?'，已標記收到':o.balInfo?`\n💸 客人已回傳匯款資訊（${tm(o.balInfo.at)}${o.balInfo.last5?'，後五碼 '+o.balInfo.last5:''}${o.balInfo.file?'，附轉帳截圖':''}），待對帳：對完請在「尾款收款方式」標記已匯`:'，客人還沒回傳匯款資訊'}`:'月結'}`);
   if(o.memoFixAt&&!(+o.memoOkAt>+o.memoFixAt))L.push(`✏️ 客人說內容要修改（${tm(o.memoFixAt)}）：${o.memoFixNote||''}\n改好後請再按一次「傳確認單給客人核對」`);
   {const M=MEMOS&&MEMOS[normNo(orderNo(o))]||{};if(o.memoHoldAt&&!o.memoOkAt&&!(+M.sentAt>+o.memoHoldAt))L.push(`🪪 等司機綁定車卡：${tm(o.memoHoldAt)} 按了傳送，群組裡還有司機沒綁定車卡${o.memoHoldNames?`（${o.memoHoldNames}）`:''}，已 @ 他們綁定；全部綁好後系統會自動把確認單傳給客人核對（22:00–10:00 排到 10:00）`)}
@@ -1961,7 +1972,11 @@ function applyForm(res){const c=o.c;let n=0;o.sample=false;const set=(k,v)=>{if(
 /* ---------- binding ---------- */
 function getPath(obj,path){return path.split('.').reduce((a,k)=>a==null?a:a[k],obj)}
 function setPath(obj,path,v){const ks=path.split('.');const last=ks.pop();const t=ks.reduce((a,k)=>a[k],obj);t[last]=v}
-function fillInputs(){document.querySelectorAll('[data-b]').forEach(el=>{const v=getPath(o,el.dataset.b);if(el.hasAttribute('data-bool'))el.value=v?'1':'0';else el.value=v==null||(el.dataset.b==='tripKm'&&!+v)?'':v});
+function renderXList(){if(!o)return;if(!Array.isArray(o.extras)||!o.extras.length)o.extras=[{n:'',a:0}];   /* 2026-10-20 加項可以多筆（第 1 頁、第 5 頁同一份）；出發前新增的列在尾款 */
+  const c5=$('xCard5');if(c5)c5.hidden=isPt(o)||isMonthly(o);
+  document.querySelectorAll('.xList').forEach(el=>{if(el.contains(document.activeElement)&&el.querySelectorAll('[data-b$=".n"]').length===o.extras.length)return;const w=el.dataset.xw;
+  el.innerHTML=(w==='1'?`<div style="font-size:0.867rem;color:var(--muted);margin-bottom:4px">加項（例：指定路線、跨縣市）</div>`:'')+o.extras.map((e,i)=>`<div class="row" style="gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><input data-b="extras.${i}.n" placeholder="項目，例：指定路線" style="flex:1 1 140px;min-width:0"><input type="number" data-b="extras.${i}.a" data-num placeholder="金額" style="width:100px"><select data-b="extras.${i}.late" data-bool style="width:auto"><option value="0">訂金前已談好</option><option value="1">出發前新增（列在尾款）</option></select>${o.extras.length>1||e.n||num(e.a)?`<button class="btn sm" data-xdel="${i}" title="刪除">✕</button>`:''}</div>`).join('')+`<button class="btn sm" data-xadd="${w}">＋ 新增款項</button>`})}
+function fillInputs(){try{renderXList()}catch(e){}document.querySelectorAll('[data-b]').forEach(el=>{const v=getPath(o,el.dataset.b);if(el.hasAttribute('data-bool'))el.value=v?'1':'0';else el.value=v==null||(el.dataset.b==='tripKm'&&!+v)?'':v});
   document.querySelectorAll('[data-s]').forEach(el=>{el.value=S[el.dataset.s]==null?'':S[el.dataset.s]});
   try{renderFormPlaces()}catch(e){}
   try{renderChats()}catch(e){}
@@ -1973,7 +1988,7 @@ function fillInputs(){document.querySelectorAll('[data-b]').forEach(el=>{const v
 document.addEventListener('input',e=>{const el=e.target;
   if(el.dataset.b){let v=el.value;if(el.hasAttribute('data-num'))v=el.value===''?0:num(el.value);if(el.hasAttribute('data-bool'))v=el.value==='1';
     if(el.dataset.b==='depOverride')v=el.value===''?'':num(el.value);
-    setPath(o,el.dataset.b,v);o.sample=false;if(/^(c\.(meet|wed|o\d+)(L|T|Map|S)?|path)$/.test(el.dataset.b))o.locEditAt=Date.now();
+    setPath(o,el.dataset.b,v);o.sample=false;{const xm=el.dataset.b.match(/^extras\.(\d+)\.(a|late)$/);if(xm&&o.extras[+xm[1]])o.extras[+xm[1]].at=Date.now()}if(/^(c\.(meet|wed|o\d+)(L|T|Map|S)?|path)$/.test(el.dataset.b))o.locEditAt=Date.now();
     if(el.dataset.b==='src.vendor'&&v&&!(o.src&&o.src.from)){o.src.from='婚顧／廠商介紹';if($('q_from'))$('q_from').value=o.src.from}
     if(el.dataset.b==='c.meet'&&!o.cityA&&countyOf(o.c.meet)){o.cityA=countyOf(o.c.meet);$('q_cityA').value=o.cityA}
     if(el.dataset.b==='c.wed'&&!o.cityB&&countyOf(o.c.wed)){o.cityB=countyOf(o.c.wed);$('q_cityB').value=o.cityB}
@@ -1998,7 +2013,7 @@ document.addEventListener('input',e=>{const el=e.target;
 document.addEventListener('change',e=>{if(e.target.dataset.fl&&e.target.dataset.fl.endsWith('.role')){o.fleet.sort((a,b)=>{const r=x=>{const i=ROLES.indexOf(x.role);return i<0?9:i};return r(a)-r(b)});save();renderFleet();renderAll()}
   if(e.target.id==='mapLinks'){o.mapLinks=e.target.checked;save();renderMemo()}
   if(e.target.id==='routeInMemo'){o.routeInMemo=e.target.checked;save();renderMemo()}
-  if(e.target.classList&&e.target.classList.contains('balMode')){const d=new Date(),v=e.target.value;o.balPaid=!!v;o.balRed=v==='nored';o.balPaidAt=o.balPaid?`${d.getMonth()+1}/${d.getDate()}`:'';document.querySelectorAll('.balMode').forEach(s=>s.value=v);save();renderMemo();renderAll();toast(v==='all'?'已標記：客人已匯尾款＋紅包，司機只收加時':v==='nored'?'已標記：客人已匯尾款，司機現場收紅包':'已改回：司機現場收尾款');
+  if(e.target.classList&&e.target.classList.contains('balMode')){const d=new Date(),v=e.target.value,was=!!o.balPaid;o.balPaid=!!v;if(o.balPaid&&!was)o.balPaidTs=Date.now();if(!o.balPaid)o.balPaidTs=0;o.balRed=v==='nored';o.balPaidAt=o.balPaid?`${d.getMonth()+1}/${d.getDate()}`:'';document.querySelectorAll('.balMode').forEach(s=>s.value=v);save();renderMemo();renderAll();toast(v==='all'?'已標記：客人已匯尾款＋紅包，司機只收加時':v==='nored'?'已標記：客人已匯尾款，司機現場收紅包':'已改回：司機現場收尾款');
     /* 2026-10-19 尾款入帳狀態改了：派車單自動更新；已在群組發佈過派車單 → 通知禮車負責人 */
     {const x=o,r=calc(x),no=orderNo(x),ld=lead(x)||{},who=ld.driver?'禮車負責人 '+ld.driver:'禮車負責人';memoDocsFor(x);
       if(x.pubAt){const t=`📣 尾款收款更新｜${no} ${coupleName(x)}\n`+(v==='all'?'客人已匯尾款（含司機禮），現場不用收款，只收加時費用（如有）':v==='nored'?`客人已匯尾款，${who}當天只需收司機禮 ${money(r.red)}`:`尾款改回現場收取：請${who}當天向客人收取尾款 ${money(r.balance)}${r.red?'（含司機禮）':''}`);
@@ -2018,7 +2033,7 @@ function renderSum(){const r=calc(o);const rows=[];
   rows.push([r.b?`${r.b.name}方案`:'車資',money(r.base)]);if(r.b&&r.listBase>r.base)rows.push([`<span class="sub">原價 ${money(r.listBase)}，省 ${money(r.listBase-r.base)}</span>`,'']);
   if(r.ot)rows.push([`加時 ${r.eh}HR`,money(r.ot)]);if(r.zone)rows.push([`跨區/里程費（${zoneLabel(o)}）`,money(r.zone)]);if(zoneUnit(o)&&luxN(o))rows.push(['豪車跨區費','另行評估']);if(r.cane)rows.push(['甘蔗固定費',money(r.cane)]);if(r.colorAdd)rows.push([`指定${o.colorReq}`,money(r.colorAdd)]);if(r.deco)rows.push(['指定車頭彩'+esc(decoTag(o)),money(r.deco)]);
   if(r.vb!=null)rows.push([`<span class="sub">${esc(vendorOf(o).name)}配套價</span>`,'']);
-  if(r.extras)rows.push(['加項',money(r.extras)]);if(r.disc)rows.push([o.discName||'折扣','-'+money(r.disc)]);if(r.tax)rows.push(['5% 營業稅',money(r.tax)]);if(r.red)rows.push([`司機禮 ×${r.n}`,money(r.red)]);
+  (o.extras||[]).forEach(e=>{if(num(e.a))rows.push([`${String(e.n||'加項').trim()}${e.late?'（出發前新增）':''}`,money(num(e.a))])});if(r.disc)rows.push([o.discName||'折扣','-'+money(r.disc)]);if(r.tax)rows.push(['5% 營業稅',money(r.tax)]);if(r.red)rows.push([`司機禮 ×${r.n}`,money(r.red)]);
   $('sumBox').innerHTML=rows.map(([a,b])=>`<div><span>${a}</span><span>${b}</span></div>`).join('')+
    `<div class="tot"><span>合計</span><span>${money(r.total)}</span></div>
     <div><span>應付訂金${o.depOverride!==''?'（手動）':isMonthly(o)?'（月結）':S.depMode==='driver'&&r.dok?'（總額−司機車資）':`（${S.depPct}%）`}</span><span>${money(r.deposit)}</span></div>
@@ -2232,8 +2247,8 @@ function settleInfo(x){const r=calc(x),ld=lead(x)||{},who=ld.driver||'負責人'
     return{st:`月結・司機收紅包 ${money(r.red)}${r.cane?`＋甘蔗 ${money(r.cane)}`:''}`,act:gap>0?`公司匯差額給司機：${r.cane?'':dd+'（'}共 ${money(gap)}${r.cane?'':'）'}`:''}}
   if(x.partner){const k=ptCalc(x),co=x.partner.co||'同業';if(x.partner.prepaid)return{st:`同業單（${co}）客人已匯同業`,act:`公司匯酬勞給司機：${ds}（共 ${money(r.dsum)}）；${co} 應付我 ${money(k.owe)}${k.remit?`、我匯回 ${money(k.remit)}`:''}`};
     return{st:`同業單（${co}）司機現場收 ${money(num(x.partner.collect))}`,act:[k.back>0?`${who} 交回 ${money(k.back)}`:k.back<0?`公司匯差額 ${money(-k.back)} 給 ${who}`:'',k.remit?`匯回 ${co} ${money(k.remit)}`:''].filter(Boolean).join('；')}}
-  if(x.balPaid&&x.balRed&&r.red){const rp=num(S.red),dd=(x.fleet||[]).map(f=>{const v=f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x);return `${f.driver||f.role} ${money(v-rp)}`}).join('、');return{st:`客人已匯尾款，司機收紅包 ${money(r.red)}`,act:`公司匯酬勞（已扣紅包）給司機：${dd}（共 ${money(r.dsum-r.red)}）`}}
-  if(x.balPaid)return{st:`${money(r.balance)} 客人已匯款（含紅包）`,act:`公司匯酬勞給司機：${ds}（共 ${money(r.dsum)}）`};
+  if(x.balPaid&&x.balRed&&r.red){const rp=num(S.red),dd=(x.fleet||[]).map(f=>{const v=f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x);return `${f.driver||f.role} ${money(v-rp)}`}).join('、');const pX=sumX(x,postX(x));return{st:`客人已匯尾款，司機收紅包 ${money(r.red)}${pX?`＋現場另收 ${money(pX)}`:''}`,act:`公司匯酬勞（已扣紅包）給司機：${dd}（共 ${money(r.dsum-r.red)}）${pX?`；${who} 交回現場另收 ${money(pX)}`:''}`}}
+  if(x.balPaid){const pX=sumX(x,postX(x));return{st:`${money(r.balance-pX)} 客人已匯款（含紅包）${pX?`＋現場另收 ${money(pX)}`:''}`,act:`公司匯酬勞給司機：${ds}（共 ${money(r.dsum)}）${pX?`；${who} 交回現場另收 ${money(pX)}`:''}`}}
   const back=r.balance-r.dsum;
   if(back>0)return{st:`${money(r.balance)} 司機現場收`,act:`${who} 匯回 ${money(back)}`};
   if(back<0)return{st:`${money(r.balance)} 司機現場收`,act:`公司匯差額 ${money(-back)} 給 ${who}`};
@@ -2244,7 +2259,7 @@ function drvTransfers(day){const pay={},back={},add=(M,f,amt,no)=>{if(!amt)retur
     if(x.partner){if(x.partner.prepaid)F.forEach(f=>add(pay,f,pv(f),no));else{const k=ptCalc(x);if(k.back>0)add(back,ld,k.back,no);else if(k.back<0)add(pay,ld,-k.back,no)}return}
     if(!r.dok)return;
     if(r.mon){const rp=x.red?num(S.red):0;if(r.dsum>r.onsite)F.forEach(f=>add(pay,f,pv(f)-rp,no));return}
-    if(x.balPaid){const rp=x.balRed&&r.red?num(S.red):0;F.forEach(f=>add(pay,f,pv(f)-rp,no));return}
+    if(x.balPaid){const rp=x.balRed&&r.red?num(S.red):0;F.forEach(f=>add(pay,f,pv(f)-rp,no));const pX=sumX(x,postX(x));if(pX)add(back,ld,pX,no);return}
     const b=r.balance-r.dsum;if(b>0)add(back,ld,b,no);else if(b<0)add(pay,ld,-b,no)});
   return{pay,back}}
 function renderDrvTransfers(day){const el=$('setDrv');if(!el)return;const {pay,back}=drvTransfers(day);const row=(k,z)=>`<div class="todo-row" style="cursor:default"><div class="m" style="flex:1"><div><b>${esc(k)}</b> ${esc(ph(z.phone)||'')}　<b>${money(z.amt)}</b></div><div class="sub">${esc(z.items.join('、'))}</div></div></div>`;
@@ -2690,6 +2705,8 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   if(b.dataset.hostf){hostF=b.dataset.hostf;renderHosts();return}
   if(b.dataset.lgday){$('lgDate').value=b.dataset.lgday;renderLg();return}
   const x=DB.orders[b.dataset.lgcopy];if(x){const n=lgName(x);clip(n);toast('已複製群組名稱：'+n);b.textContent='✅ 已複製';b.classList.remove('pri');setTimeout(()=>{if(b.isConnected){b.textContent='複製';b.classList.add('pri')}},1800)}});
+document.addEventListener('click',e=>{const t=e.target;if(!t||!o)return;if(t.dataset&&t.dataset.xadd!=null){const w=t.dataset.xadd;o.extras=o.extras||[];const L=o.extras[o.extras.length-1];if(L&&!L.n&&!num(L.a))o.extras.pop();o.extras.push({n:'',a:0,late:w==='5'||!!o.paid,at:Date.now()});save();fillInputs();renderAll();const ins=document.querySelectorAll(`.xList[data-xw="${w}"] input[data-b$=".n"]`);if(ins.length)ins[ins.length-1].focus();return}
+  if(t.dataset&&t.dataset.xdel!=null){const i=+t.dataset.xdel,e0=o.extras[i]||{};if((e0.n||num(e0.a))&&!confirm(`刪除加項「${e0.n||'加項'} ${money(num(e0.a))}」？`))return;o.extras.splice(i,1);if(!o.extras.length)o.extras=[{n:'',a:0}];save();fillInputs();renderAll();toast('已刪除加項')}});
 document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||t.dataset.nogrp==null||!o)return;const f=(o.fleet||[])[+t.dataset.nogrp];if(!f)return;f.noGrp=t.checked;const dr=FDRAFT&&FDRAFT.id===o.id;save();try{renderLgCard()}catch(_){}try{renderLg()}catch(_){}toast((t.checked?`已設定：${f.driver} 不進群組（不用綁車卡）`:`已取消：${f.driver} 要進群組`)+(dr?'｜地點流程還沒儲存，按上方「儲存」或「取消」後才會寫進系統':''))});
 document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!t.dataset.headonly)return;const x=DB.orders[t.dataset.headonly];if(!x)return;   /* 2026-10-20 Nicole：只有車頭的群組不用綁車卡、不發教案 */
   x.headOnly=t.checked;x.updated=Date.now();store('nwcw_orders',DB);try{pushSync()}catch(_){}try{renderLg()}catch(_){}try{renderLgCard()}catch(_){}try{renderPtCard()}catch(_){}try{renderLsn()}catch(_){}toast(t.checked?'已設定：此群組只有車頭（不需綁定車卡、不發禮車教案）':'已取消「只有車頭」');});
