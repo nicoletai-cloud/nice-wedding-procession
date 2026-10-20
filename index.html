@@ -658,7 +658,7 @@ nav.tabs button{scroll-snap-align:start}
         <label class="f wide">群組名稱<div class="row" style="flex-wrap:nowrap"><input id="lgName" readonly style="flex:1"><button class="btn sm pri" data-copyv="lgName">複製</button></div></label>
       </div>
       <div id="lgCard" style="margin-top:8px"></div>
-      <div class="row" style="justify-content:space-between;margin:10px 0 6px"><span class="hint" style="margin:0">開場訊息</span><button class="btn sm pri" data-copy="lgMsg">複製訊息</button></div>
+      <div class="row" style="justify-content:space-between;margin:10px 0 6px"><span class="hint" style="margin:0">開場訊息</span><span class="row" style="gap:6px"><button class="btn sm pri" id="btnLgPub">禮車助手發到群組</button><button class="btn sm" data-copy="lgMsg">複製訊息</button></span></div><div class="hint" style="margin:0 0 6px">「禮車助手發到群組」會發成有「查看派車單」按鈕的卡片，並一起發禮車教案；自己貼的話只能是文字連結。</div>
       <pre class="out" id="lgMsg"></pre>
       <div class="pubBox" style="margin-top:10px"></div>
     </div>
@@ -3229,6 +3229,13 @@ function renderLsn(){if(!o)return;const bx=document.querySelectorAll('.lsnBox');
       h=st.all?`<div style="color:var(--ok);font-weight:600">✅ 所有司機都已詳讀禮車教案（${st.read.length}/${n}）</div><div class="hint" style="margin:2px 0 0">${esc(st.read.join('、'))}・教案 ${esc(t)} 發出</div>`
         :`<div style="font-weight:600">📘 禮車教案已讀 ${st.read.length}/${n}</div><div class="hint" style="margin:2px 0 0">${st.read.length?'已讀：'+esc(st.read.join('、'))+'<br>':''}<span style="color:var(--warn)">未讀：${esc(st.unread.map(u=>u.n+(u.b?'':'（未綁車卡）')).join('、')||'—')}</span><br>教案 ${esc(t)} 發出；司機要在教案最下面按「已詳讀」才算，同一週（週一到週日）讀過一次就算</div><div class="row" style="gap:6px;margin-top:6px"><button class="btn sm pri" data-lsn="nag">@ 提醒還沒讀的人</button><button class="btn sm" data-lsn="re">重新整理</button><button class="btn sm" data-lsn="send">重發教案</button></div>`}}
   bx.forEach(b=>b.innerHTML=h)}
+/* 2026-10-20 Nicole：派車單由禮車助手發到群組，用按鈕卡片（跟客人收到的一樣）＋禮車教案 */
+document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.closest('#btnLgPub');if(!b||!o)return;const x=o;
+  if(!confirm(x.pubAt?'這張派車單已經發佈過了，確定要再發一次到司機群組？':'由禮車助手把派車單（按鈕卡片）'+(x.headOnly?'':'和禮車教案')+'發到這趟的司機群組？'))return;
+  b.disabled=true;const tx=b.textContent;b.textContent='傳送中…';
+  try{const t=await lgMsgReady();const j=await lgCall({op:'pub',keys:lgKeys(x),no:orderNo(x),text:t,ho:x.headOnly?1:0});x.pubAt=Date.now();if(j.lesson&&!x.lsnSentAt)x.lsnSentAt=Date.now();if(o&&o.id===x.id){save()}else{x.updated=Date.now();DB.orders[x.id]=x;store('nwcw_orders',DB);pushSync()}
+    try{renderPub()}catch(_){}try{renderLsn()}catch(_){}toast('已發到群組「'+(j.name||'')+'」'+(j.lesson?'（含禮車教案）':''))}
+  catch(er){toast('沒發出去：'+(er&&er.message||er))}finally{b.disabled=false;b.textContent=tx}});
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-lsn]');if(!b||!o)return;const k=b.dataset.lsn,x=o;
   if(k==='re'){lsnLoad(x,true);renderLsn();return}
   if(k==='send'&&x.lsnSentAt&&!confirm('教案已經發過了，確定要再發一次？（本週已讀過的司機不用再讀）'))return;
