@@ -1471,7 +1471,8 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   {/* 2026-10-19 A、B 同一地點：只列「A. 集合地點：地址(地點名稱)」，不寫男方家／女方家 */const nz=v=>String(v||'').replace(/[\s　]/g,'').replace(/[（]/g,'(').replace(/[）]/g,')').replace(/臺/g,'台'),A=pts.find(p=>p.k==='A'),B=pts.find(p=>p.k==='B');
     pts.forEach(p=>{if((p.k==='A'||p.k==='B')&&/^(男方家|女方家)$/.test(String(p.label||'').trim())&&isHotel(p.addr))p.label=''});
     if(A&&B&&nz(A.addr)===nz(B.addr)){pts=pts.filter(p=>p.k!=='B');A.label='';const mm=String(A.addr).match(/^([^（(]+?)\s*[（(]\s*(.+?)\s*[)）]\s*$/);if(mm&&/[市縣區鄉鎮路街道段巷號]/.test(mm[2])&&!/[市縣路街號]/.test(mm[1]))A.addr=`${mm[2]}(${mm[1]})`}}
-  const flow=x.flow.filter(f=>f.t||f.seg).map(f=>`${ap(f.t)} ${f.who?f.who+' ':''}${f.seg}`.trim());   /* 2026-10-20 只用禮車預計發車時間 */
+  const flowSplit=x.flow.some(f=>(f.t||f.seg)&&String(f.who||'').trim());   /* 2026-10-20 Nicole：車隊有分開走時，沒指定車輛的那段要寫「全車隊」 */
+  const flow=x.flow.filter(f=>f.t||f.seg).map(f=>{const w=String(f.who||'').trim()||(flowSplit?'全車隊':'');return `${ap(f.t)} ${w?w+' ':''}${f.seg}`.trim()});   /* 2026-10-20 只用禮車預計發車時間 */
   let pay=[],payHead=null;
   const otU=+x.hours>0&&+x.hours<3?'/0.5HR':'/HR';const otl=(x.otText||'').trim()||MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MABBR[m]} ${money(S.ot[m])}${otU}`).join(' ; ');
   if(who==='cust'){
