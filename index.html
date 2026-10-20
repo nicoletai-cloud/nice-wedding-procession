@@ -554,7 +554,7 @@ nav.tabs button{scroll-snap-align:start}
     <div class="stack">
       <div class="card" id="xCard5"><h3>加項 <small>客人傳過行前確認後才加的款項，填在這裡會列在尾款（尾款 $X+項目 $Y=$Z）</small></h3><div class="xList" data-xw="5"></div></div>
       <div class="card" id="ptCard" hidden style="border-color:#A77D4C"><h3>同業單 <small>只要選司機；不用出合約、memo、派車單</small></h3><datalist id="ptCoList"></datalist><div id="ptCardBody"></div></div>
-      <div class="card">
+      <div class="card fdZone">   <!-- 2026-10-20 Nicole：車隊改完也要按儲存 -->
         <h3>車隊 <small>車序、車號、司機</small></h3>
         <div id="fleetCall" class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2,#faf5ee)" hidden></div>
         <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 8px"><span class="hint" style="margin:0">從司機名單選：</span><select id="drvMode" style="width:auto"><option value="mc">車款＋顏色相符</option><option value="m">只看車款</option><option value="all">全部司機</option></select><select id="drvArea" style="width:auto" title="依司機居住地區篩選"><option value="">全部地區</option><option value="北部">住北部（基北北桃竹宜）</option><option value="中部">住中部（苗中彰投雲）</option><option value="南部">住南部（嘉南高屏）</option><option value="東部">住東部（花東）</option></select><input id="drvQ" type="search" placeholder="🔍 搜尋司機：姓名／車牌／電話" style="width:230px" autocomplete="off"><button class="btn sm" id="btnDrvReload">更新司機名單</button><button class="btn sm" id="btnDrvAdd">＋新增司機</button><span class="hint" style="margin:0" id="drvSt"></span></div>
@@ -1087,14 +1087,15 @@ function ptMerge(x){const c=x&&x.c;if(!c||!c.o1||!c.wed||c.o2)return false;const
   c.wedL=[bl,...parts].filter(Boolean).join('・');if(!c.wedMap&&c.o1Map)c.wedMap=c.o1Map;c.o1='';c.o1L='';c.o1Map='';c.o1S='';
   const sw=t=>String(t||'').replace(/\bC\b/g,'B');x.path=sw(x.path);(x.flow||[]).forEach(f=>{f.seg=sw(f.seg)});return true}
 /* 2026-10-20 Nicole：第 5 頁地點／流程改完按「儲存」才寫進系統（之前只是草稿，可以取消） */
-let FDRAFT=null;
-function fdBegin(){if(!o)return;if(FDRAFT&&FDRAFT.id!==o.id)fdCommit(true);if(FDRAFT)return;FDRAFT={id:o.id,bak:clone({c:o.c,path:o.path,flow:o.flow,locEditAt:o.locEditAt||0})};setTimeout(renderFdBar,0)}
-function fdCommit(quiet){if(!FDRAFT)return;const x=DB.orders[FDRAFT.id];FDRAFT=null;if(x){x.locEditAt=Date.now();x.updated=Date.now();DB.orders[x.id]=x;store('nwcw_orders',DB);pushSync();setTimeout(()=>drvPush(x).catch(e=>console.warn('drvPush',e)),3000)}if(!quiet)toast('流程已儲存，確認單和派車單已更新');try{renderAll();renderFlow()}catch(_){}renderFdBar()}
-function fdCancel(){if(!FDRAFT)return;const x=DB.orders[FDRAFT.id],b=FDRAFT.bak;FDRAFT=null;if(x){x.c=b.c;x.path=b.path;x.flow=b.flow;x.locEditAt=b.locEditAt;DB.orders[x.id]=x;if(o&&o.id===x.id)o=x;store('nwcw_orders',DB);pushSync()}toast('已取消修改');try{fillInputs();renderAll();renderFlow()}catch(_){}renderFdBar()}
+let FDRAFT=null;var BASES={};   /* 2026-10-20 每張單最後一次跟伺服器一致的內容（衝突時用來合併） */
+function fdBegin(){if(!o)return;if(FDRAFT&&FDRAFT.id!==o.id)fdCommit(true);if(FDRAFT)return;FDRAFT={id:o.id,bak:clone({c:o.c,path:o.path,flow:o.flow,locEditAt:o.locEditAt||0,fleet:o.fleet,friends:o.friends||[],friendsManual:!!o.friendsManual,avoidZ:o.avoidZ||[],eqOk:o.eqOk||null})};setTimeout(renderFdBar,0)}
+function fdCommit(quiet){if(!FDRAFT)return;const x=DB.orders[FDRAFT.id];FDRAFT=null;if(x){x.locEditAt=Date.now();x.updated=Date.now();DB.orders[x.id]=x;store('nwcw_orders',DB);pushSync();setTimeout(()=>drvPush(x).catch(e=>console.warn('drvPush',e)),3000)}if(!quiet)toast('已儲存，確認單和派車單已更新');try{renderAll();renderFlow()}catch(_){}renderFdBar()}
+function fdCancel(){if(!FDRAFT)return;const x=DB.orders[FDRAFT.id],b=FDRAFT.bak;FDRAFT=null;if(x){x.c=b.c;x.path=b.path;x.flow=b.flow;x.locEditAt=b.locEditAt;if(b.fleet){x.fleet=b.fleet;x.friends=b.friends;x.friendsManual=b.friendsManual;x.avoidZ=b.avoidZ;x.eqOk=b.eqOk}DB.orders[x.id]=x;if(o&&o.id===x.id)o=x;store('nwcw_orders',DB);pushSync()}toast('已取消修改');try{fillInputs();renderAll();renderFlow();renderFleet();renderFr();renderEq()}catch(_){}renderFdBar()}
 function renderFdBar(){if(FDRAFT&&o&&FDRAFT.id!==o.id){fdCommit(true);toast('上一張單的流程修改已自動儲存');return}const fe=document.querySelector('.flowEdit');if(!fe)return;let b=$('fdBar');if(!b){b=document.createElement('div');b.id='fdBar';b.style.cssText='position:sticky;bottom:8px;z-index:5;margin-top:12px;padding:10px 12px;border-radius:10px;background:#fff4e5;border:1px solid #e0b070;display:flex;gap:8px;align-items:center;flex-wrap:wrap';fe.appendChild(b)}
   const on=!!(FDRAFT&&o&&FDRAFT.id===o.id);b.hidden=false;b.style.background=on?'#fff4e5':'var(--surface-2,#f6f1ea)';b.style.borderColor=on?'#e0b070':'var(--line,#e6dccf)';   /* 一直顯示儲存列；沒修改時按鈕不能按 */
+  document.querySelectorAll('.fdZone').forEach(z=>{let b2=z.querySelector('.fdBar2');if(!b2){b2=document.createElement('div');b2.className='fdBar2';b2.style.cssText='position:sticky;bottom:8px;z-index:5;margin-top:12px;padding:10px 12px;border-radius:10px;border:1px solid #e0b070;background:#fff4e5;display:flex;gap:8px;align-items:center;flex-wrap:wrap';z.appendChild(b2)}b2.hidden=!on;b2.innerHTML=on?'<b style="flex:1;min-width:180px;color:#8a5a00">車隊／流程有修改，還沒儲存</b><button class="btn sm" type="button" data-fd="cancel">取消</button><button class="btn sm pri" type="button" data-fd="save">儲存</button>':''});
   b.innerHTML=on?'<b style="flex:1;min-width:180px;color:#8a5a00">流程有修改，還沒儲存</b><button class="btn sm" type="button" data-fd="cancel">取消</button><button class="btn sm pri" type="button" data-fd="save">儲存</button>':'<span style="flex:1;min-width:180px;color:var(--muted)">地點、流程改完按「儲存」才會寫進系統</span><button class="btn sm" type="button" disabled>取消</button><button class="btn sm pri" type="button" disabled style="opacity:.45">儲存</button>'}
-['input','change','click'].forEach(ev=>document.addEventListener(ev,e=>{const t=e.target;if(!t||!t.closest)return;if(t.closest('#fdBar'))return;if(!t.closest('.flowEdit'))return;if(ev==='click'&&!t.closest('button'))return;fdBegin()},true));
+['input','change','click'].forEach(ev=>document.addEventListener(ev,e=>{const t=e.target;if(!t||!t.closest)return;if(t.closest('#fdBar')||t.closest('.fdBar2')||t.closest('#eqWarn'))return;if(!t.closest('.flowEdit')&&!t.closest('.fdZone'))return;if(ev==='click'&&!t.closest('button'))return;fdBegin()},true));
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-fd]');if(!b)return;if(b.dataset.fd==='save')fdCommit();else fdCancel()});
 window.addEventListener('beforeunload',e=>{if(FDRAFT){e.preventDefault();e.returnValue=''}});
 function save(){try{ptMerge(o)}catch(_){}if(FDRAFT&&o&&FDRAFT.id===o.id){o.updated=Date.now();DB.orders[o.id]=o;setTimeout(renderFdBar,0);return}o.updated=Date.now();DB.cur=o.id;DB.orders[o.id]=o;store('nwcw_orders',DB);pushSync();drvAutoQ()}
@@ -1110,8 +1111,17 @@ async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl
     const j=await res.json();clearTimeout(to);if(!j.ok)throw new Error(j.error||'失敗');
     let cur=false;DB.deleted=Object.assign({},DB.deleted||{},j.deleted||{});
     const CF=new Set(j.conflicts||[]);   /* 2026-10-20 伺服器擋下舊版覆蓋 → 這台改載入最新版 */
-    Object.keys(j.orders||{}).forEach(id=>{const r=j.orders[id],l=DB.orders[id];if(!l||(+r.updated||0)>(+l.updated||0)||CF.has(id)){DB.orders[id]=migrate(r);DB.orders[id]._base=+r.updated||0;if(id===o.id)cur=true}else if((+r.updated||0)===(+l.updated||0))l._base=+l.updated||0});
-    if(CF.size)setTimeout(()=>toast('有 '+CF.size+' 張單在別台裝置改過，已載入最新版本；剛剛在這台的修改請再改一次'),300);
+    let mergedN=0,lostN=0;
+    Object.keys(j.orders||{}).forEach(id=>{const r=j.orders[id],l=DB.orders[id];
+      if(CF.has(id)&&l&&BASES[id]){   /* 2026-10-20 Nicole：別台（或系統）同時改過 → 合併：這台改過的欄位保留，其他用伺服器最新版，不再整張丟掉 */
+        const b=BASES[id],m=migrate(clone(r)),J=v=>JSON.stringify(v===undefined?null:v);let kept=0;
+        Object.keys(l).forEach(k=>{if(k==='updated'||k==='_base'||k==='c')return;if(J(l[k])!==J(b[k])){m[k]=clone(l[k]);kept++}});
+        const lc=l.c||{},bc=b.c||{};m.c=m.c||{};Object.keys(lc).forEach(k=>{if(J(lc[k])!==J(bc[k])){m.c[k]=clone(lc[k]);kept++}});
+        BASES[id]=clone(r);m._base=+r.updated||0;if(kept){m.updated=Date.now();syncAgain=true;mergedN++}DB.orders[id]=m;if(id===o.id)cur=true;return}
+      if(!l||(+r.updated||0)>(+l.updated||0)||CF.has(id)){if(CF.has(id))lostN++;DB.orders[id]=migrate(r);DB.orders[id]._base=+r.updated||0;BASES[id]=clone(r);if(id===o.id)cur=true}
+      else if((+r.updated||0)===(+l.updated||0)){l._base=+l.updated||0;BASES[id]=clone(l)}});
+    if(mergedN)setTimeout(()=>toast('有 '+mergedN+' 張單在別台裝置也改過，已合併兩邊的修改'),300);
+    if(lostN)setTimeout(()=>toast('有 '+lostN+' 張單在別台裝置改過，已載入最新版本；剛剛在這台的修改請再改一次'),300);
     Object.keys(DB.deleted).forEach(id=>{const l=DB.orders[id];if(l&&(+l.updated||0)<=DB.deleted[id]){delete DB.orders[id];if(id===o.id)cur=true}});
     const real=Object.values(DB.orders).filter(x=>!x.sample).sort((a,b)=>(b.updated||0)-(a.updated||0));
     if(real.length){if(o.sample){o=real[0];cur=true}Object.values(DB.orders).forEach(x=>{if(x.sample)delete DB.orders[x.id]})}
