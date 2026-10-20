@@ -3283,14 +3283,14 @@ function renderBalHint(){const h=$('balHint');if(!h)return;const bc=$('balCard')
 /* 已在群組發佈派車單：勾了負責人才能在 LINE「我已聯絡新人」看到這趟（預排的單不會被司機看到） */
 /* 2026-10-20 Nicole：發派車單時一起把禮車教案發到群組，並追蹤每位司機都讀過（同業單、好好禮車訂單都一樣） */
 const LSNST={};
-function lsnAuto(x){if(!x||x.lsnSentAt||x.headOnly)return;lgCall({op:'lesson',keys:lgKeys(x)}).then(j=>{x.lsnSentAt=Date.now();save();LSNST[x.id]=Object.assign(j,{t:Date.now()});toast(j.queued?'現在是司機休息時間，禮車教案會在 10:00 發到「'+(j.name||'群組')+'」':'已在「'+(j.name||'群組')+'」發禮車教案');renderLsn()}).catch(e=>{LSNST[x.id]={err:e.message,t:Date.now()};toast('禮車教案沒發出去：'+e.message);renderLsn()})}
+function lsnAuto(x){if(!x||x.lsnSentAt||x.headOnly)return;lgCall({op:'lesson',keys:lgKeys(x)}).then(j=>{x.lsnSentAt=Date.now();save();LSNST[x.id]=Object.assign(j,{t:Date.now()});toast(j.queued?'現在是司機休息時間，禮車教案會在 09:00 發到「'+(j.name||'群組')+'」':'已在「'+(j.name||'群組')+'」發禮車教案');renderLsn()}).catch(e=>{LSNST[x.id]={err:e.message,t:Date.now()};toast('禮車教案沒發出去：'+e.message);renderLsn()})}
 function lsnLoad(x,force){if(!x||!x.pubAt)return;const c=LSNST[x.id];if(!force&&c&&(c.busy||Date.now()-c.t<60000))return;LSNST[x.id]=Object.assign(c||{},{busy:1,t:Date.now()});lgCall({op:'lessonSt',keys:lgKeys(x)}).then(j=>{LSNST[x.id]=Object.assign(j,{t:Date.now()});renderLsn()}).catch(e=>{LSNST[x.id]={err:e.message,t:Date.now()};renderLsn()})}
 function renderLsn(){if(!o)return;const bx=document.querySelectorAll('.lsnBox');if(!bx.length)return;let h='';
   if(o.headOnly)h='<div class="hint" style="margin:0">📘 此群組只有車頭，不發禮車教案。</div>';
   else if(!o.pubAt)h='<div class="hint" style="margin:0">📘 勾選「已發送派車單」或客人確認後系統發派車單時，會接著把禮車教案發到司機群組，並追蹤每位司機本週都讀過。</div>';
   else{const st=LSNST[o.id];if(!st||(st.busy&&!('sent' in st)&&!st.err)){h='<div class="hint" style="margin:0">📘 讀取教案閱讀狀況中…</div>';lsnLoad(o)}
     else if(st.err)h=`<div class="hint" style="margin:0;color:var(--warn)">📘 教案：${esc(st.err)}</div><div class="row" style="gap:6px;margin-top:6px"><button class="btn sm" data-lsn="send">發教案到群組</button><button class="btn sm" data-lsn="re">重新整理</button></div>`;
-    else if(!st.sent&&st.queued)h=`<div>🕙 ${st.queued==='pub'?'派車單和禮車教案':'禮車教案'}已排在 10:00 發到司機群組（22:00–10:00 不打擾司機休息）</div>`;
+    else if(!st.sent&&st.queued)h=`<div>🕙 ${st.queued==='pub'?'派車單和禮車教案':'禮車教案'}已排在 09:00 發到司機群組（00:00–09:00 不打擾司機休息）</div>`;
     else if(!st.sent)h=`<div style="color:var(--warn)">📘 這趟群組還沒發禮車教案</div><div class="row" style="gap:6px;margin-top:6px"><button class="btn sm pri" data-lsn="send">發教案到群組</button></div>`;
     else{const n=st.read.length+st.unread.length,t=new Date(+st.sent).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
       h=st.all?`<div style="color:var(--ok);font-weight:600">✅ 所有司機都已詳讀禮車教案（${st.read.length}/${n}）</div><div class="hint" style="margin:2px 0 0">${esc(st.read.join('、'))}・教案 ${esc(t)} 發出</div>`
@@ -3299,6 +3299,7 @@ function renderLsn(){if(!o)return;const bx=document.querySelectorAll('.lsnBox');
 /* 2026-10-20 Nicole：派車單由禮車助手發到群組，用按鈕卡片（跟客人收到的一樣）＋禮車教案 */
 document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.closest('#btnLgPub');if(!b||!o)return;const x=o;
   if(!confirm(x.pubAt?'這張派車單已經發佈過了，確定要再發一次到司機群組？':'由禮車助手把派車單（按鈕卡片）'+(x.headOnly?'':'和禮車教案')+'發到這趟的司機群組？'))return;
+  if(new Date().getHours()<9&&!confirm('現在是司機休息時間（00:00–09:00），確定現在就發到司機群組？'))return;   /* 2026-10-20 Nicole：00:00–09:00 先問 */
   b.disabled=true;const tx=b.textContent;b.textContent='傳送中…';
   try{const t=await lgMsgReady();const j=await lgCall({op:'pub',keys:lgKeys(x),no:orderNo(x),text:t,ho:x.headOnly?1:0});x.pubAt=Date.now();if(j.lesson&&!x.lsnSentAt)x.lsnSentAt=Date.now();if(o&&o.id===x.id){save()}else{x.updated=Date.now();DB.orders[x.id]=x;store('nwcw_orders',DB);pushSync()}
     try{renderPub()}catch(_){}try{renderLsn()}catch(_){}toast('已發到群組「'+(j.name||'')+'」'+(j.lesson?'（含禮車教案）':''))}
@@ -3308,7 +3309,8 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   if(k==='send'&&x.lsnSentAt&&!confirm('教案已經發過了，確定要再發一次？（本週已讀過的司機不用再讀）'))return;
   if(k==='send'&&!x.lsnSentAt&&!confirm('禮車助手會把禮車教案發到這趟的司機群組，確定發送？'))return;
   if(k==='nag'&&!confirm('禮車助手會在群組 @ 還沒讀教案的司機，確定發送？'))return;
-  b.disabled=true;b.textContent='傳送中…';lgCall({op:k==='nag'?'lessonNag':'lesson',keys:lgKeys(x)}).then(j=>{if(k==='send'){x.lsnSentAt=Date.now();save()}LSNST[x.id]=Object.assign(j,{t:Date.now()});toast(k==='nag'?(j.none?'大家都讀完了':'已在群組 @ 還沒讀的人'):j.queued?'現在是司機休息時間，教案會在 10:00 發':'已發禮車教案到「'+(j.name||'群組')+'」');renderLsn()}).catch(er=>{toast('沒發出去：'+er.message);b.disabled=false;renderLsn()})});
+  const dqNow=k==='send'&&new Date().getHours()<9&&confirm('現在是司機休息時間（00:00–09:00）。\n\n按「確定」＝現在就發\n按「取消」＝排到 09:00 再發');
+  b.disabled=true;b.textContent='傳送中…';lgCall({op:k==='nag'?'lessonNag':'lesson',keys:lgKeys(x),now:dqNow||undefined}).then(j=>{if(k==='send'){x.lsnSentAt=Date.now();save()}LSNST[x.id]=Object.assign(j,{t:Date.now()});toast(k==='nag'?(j.none?'大家都讀完了':'已在群組 @ 還沒讀的人'):j.queued?'現在是司機休息時間，教案會在 09:00 發':'已發禮車教案到「'+(j.name||'群組')+'」');renderLsn()}).catch(er=>{toast('沒發出去：'+er.message);b.disabled=false;renderLsn()})});
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#btnMemoLinkCard,#btnMemoLinkHide');if(!b)return;const c=$('memoLinkCard');if(!c)return;
   if(b.id==='btnMemoLinkHide'){c.hidden=true;return}try{showTab('memo')}catch(_){}c.hidden=false;try{renderMemoLinks()}catch(_){}setTimeout(()=>c.scrollIntoView({behavior:'smooth',block:'start'}),60)});
 function renderPub(){if(!o)return;const t=o.pubAt?new Date(o.pubAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';document.querySelectorAll('.pubBox').forEach(b=>{b.innerHTML=`<label style="display:flex;gap:8px;align-items:center;font-weight:600;cursor:pointer"><input type="checkbox" data-pub ${o.pubAt?'checked':''} style="width:20px;height:20px"> 已在群組發佈派車單 ${t?`<span class="hint" style="margin:0;font-weight:400">（${esc(t)}）</span>`:''}</label><div class="hint" style="margin:4px 0 0">勾選後，這趟的負責人才看得到 LINE「我已聯絡新人」的發文工具；預排、還沒公布的單不要勾。</div><div class="lsnBox" style="margin-top:10px"></div>`});renderLsn()}
