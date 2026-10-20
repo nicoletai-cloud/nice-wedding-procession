@@ -1217,7 +1217,7 @@ function zoneUnit(x){return Math.max(zoneUnitKm(x),zoneCross(x)*num(S.zRate||500
 function luxN(x){return MODELS.reduce((a,m)=>a+(num(x.cars[m])>0&&cPrice(m,x.hours).v>=10000?num(x.cars[m]):0),0)}
 function zoneLabel(x){const zc=zoneCross(x),km=zoneUnitKm(x);return zc*num(S.zRate||500)>=km&&zc?`跨區 ${zc} 區`:`里程 ${num(x.tripKm)}km`}
 function dzExtra(x){const k=overKm(x);return k>0&&zoneCross(x)>0?Math.ceil(k/num(S.dzKm||35)-1e-9)*num(S.dzAmt):0}
-function driverBasePay(m,x){const v=driverBasePay0(m,x);return v==null?null:v+dzExtra(x)}
+function driverBasePay(m,x){const v=driverBasePay0(m,Object.assign({},x,{hours:drvHrs(x)}));return v==null?null:v+dzExtra(x)}
 function driverBasePay0(m,x){const d=S.dp[m];if(!d)return null;const h=+x.hours,g=k=>blank(d[k])?null:num(d[k]);
   if(h===0)return g('trip');
   if(h>=3){const a=g('h3'),b=g('ot1');return a==null||b==null&&h>3?null:a+Math.ceil(h-3-1e-9)*(b||0)}
@@ -1387,7 +1387,11 @@ document.addEventListener('input',e=>{const t=e.target;if(!t||!t.dataset)return;
   if(t.dataset.fl&&/\.color$/.test(t.dataset.fl)){const f=o.fleet[+t.dataset.fl.split('.')[0]];if(f){f.colorSet=true;save()}return}
   if(t.id==='q_color'||t.id==='q_colorQty')setTimeout(()=>{if(applyColorReq(o)){save();renderFleet()}},0)});
 document.addEventListener('change',e=>{const t=e.target;if(t&&(t.id==='q_color'||t.id==='q_colorQty'))setTimeout(()=>{if(applyColorReq(o)){save();renderFleet()}},0)});
-function payOf(f,x){return f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x||o)}
+function payOf(f,x){x=x||o;return f.pay!==''&&f.pay!=null?num(f.pay)+otDrvAdd(f.m,x):driverBasePay(f.m,x)}
+/* 2026-10-21 Nicole：已和客人確認加時 → 司機酬勞改成加時後時數（例：3HR＋1HR＝4HR 的酬勞） */
+function otHrs(x){const mn=+((x&&x.otOk)||{}).min||0;if(!mn)return 0;const u=+x.hours>0&&+x.hours<3?30:60;return Math.ceil(mn/u)*u/60}
+function drvHrs(x){return +x.hours===0?0:+x.hours+otHrs(x)}
+function otDrvAdd(m,x){const h=otHrs(x);if(!h||+x.hours===0)return 0;const a=driverBasePay0(m,x),b=driverBasePay0(m,Object.assign({},x,{hours:+x.hours+h}));return a==null||b==null?0:b-a}
 /* 2026-10-20 Nicole：負責人對講機要夠（客人預約幾台車就要幾支，親友車不算）；客人要固定甘蔗時主禮車要有甘蔗固定器；主禮車要有車頭彩。資料來自司機在禮車助手填的車卡 */
 function eqIssues(x){const out=[];if(!x||x.sample||x.lost)return out;const F=x.fleet||[];if(!F.length)return out;
   const ld=F.find(f=>f.lead&&String(f.driver||'').trim());
@@ -1486,7 +1490,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   }else{
     const groups={};x.fleet.forEach(f=>{const v=payOf(f,x);const key=v==null?'?':v;(groups[key]=groups[key]||[]).push(f.role)});
     pay=[r.mon?(r.onsite?`收取${[r.red?`紅包 ${money(S.red)}/台`:'',r.cane?`甘蔗固定費 ${money(r.cane)}`:''].filter(Boolean).join('、')}`:'現場不用收款'):x.balPaid?(postX(x).length?(x.balRed&&r.red?`尾款客人已匯款，現場收司機紅包 ${money(S.red)}/台（共 ${money(r.red)}）＋${xTxt(x,postX(x))}`:`尾款 ${money(r.balance-sumX(x,postX(x)))} 客人已匯款，現場另收 ${xTxt(x,postX(x))}`):x.balRed&&r.red?`尾款客人已匯款，現場只收司機紅包 ${money(S.red)}/台（共 ${money(r.red)}）`:`尾款 ${money(r.balance)} 客人已匯款，現場不用收款`):x.balPlan==='transfer'?`客人選提前匯款；若當天還沒入帳，請收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`:`收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}${x.balPlan==='cash'?'・客人付現金':''}`];
-    Object.keys(groups).forEach(v=>{const roles=[...new Set(groups[v])].join('＋');pay.push(+x.hours===0?`${roles} 實拿${v==='?'?'（未設定）':money(+v)}（單程接送・綁彩）`:`${roles} ${v==='?'?'（未設定）':money(+v)}/${hrsLabel(x.hours)}${r.red?'(含紅包)':''}`)});
+    Object.keys(groups).forEach(v=>{const roles=[...new Set(groups[v])].join('＋');pay.push(+x.hours===0?`${roles} 實拿${v==='?'?'（未設定）':money(+v)}（單程接送・綁彩）`:`${roles} ${v==='?'?'（未設定）':money(+v)}/${hrsLabel(drvHrs(x))}${r.red?'(含紅包)':''}`)});
     const ms=MODELS.filter(m=>num(x.cars[m])>0);
     if(+x.hours===0)pay.push(`等候 15 分鐘未出發，每半小時：${ms.map(m=>driverOtText(m,x).replace(' 等候每 0.5HR','')).join(' ; ')}`);
     else pay.push(x.hours<3?'未滿 3 小時方案無緩衝，超過即以每 0.5 小時計加時':'加時 15 分鐘內不計 ; 第 16 分鐘起收加時費用',`加時：${otl}`);
@@ -1607,7 +1611,7 @@ function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr)
   const CNN=['零','一','兩','三','四','五','六','七','八','九','十'];const n2=n=>CNN[n]||String(n);
   const ng={};fl.forEach(f=>{const k=`${(f.color||'').trim()} ${MNAME[f.m]}`.trim();ng[k]=(ng[k]||0)+1});
   const pg={};fl.forEach(f=>{const v=payOf(f,x);const k=v==null?'?':String(v);(pg[k]=pg[k]||new Set()).add(MNAME[f.m])});
-  const pk=Object.keys(pg),hl=hrsLabel(x.hours);
+  const pk=Object.keys(pg),hl=hrsLabel(drvHrs(x));
   const payOne=v=>v==='?'?'（待定）':+x.hours===0?`實拿 ${money(+v)}（單程接送・綁彩）`:`${money(+v)}/${hl}${r.red?'（含紅包）':''}`;
   const payL=pk.length===1?payOne(pk[0]):pk.map(v=>`${[...pg[v]].join('、')} ${payOne(v)}`).join('；');
   const cane=caneOf(x),deco=(c.decoAns||'').trim();
