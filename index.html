@@ -1459,7 +1459,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   const cname=contactName(x),crole=c.role==='其他'?((c.rel||'').trim()?`(${c.rel.trim()})`:''):`(${lang==='en'?(c.role==='新郎'?'Groom':'Bride'):lang==='ja'?(c.role==='新郎'?'新郎':'新婦'):c.role})`;
   const p=dparts(x.date);
   const zn=lang==='zh'&&zodNeed(x);
-  const fleet=fleetWithFriends(x).map(f=>f.friend?{friend:true,role:lang==='zh'?f.role:roleName('親友車',lang),plate:roleName('親友車',lang),driver:lang==='en'?'Driven by family/friends':lang==='ja'?'ご親族・ご友人が運転':'親友自行駕駛',car:'',spec:'',phone:''}:({role:roleName(f.role,lang),plate:f.plate,emg:who==='drv'?emgLine(f):'',driver:(f.driver||'')+(f.lead?' '+t.lead:'')+(zn&&f.driver?(zodOfF(f)?` / 肖：${zodOfF(f)}`:(who==='drv'?' / 肖：未填':'')):''),car:(f.up||'').trim()&&f.up.trim()!==MNAME[f.m]?`${f.up.trim()}(升等)`:MNAME[f.m],spec:`${colorName(f.color||'',lang)} ${t.seats(f.seats||S.seats[f.m])}`.trim(),phone:ph(f.phone)}));
+  const fleet=fleetWithFriends(x).map(f=>f.friend?{friend:true,role:lang==='zh'?f.role:roleName('親友車',lang),plate:roleName('親友車',lang),driver:'',car:'',spec:'',phone:''}:({role:roleName(f.role,lang),plate:f.plate,emg:who==='drv'?emgLine(f):'',driver:(f.driver||'')+(f.lead?' '+t.lead:'')+(zn&&f.driver?(zodOfF(f)?` / 肖：${zodOfF(f)}`:(who==='drv'?' / 肖：未填':'')):''),car:(f.up||'').trim()&&f.up.trim()!==MNAME[f.m]?`${f.up.trim()}(升等)`:MNAME[f.m],spec:`${colorName(f.color||'',lang)} ${t.seats(f.seats||S.seats[f.m])}`.trim(),phone:ph(f.phone)}));
   let pts=points(x).filter(pt=>pt.addr).map(pt=>({k:pt.k,title:lang==='zh'&&String((c[ptField(pt.k)+'T'])||'').trim()?String(c[ptField(pt.k)+'T']).trim():pt.k==='A'?t.meet:pt.k==='B'?t.wed:t.other,   /* 2026-10-20 地點類型可選 */addr:noFloor(pt.addr),label:pt.label,map:pt.map}));
   {/* 2026-10-20 Nicole：地址待定、或流程沒用到的地點不列出（例：繞圈單 B 待定） */const pk=String(x.path||'').toUpperCase().match(/\b[A-Z]\b/g)||[];pts=pts.filter(p=>p.k==='A'||(!/^(待定|未定|待確認|待補|[-—－])$/.test(String(p.addr).trim())&&(!pk.length||pk.includes(p.k))))}
   {/* 2026-10-19 A、B 同一地點：只列「A. 集合地點：地址(地點名稱)」，不寫男方家／女方家 */const nz=v=>String(v||'').replace(/[\s　]/g,'').replace(/[（]/g,'(').replace(/[）]/g,')').replace(/臺/g,'台'),A=pts.find(p=>p.k==='A'),B=pts.find(p=>p.k==='B');
@@ -1503,18 +1503,32 @@ function noteItems(t){return nlSplit(t).map((z,i)=>`${i+1}. ${z}`)}   /* 2026-10
 function nlSplit(v){return String(v||'').trim().split(/\n\s*\n/).map(z=>z.trim().replace(/^\d{1,2}\s*[.．、]\s*/,'').trim()).filter(Boolean)}
 /* 2026-10-20 Nicole：注意事項改成一項一格，多一項按「＋ 新增一項」；存回原本欄位（每項用空行隔開） */
 function nlGrow(t){t.style.height='auto';t.style.height=Math.max(38,t.scrollHeight+2)+'px'}
-function nlRender(ta,extra){if(!ta)return;let w=ta.nextElementSibling;if(!w||!w.classList||!w.classList.contains('nl')){w=document.createElement('div');w.className='nl';ta.after(w);ta.style.display='none'}
+function nlRender(ta,extra,force){if(!ta)return;if(!extra&&!force&&DN_DIRTY&&ta.closest('#drvNoteCard'))return;let w=ta.nextElementSibling;if(!w||!w.classList||!w.classList.contains('nl')){w=document.createElement('div');w.className='nl';ta.after(w);ta.style.display='none'}
   if(!extra&&w.contains(document.activeElement))return;const it=nlSplit(ta.value);if(extra||!it.length)it.push('');const ph=ta.getAttribute('placeholder')||'';
   w.innerHTML=it.map((z,i)=>`<div class="nl-row"><b>${i+1}.</b><textarea rows="1" data-nli="${i}" placeholder="${i===0?esc(ph):'新的一項'}">${esc(z)}</textarea><button type="button" class="btn sm" data-nldel="${i}" title="刪除這一項">✕</button></div>`).join('')+`<button type="button" class="btn sm" data-nladd>＋ 新增一項</button>`;
   w.querySelectorAll('textarea').forEach(nlGrow);if(extra){const L=w.querySelectorAll('textarea[data-nli]');L[L.length-1].focus()}}
 function nlAll(){document.querySelectorAll('textarea[data-nl]').forEach(ta=>nlRender(ta))}
 function nlSync(w,skipSelf){const ta=w.previousElementSibling;const v=[...w.querySelectorAll('textarea[data-nli]')].map(t=>t.value.trim()).filter(Boolean).join('\n\n');
+  if(ta.closest('#drvNoteCard')){if(ta.value!==v){ta.value=v;dnDirty(true)}return}   /* 2026-10-20 Nicole：這一頁改完按「儲存」才寫進去，不即時更新 */
   if(ta.value!==v){ta.value=v;ta.dispatchEvent(new Event('input',{bubbles:true}));ta.dispatchEvent(new Event('change',{bubbles:true}))}
   document.querySelectorAll('textarea[data-nl]').forEach(t=>{if(t!==ta&&t.dataset.b===ta.dataset.b){t.value=v;nlRender(t)}})}
 document.addEventListener('input',e=>{const t=e.target;if(!t||!t.dataset||t.dataset.nli==null)return;nlGrow(t);const w=t.closest('.nl');if(w)nlSync(w)});
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-nladd],[data-nldel]');if(!a)return;const w=a.closest('.nl');if(!w)return;e.preventDefault();const ta=w.previousElementSibling;
   if(a.hasAttribute('data-nladd')){nlSync(w);nlRender(ta,true);return}
-  const row=a.closest('.nl-row');const has=row.querySelector('textarea').value.trim();if(has&&!confirm('刪除這一項？'))return;row.remove();nlSync(w);nlRender(ta)});
+  const row=a.closest('.nl-row');const has=row.querySelector('textarea').value.trim();if(has&&!confirm('刪除這一項？'))return;row.remove();nlSync(w);nlRender(ta,false,true)});
+/* 2026-10-20 Nicole：給司機的補充／車頭彩寫法／給客人的說明：改完出現「儲存／取消」，不即時存（避免網頁跳動、輸入失敗） */
+let DN_DIRTY=false;
+function dnBar(){const card=$('drvNoteCard');if(!card)return null;let b=$('dnSaveBar');if(!b){b=document.createElement('div');b.id='dnSaveBar';b.hidden=true;b.style.cssText='position:sticky;bottom:0;z-index:5;display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;padding:10px 0 4px;margin-top:10px;background:var(--card,#fff);border-top:1px solid var(--line,#ddd)';
+  b.innerHTML='<span style="margin-right:auto;color:var(--warn,#b9770e);font-weight:700">有修改還沒儲存</span><button type="button" class="btn sm" id="dnCancel">取消</button><button type="button" class="btn sm pri" id="dnSave">儲存</button>';card.appendChild(b)}return b}
+let DN_ID='';function dnDirty(v){DN_DIRTY=v;DN_ID=v&&o?o.id:'';const b=dnBar();if(b)b.hidden=!v}
+let DN_PASS=false;
+document.addEventListener('input',e=>{if(DN_PASS)return;const t=e.target;if(!t||!t.closest||!t.closest('#drvNoteCard'))return;if(t.dataset&&t.dataset.nli!=null){nlGrow(t);const w=t.closest('.nl');if(w)nlSync(w)}else if(t.dataset&&t.dataset.b)dnDirty(true);else return;e.stopImmediatePropagation()},true);
+document.addEventListener('change',e=>{if(DN_PASS)return;const t=e.target;if(t&&t.closest&&t.closest('#drvNoteCard')&&t.dataset&&(t.dataset.b||t.dataset.nli!=null))e.stopImmediatePropagation()},true);
+document.addEventListener('click',e=>{const id=e.target&&e.target.id;if(id!=='dnSave'&&id!=='dnCancel')return;const card=$('drvNoteCard');if(!card||!o)return;
+  if(id==='dnSave'){card.querySelectorAll('.nl').forEach(w=>{const ta=w.previousElementSibling;ta.value=[...w.querySelectorAll('textarea[data-nli]')].map(t=>t.value.trim()).filter(Boolean).join('\n\n')});
+    DN_PASS=true;try{card.querySelectorAll('[data-b]').forEach(el=>{if(String(getPath(o,el.dataset.b)??'')!==el.value){el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}))}})}finally{DN_PASS=false}
+    dnDirty(false);document.querySelectorAll('textarea[data-nl]').forEach(t=>{if(!card.contains(t)){t.value=getPath(o,t.dataset.b)||'';nlRender(t,false,true)}});toast('已儲存')}
+  else{dnDirty(false);card.querySelectorAll('[data-b]').forEach(el=>{const v=getPath(o,el.dataset.b);el.value=v==null?'':v});card.querySelectorAll('textarea[data-nl]').forEach(t=>nlRender(t,false,true));toast('已取消修改')}});
 new MutationObserver(()=>{document.querySelectorAll('textarea[data-nl]').forEach(ta=>{const w=ta.nextElementSibling;if(!w||!w.classList||!w.classList.contains('nl'))nlRender(ta)})}).observe(document.documentElement,{childList:true,subtree:true});
 function ptOne(p){const ad=String(p.addr||'').trim(),lb=String(p.label||'').replace(/^[（(]|[）)]$/g,'').trim(),mm=ad.match(/^(.*?)\s*[（(]([^（）()]+)[）)]\s*$/);const a=mm?mm[1]:ad,nm=mm?mm[2].trim():'';
   return{a,s:nm&&lb&&nm!==lb?`（${nm} - ${lb}）`:(nm||lb)?`（${nm||lb}）`:''}}
@@ -1522,7 +1536,7 @@ function memoText(m,maps){return window.nwcSpace?nwcSpace(memoText0(m,maps)):mem
 function memoText0(m,maps){const t=m.t,L2=[];
   L2.push(`好好禮車           ${t.orderNo}:${m.no}`,'———————',   /* 2026-10-20 Nicole：拿掉 Wedding Day 那行（跟下面日期重複） */
     m.dateLine,`${t.gather}：${m.gather}`,`${t.contact}：${m.contact}`,`${t.boss}：${m.boss}`,'',`${t.plan}`,m.plan,m.flags,'');
-  m.fleet.forEach(f=>L2.push(f.friend?`${f.role}｜${f.plate}｜${f.driver}`:`${f.role}｜${f.plate||'—'}｜${f.driver||'—'}｜${f.car} ${f.spec}｜${f.phone||'—'}${f.emg?'｜'+f.emg:''}`));
+  m.fleet.forEach(f=>L2.push(f.friend?`${f.role}｜${f.plate}`:`${f.role}｜${f.plate||'—'}｜${f.driver||'—'}｜${f.car} ${f.spec}｜${f.phone||'—'}${f.emg?'｜'+f.emg:''}`));
   L2.push('');m.pts.forEach(p=>{const q=ptOne(p);   /* 2026-10-20 Nicole：「A. 集合地點：地址（地點名稱 - 男方家）」一行；客人版導航連結直接放在地址上 */
     const pl=p.map&&!isRouteUrl(p.map);L2.push(m.who==='cust'?`${p.k}. ${p.title}：${pl?`[${q.a}](${p.map})`:q.a}${q.s}`:`${p.k}. ${p.title}：${q.a}${q.s}`+(pl?`\n導航定位：${p.map}`:''));if(maps)L2.push(mapUrl(p.addr))});
   const routes=m.pts.filter(p=>p.map&&isRouteUrl(p.map)).map(p=>p.map);
@@ -1817,9 +1831,13 @@ function fireLines(x,who){const L=[],c=x.c||{},loop=x.fireMode==='loop';
   if(who==='drv'&&x.host&&(x.host.name||x.host.phone))L.push(`儀式老師／主持人：${[x.host.name,x.host.phone].filter(Boolean).join(' ')}`);
   return L}
 function caneOf(x){const c=x.c||{},n=caneYN(c.caneNote);if(n&&(!c.caneAns||c.caneAns==='待確認'))return n;return c.caneAns||(x.cane?'是':'否')}
+/* 2026-10-20 Nicole：行前確認填的聯絡人身分（新郎／新娘／親友／婚顧或主持人／其他＋說明）→ 訂單聯絡人身分 */
+function cfRole(c,r,chg){const cr=String(r.crole||'').trim(),rel=String(r.crel||'').trim();if(!cr)return;
+  if(cr==='新郎'||cr==='新娘'){c.role=cr;return}const nm=String(r.name||'').trim();if(nm){c.role='其他';c.contact=nm}const v=cr==='其他'?(rel||'其他'):rel?cr+'／'+rel:cr;chg('聯絡人身分',c.rel,v);c.rel=v}
 function applyLoop(f){const c=o.c,diffs=['行程：單點繞圈'],warn=[];o.sample=false;
   const chg=(label,oldV,newV)=>{if(newV&&String(oldV||'')!==String(newV))diffs.push(`${label}：${oldV||'（空白）'} → ${newV}`)};
   if(f.name){const nm=f.name.replace(/\s+/g,'');const prev=contactName(o);if(nm===c.groom)c.role='新郎';else if(nm===c.bride)c.role='新娘';else{c.role='其他';c.contact=f.name}chg('聯絡人',prev,f.name)}
+  cfRole(c,f,chg);
   if(f.phone){chg('電話',c.phone,f.phone);c.phone=f.phone.replace(/\s/g,'')}
   if(f.meet){chg('集合地點',c.meet,f.meet);c.meet=f.meet;if(!c.meetL)c.meetL='男方家'}
   if(f.combo)c.combo=f.combo;if(f.cane){c.caneNote=f.cane;const cv=caneYN(f.cane);if(cv)c.caneAns=cv}
@@ -1834,6 +1852,7 @@ function applyLoop(f){const c=o.c,diffs=['行程：單點繞圈'],warn=[];o.samp
   return{diffs,warn}}
 /* 2026-10-20 舊版（10/18 以前）帶入的行前確認沒有把「想提醒司機」放進注意事項 → 每張只補一次（cfNoteChk），之後你刪改不會再加回 */
 const cfNz=s=>String(s||'').replace(/[\s　，,。.、！!~～]/g,'');
+function cfSegsTxt(f){const N={A:'男方家',B:'女方家',C:'餐廳',D:'其他地點'};return String(f.segs||'').split('\n').filter(Boolean).map(z=>{const m=z.match(/^(\S+) ([A-D])→([A-D])$/);return m?`${m[1]} ${m[2]===m[3]?N[m[2]]+'附近繞一圈':N[m[2]]+' → '+N[m[3]]}`:z}).join('\n')}
 function cfNoteIn(x,nt){return !!nt&&cfNz(x.drvNote).indexOf(cfNz(nt))>=0}
 function cfNoteFill(){const ch=[];Object.values(DB.orders).forEach(x=>{if(x.sample)return;const cf=CONFIRMS[normNo(orderNo(x))];if(!cf||!cf.f||+x.cfNoteChk===+cf.at)return;if(!(+x.cfApplyAt>=+cf.at))return;
   const nt=String(cf.f.note||'').trim();x.cfNoteChk=+cf.at;
@@ -1841,7 +1860,7 @@ function cfNoteFill(){const ch=[];Object.values(DB.orders).forEach(x=>{if(x.samp
   x.updated=Date.now();DB.orders[x.id]=x;ch.push(x)});return ch.filter(x=>cfNoteIn(x,String(CONFIRMS[normNo(orderNo(x))].f.note||'').trim())&&!(x.cfLast&&x.cfLast.f))}
 function cfNoteAdd(){const cf=CONFIRMS[normNo(orderNo(o))],nt=String(((cf&&cf.f)||(o.cfLast&&o.cfLast.f)||{}).note||'').trim();if(!nt)return;if(!cfNoteIn(o,nt))o.drvNote=(String(o.drvNote||'').trim()?String(o.drvNote).trim()+'\n\n':'')+nt;o.sample=false;save();try{renderAll()}catch(_){}toast('已加進注意事項（派車單＋服務確認單），記得重新產生文件')}
 function cfAuto(){const ch=[];Object.values(DB.orders).forEach(x=>{if(x.sample)return;const cf=CONFIRMS[normNo(orderNo(x))];if(!cf||!cf.f||!(+cf.at>(+x.cfApplyAt||0))||+x.locEditAt>=+cf.at)return;   /* 2026-10-20 你手動改過地點／流程後，同一份行前確認不再覆蓋 */
-  const keep=o;o=x;try{x.cfPrev={meet:x.c.meet||'',wed:x.c.wed||'',o1:x.c.o1||''};const f=cf.f,r=f.mode==='loop'?applyLoop(f):applyConfirm({name:f.name,phone:f.phone,meet:f.meet,wed:f.wed,start:f.start,combo:f.combo,cane:f.cane,back:f.back,restYN:f.restYN,restT:f.restT,restAddr:f.restAddr});
+  const keep=o;o=x;try{x.cfPrev={meet:x.c.meet||'',wed:x.c.wed||'',o1:x.c.o1||''};const f=cf.f,r=f.mode==='loop'?applyLoop(f):applyConfirm({crole:f.crole,crel:f.crel,segs:f.segs,dAddr:f.dAddr,name:f.name,phone:f.phone,meet:f.meet,wed:f.wed,start:f.start,combo:f.combo,cane:f.cane,back:f.back,restYN:f.restYN,restT:f.restT,restAddr:f.restAddr});
     if(f.friend){const ft=f.friend==='有'?`${f.friendN} 台，排第 ${String(f.friendPos||'').split(',').join('、')} 車`:f.friend;if(f.friend==='有')r.warn.unshift(`親友車加入車隊：${ft}，已自動排進用車確認單和司機派車單，請到「車隊」確認車序。`);else r.diffs.push(`親友車加入車隊：${ft}`)}   // 2026-10-15 行前確認新增親友車題目
     if(f.fireYN){x.fireYN=f.fireYN;x.fire=f.fire||'';x.fireType=f.fireType||'';x.fireMode=f.mode==='loop'?'loop':'';r.diffs.push('鞭炮：'+(f.fireYN==='要放'?fireLines(x,'cust')[0].replace(/^鞭炮：/,''):f.fireYN))}   // 2026-10-20 鞭炮
     if(f.host){x.host=f.host==='有'?{name:f.hostName||'',phone:f.hostPhone||''}:null;if(f.host==='有')r.diffs.push('儀式老師／主持人：'+([f.hostName,f.hostPhone].filter(Boolean).join(' ')||'有（沒留資料）'))}
@@ -1894,6 +1913,7 @@ function minutes(t){if(!t)return null;const [h,m]=t.split(':').map(Number);retur
 function applyConfirm(res){const c=o.c,before=clone(o),diffs=[],warn=[];o.sample=false;
   const chg=(label,oldV,newV)=>{if(newV&&String(oldV||'')!==String(newV))diffs.push(`${label}：${oldV||'（空白）'} → ${newV}`)};
   if(res.name){const nm=res.name.replace(/\s+/g,'');const prev=contactName(o);if(nm===c.groom)c.role='新郎';else if(nm===c.bride)c.role='新娘';else{c.role='其他';c.contact=res.name}chg('聯絡人',prev,res.name)}
+  cfRole(c,res,chg);   /* 2026-10-20 客人填的聯絡人身分 */
   if(res.phone){chg('電話',c.phone,res.phone);c.phone=res.phone.replace(/\s/g,'')}
   if(res.meet){chg('男方家／集合地點',c.meet,res.meet);c.meet=res.meet;if(!c.meetL)c.meetL='男方家'}
   if(res.wed){chg('女方家',c.wed,res.wed);c.wed=res.wed;if(!c.wedL)c.wedL='女方家'}
@@ -1903,8 +1923,11 @@ function applyConfirm(res){const c=o.c,before=clone(o),diffs=[],warn=[];o.sample
   const back=normTime(res.back);const restT=normTime(res.restT);const rest=yesish(res.restYN)||(!!res.restAddr&&!/^(否|不|無|沒|n\/?a)/i.test(res.restAddr));
   if(rest&&res.restAddr&&!/^(否|不|無|沒|n\/?a)/i.test(res.restAddr)){chg('餐廳',c.o1,res.restAddr);c.o1=res.restAddr;c.o1L='餐廳'}
   // rebuild flow
-  const flow=[{t:c.start,who:'',seg:'A - B'}];if(back)flow.push({t:back,who:'',seg:'B - A'});if(rest)flow.push({t:restT||'',who:'',seg:'A - C'});
-  o.flow=flow;o.path=rest?'A - B - A - C':'A - B - A';
+  const SG=String(res.segs||'').split('\n').map(z=>z.trim().match(/^(\d{1,2}:\d{2}) ([A-D])→([A-D])$/)).filter(Boolean);   /* 2026-10-20 新版行前確認：當天流程一段一行 */
+  if(SG.length){if(SG.some(m=>m[2]==='D'||m[3]==='D')&&res.dAddr){const fd=ptField('D');chg('其他地點（D）',c[fd],res.dAddr);c[fd]=res.dAddr;if(!c[fd+'L'])c[fd+'L']='其他地點'}
+    o.flow=SG.map(m=>({t:normTime(m[1])||m[1],who:'',seg:m[2]===m[3]?`${m[2]} 繞圈`:`${m[2]} - ${m[3]}`}));const ks=[SG[0][2]];SG.forEach(m=>{if(ks[ks.length-1]!==m[3])ks.push(m[3])});o.path=ks.join(' - ')}
+  else{const flow=[{t:c.start,who:'',seg:'A - B'}];if(back)flow.push({t:back,who:'',seg:'B - A'});if(rest)flow.push({t:restT||'',who:'',seg:'A - C'});
+  o.flow=flow;o.path=rest?'A - B - A - C':'A - B - A'}
   // cities
   const ca=countyOf(c.meet),cb=countyOf(c.wed),cc=rest?countyOf(c.o1):'';
   /* 2026-10-20 Nicole：台北、新北算同縣市（只需計算公里數）；原本沒設定縣市就不提醒 */const g2=v=>/^(台北|新北)$/.test(v||'')?'雙北':(v||'');
@@ -1912,7 +1935,7 @@ function applyConfirm(res){const c=o.c,before=clone(o),diffs=[],warn=[];o.sample
   if(cc&&g2(cc)!==g2(ca)&&g2(cc)!==g2(cb))warn.push(`餐廳在${cc}，跟男女方不同縣市。`);
   if(ca||cb||cc){const L3=[ca,cb,cc].filter(Boolean),set=new Set(L3.map(g2));if(!num(o.tripKm)){if(set.size>1)warn.push('行程跨縣市，請在「報價」填「總行程里程」確認是否有跨區/里程費。');else if(new Set(L3).size>1)warn.push('行程在台北、新北（算同縣市），請在「報價」填「總行程里程」確認公里數。')}}
   // duration vs contract
-  const last=rest?(restT||back):back;let need=null;
+  const last=SG.length?normTime(SG[SG.length-1][1]):rest?(restT||back):back;let need=null;
   if(c.start&&last){let d=minutes(last)-minutes(c.start);if(d<0)d+=1440;d+=30;need=d;
     const endEst=addMin(c.start,d);c.end=endEst;const allow=o.hours*60+15;
     if(d>allow){const eh=Math.ceil((d-o.hours*60)/60-1e-9);const otAmt=MODELS.reduce((a,m)=>a+num(o.cars[m])*num(S.ot[m])*eh,0);
@@ -2001,8 +2024,8 @@ function renderCfFlow(){const card=$('cfFlowCard'),b=$('cfFlowBody');if(!card||!
   const at=cf?+cf.at:+L.at,who=(cf&&cf.who)||(L&&L.who)||'',ln=(cf&&cf.lname)||(L&&L.lname)||'';
   let h=`<b style="color:var(--ok)">✅ ${L&&L.manual&&!f?'已用貼上的回覆帶入':'客人已送出'}（${tm(at)}${who?'，'+(who==='agent'?'婚顧／主持人代填':'新人填寫'):''}${ln?'，LINE：'+esc(ln):''}）</b>`;
   if(f){const loop=f.mode==='loop',fr=f.friend?(f.friend==='有'?`${f.friendN} 台，排第 ${String(f.friendPos||'').split(',').join('、')} 車`:f.friend):'';
-    const rows=(loop?[['行程','單點繞圈'],['聯絡人',[f.name,f.phone].filter(Boolean).join(' ')],['集合地點（男方家）',f.meet],['第一圈',f.loop1],['繞第二圈',f.loop2YN],['第二圈',f.loop2T]]
-      :[['聯絡人',[f.name,f.phone].filter(Boolean).join(' ')],['男方家／集合地點',f.meet],['女方家',f.wed],['出發時間',f.start],['迎娶回男方家',f.back],['接送至餐廳',f.restYN],['出發去餐廳',f.restT],['餐廳地址',f.restAddr]])
+    const rows=(loop?[['行程','單點繞圈'],['聯絡人',[f.name,f.phone].filter(Boolean).join(' ')+(f.crole?`（${[f.crole,f.crel].filter(Boolean).join('／')}）`:'')],['集合地點（男方家）',f.meet],['第一圈',f.loop1],['繞第二圈',f.loop2YN],['第二圈',f.loop2T]]
+      :[['聯絡人',[f.name,f.phone].filter(Boolean).join(' ')+(f.crole?`（${[f.crole,f.crel].filter(Boolean).join('／')}）`:'')],['男方家／集合地點',f.meet],['女方家',f.wed],['當天流程',cfSegsTxt(f)],['其他地點（D）',f.dAddr],['出發時間',f.segs?'':f.start],['迎娶回男方家',f.segs?'':f.back],['接送至餐廳',f.restYN],['出發去餐廳',f.segs?'':f.restT],['餐廳地址',f.restAddr]])
       .concat([['訂結一起',f.combo],['甘蔗竹子',f.cane],['親友車加入車隊',fr],['鞭炮',f.fireYN==='要放'?fireLines({fireYN:'要放',fire:f.fire,fireType:f.fireType,fireMode:f.mode,c:o.c},'cust').join('\n'):f.fireYN],['儀式老師／主持人',f.host==='有'?([f.hostName,f.hostPhone].filter(Boolean).join(' ')||'有'):f.host],['想提醒司機',f.note]]).filter(r=>String(r[1]||'').trim());const ntIn=cfNoteIn(o,String(f.note||'').trim());
     h+=`<div class="tbl" style="margin-top:8px"><table><tbody>${rows.map(r=>`<tr><th style="white-space:nowrap;width:1%">${esc(r[0])}</th><td style="white-space:pre-wrap">${esc(r[1])}${r[0]==='想提醒司機'?(ntIn?'<div class="sub" style="color:var(--ok);white-space:normal">✅ 已在注意事項（派車單、服務確認單都看得到）</div>':'<div style="color:var(--warn);white-space:normal;margin-top:4px">⚠️ 還沒放進注意事項，派車單看不到 <button class="btn sm" id="btnCfNoteAdd">加進注意事項</button></div>'):''}</td></tr>`).join('')}${(f.files||[]).length?`<tr><th style="white-space:nowrap">行程表</th><td>${f.files.map(z=>`<a href="https://drive.google.com/file/d/${encodeURIComponent(z.id)}/view" target="_blank" rel="noopener">${esc(z.name||(z.pdf?'PDF':'照片'))}</a>`).join('、')}</td></tr>`:''}</tbody></table></div>`}
   if(L&&L.cmp&&(L.cmp.lines||[]).length)h+=`<div class="sum" style="margin-top:8px;border-left:3px solid #A0453A"><b style="color:#A0453A">⚠️ 跟 ${tm(L.cmp.at)}（${L.cmp.who==='agent'?'婚顧／主持人代填':L.cmp.who?'新人':'之前'}）填的不一樣，請跟客人核對：</b>${L.cmp.lines.map(z=>`<div class="sub">・${esc(z)}</div>`).join('')}</div>`;
@@ -2036,7 +2059,7 @@ function renderXList(){if(!o)return;if(!Array.isArray(o.extras)||!o.extras.lengt
   const c5=$('xCard5');if(c5)c5.hidden=isPt(o)||isMonthly(o);
   document.querySelectorAll('.xList').forEach(el=>{if(el.contains(document.activeElement)&&el.querySelectorAll('[data-b$=".n"]').length===o.extras.length)return;const w=el.dataset.xw;
   el.innerHTML=(w==='1'?`<div style="font-size:0.867rem;color:var(--muted);margin-bottom:4px">加項（例：指定路線、跨縣市）</div>`:'')+o.extras.map((e,i)=>`<div class="row" style="gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><input data-b="extras.${i}.n" placeholder="項目，例：指定路線" style="flex:1 1 140px;min-width:0"><input type="number" data-b="extras.${i}.a" data-num placeholder="金額" style="width:100px"><select data-b="extras.${i}.late" data-bool style="width:auto"><option value="0">訂金前已談好</option><option value="1">出發前新增（列在尾款）</option></select>${o.extras.length>1||e.n||num(e.a)?`<button class="btn sm" data-xdel="${i}" title="刪除">✕</button>`:''}</div>`).join('')+`<button class="btn sm" data-xadd="${w}">＋ 新增款項</button>`})}
-function fillInputs(){try{renderXList()}catch(e){}document.querySelectorAll('[data-b]').forEach(el=>{const v=getPath(o,el.dataset.b);if(el.hasAttribute('data-bool'))el.value=v?'1':'0';else el.value=v==null||(el.dataset.b==='tripKm'&&!+v)?'':v});try{nlAll()}catch(e){}
+function fillInputs(){if(DN_DIRTY&&(!o||o.id!==DN_ID))dnDirty(false);try{renderXList()}catch(e){}document.querySelectorAll('[data-b]').forEach(el=>{if(DN_DIRTY&&el.closest('#drvNoteCard'))return;const v=getPath(o,el.dataset.b);if(el.hasAttribute('data-bool'))el.value=v?'1':'0';else el.value=v==null||(el.dataset.b==='tripKm'&&!+v)?'':v});try{nlAll()}catch(e){}
   document.querySelectorAll('[data-s]').forEach(el=>{el.value=S[el.dataset.s]==null?'':S[el.dataset.s]});
   try{renderFormPlaces()}catch(e){}
   try{renderChats()}catch(e){}
@@ -2197,6 +2220,7 @@ function fleetTbl(h){
     var hd = n <= 2 ? ['車序', '車款'] : n <= 5 ? ['車序', '司機', '車號／車款'] : ['車序', '司機', '車號／車款', '緊急聯絡'];
     out.push('<table class="ft"><thead><tr>' + hd.map(function(x){ return '<th>' + x + '</th>'; }).join('') + '</tr></thead><tbody>' + rows.map(function(r){
       if (n <= 2) return '<tr><td class="nw">' + r[0] + '</td><td>' + (r[1] || '') + '</td></tr>';
+      if (r.length <= 2) return '<tr><td class="nw">' + r[0] + '</td><td colspan="' + (n <= 5 ? 2 : 3) + '">' + (r[1] || '') + '</td></tr>';   /* 2026-10-20 親友車：第二、三欄合併寫「親友車」 */
       var drv = (r[2] || '') + (r[4] ? '<br>' + r[4] : ''), car = (r[1] || '') + (r[3] ? '<div class="em">' + r[3] + '</div>' : '');
       if (n <= 5) return '<tr><td class="nw">' + r[0] + '</td><td>' + drv + '</td><td>' + car + '</td></tr>';
       var em = r.slice(5).join(' '), er = em.replace(/^緊急聯絡人?/, '').trim().match(/^[（(]([^）)]*)[）)]\s*[:：]\s*(.+)$/);
