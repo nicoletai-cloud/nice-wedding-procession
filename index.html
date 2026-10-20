@@ -2103,7 +2103,7 @@ document.addEventListener('input',e=>{const el=e.target;
   if(el.dataset.p){const [grp,m,k]=el.dataset.p.split('.');const v=el.value===''?'':num(el.value);if(k)S[grp][m][k]=v;else S[grp][m]=v;saveS();renderCars();renderFleet();renderAll();return}
   if(el.dataset.mm){const [i,k]=el.dataset.mm.split('.');S.models[+i][k]=el.value;rebuildModels();saveS();renderCars();renderAll();return}
   if(el.dataset.bd){const [i,k]=el.dataset.bd.split('.');const b=S.bundles[+i];if(k==='name')b.name=el.value;else if(k==='price')b.price=num(el.value);else if(k==='combo')b.cars=parseCombo(el.value);else b.cars[k]=num(el.value);saveS();renderAll();return}
-  if(el.dataset.fl){const [i,k]=el.dataset.fl.split('.');const f=o.fleet[+i];if(k==='lead'){o.fleet.forEach(x=>x.lead=false);f.lead=el.checked}else f[k]=(k==='seats')?num(el.value):el.value;o.sample=false;save();renderAll();return}
+  if(el.dataset.fl){const [i,k]=el.dataset.fl.split('.');const f=o.fleet[+i];if(k==='lead'){o.fleet.forEach(x=>x.lead=false);f.lead=el.checked}else f[k]=(k==='seats')?num(el.value):k==='plate'?el.value.toUpperCase():el.value;o.sample=false;save();renderAll();return}
   if(el.dataset.fw){const [i,k]=el.dataset.fw.split('.');o.flow[+i][k]=el.value;o.sample=false;o.locEditAt=Date.now();save();renderAll();return}
   if(el.id==='mapLinks'){o.mapLinks=el.checked;save();renderMemo()}
 });
