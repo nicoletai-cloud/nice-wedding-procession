@@ -1436,12 +1436,14 @@ function tipsC(x,lang){const mc=(x.fleet||[]).find(f=>f.role==='主禮車');cons
 const TIPS_D=['前一天確實清潔車輛及充電、遵守服裝規定、調整座椅角度、注意禮貌積極協助新人及負責人完成任務、抽菸請迴避新人。','請事先將所有行程定點設定於導航中，點選上列地址連結後可跳轉至 Google Map。','安全第一：車隊行駛跟車中務必以安全為第一考量，若車隊中斷可在定點集合後再出發。','保護車輛：為避免損傷車輛，請主動協助新人開關車門及行李箱，施放鞭炮建議客人下車施放，待鞭炮結束後車隊再行駛。','遵守禮俗：迎娶中禮車不能倒車、迴轉，狹窄巷弄請特別留意注意轉彎角度。','任務當天起床、出發、到點請在群組回報。','車隊出發、任務結束請負責人在群組回報。','任務結束請確實查看車上是否有客人遺留物品並交還對講機後方可離開。'];
 /* 2026-10-15 親友車加入車隊：x.friends=[{pos,role}]，排進用車確認單／司機派車單的車序；行前確認填了會自動帶入 */
 const ZH_N='一二三四五六七八九十';
-function frDefRole(p){return p===1?'前導車':`第${ZH_N[p-1]||p}台`}
+/* 2026-10-20 Nicole：車序名稱看整個車隊（含親友車）總台數：2 台＝前導車、主禮車；3 台＝前導車、主禮車、伴娘車；4 台以上第 3 台起叫第三台、第四台… */
+function frDefRole(p,n){return p===1?'前導車':p===2?'主禮車':p===3&&n===3?'伴娘車':`第${ZH_N[p-1]||p}台`}
 function frList(x){return (x.friends||[]).filter(z=>+z.pos>0).map(z=>({pos:+z.pos,role:String(z.role||'').trim()})).sort((a,b)=>a.pos-b.pos)}
 function frText(x){return frList(x).map(z=>z.pos+(z.role?' '+z.role:'')).join(', ')}
 function frParse(t){const out=[],seen={};String(t||'').split(/[,，、;；\n]+/).forEach(q=>{const m=q.trim().match(/^第?\s*(\d{1,2})\s*(?:車|台)?\s*(.*)$/);if(!m)return;const p=+m[1];if(!p||seen[p])return;seen[p]=1;out.push({pos:p,role:m[2].trim()})});return out.sort((a,b)=>a.pos-b.pos)}
 function fleetWithFriends(x){const fr=frList(x),fl=x.fleet||[],res=[];let k=0;
-  for(let p=1;k<fl.length||fr.some(z=>z.pos>=p);p++){const z=fr.find(q=>q.pos===p);if(z)res.push({friend:true,pos:p,role:z.role||frDefRole(p)});else if(k<fl.length)res.push(fl[k++]);}
+  for(let p=1;k<fl.length||fr.some(z=>z.pos>=p);p++){const z=fr.find(q=>q.pos===p);if(z)res.push({friend:true,pos:p,role:z.role});else if(k<fl.length)res.push(fl[k++]);}
+  const n=res.length;if(fr.length)res.forEach((f,i)=>{if(f.friend){if(!f.role)f.role=frDefRole(i+1,n)}else if(!String(f.role||'').trim()||f.role==='其他')res[i]=Object.assign({},f,{role:frDefRole(i+1,n)})});
   return res}
 function renderFr(){const el=$('frIn');if(!el||!o)return;if(document.activeElement!==el)el.value=frText(o);const n=frList(o).length;$('frSt').textContent=n?`共 ${n} 台，會排進用車確認單和司機派車單`:''}
 document.addEventListener('change',e=>{if(!e.target||e.target.id!=='frIn'||!o)return;o.friends=frParse(e.target.value);o.friendsManual=true;o.sample=false;save();renderFr();try{renderAll()}catch(_){}toast(o.friends.length?`已設定親友車：第 ${o.friends.map(z=>z.pos).join('、')} 車`:'已清除親友車')});
@@ -1456,7 +1458,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   const cname=contactName(x),crole=c.role==='其他'?((c.rel||'').trim()?`(${c.rel.trim()})`:''):`(${lang==='en'?(c.role==='新郎'?'Groom':'Bride'):lang==='ja'?(c.role==='新郎'?'新郎':'新婦'):c.role})`;
   const p=dparts(x.date);
   const zn=lang==='zh'&&zodNeed(x);
-  const fleet=fleetWithFriends(x).map(f=>f.friend?{friend:true,role:lang==='zh'?f.role:roleName('親友車',lang),plate:roleName('親友車',lang),driver:'',car:'',spec:'',phone:''}:({role:roleName(f.role,lang),plate:f.plate,emg:who==='drv'?emgLine(f):'',driver:(f.driver||'')+(f.lead?' '+t.lead:'')+(zn&&f.driver?(zodOfF(f)?` / 肖：${zodOfF(f)}`:(who==='drv'?' / 肖：未填':'')):''),car:(f.up||'').trim()&&f.up.trim()!==MNAME[f.m]?`${f.up.trim()}(升等)`:MNAME[f.m],spec:`${colorName(f.color||'',lang)} ${t.seats(f.seats||S.seats[f.m])}`.trim(),phone:ph(f.phone)}));
+  const fleet=fleetWithFriends(x).map(f=>f.friend?{friend:true,role:lang==='zh'?f.role:roleName('親友車',lang),plate:roleName('親友車',lang),driver:lang==='en'?'Driven by family/friends':lang==='ja'?'ご親族・ご友人が運転':'親友自行駕駛',car:'',spec:'',phone:''}:({role:roleName(f.role,lang),plate:f.plate,emg:who==='drv'?emgLine(f):'',driver:(f.driver||'')+(f.lead?' '+t.lead:'')+(zn&&f.driver?(zodOfF(f)?` / 肖：${zodOfF(f)}`:(who==='drv'?' / 肖：未填':'')):''),car:(f.up||'').trim()&&f.up.trim()!==MNAME[f.m]?`${f.up.trim()}(升等)`:MNAME[f.m],spec:`${colorName(f.color||'',lang)} ${t.seats(f.seats||S.seats[f.m])}`.trim(),phone:ph(f.phone)}));
   let pts=points(x).filter(pt=>pt.addr).map(pt=>({k:pt.k,title:lang==='zh'&&String((c[ptField(pt.k)+'T'])||'').trim()?String(c[ptField(pt.k)+'T']).trim():pt.k==='A'?t.meet:pt.k==='B'?t.wed:t.other,   /* 2026-10-20 地點類型可選 */addr:noFloor(pt.addr),label:pt.label,map:pt.map}));
   {/* 2026-10-20 Nicole：地址待定、或流程沒用到的地點不列出（例：繞圈單 B 待定） */const pk=String(x.path||'').toUpperCase().match(/\b[A-Z]\b/g)||[];pts=pts.filter(p=>p.k==='A'||(!/^(待定|未定|待確認|待補|[-—－])$/.test(String(p.addr).trim())&&(!pk.length||pk.includes(p.k))))}
   {/* 2026-10-19 A、B 同一地點：只列「A. 集合地點：地址(地點名稱)」，不寫男方家／女方家 */const nz=v=>String(v||'').replace(/[\s　]/g,'').replace(/[（]/g,'(').replace(/[）]/g,')').replace(/臺/g,'台'),A=pts.find(p=>p.k==='A'),B=pts.find(p=>p.k==='B');
@@ -1503,14 +1505,14 @@ function memoText(m,maps){return window.nwcSpace?nwcSpace(memoText0(m,maps)):mem
 function memoText0(m,maps){const t=m.t,L2=[];
   L2.push(`好好禮車           ${t.orderNo}:${m.no}`,'———————',   /* 2026-10-20 Nicole：拿掉 Wedding Day 那行（跟下面日期重複） */
     m.dateLine,`${t.gather}：${m.gather}`,`${t.contact}：${m.contact}`,`${t.boss}：${m.boss}`,'',`${t.plan}`,m.plan,m.flags,'');
-  m.fleet.forEach(f=>L2.push(f.friend?`${f.role}｜${f.plate}`:`${f.role}｜${f.plate||'—'}｜${f.driver||'—'}｜${f.car} ${f.spec}｜${f.phone||'—'}${f.emg?'｜'+f.emg:''}`));
+  m.fleet.forEach(f=>L2.push(f.friend?`${f.role}｜${f.plate}｜${f.driver}`:`${f.role}｜${f.plate||'—'}｜${f.driver||'—'}｜${f.car} ${f.spec}｜${f.phone||'—'}${f.emg?'｜'+f.emg:''}`));
   L2.push('');m.pts.forEach(p=>{const q=ptOne(p);   /* 2026-10-20 Nicole：「A. 集合地點：地址（地點名稱 - 男方家）」一行；客人版導航連結直接放在地址上 */
     const pl=p.map&&!isRouteUrl(p.map);L2.push(m.who==='cust'?`${p.k}. ${p.title}：${pl?`[${q.a}](${p.map})`:q.a}${q.s}`:`${p.k}. ${p.title}：${q.a}${q.s}`+(pl?`\n導航定位：${p.map}`:''));if(maps)L2.push(mapUrl(p.addr))});
   const routes=m.pts.filter(p=>p.map&&isRouteUrl(p.map)).map(p=>p.map);
   if(m.route)L2.push(`${t.route}：${m.route}`);
   L2.push('',`${t.flow}：${m.path||''}`,...m.flow);
   /* 2026-10-19 Nicole：已轉達司機、參考資訊放在禮車流程下面，項目叫「注意事項」 */
-  if(m.drvNote||(m.files||[]).length||routes.length){L2.push('',`${t.notes||'注意事項'}${m.drvNote?`（${m.drvLabel||t.drvAdd||'給司機的補充'}）`:''}：`);if(m.drvNote){const ni=noteItems(m.drvNote);L2.push(...(ni.length>1?['']:[]),...ni)}   /* 2026-10-20 Nicole：只有一項時標題下不空行；多項編號才空一行 */
+  if(m.drvNote||(m.files||[]).length||routes.length){L2.push('',`${t.notes||'注意事項'}${m.drvNote?`（${m.drvLabel||t.drvAdd||'給司機的補充'}）`:''}：`);if(m.drvNote){const ni=noteItems(m.drvNote);L2.push(...ni)}   /* 2026-10-20 Nicole：注意事項標題下都不空行 */
     routes.forEach((u,i)=>L2.push(m.who==='cust'?`🗺 [路線參考${routes.length>1?' '+(i+1):''}](${u})`:`🗺 路線參考${routes.length>1?' '+(i+1):''}：${u}`));
 
     if((m.files||[]).length)L2.push(`📎 ${t.files||'參考資訊'}：`+m.files.map((f,i)=>`${t.ref||'參考資料'} ${i+1} ${f.url}`).join('、'));}   /* 2026-10-19 同一行不換行 */   /* 不顯示檔名；確認單網頁會把這行變成「參考資料 1」連結 */
@@ -2185,7 +2187,7 @@ function fleetTbl(h){
     }).join('') + '</tbody></table>');
     buf = [];
   };
-  L.forEach(function(l){ if (/^[^｜\s<>]{1,8}車\s*｜/.test(l) && l.split('｜').length >= 2) buf.push(l); else { flush(); out.push(l); } });
+  L.forEach(function(l){ if (/^[^｜\s<>]{1,8}[車台]\s*｜/.test(l) && l.split('｜').length >= 2) buf.push(l); else { flush(); out.push(l); } });
   flush();
   return out.join('\n').replace(/\n?(<table class="ft">[\s\S]*?<\/table>)\n?/g, '$1')
     .replace(/導航定位：(https:\/\/[^\s<]+)/g, '導航定位：<a href="$1" target="_blank" rel="noopener" style="color:#8a6d43;text-decoration:underline">開啟 Google 地圖</a>');
