@@ -319,13 +319,12 @@ nav.tabs button{scroll-snap-align:start}
 
   <nav class="tabs" role="tablist" id="tabs">
     <button role="tab" data-tab="quote" aria-selected="true"><span class="n">1</span>報價・下單</button>
-    <button role="tab" data-tab="couple"><span class="n">2</span>確認款項</button>
-    <button role="tab" data-tab="contract"><span class="n">3</span>合約</button>
-    <button role="tab" data-tab="find"><span class="n">4</span>找司機</button>
-    <button role="tab" data-tab="dispatch"><span class="n">5</span>車隊與流程</button>
-    <button role="tab" data-tab="memo"><span class="n">6</span>服務確認單／派車單</button>
-    <button role="tab" data-tab="refs"><span class="n">7</span>回金</button>
-    <button role="tab" data-tab="settings" hidden><span class="n">8</span>價目設定</button>
+    <button role="tab" data-tab="contract"><span class="n">2</span>合約</button>
+    <button role="tab" data-tab="find"><span class="n">3</span>找司機</button>
+    <button role="tab" data-tab="dispatch"><span class="n">4</span>車隊與流程</button>
+    <button role="tab" data-tab="memo"><span class="n">5</span>服務確認單／派車單</button>
+    <button role="tab" data-tab="refs"><span class="n">6</span>回金</button>
+    <button role="tab" data-tab="settings" hidden><span class="n">7</span>價目設定</button>
   </nav>
 
   <div class="sample" id="sampleBar" hidden>
@@ -458,10 +457,7 @@ nav.tabs button{scroll-snap-align:start}
         </div>
       </div>
     </div>
-  </section>
-
-  <!-- 2 新人資料 -->
-  <section class="tab" id="tab-couple" hidden>
+    <!-- 2026-10-21 Nicole：訂金都走綠界 ATM，原本「2 確認款項」併到第一頁 -->
     <div class="grid" style="margin-bottom:18px">
       <div class="card">
         <h3>收款確認 <span id="payChip"></span></h3>
@@ -478,6 +474,8 @@ nav.tabs button{scroll-snap-align:start}
       </div>
     </div>
   </section>
+
+
 
   <!-- 3 合約 -->
   <section class="tab" id="tab-contract" hidden>
@@ -922,7 +920,7 @@ nav.tabs button{scroll-snap-align:start}
             <select id="c_role" data-b="c.role"><option>新郎</option><option>新娘</option><option>其他</option></select></label>
           <label class="f">聯絡人姓名（其他時填）<input id="c_cname" data-b="c.contact"></label>
           <label class="f">聯絡人關係（其他時填）<input id="c_rel" data-b="c.rel" placeholder="例：新娘妹妹"></label>
-          <label class="f">聯絡電話<input id="c_phone" data-b="c.phone" inputmode="tel"></label>
+          <label class="f">聯絡電話 <b style="color:var(--warn);font-size:.8em">必填</b><input id="c_phone" data-b="c.phone" inputmode="tel" required placeholder="必填，例：0912-345-678"></label>
           <label class="f">第二聯絡人<input id="c_contact2" data-b="c.contact2" placeholder="沒有就留空"></label>
           <label class="f">第二聯絡人關係<input id="c_rel2" data-b="c.rel2" placeholder="例：新郎"></label>
           <label class="f">第二聯絡人電話<input id="c_phone2" data-b="c.phone2" inputmode="tel"></label>
@@ -2146,7 +2144,7 @@ function renderSum(){const r=calc(o);const rows=[];
   $('bundleChip').innerHTML=r.b?`<span class="chip ok">已套用 ${esc(r.b.name)}方案 ${money(r.b.price)}</span>`:(o.hours<3?`<span class="chip">${hrsLabel(o.hours)}不適用優惠方案</span>`:'')+r.miss.map(t=>`<span class="chip" style="color:var(--warn)">${esc(t)}</span>`).join('');
   $('payBox').innerHTML=o.fleet.map(f=>{const v=payOf(f);return `<div><span>${esc(f.role)}・${MNAME[f.m]}</span><span>${v==null?'未設定':money(v)}</span></div>`}).join('')+`<div class="tot"><span>合計</span><span>${r.dok?money(r.dsum):'—'}</span></div>`}
 function renderFleet(){try{renderFr()}catch(_){}try{setTimeout(renderEq,0)}catch(_){}$('fleetBody').innerHTML=o.fleet.map((f,i)=>{const dp=driverBasePay(f.m,o);return `<tr><td><b>${MNAME[f.m]}</b></td>
-  <td><select data-fl="${i}.role" id="fl_r${i}">${ROLES.map(r=>`<option${r===f.role?' selected':''}>${r}</option>`).join('')}</select></td>
+  <td><select data-fl="${i}.role" id="fl_r${i}" style="min-width:104px">${ROLES.map(r=>`<option${r===f.role?' selected':''}>${r}</option>`).join('')}</select></td>
   <td><input data-fl="${i}.plate" id="fl_p${i}" value="${esc(f.plate)}" placeholder="ABC-1234"></td>
   <td><input data-fl="${i}.driver" id="fl_d${i}" value="${esc(f.driver)}"><div style="display:flex;gap:4px;margin-top:4px;align-items:center"><select class="drvPick" data-dp="${i}" style="font-size:0.8rem;max-width:150px">${drvOptions(f)}</select>${(f.driver||f.phone||f.plate)?`<button class="btn sm" data-drvclr="${i}" title="移除這台的司機、電話、車號、緊急聯絡" style="padding:2px 7px;color:#A0453A">✕ 移除</button>`:''}</div></td>
   <td><input data-fl="${i}.phone" id="fl_t${i}" value="${esc(f.phone)}" inputmode="tel"></td>
@@ -3035,7 +3033,11 @@ function copy(text,el){const done=()=>toast('已複製');
   const fb=()=>{const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);try{document.execCommand('copy')?done():toast('已選取文字，請按複製')}catch(_){toast('已選取文字，請按複製')}};
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(done,fb);else fb()}
 let tt;function toast(s){const t=$('toast');t.textContent=s;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1600)}
-function showTab(name){document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===name));
+/* 2026-10-21 Nicole：客人聯絡電話必填：沒填不能確認合約／存 Drive／列印 */
+window.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#btnCtOk,#btnDrive,#btnPrint');if(!b||!o)return;if(String((o.c||{}).phone||'').trim())return;
+  e.preventDefault();e.stopImmediatePropagation();toast('請先填客人的聯絡電話（必填）');{const md=$('coupleModal');if(md)md.hidden=false}setTimeout(()=>{const el=$('c_phone');if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.focus()}},120)},true);
+function showTab(name){if(name==='couple')name='quote';   /* 2026-10-21 確認款項併入報價・下單 */
+  document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===name));
   document.querySelectorAll('section.tab').forEach(s=>s.hidden=s.id!=='tab-'+name);{const z=$('delZone');if(z)z.hidden=name==='settings'||name==='refs';const b=$('btnDel');if(b&&delStep){delStep=0;clearTimeout(delTimer);b.textContent='🗑 刪除此訂單';$('delHint').textContent=''}}try{sessionStorage.setItem('nwcw_tab',name)}catch(_){}}
 
 /* ---------- 關鍵字搜尋：單號、客人名稱、新人、電話、地址、婚顧／廠商、備註…（空白分開可多個關鍵字） ---------- */
@@ -3346,7 +3348,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.c
   if(!confirm(x.pubAt?'這張派車單已經發佈過了，確定要再發一次到司機群組？':'由禮車助手把派車單（按鈕卡片）'+(x.headOnly?'':'和禮車教案')+'發到這趟的司機群組？'))return;
   if(new Date().getHours()<9&&!confirm('現在是司機休息時間（00:00–09:00），確定現在就發到司機群組？'))return;   /* 2026-10-20 Nicole：00:00–09:00 先問 */
   b.disabled=true;const tx=b.textContent;b.textContent='傳送中…';
-  try{const t=await lgMsgReady();const j=await lgCall({op:'pub',keys:lgKeys(x),no:orderNo(x),text:t,ho:x.headOnly?1:0});x.pubAt=Date.now();if(j.lesson&&!x.lsnSentAt)x.lsnSentAt=Date.now();if(o&&o.id===x.id){save()}else{x.updated=Date.now();DB.orders[x.id]=x;store('nwcw_orders',DB);pushSync()}
+  try{const t=await lgMsgReady();const j=await lgCall({op:'pub',keys:lgKeys(x),no:orderNo(x),text:t,ho:x.headOnly?1:0,lead:((lead(x)||{}).driver||'')});x.pubAt=Date.now();if(j.lesson&&!x.lsnSentAt)x.lsnSentAt=Date.now();if(o&&o.id===x.id){save()}else{x.updated=Date.now();DB.orders[x.id]=x;store('nwcw_orders',DB);pushSync()}
     try{renderPub()}catch(_){}try{renderLsn()}catch(_){}toast('已發到群組「'+(j.name||'')+'」'+(j.lesson?'（含禮車教案）':''))}
   catch(er){toast('沒發出去：'+(er&&er.message||er))}finally{b.disabled=false;b.textContent=tx}});
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-lsn]');if(!b||!o)return;const k=b.dataset.lsn,x=o;
