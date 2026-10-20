@@ -1678,21 +1678,24 @@ async function calcKm(){const c=o.c,cl=s=>String(s||'').replace(/（[^）]*）|\
 document.addEventListener('input',e=>{const b=e.target&&e.target.dataset&&e.target.dataset.b;if(b)document.querySelectorAll('[data-b]').forEach(el=>{if(el!==e.target&&el.dataset.b===b&&el.tagName!=='SELECT')el.value=e.target.value})});
 async function makeMemoDocs(){const btn=$('btnMemoDocs');if(!S.driveUrl||!S.driveKey){toast('請先到「價目設定」填 Drive 網址和金鑰');showTab('settings');return}
   btn.disabled=true;$('memoDocMsg').textContent='建立中，約需 10 秒…';
-  try{const no=orderNo(o);const docs=['cust','drv'].map(k=>({key:k,name:k==='drv'?`訂單編號:${no}-司機端`:`禮車服務確認單｜訂單編號:${no}`,model:tplModel(o,k)}));
-    const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'memo',orderNo:no,couple:coupleName(o),docs})});
-    const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');o.memoLinks=j.links;o.memoSig=memoSig(o);o.driveFolder=o.driveFolder||j.folder;save();renderMemoLinks();$('memoDocMsg').textContent='已更新';toast('memo 連結已更新');return true}
+  try{const no=orderNo(o);const docs=['cust'].map(k=>({key:k,name:`禮車服務確認單｜訂單編號:${no}`,model:tplModel(o,k)}));   /* 2026-10-20 Nicole：司機派車單改成網頁（love.niceweddingcar.com/drv-memo），不再做 Google 文件 */
+    const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'memo',orderNo:no,couple:coupleName(o),docs,drvText:drvMemoText(o)})});
+    const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');o.memoLinks=Object.assign({},j.links,{drv:drvMemoUrl(o)});o.memoSig=memoSig(o);o.driveFolder=o.driveFolder||j.folder;save();renderMemoLinks();$('memoDocMsg').textContent='已更新';toast('memo 連結已更新');return true}
   catch(e){$('memoDocMsg').textContent='失敗：'+e.message;return false}finally{btn.disabled=false}}
 /* 2026-10-19 背景更新某一張單的確認單／派車單（Google 文件，連結不變）：客人選了尾款付款方式、尾款入帳時自動跑 */
-async function memoDocsFor(x){if(!x||!S.driveUrl||!S.driveKey||!(x.memoLinks||{}).drv)return false;if(x.memoSig===memoSig(x))return true;
-  try{const no=orderNo(x);const docs=['cust','drv'].map(k=>({key:k,name:k==='drv'?`訂單編號:${no}-司機端`:`禮車服務確認單｜訂單編號:${no}`,model:tplModel(x,k)}));
-    const r=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'memo',orderNo:no,couple:coupleName(x),docs})});const j=await r.json();if(!j.ok)throw new Error(j.error||'失敗');
-    x.memoLinks=j.links;x.memoSig=memoSig(x);x.updated=Date.now();DB.orders[x.id]=x;save();try{if(o&&o.id===x.id)renderMemoLinks()}catch(_){}return true}catch(e){console.warn('memoDocsFor',e);return false}}
+async function memoDocsFor(x){if(!x||!S.driveUrl||!S.driveKey||!(x.memoLinks||{}).drv)return false;if(x.memoSig===memoSig(x)&&drvIsWeb(x))return true;
+  try{const no=orderNo(x);const docs=['cust'].map(k=>({key:k,name:`禮車服務確認單｜訂單編號:${no}`,model:tplModel(x,k)}));
+    const r=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,action:'memo',orderNo:no,couple:coupleName(x),docs,drvText:drvMemoText(x)})});const j=await r.json();if(!j.ok)throw new Error(j.error||'失敗');
+    x.memoLinks=Object.assign({},j.links,{drv:drvMemoUrl(x)});x.memoSig=memoSig(x);x.updated=Date.now();DB.orders[x.id]=x;save();try{if(o&&o.id===x.id)renderMemoLinks()}catch(_){}return true}catch(e){console.warn('memoDocsFor',e);return false}}
+function drvMemoUrl(x){return 'https://love.niceweddingcar.com/drv-memo?no='+encodeURIComponent(orderNo(x))+'&d='+cfKey('drv:'+x.id)}
+function drvIsWeb(x){return /\/drv-memo\?/.test(String((x.memoLinks||{}).drv||''))}
+function drvMemoText(x){const keep=o;try{o=x;return memoText(memoModel(x,'drv','zh'),false)}finally{o=keep}}
 /* 2026-10-19 派車單內容的指紋：車隊、流程改過就知道要更新文件 */
 function memoSig(x){try{const t=JSON.stringify([tplModel(x,'cust'),tplModel(x,'drv')]);let h=0;for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))|0;return String(h)}catch(_){return ''}}
 /* 2026-10-19 複製開場訊息：還沒有派車單連結、或車隊流程改過 → 先自動產生／更新，再複製（Safari 用 ClipboardItem 保留點擊權限） */
-async function lgMsgReady(){const L=o.memoLinks||{};if(!L.drv||o.memoSig!==memoSig(o)){toast(L.drv?'車隊或流程有改，更新派車單中…':'產生派車單連結中，約 10 秒…');const ok=await makeMemoDocs();if(!ok)throw new Error('派車單連結產生失敗')}const t=lgMsg(o);$('lgMsg').textContent=t;return t}
+async function lgMsgReady(){const L=o.memoLinks||{};if(!L.drv||o.memoSig!==memoSig(o)||!drvIsWeb(o)){toast(L.drv?'車隊或流程有改，更新派車單中…':'產生派車單連結中，約 10 秒…');const ok=await makeMemoDocs();if(!ok)throw new Error('派車單連結產生失敗')}const t=lgMsg(o);$('lgMsg').textContent=t;return t}
 function copyLgMsg(){const el=$('lgMsg'),after=()=>{toast('已複製開場訊息（含派車單連結）；貼到群組後請勾選「已在群組發佈派車單」，系統會接著發禮車教案')};   /* 2026-10-20 改成勾選後才算發佈＋發教案 */
-  const need=!(o.memoLinks||{}).drv||o.memoSig!==memoSig(o);if(!need){copy(el.textContent,el);after();return}
+  const need=!(o.memoLinks||{}).drv||o.memoSig!==memoSig(o)||!drvIsWeb(o);if(!need){copy(el.textContent,el);after();return}
   if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){const p=lgMsgReady().then(t=>new Blob([t],{type:'text/plain'}));navigator.clipboard.write([new ClipboardItem({'text/plain':p})]).then(after,err=>{p.then(()=>toast('連結已產生，請再按一次「複製訊息」'),e=>toast(e.message))});return}
   lgMsgReady().then(t=>{copy(t,el);after()},e=>toast(e.message))}
 function drvLinkText(du){return ['提供行程及注意事項：',du,'','感謝大家的支援，','雖然大部分的人都不是第一次出任務了，','但為了讓客人有一致的服務體驗，','請每一位詳細閱讀以下教案內容：',(S.lessonUrl||'（請到「價目設定」填司機教案網址）')+' (請勿外傳)','',
