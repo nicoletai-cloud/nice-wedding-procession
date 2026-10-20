@@ -3527,5 +3527,12 @@ document.addEventListener('click',function(e){var t=e.target;if(t.closest&&t.clo
  if(w.hidden)return;if(t.dataset&&t.dataset.moreclose){w.hidden=true;return}
  var b=t.closest&&t.closest('.more-sheet .btn');if(b)setTimeout(function(){w.hidden=true},0);});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')w.hidden=true});})();</script>
+<script>/* 2026-10-20 Nicole：時間欄位切換以 5 分鐘為單位（上下方向鍵、選擇器）；要 1 分鐘可以直接手動輸入 */
+(function(){
+  function fix(r){ (r.querySelectorAll ? r.querySelectorAll('input[type="time"]:not([step])') : []).forEach(function(e){ e.step = 300; }); if (r.matches && r.matches('input[type="time"]:not([step])')) r.step = 300; }
+  function start(){ fix(document); new MutationObserver(function(ms){ ms.forEach(function(m){ m.addedNodes.forEach(function(n){ if (n.nodeType === 1) fix(n); }); }); }).observe(document.body, { childList: true, subtree: true }); }
+  if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+})();
+</script>
 </body>
 </html>
