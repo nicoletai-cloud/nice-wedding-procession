@@ -1965,10 +1965,11 @@ function renderMemoOk(){const el=$('memoOkSt'),card=$('memoOkCard');if(!el||!o)r
 async function memoPush(){if(!S.driveUrl||!S.driveKey){toast('還沒設定機器人連線');return}let r=calc(o);
   const qh=(h=>h<10||h>=22)(new Date().getHours());
   if(!confirm(`要傳禮車服務確認單給客人核對嗎？${qh?'\n\n🕙 現在是 22:00–10:00，按確定後系統會在 10:00 才傳給客人（不打擾客人休息）':''}\n\n客人會看到整份確認單，並選擇尾款付款方式：\n・用車當天付現金 ${money(r.balance)}（尾款＋司機禮）\n・提前匯款（最晚用車前一天）\n\n（傳之前請先確認第 6 頁的確認單內容都是最新的）`))return;
+  const now1=qh&&confirm('客人正在等嗎？\n\n按「確定」＝現在立刻傳給客人\n按「取消」＝照原本排到 10:00 再傳');   /* 2026-10-20 Nicole：22:00 後客人在等也能立刻傳 */
   toast('傳送中…（約 10–20 秒，請不要關閉或重新整理）');{const st=$('memoOkSt');if(st)st.textContent='⏳ 傳送中…請不要關閉或重新整理';}try{await syncFresh()}catch(_){}
   r=calc(o);const text=memoText(memoModel(o,'cust','zh'),false);   /* 2026-10-20 先同步拿到最新版再產生確認單內容（避免用到這台舊的資料） */
   let grp='';try{grp=await lgMsgReady()}catch(_){}   // 2026-10-19 客人確認後要自動發到司機群組的開場訊息（含派車單連結）
-  const j=await cfQApi({action:'memoSend',items:[{id:o.id,text,bal:r.balance,mon:!!r.mon,grp}]});if(!j||!j.ok){const er=(j&&j.error)||'連不到機器人（網路或機器人忙碌，請稍等再按一次）';o.memoPushErr=er;o.updated=Date.now();save();renderMemoOk();alert('確認單沒有送出：'+er);return}
+  const j=await cfQApi({action:'memoSend',now:now1||undefined,items:[{id:o.id,text,bal:r.balance,mon:!!r.mon,grp}]});if(!j||!j.ok){const er=(j&&j.error)||'連不到機器人（網路或機器人忙碌，請稍等再按一次）';o.memoPushErr=er;o.updated=Date.now();save();renderMemoOk();alert('確認單沒有送出：'+er);return}
   const res=(j.res||[])[0]||{},now=Date.now();if(res.ok&&res.held){o.memoSentAt=now;o.memoSentText=text;o.memoHoldAt=now;o.memoHoldNames=(res.names||[]).join('、');o.memoQAt=0;o.memoDone=true;o.memoPushErr='';o.memoOkAt=0;o.memoFixAt=0;alert(`🪪 先請司機綁定車卡\n\n群組裡還有司機沒綁定車卡：${o.memoHoldNames||'—'}\n\n${res.quiet?'現在是 22:00–10:00，系統會在 10:00 在群組 @ 他們綁定。':'已在群組 @ 他們綁定。'}\n全部綁好後，系統會自動把確認單傳給客人核對（夜間會排到 10:00）。`)}
   else if(res.ok){o.memoSentAt=now;o.memoSentText=text;o.memoHoldAt=0;o.memoQAt=res.queued?now:0;o.memoDone=true;o.memoPushErr='';o.memoOkAt=0;o.memoFixAt=0;if(res.agent)o.memoAgent=res.agent;if(res.agent&&!res.queued)alert(`確認單已傳給代填行前確認的「${res.agent}」（主持人／婚顧）核對。\n這張是私人 LINE 的單，系統沒有新人的官方 LINE。`);else if(res.queued)alert('🕙 已排程\n\n現在是 22:00–10:00，確認單會在 10:00 自動傳給客人核對。\n第 6 頁會顯示「已排程」，10:00 傳出後會變成「已傳給客人」。');else toast('已傳給客人核對')}else{o.memoPushErr=res.err||'';alert('傳不到客人：'+(res.err||'')+'\n\n確認單內容已存好，可以按「複製核對連結」手動傳給客人。')}
   o.updated=now;save();pushSync();renderMemoOk();try{renderTodo()}catch(_){}}
