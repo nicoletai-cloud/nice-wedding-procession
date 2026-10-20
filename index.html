@@ -2645,7 +2645,7 @@ function renderLg(){const m=lgPending(),d=$('lgDate').value,ds=Object.keys(m).so
       +`<div class="row" style="gap:6px;flex:1 1 100%;justify-content:flex-end;flex-wrap:wrap;padding-left:26px"><button class="btn sm pri" data-lgcopy="${esc(x.id)}">複製</button><button class="btn sm" data-lgbind="${esc(x.id)}"${g&&g.ok?'':' disabled'} title="在群組傳「綁定車卡」按鈕給司機">📨 傳綁定車卡</button>${lgMentBtn(x,g)}</div></div>`}).join(''):(A.length?'<p class="hint">這個篩選沒有車趟。</p>':'<p class="hint">這天沒有已收訂的車趟。</p>');
   lgStatus(L)}
 /* 這趟司機的禮車助手車卡綁定狀態：用司機名單（後台帶 wc.bound）比對電話或姓名 */
-function lgBind(x){const ds=(x.fleet||[]).filter(f=>String(f.driver||'').trim()),pn=v=>String(v||'').replace(/\D/g,'').slice(-9),miss=[];
+function lgBind(x){const ds=(x.fleet||[]).filter(f=>String(f.driver||'').trim()&&!f.noGrp),   /* 2026-10-20 不進群組的司機不用綁車卡 */pn=v=>String(v||'').replace(/\D/g,'').slice(-9),miss=[];
   const list=[];ds.forEach(f=>{const d=(DRV||[]).find(z=>(pn(f.phone)&&pn(z.phone)===pn(f.phone))||nz(z.name)===nz(f.driver)),ok=!!(d&&d.wc&&d.wc.bound),n=String(f.driver).trim();if(!ok)miss.push(n);
     if(!list.some(z=>z.n===n))list.push({n,ok,role:f.role||'',car:(typeof MABBR!=='undefined'&&MABBR[f.m])||'',ph:String(f.phone||(d&&d.phone)||'').trim()})});
   return {total:ds.length,miss:[...new Set(miss)],list}}
@@ -2668,7 +2668,8 @@ const LGST={};let lgBusy='',lgF='all';
 function renderLgCard(){const el=$('lgCard');if(!el||!o)return;if(o.sample||!lgOk(o)){el.innerHTML='<span class="hint" style="margin:0">收訂後才會出現「已建立」與「傳綁定車卡」。</span>';return}
   const g=LGST[o.id],bd=lgBind(o);
   el.innerHTML=`<div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer"><input type="checkbox" data-lgdone="${esc(o.id)}" style="width:auto"${o.lgAt?' checked':''}>群組已建立</label><label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;white-space:nowrap" title="只有車頭的群組：不需要綁定車卡，也不發禮車教案"><input type="checkbox" data-headonly="${esc(o.id)}" style="width:auto"${o.headOnly?' checked':''}>此群組只有車頭</label>${o.headOnly?'<span class="hint" style="margin:0">只有車頭：不需綁定車卡、不發禮車教案</span>':`<button class="btn sm" data-lgbind="${esc(o.id)}"${g&&g.ok?'':' disabled'}>📨 傳綁定車卡</button>${lgMentBtn(o,g)}`}<button class="btn sm" id="btnLgCardRefresh" title="剛建好或改名的群組，按這裡重新偵測">🔄 重新偵測</button><span class="hint" style="margin:0">${g==null?'查詢群組中…':g.ok?'🤖 禮車助手已在群組':'⚠️ 還沒偵測到群組（群組名稱要有代碼、禮車助手要在群組裡）'}</span></div>`
-    +`<div class="hint" style="margin:6px 0 0">${!bd.total?'還沒派司機':bd.miss.length?`<b style="color:var(--warn)">未綁車卡 ${bd.miss.length}/${bd.total}：${esc(bd.miss.join('、'))}</b>`:`✅ 司機 ${bd.total} 位都已綁車卡`}</div>${lgUbLine(g)}`;
+    +`<div class="hint" style="margin:6px 0 0">${!bd.total?'還沒派司機':bd.miss.length?`<b style="color:var(--warn)">未綁車卡 ${bd.miss.length}/${bd.total}：${esc(bd.miss.join('、'))}</b>`:`✅ 司機 ${bd.total} 位都已綁車卡`}</div>${lgUbLine(g)}`
+    +((o.fleet||[]).some(f=>String(f.driver||'').trim())?`<div class="row" style="gap:4px 14px;flex-wrap:wrap;margin-top:6px;font-size:.9rem">${(o.fleet||[]).map((f,i)=>String(f.driver||'').trim()?`<label style="display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;color:var(--muted)"><input type="checkbox" data-nogrp="${i}" style="width:auto"${f.noGrp?' checked':''}>${esc(f.role||'')} ${esc(String(f.driver).trim())} 不進群組</label>`:'').join('')}</div>`:'');   /* 2026-10-20 Nicole：某台車司機不進群組（不用綁車卡、不用報到） */
   if(g==null)lgStatus([o])}
 /* 群組裡還沒綁定車卡、系統可以 @ 的人（LINE 名稱）：有人加入或在群組說過話才認得 */
 function lgUbLine(g){if(!g||!g.ok||!Array.isArray(g.ub))return '';return `<div class="sub" style="margin-top:2px">${g.ub.length?`📣 群組裡可以 @ 的未綁定成員：<b>${esc(g.ub.join('、'))}</b>`:'群組裡沒有可以 @ 的未綁定成員（沒在群組說過話、或禮車助手加入前就在群組的人認不到）'}</div>`}
@@ -2689,6 +2690,7 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   if(b.dataset.hostf){hostF=b.dataset.hostf;renderHosts();return}
   if(b.dataset.lgday){$('lgDate').value=b.dataset.lgday;renderLg();return}
   const x=DB.orders[b.dataset.lgcopy];if(x){const n=lgName(x);clip(n);toast('已複製群組名稱：'+n);b.textContent='✅ 已複製';b.classList.remove('pri');setTimeout(()=>{if(b.isConnected){b.textContent='複製';b.classList.add('pri')}},1800)}});
+document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||t.dataset.nogrp==null||!o)return;const f=(o.fleet||[])[+t.dataset.nogrp];if(!f)return;f.noGrp=t.checked;save();try{renderLgCard()}catch(_){}try{renderLg()}catch(_){}toast(t.checked?`已設定：${f.driver} 不進群組（不用綁車卡）`:`已取消：${f.driver} 要進群組`)});
 document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!t.dataset.headonly)return;const x=DB.orders[t.dataset.headonly];if(!x)return;   /* 2026-10-20 Nicole：只有車頭的群組不用綁車卡、不發教案 */
   x.headOnly=t.checked;x.updated=Date.now();store('nwcw_orders',DB);try{pushSync()}catch(_){}try{renderLg()}catch(_){}try{renderLgCard()}catch(_){}try{renderPtCard()}catch(_){}try{renderLsn()}catch(_){}toast(t.checked?'已設定：此群組只有車頭（不需綁定車卡、不發禮車教案）':'已取消「只有車頭」');});
 document.addEventListener('change',e=>{const t=e.target;if(!t)return;if(t.id==='lgDate'){renderLg();return}if(!t.dataset||!t.dataset.lgdone)return;const x=DB.orders[t.dataset.lgdone];if(!x)return;
