@@ -465,15 +465,10 @@ nav.tabs button{scroll-snap-align:start}
     <div class="grid" style="margin-bottom:18px">
       <div class="card">
         <h3>收款確認 <span id="payChip"></span></h3>
-        <div class="fields" style="margin-bottom:10px">
-          <label class="f">匯款日期<input type="date" id="c_pd" data-b="c.payDate"></label>
-          <label class="f">匯款金額<input id="c_pa" data-b="c.payAmt"></label>
-          <label class="f">匯款後五碼<input id="c_l5" data-b="c.last5"></label>
-        </div>
-        <div class="sum" id="payCheck"></div>
-        <div class="row" style="margin-top:12px"><button class="btn pri" id="btnPaid">已在銀行 App 確認收到訂金</button><button class="btn sm" id="btnUnpaid" hidden>取消確認</button></div>
+        <div class="sum" id="payCheck"></div><!-- 2026-10-20 Nicole：訂金都走綠界 ATM，入帳自動確認；不再請客人填末五碼 -->
+        <div class="row" style="margin-top:12px"><button class="btn sm" id="btnPaid">手動標記已收訂金</button><button class="btn sm" id="btnUnpaid" hidden>取消確認</button></div>
         <div id="ttCheck" class="row" style="margin-top:10px;gap:8px;align-items:center" hidden></div>
-        <p class="hint">比對新人表單填的匯款金額和應付訂金。實際入帳請在將來銀行 App 看一眼後再按確認。</p>
+        <p class="hint">訂金走綠界 ATM：客人轉帳後系統會自動標記已收訂金（入帳通知沒收到時，每 5 分鐘也會主動向綠界查詢）。只有客人用其他方式付款時才需要手動標記。</p>
       </div>
       <div class="card">
         <h3>收到訂金回覆</h3>
@@ -557,7 +552,6 @@ nav.tabs button{scroll-snap-align:start}
   <section class="tab" id="tab-dispatch" hidden>
 <div class="card lgTop" style="margin-bottom:14px;padding:10px 14px"><div class="row" style="gap:8px;align-items:center;flex-wrap:nowrap"><b style="white-space:nowrap">群組名稱</b><input id="lgName5" readonly style="flex:1;min-width:0"><button class="btn sm pri" data-copyv="lgName5">複製</button></div></div>   <!-- 2026-10-20 車隊與流程、派車單頁上方都能複製群組名稱 -->
     <div class="stack">
-      <div class="card" id="balCard"><div class="row" style="gap:10px;align-items:center;flex-wrap:wrap"><b>尾款收款方式</b><select class="balMode" style="width:auto"><option value="">司機現場收尾款＋紅包</option><option value="all">客人已匯尾款＋紅包（司機只收加時）</option><option value="nored">客人已匯尾款，紅包現場給司機</option></select><span class="hint" style="margin:0" id="balHint"></span></div></div>
       <div class="card" id="xCard5"><h3>加項 <small>客人傳過行前確認後才加的款項，填在這裡會列在尾款（尾款 $X+項目 $Y=$Z）</small></h3><div class="xList" data-xw="5"></div></div>
       <div class="card" id="ptCard" hidden style="border-color:#A77D4C"><h3>同業單 <small>只要選司機；不用出合約、memo、派車單</small></h3><datalist id="ptCoList"></datalist><div id="ptCardBody"></div></div>
       <div class="card">
@@ -642,7 +636,6 @@ nav.tabs button{scroll-snap-align:start}
       <label class="row" style="font-size:0.867rem;color:var(--muted);gap:6px">方案備註（顯示在車頭彩下一行）<input id="flagNote" data-b="flagNote" placeholder="例：多預備三組門把彩" style="width:220px"></label>
       <label class="row" style="font-size:0.867rem;color:var(--muted);gap:6px">加時寫法（空白＝依價目表）<input id="otText" data-b="otText" placeholder="例：M3 $800/0.5HR ; MX $1,200/0.5HR" style="width:260px"></label>
       <label class="row" style="font-size:0.867rem;color:var(--muted);gap:6px"><input type="checkbox" id="routeInMemo" style="width:auto"> 加入「行程說明」列（路線說明）</label>
-      <label class="row" style="font-size:0.867rem;color:var(--muted);gap:6px">尾款收款方式<select class="balMode" style="width:auto"><option value="">司機現場收尾款＋紅包</option><option value="all">客人已匯尾款＋紅包（司機只收加時）</option><option value="nored">客人已匯尾款，紅包現場給司機</option></select><span id="balPaidAt"></span></label>
       <label class="row" hidden style="font-size:0.867rem;color:var(--muted);gap:6px"><input type="checkbox" id="mapLinks" style="width:auto"> 地址附 Google Map 連結</label>
     </div>
     <div class="card" style="margin-bottom:18px" id="memoOkCard"><!-- 2026-10-17 傳服務確認單給客人核對＋選尾款付款方式 -->
@@ -669,6 +662,7 @@ nav.tabs button{scroll-snap-align:start}
       <div class="row"><button class="btn pri" id="btnMemoDocs">產生／更新派車單＋服務確認單連結</button><span class="hint" id="memoDocMsg" style="margin:0"></span></div>
       <div class="sum" id="memoLinks" style="margin-top:10px"></div>
     </div>
+    <div class="card" id="balCard" style="margin-bottom:18px"><!-- 2026-10-20 Nicole：尾款收款方式移到服務確認單／派車單頁最下面 --><div class="row" style="gap:10px;align-items:center;flex-wrap:wrap"><b>尾款收款方式</b><select class="balMode" style="width:auto"><option value="">司機現場收尾款＋紅包</option><option value="all">客人已匯尾款＋紅包（司機只收加時）</option><option value="nored">客人已匯尾款，紅包現場給司機</option></select><span class="hint" style="margin:0" id="balHint"></span><span id="balPaidAt" class="hint" style="margin:0"></span></div></div>
   </section>
 
   <!-- 回金・月結 -->
@@ -1126,7 +1120,7 @@ async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl
     if(j.settings&&(+j.settings._ts||0)>(+S._ts||0)){const keep={driveUrl:S.driveUrl,driveKey:S.driveKey};S=Object.assign(clone(DEF_S),j.settings,keep);store('nwcw_settings',S);rebuildModels();renderPriceSettings();cur=true}
     try{if(j.shopee)setTimeout(()=>spMerge(j.shopee),0)}catch(_){}
     try{if(j.review){REV=j.review;store('nwcw_rev',REV);let up=false;Object.keys(REV).forEach(id=>{const x=DB.orders[id],r=REV[id];if(x&&r.reply&&r.reply.photo&&x.c&&x.c.photoReq!=='要'){x.c.photoReq='要';x.updated=Date.now();up=true;if(id===o.id)cur=true}});if(up)syncAgain=true;try{renderRev()}catch(_){}}}catch(_){}
-    let upN=false;FORMDATA=j.formData||FORMDATA;CONFIRMS=j.confirms||CONFIRMS;MEMOS=j.memos||MEMOS;try{const mc=memoApply(MEMOS);if(mc.length){upN=true;(async()=>{for(const x of mc){try{await memoDocsFor(x)}catch(_){}}})();if(mc.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}}}catch(e){console.warn(e)}try{const qc=cfApplyQ(j.cfq);if(qc.length){upN=true;if(qc.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}}}catch(e){console.warn(e)}try{const nf=cfNoteFill();if(nf.length){upN=true;if(nf.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}setTimeout(()=>toast(`已補上 ${nf.length} 筆客人「想提醒司機」到注意事項：${nf.map(x=>orderNo(x)).join('、')}`),1600)}}catch(e){console.warn(e)}try{const ch=cfAuto();if(ch.length){upN=true;if(ch.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}setTimeout(()=>toast(`已帶入 ${ch.length} 筆客人行前確認：${ch.map(x=>orderNo(x)).join('、')}`),800)}}catch(e){console.warn(e)}try{renderFormDataBtn();renderFormPlaces()}catch(e){}{const F=j.forms||{},N=j.formNames||{};Object.values(DB.orders).forEach(x=>{const k=normNo(orderNo(x)),t=F[k],nm=N[k];if(t&&!x.formAt){x.formAt=t;if(x.id===o.id)cur=true}
+    let upN=false;FORMDATA=j.formData||FORMDATA;CONFIRMS=j.confirms||CONFIRMS;MEMOS=j.memos||MEMOS;ECP=j.ecp||ECP;try{const mc=memoApply(MEMOS);if(mc.length){upN=true;(async()=>{for(const x of mc){try{await memoDocsFor(x)}catch(_){}}})();if(mc.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}}}catch(e){console.warn(e)}try{const qc=cfApplyQ(j.cfq);if(qc.length){upN=true;if(qc.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}}}catch(e){console.warn(e)}try{const nf=cfNoteFill();if(nf.length){upN=true;if(nf.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}setTimeout(()=>toast(`已補上 ${nf.length} 筆客人「想提醒司機」到注意事項：${nf.map(x=>orderNo(x)).join('、')}`),1600)}}catch(e){console.warn(e)}try{const ch=cfAuto();if(ch.length){upN=true;if(ch.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}setTimeout(()=>toast(`已帶入 ${ch.length} 筆客人行前確認：${ch.map(x=>orderNo(x)).join('、')}`),800)}}catch(e){console.warn(e)}try{renderFormDataBtn();renderFormPlaces()}catch(e){}{const F=j.forms||{},N=j.formNames||{};Object.values(DB.orders).forEach(x=>{const k=normNo(orderNo(x)),t=F[k],nm=N[k];if(t&&!x.formAt){x.formAt=t;if(x.id===o.id)cur=true}
       if(nm&&(nm.groom||nm.bride)&&!x.c.groom&&!x.c.bride){x.c.groom=nm.groom||'';x.c.bride=nm.bride||'';x.updated=Date.now();upN=true;if(x.id===o.id)cur=true}})}
     DB.cur=o.id;store('nwcw_orders',DB);if(cur)loadOrder();else renderOrderSel();try{renderCfFlow()}catch(_){}setTimeout(()=>{cfGeoRun().catch(e=>console.warn(e))},1500);openFromHash();
     try{if(ttDrvSync())upN=true}catch(e){console.warn(e)}   // 2026-10-20 TimeTree 2768：答維正的趟次先存好司機派車單文字
@@ -1394,12 +1388,13 @@ function eqIssues(x){const out=[];if(!x||x.sample||x.lost)return out;const F=x.f
 /* 2026-10-20 Nicole：裝備不足已經安排好（例：借用對講機）→ 勾「已解決」＋備註怎麼解決；裝備問題有變動（換司機等）會重新提醒 */
 function eqSig(x){return eqIssues(x).join('｜')}
 function eqResolved(x){const E=eqIssues(x);return !!(E.length&&x.eqOk&&x.eqOk.sig===E.join('｜'))}
-function renderEq(){const el=$('eqWarn');if(!el||!o)return;const E=eqIssues(o);if(!E.length){el.innerHTML='';return}const ok=eqResolved(o),k=o.eqOk||{},chg=k.at&&!ok;
+function renderEq(){const el=$('eqWarn');if(!el||!o)return;{const r=$('eqSaveRow');if(r&&!r.hidden&&el.contains(document.activeElement))return}const E=eqIssues(o);if(!E.length){el.innerHTML='';return}const ok=eqResolved(o),k=o.eqOk||{},chg=k.at&&!ok;
   const tm=t=>{const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`};
   el.innerHTML=`<div class="sum" style="border-left:3px solid ${ok?'var(--ok,#2f7d4f)':'var(--warn)'}">${E.map(t=>`<div style="color:${ok?'var(--muted)':'var(--warn)'}">${ok?'✅':'⚠️'} ${esc(t)}</div>`).join('')}
     ${chg?`<div style="color:var(--warn);font-size:.9em">裝備狀況有變動（例如換了司機），之前標記的「已解決」已失效，請重新確認</div>`:''}
     <label class="row" style="gap:8px;align-items:center;margin-top:8px;cursor:pointer"><input type="checkbox" id="eqOkChk" ${ok?'checked':''} style="width:20px;height:20px">已安排解決${ok&&k.at?`<span class="hint" style="margin:0">（${tm(k.at)} 標記）</span>`:''}</label>
-    <input id="eqOkNote" placeholder="怎麼解決的，例：跟楊修誠借對講機 2 支、當天帶到集合地點" value="${esc(ok||chg?k.note||'':'')}" style="width:100%;margin-top:6px"></div>`}
+    <input id="eqOkNote" placeholder="怎麼解決的，例：跟楊修誠借對講機 2 支、當天帶到集合地點" value="${esc(ok||chg?k.note||'':'')}" style="width:100%;margin-top:6px">
+    <div class="row" id="eqSaveRow" hidden style="gap:8px;margin-top:6px;justify-content:flex-end"><span class="hint" style="margin:0 auto 0 0;color:var(--warn)">備註還沒儲存</span><button type="button" class="btn sm" id="eqCancel">取消</button><button type="button" class="btn sm pri" id="eqSave">儲存</button></div></div>`}
 function lead(x){return x.fleet.find(f=>f.lead)||x.fleet.find(f=>f.role==='主禮車')||x.fleet[0]}
 
 /* ---------- locations / flow ---------- */
@@ -1807,7 +1802,7 @@ function parseForm(text){text=toHalf(text);const res={};text=text.replace(/\r/g,
 const CONFIRM_TPL=['哈嘍！我們要最終確認行程嘍!','','請再次確認下面資訊：','聯絡人姓名：','聯絡人電話：','男方家地址(或集合地點):','女方家地址:','當天預計出發時間:','是否訂結一起：','女方是否有準備甘蔗、竹子：','預計幾點迎娶回男方家：','是否需要接送至餐廳：','預計幾點出發去餐廳：','餐廳地址：','','📝行程表若確定，也可一起提供喔！方便司機掌握情況'].join('\n');
 // 2026-10-14 行前確認頁：客人點連結填寫，送出後同步時自動帶入、比對合約，memo／派車單跟著更新
 const CF_LIFF='2009335688-N0uyJ02P';// 行前確認 LIFF ID（建好後填上；空白＝用一般網址）
-let CONFIRMS={};
+let CONFIRMS={};var ECP={};   /* 2026-10-20 綠界狀態（server 回傳，不含帳號） */
 function cfKey(id){const h=t=>{let v=0x811c9dc5;for(let i=0;i<t.length;i++){v^=t.charCodeAt(i);v=Math.imul(v,0x01000193)>>>0}return v.toString(36)};return h(String(id))+h('cf'+id)}
 function cfLink(x){const q='?no='+encodeURIComponent(orderNo(x))+'&k='+cfKey(x.id);return CF_LIFF?'https://liff.line.me/'+CF_LIFF+q:'https://love.niceweddingcar.com/wed-confirm'+q}
 function cfMsg(x){const c=x.c||{},lk=cfLink(x),body=`🧡 婚禮快到了，我們要最終確認行程嘍！\n請點下面連結，確認當天的聯絡人、地址和時間（已先帶入您之前填的資料，有變動直接修改就好）👇\n${lk}`;
@@ -1998,7 +1993,7 @@ function cfArea(a){const s=String(a||'').replace(/臺/g,'台').replace(/^\s*\d{3
 function cfMapUrl(q,pid){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q)+(pid?'&query_place_id='+encodeURIComponent(pid):'')}
 async function cfGeoRun(){if(cfGeoBusy||!S.driveUrl||!S.driveKey)return;const td=new Date().toISOString().slice(0,10);
   /* 2026-10-20 Nicole：導航連結只用客人給的或我手動填的；之前 Google 核對自動帶入的導航連結清掉（一次） */
-  {let mc=0;Object.values(DB.orders).forEach(x=>{if(!x||!x.c||x.mapAutoClr||(x.date||'')<td)return;x.mapAutoClr=1;let ch=0;Object.keys(x.c).forEach(k=>{if(/Map$/.test(k)&&/^https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=/.test(String(x.c[k]||''))){x.c[k]='';ch++}});if(ch){x.updated=Date.now();mc+=ch}});if(mc){store('nwcw_orders',DB);pushSync();try{renderAll()}catch(_){}}}
+  /* 2026-10-20 舊的自動導航連結已在伺服器端一次清掉（不在前端改，避免舊分頁蓋掉別人的修改） */
   const L=Object.values(DB.orders).filter(x=>x&&!x.sample&&x.cfLast&&x.date>=td&&(+x.cfGeoAt||0)<(+x.cfApplyAt||0)&&!(+x.locEditAt>(+x.cfApplyAt||0)));   /* 手動改過地點就不再自動核對帶入 */if(!L.length)return;cfGeoBusy=true;let n=0;
   try{for(const x of L){const c=x.c||{},todo=CF_GEO_F.filter(([k])=>{const v=String(c[k]||'').trim();return v&&!cfHasNo(v)&&!/^(待定|未定|再確認|同上|無|沒有|不需要|不用|-|—)$/.test(v)});x.cfGeoAt=Date.now();
     if(todo.length){const ctx=CF_GEO_F.map(([k])=>c[k]).concat(Object.values(x.cfPrev||{})).filter(cfHasNo).map(countyOf).filter(Boolean)[0]||'',qs=[];
@@ -2371,9 +2366,10 @@ function ttPromptText(pick){const sv=o,L=[],now=new Date();
     '沒有的話，請用下面的標題、時間、備註新增，標籤選「好好禮車」。名字相近但不確定是不是同一場的，先列出來問我，不要新增。',
     '完成後請回報：已存在幾筆、新增了哪幾筆、哪幾筆需要我確認；並在派車系統把已經在 TimeTree 的訂單標記為「已填 TimeTree」。','','──────────',...L].join('\n').trim()}
 function renderPay(){const ps=payState(o),r=ps.r,c=o.c;
-  $('payCheck').innerHTML=`<div><span>應付訂金</span><span>${money(r.deposit)}</span></div><div><span>新人填的匯款金額</span><span>${ps.amt?money(ps.amt):'未填'}</span></div>
-   <div><span>匯款日期／後五碼</span><span>${c.payDate?fmtDate(c.payDate):'—'}／${esc(c.last5||'—')}</span></div>`;
-  $('payChip').innerHTML=o.paid?`<span class="chip ok">已確認收款 ${esc(o.paidAt||'')}</span>`:ps.amt?(ps.match?'<span class="chip ok">金額相符，待確認入帳</span>':'<span class="chip" style="color:var(--warn)">金額不符，請核對</span>'):'<span class="chip">尚未填匯款資料</span>';
+  const ep=(ECP||{})[o.id]||{},tm=t=>{const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`};
+  const est=o.ecpayPaid?`已入帳 ${money(o.ecpayPaid.amt)}（${esc(o.ecpayPaid.at||'')}）`:ep.mm?`⚠️ 綠界收到 ${money(ep.mm.amt)}，跟應付訂金 ${money(ep.mm.want)} 對不上，請核對`:ep.va?`已產生轉帳帳號（${esc(ep.bank)}），等待客人轉帳${ep.exp?`，期限 ${esc(ep.exp)}`:''}`:ep.open?`客人 ${tm(ep.open)} 打開過付款連結，等待轉帳`:'客人還沒打開付款連結';
+  $('payCheck').innerHTML=`<div><span>應付訂金</span><span>${money(r.deposit)}</span></div><div><span>綠界狀態</span><span>${est}</span></div>${o.paid&&c.payDate?`<div><span>入帳日期</span><span>${fmtDate(c.payDate)}</span></div>`:''}`;
+  $('payChip').innerHTML=o.paid?`<span class="chip ok">已收訂金 ${esc(o.paidAt||(o.ecpayPaid?'（綠界）':''))}</span>`:ep.mm?'<span class="chip" style="color:var(--warn)">金額不符，請核對</span>':ep.va||ep.open?'<span class="chip">等待綠界入帳</span>':'<span class="chip">尚未付款</span>';
   $('btnPaid').hidden=!!o.paid;$('btnUnpaid').hidden=!o.paid;$('outPaid').textContent=paidText(o);renderCtSend();renderPaidAck();
   $('ttTitle').value=ttTitle(o);$('ttWhen').textContent=`日期 ${o.date?fmtDate(o.date):'未定'}　${o.c.start||'--:--'} → ${o.c.end||'--:--'}`;$('ttMemo').textContent=ttMemo(o);$('lgName').value=lgName(o);['lgName5','lgName6'].forEach(i=>{const el=$(i);if(el)el.value=lgName(o)});try{renderLgCard()}catch(e){}$('lgMsg').textContent=lgMsg(o);try{renderPub()}catch(e){}}
 function refRowText(x){const r=calc(x),v=vendorOf(x);const p=dparts(x.date);
@@ -2442,7 +2438,12 @@ document.addEventListener('change',async e=>{const t=e.target;if(!t||t.id!=='att
   if(n){save();renderAttach();try{renderMemo()}catch(_){}toast('已新增 '+n+' 個附件；派車單和確認單請按一次「產生／更新」')}});
 document.addEventListener('click',e=>{const h=e.target&&e.target.closest?e.target.closest('[data-atthide]'):null;if(h&&o){e.preventDefault();o.attHide=(o.attHide||[]).concat([h.dataset.atthide]);save();renderAttach();try{renderMemo()}catch(_){}toast('已撤掉這個附件（確認單和派車單不再顯示）');}});
 document.addEventListener('click',e=>{const b=e.target&&e.target.closest?e.target.closest('[data-attdel]'):null;if(!b||!o)return;e.preventDefault();const i=+b.dataset.attdel;(o.attach||[]).splice(i,1);save();renderAttach();try{renderMemo()}catch(_){}toast('已移除附件（Drive 裡的檔案還在）')});
-function ctHint5(){const el=$('ctHint5');if(!el||!o)return;const c=o.c||{},h=(+o.hours||0)+(+o.cfOtH||0),ce=ctEnd(o),ov=ctOver(o);el.innerHTML=!c.start?'':`合約 ${hrsLabel(o.hours)}${+o.cfOtH?`＋加時 ${o.cfOtH}HR`:''}：${esc(c.start)} 開始 → 合約結束 ${esc(ce||'—')}${ov?`　<b style="color:#c0392b">結束時間超過合約 ${ov} 分鐘</b>`:''}`}
+function ctHint5(){const el=$('ctHint5');if(!el||!o)return;const c=o.c||{},h=(+o.hours||0)+(+o.cfOtH||0),ce=ctEnd(o),ov=ctOver(o);el.innerHTML=!c.start?'':`合約 ${hrsLabel(o.hours)}${+o.cfOtH?`＋加時 ${o.cfOtH}HR`:''}：${esc(c.start)} 開始 → 合約結束 ${esc(ce||'—')}${ov&&!o.otOk?`　<b style="color:#c0392b">結束時間超過合約 ${ov} 分鐘</b>`:''}${o.otOk?`　<b style="color:var(--ok,#2f7d4f)">已和客人確認加時 ${o.otOk.min} 分鐘，尾款加 ${money(o.otOk.amt)}</b>`:''}`+(ov||o.otOk?`<label class="row" style="gap:6px;align-items:center;margin-top:6px;cursor:pointer;color:var(--fg)"><input type="checkbox" id="otOkChk" ${o.otOk?'checked':''} style="width:18px;height:18px">已和客人確認加時${!o.otOk&&ov?`（${ov} 分鐘，約 ${money(otCalc(o,ov))}，勾選後加到尾款）`:''}</label>`:'')}
+/* 2026-10-20 Nicole：用車時間超過合約 → 勾「已和客人確認加時」，加時金額自動加進尾款（列在加項） */
+function otCalc(x,ov){const u=+x.hours>0&&+x.hours<3?30:60,n=Math.ceil(ov/u);return MODELS.reduce((a,m)=>a+num((x.cars||{})[m])*num(S.ot[m]),0)*n}
+document.addEventListener('change',e=>{const t=e.target;if(!t||t.id!=='otOkChk'||!o)return;o.extras=(o.extras||[]).filter(z=>!(z&&z.otAuto));
+  if(t.checked){const ov=ctOver(o);if(!ov){t.checked=false;toast('目前用車時間沒有超過合約');return}const amt=otCalc(o,ov);o.otOk={min:ov,amt,at:Date.now()};o.extras.push({n:`加時 ${ov} 分鐘`,a:amt,late:true,at:Date.now(),otAuto:1});toast(`已確認加時 ${ov} 分鐘，尾款加 ${money(amt)}`)}
+  else{o.otOk=null;toast('已取消加時')}o.sample=false;save();try{renderXList()}catch(_){}renderAll()});
 function renderAll(){try{ctHint5()}catch(e){}try{renderAttach()}catch(e){}try{renderQx()}catch(e){}try{renderFormDataBtn()}catch(e){}renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派車頭':''].filter(Boolean),tr=[k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就派司機':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月派司機':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月派司機':'白色特斯拉：用車前一週派司機'):''].filter(Boolean);$('headHint').textContent=(rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):k.tesla&&!k.lux?'特斯拉由你擔任車頭，不用指派車頭。':'本單沒有提前指派車頭的需求。')+(tr.length?'　'+tr.join('；'):'')+(String(o.carHead||'').trim()?'　✅ 已找車頭：司機由車頭安排，用車前 3 天再確認司機資料即可。':'')}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=cfMsg(o);try{renderCfSt()}catch(e){}try{renderCfFlow()}catch(e){}try{renderMemoOk()}catch(e){}renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
   $('outQuote').textContent=quoteText(o,'zh');if($('outQuoteAdd'))$('outQuoteAdd').textContent=QUOTE_ADD;$('outOrder').textContent=orderText(o,'zh');
   renderFind();$('contractPaper').innerHTML=contractHTML(o);ctTuneFill();renderSigned();renderMemo();
@@ -2859,7 +2860,10 @@ document.addEventListener('click',e=>{const t=e.target;if(!t||!o)return;if(t.dat
   if(t.dataset&&t.dataset.xdel!=null){const i=+t.dataset.xdel,e0=o.extras[i]||{};if((e0.n||num(e0.a))&&!confirm(`刪除加項「${e0.n||'加項'} ${money(num(e0.a))}」？`))return;o.extras.splice(i,1);if(!o.extras.length)o.extras=[{n:'',a:0}];save();fillInputs();renderAll();toast('已刪除加項')}});
 document.addEventListener('change',e=>{const t=e.target;if(!t||t.id!=='eqOkChk'||!o)return;const n=($('eqOkNote')||{}).value||'';
   if(t.checked){o.eqOk={sig:eqSig(o),at:Date.now(),note:n.trim()};toast(n.trim()?'已標記裝備問題已解決':'已標記已解決；記得在下面備註怎麼解決的')}else{o.eqOk=null;toast('已取消「已解決」')}save();renderEq();try{renderAll()}catch(_){}});
-document.addEventListener('input',e=>{const t=e.target;if(!t||t.id!=='eqOkNote'||!o)return;if(o.eqOk){o.eqOk.note=t.value.trim();save()}});
+/* 2026-10-20 Nicole：解決方式備註改完按「儲存」 */
+document.addEventListener('input',e=>{const t=e.target;if(!t||t.id!=='eqOkNote'||!o)return;const r=$('eqSaveRow');if(r)r.hidden=t.value.trim()===String((o.eqOk||{}).note||'')});
+document.addEventListener('click',e=>{const id=e.target&&e.target.id;if((id!=='eqSave'&&id!=='eqCancel')||!o)return;const n=$('eqOkNote');if(id==='eqCancel'){renderEq();return}
+  const v=(n&&n.value||'').trim();if(o.eqOk)o.eqOk.note=v;else o.eqOk={sig:eqSig(o),at:Date.now(),note:v};o.sample=false;save();renderEq();try{renderAll()}catch(_){}toast(o.eqOk&&v?'已儲存，並標記為已解決':'已儲存')});
 document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||t.dataset.nogrp==null||!o)return;const f=(o.fleet||[])[+t.dataset.nogrp];if(!f)return;f.noGrp=t.checked;const dr=FDRAFT&&FDRAFT.id===o.id;save();try{renderLgCard()}catch(_){}try{renderLg()}catch(_){}toast((t.checked?`已設定：${f.driver} 不進群組（不用綁車卡）`:`已取消：${f.driver} 要進群組`)+(dr?'｜地點流程還沒儲存，按上方「儲存」或「取消」後才會寫進系統':''))});
 document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!t.dataset.headonly)return;const x=DB.orders[t.dataset.headonly];if(!x)return;   /* 2026-10-20 Nicole：只有車頭的群組不用綁車卡、不發教案 */
   x.headOnly=t.checked;x.updated=Date.now();store('nwcw_orders',DB);try{pushSync()}catch(_){}try{renderLg()}catch(_){}try{renderLgCard()}catch(_){}try{renderPtCard()}catch(_){}try{renderLsn()}catch(_){}toast(t.checked?'已設定：此群組只有車頭（不需綁定車卡、不發禮車教案）':'已取消「只有車頭」');});
