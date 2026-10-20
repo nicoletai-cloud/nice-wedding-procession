@@ -2144,7 +2144,7 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   document.activeElement&&document.activeElement.blur&&document.activeElement.blur();renderMemo()});
 function renderMemo(){const who=o.memoWho||'cust';renderMemoLinks();if($('routeInMemo'))$('routeInMemo').checked=!!o.routeInMemo;document.querySelectorAll('.balMode').forEach(s=>s.value=o.balPaid?(o.balRed?'nored':'all'):'');if($('balPaidAt'))$('balPaidAt').textContent=o.balPaid&&o.balPaidAt?`（${o.balPaidAt} 標記）`:'';document.querySelectorAll('#memoWho button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.who===who));
   const lang='zh';const m=memoModel(o,who,lang);
-  $('outMemo').textContent=memoText(m,false);$('memoDoc').innerHTML=who==='cust'&&!isPt(o)?custView(o,m):who==='drv'&&!isPt(o)?drvView(o,m):memoHTML(m,false);try{renderMemoEdit(who)}catch(e){console.warn(e)}}
+  $('outMemo').textContent=memoText(m,false);$('memoDoc').innerHTML=who==='cust'&&!isPt(o)?custView(o,m):who==='drv'&&!isPt(o)?drvView(o,m):memoHTML(m,false);if(who==='drv'&&!isPt(o)&&drvIsWeb(o)&&hs32(drvMemoText(o))!==o.drvSentSig)drvAutoQ();try{renderMemoEdit(who)}catch(e){console.warn(e)}}
 /* 2026-10-20 Nicole：預覽＝客人看到的畫面。確認前：待核對內容（只看車款、顏色、座位數，負責人只寫姓氏）；確認後：正式用車確認單（轉發版，不含款項） */
 function cvPre(t){let hit=false;const L=String(t||'').split('\n').map(l=>{const p=l.split('｜');if(p.length>=5){hit=true;return p[0].trim()+'｜'+p[3].trim()}
     const bm=l.match(/^(\s*(?:禮車負責人|Coordinator|責任者)\s*[：:]\s*)(.*)$/);if(bm){const nm=bm[2].replace(/[\s　]*\+?\d[\d\-\s]{7,}\d/g,'').trim(),cj=/^[\u4e00-\u9fff]{2,4}$/.test(nm);return bm[1]+(cj?nm.charAt(0)+'○'.repeat(nm.length-1):nm.split(/\s+/)[0])+'（確認後提供全名與聯絡電話）'}return l});
