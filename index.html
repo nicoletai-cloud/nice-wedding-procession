@@ -1380,7 +1380,15 @@ function eqIssues(x){const out=[];if(!x||x.sample||x.lost)return out;const F=x.f
   const mc=F.find(f=>f.role==='主禮車'&&String(f.driver||'').trim());
   if(mc){const d=drvOf(mc);if(d){const t=String(d.tools||'');if(!t.trim())out.push(`主禮車 ${mc.driver} 車卡沒填裝備（車頭彩／甘蔗固定器）`);else{if(t.indexOf('車頭彩')<0)out.push(`主禮車 ${mc.driver} 沒有車頭彩`);if(caneOf(x)==='是'&&!/甘蔗/.test(t))out.push(`客人要固定甘蔗，主禮車 ${mc.driver} 沒有甘蔗固定器`)}}}
   return out}
-function renderEq(){const el=$('eqWarn');if(!el||!o)return;const E=eqIssues(o);el.innerHTML=E.length?`<div class="sum" style="border-left:3px solid var(--warn)">${E.map(t=>`<div style="color:var(--warn)">⚠️ ${esc(t)}</div>`).join('')}</div>`:''}
+/* 2026-10-20 Nicole：裝備不足已經安排好（例：借用對講機）→ 勾「已解決」＋備註怎麼解決；裝備問題有變動（換司機等）會重新提醒 */
+function eqSig(x){return eqIssues(x).join('｜')}
+function eqResolved(x){const E=eqIssues(x);return !!(E.length&&x.eqOk&&x.eqOk.sig===E.join('｜'))}
+function renderEq(){const el=$('eqWarn');if(!el||!o)return;const E=eqIssues(o);if(!E.length){el.innerHTML='';return}const ok=eqResolved(o),k=o.eqOk||{},chg=k.at&&!ok;
+  const tm=t=>{const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`};
+  el.innerHTML=`<div class="sum" style="border-left:3px solid ${ok?'var(--ok,#2f7d4f)':'var(--warn)'}">${E.map(t=>`<div style="color:${ok?'var(--muted)':'var(--warn)'}">${ok?'✅':'⚠️'} ${esc(t)}</div>`).join('')}
+    ${chg?`<div style="color:var(--warn);font-size:.9em">裝備狀況有變動（例如換了司機），之前標記的「已解決」已失效，請重新確認</div>`:''}
+    <label class="row" style="gap:8px;align-items:center;margin-top:8px;cursor:pointer"><input type="checkbox" id="eqOkChk" ${ok?'checked':''} style="width:20px;height:20px">已安排解決${ok&&k.at?`<span class="hint" style="margin:0">（${tm(k.at)} 標記）</span>`:''}</label>
+    <input id="eqOkNote" placeholder="怎麼解決的，例：跟楊修誠借對講機 2 支、當天帶到集合地點" value="${esc(ok||chg?k.note||'':'')}" style="width:100%;margin-top:6px"></div>`}
 function lead(x){return x.fleet.find(f=>f.lead)||x.fleet.find(f=>f.role==='主禮車')||x.fleet[0]}
 
 /* ---------- locations / flow ---------- */
@@ -1693,7 +1701,7 @@ function hs32(t){let h=0;t=String(t||'');for(let i=0;i<t.length;i++)h=(h*31+t.ch
 /* 2026-10-20 Nicole：已經有派車單網址的單，內容改了自動更新網頁（網址不變），不用再按按鈕 */
 let DRV_T=0;function drvAutoQ(){clearTimeout(DRV_T);const id=o&&o.id;DRV_T=setTimeout(()=>{const x=DB.orders[id];if(x)drvPush(x).catch(e=>console.warn('drvPush',e))},4000)}
 async function drvPush(x){if(!x||isPt(x)||!drvIsWeb(x)||!S.driveUrl||!S.driveKey)return false;const t=drvMemoText(x),h=hs32(t);if(h===x.drvSentSig)return true;
-  await gasCall({action:'memo',orderNo:orderNo(x),couple:coupleName(x),docs:[],drvText:t});x.drvSentSig=h;x.updated=Date.now();DB.orders[x.id]=x;store('nwcw_orders',DB);pushSync();try{if(o&&o.id===x.id&&(o.memoWho||'cust')==='drv')renderMemo()}catch(_){}return true}
+  await gasCall({action:'memo',orderNo:orderNo(x),couple:coupleName(x),docs:[],drvText:t});x.drvSentSig=h;x.updated=Date.now();DB.orders[x.id]=x;store('nwcw_orders',DB);pushSync();try{if(o&&o.id===x.id)renderMemo()}catch(_){}return true}
 function drvView(x,m){const text=memoText(m,false),c=x.c||{},p=dparts(x.date),web=drvIsWeb(x),fresh=web&&hs32(drvMemoText(x))===x.drvSentSig;
   const tel=v=>v.replace(/(^|[^\d\/=])(09\d{8})(?!\d)/g,(_,a,n)=>`${a}<a href="tel:${n}" style="color:inherit;text-decoration:underline dotted">${n}</a>`);
   const body=text.split('\n').map(l=>{const mm=l.match(/^([A-Z][.．] [^：\n]{1,12}：)(.+)$/);if(!mm||/https?:/.test(mm[2]))return esc(l);const ad=mm[2].replace(/[（(][^）)]*[）)]\s*$/,'').trim()||mm[2];return esc(mm[1])+`<a href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(ad)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">${esc(mm[2])}</a>`}).join('\n')
@@ -2436,7 +2444,7 @@ function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];c
   if(st==='nocontract')T.push({k:'nocontract',late:ago(x.formAt)>=2});
   if(st!=='inq'&&!String(x.carHead||'').trim()){const R=headNeed(x,d);if(R.length)T.push({k:'head',late:R.some(r=>r.late),why:R.map(r=>r.why).join('、')})}
   if(x.paid&&d!==null){
-    {const E=eqIssues(x);if(E.length&&d>=0)T.push({k:'equip',late:d<=7,why:E.join('；')})}   /* 2026-10-20 對講機／車頭彩／甘蔗固定器 */
+    {const E=eqIssues(x);if(E.length&&d>=0&&!eqResolved(x))T.push({k:'equip',late:d<=7,why:E.join('；')})}   /* 2026-10-20 對講機／車頭彩／甘蔗固定器 */
     if(!x.partner&&d<=7&&!x.cfSentAt&&!x.cfDoneAt)T.push({k:'cfsend',late:d<=5});
     if(!x.partner&&x.cfSentAt&&!x.cfDoneAt)T.push({k:'cfwait',late:d<=5});
     if(!x.drvDone&&(!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim()))){const hd=String(x.carHead||'').trim();if(hd){if(d!==null&&d<=3)T.push({k:'nodrv',late:true,why:'車頭已安排，確認司機資料'})}else{const tr=teslaDrvRule(x,d);T.push(tr?{k:'nodrv',late:d<=14||tr.late,why:tr.why}:{k:'nodrv',late:d<=14})}}
@@ -2734,6 +2742,9 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   const x=DB.orders[b.dataset.lgcopy];if(x){const n=lgName(x);clip(n);toast('已複製群組名稱：'+n);b.textContent='✅ 已複製';b.classList.remove('pri');setTimeout(()=>{if(b.isConnected){b.textContent='複製';b.classList.add('pri')}},1800)}});
 document.addEventListener('click',e=>{const t=e.target;if(!t||!o)return;if(t.dataset&&t.dataset.xadd!=null){const w=t.dataset.xadd;o.extras=o.extras||[];const L=o.extras[o.extras.length-1];if(L&&!L.n&&!num(L.a))o.extras.pop();o.extras.push({n:'',a:0,late:w==='5'||!!o.paid,at:Date.now()});save();fillInputs();renderAll();const ins=document.querySelectorAll(`.xList[data-xw="${w}"] input[data-b$=".n"]`);if(ins.length)ins[ins.length-1].focus();return}
   if(t.dataset&&t.dataset.xdel!=null){const i=+t.dataset.xdel,e0=o.extras[i]||{};if((e0.n||num(e0.a))&&!confirm(`刪除加項「${e0.n||'加項'} ${money(num(e0.a))}」？`))return;o.extras.splice(i,1);if(!o.extras.length)o.extras=[{n:'',a:0}];save();fillInputs();renderAll();toast('已刪除加項')}});
+document.addEventListener('change',e=>{const t=e.target;if(!t||t.id!=='eqOkChk'||!o)return;const n=($('eqOkNote')||{}).value||'';
+  if(t.checked){o.eqOk={sig:eqSig(o),at:Date.now(),note:n.trim()};toast(n.trim()?'已標記裝備問題已解決':'已標記已解決；記得在下面備註怎麼解決的')}else{o.eqOk=null;toast('已取消「已解決」')}save();renderEq();try{renderAll()}catch(_){}});
+document.addEventListener('input',e=>{const t=e.target;if(!t||t.id!=='eqOkNote'||!o)return;if(o.eqOk){o.eqOk.note=t.value.trim();save()}});
 document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||t.dataset.nogrp==null||!o)return;const f=(o.fleet||[])[+t.dataset.nogrp];if(!f)return;f.noGrp=t.checked;const dr=FDRAFT&&FDRAFT.id===o.id;save();try{renderLgCard()}catch(_){}try{renderLg()}catch(_){}toast((t.checked?`已設定：${f.driver} 不進群組（不用綁車卡）`:`已取消：${f.driver} 要進群組`)+(dr?'｜地點流程還沒儲存，按上方「儲存」或「取消」後才會寫進系統':''))});
 document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!t.dataset.headonly)return;const x=DB.orders[t.dataset.headonly];if(!x)return;   /* 2026-10-20 Nicole：只有車頭的群組不用綁車卡、不發教案 */
   x.headOnly=t.checked;x.updated=Date.now();store('nwcw_orders',DB);try{pushSync()}catch(_){}try{renderLg()}catch(_){}try{renderLgCard()}catch(_){}try{renderPtCard()}catch(_){}try{renderLsn()}catch(_){}toast(t.checked?'已設定：此群組只有車頭（不需綁定車卡、不發禮車教案）':'已取消「只有車頭」');});
