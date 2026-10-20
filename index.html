@@ -1995,6 +1995,8 @@ const cfHasNo=v=>/\d\s*號/.test(String(v||''));
 function cfArea(a){const s=String(a||'').replace(/臺/g,'台').replace(/^\s*\d{3,6}\s*/,'').replace(/^台灣/,'').replace(/\s/g,'');const m=s.match(/^(.{2}[縣市])(.{1,3}?[鄉鎮市區])/);return m?m[1]+m[2]:countyOf(s)}
 function cfMapUrl(q,pid){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q)+(pid?'&query_place_id='+encodeURIComponent(pid):'')}
 async function cfGeoRun(){if(cfGeoBusy||!S.driveUrl||!S.driveKey)return;const td=new Date().toISOString().slice(0,10);
+  /* 2026-10-20 Nicole：導航連結只用客人給的或我手動填的；之前 Google 核對自動帶入的導航連結清掉（一次） */
+  {let mc=0;Object.values(DB.orders).forEach(x=>{if(!x||!x.c||x.mapAutoClr||(x.date||'')<td)return;x.mapAutoClr=1;let ch=0;Object.keys(x.c).forEach(k=>{if(/Map$/.test(k)&&/^https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=/.test(String(x.c[k]||''))){x.c[k]='';ch++}});if(ch){x.updated=Date.now();mc+=ch}});if(mc){store('nwcw_orders',DB);pushSync();try{renderAll()}catch(_){}}}
   const L=Object.values(DB.orders).filter(x=>x&&!x.sample&&x.cfLast&&x.date>=td&&(+x.cfGeoAt||0)<(+x.cfApplyAt||0)&&!(+x.locEditAt>(+x.cfApplyAt||0)));   /* 手動改過地點就不再自動核對帶入 */if(!L.length)return;cfGeoBusy=true;let n=0;
   try{for(const x of L){const c=x.c||{},todo=CF_GEO_F.filter(([k])=>{const v=String(c[k]||'').trim();return v&&!cfHasNo(v)&&!/^(待定|未定|再確認|同上|無|沒有|不需要|不用|-|—)$/.test(v)});x.cfGeoAt=Date.now();
     if(todo.length){const ctx=CF_GEO_F.map(([k])=>c[k]).concat(Object.values(x.cfPrev||{})).filter(cfHasNo).map(countyOf).filter(Boolean)[0]||'',qs=[];
@@ -2007,8 +2009,8 @@ async function cfGeoRun(){if(cfGeoBusy||!S.driveUrl||!S.driveKey)return;const td
         if(cfHasNo(prev)){c[k]=prev;setL();if(use.some(r=>cfArea(r.addr)===cfArea(prev))){diffs.push(`📍 ${lb}：客人填「${v}」，Google 核對跟合約地址同一區，沿用合約地址「${prev}」`)}
           else warn.push(`📍 ${lb}：客人只填「${v}」，已先沿用合約地址「${prev}」${use.length?`；但 Google 查到「${use[0].addr}」，不在同一區，請跟客人確認是哪裡`:'；Google 查不到這個名稱，請跟客人確認'}`);return}
         const addrs=[...new Set(use.map(r=>cfArea(r.addr)+'|'+r.addr))];
-        if(use.length&&addrs.length===1){const r=use[0];c[k]=r.addr;setL();c[k+'Map']=cfMapUrl(v,r.pid);(ctx&&!sameCty(countyOf(r.addr),ctx)?warn:diffs).push(`📍 ${lb}：客人只填「${v}」，合約也沒有地址，已用 Google 核對帶入「${r.addr}」（含導航連結）`+(ctx&&!sameCty(countyOf(r.addr),ctx)?`；跟其他地點（${ctx}）不同縣市，請再確認一次`:''))}
-        else if(ctx&&use.filter(r=>sameCty(countyOf(r.addr),ctx)).length===1){const r=use.find(r=>sameCty(countyOf(r.addr),ctx));c[k]=r.addr;setL();c[k+'Map']=cfMapUrl(v,r.pid);warn.push(`📍 ${lb}：「${v}」有同名地點（${use.filter(z=>z!==r).map(z=>z.addr).join('／')}），已依其他地點都在${ctx}帶入「${r.addr}」，請再確認一次`)}
+        if(use.length&&addrs.length===1){const r=use[0];c[k]=r.addr;setL();(ctx&&!sameCty(countyOf(r.addr),ctx)?warn:diffs).push(`📍 ${lb}：客人只填「${v}」，合約也沒有地址，已用 Google 核對帶入「${r.addr}」`+(ctx&&!sameCty(countyOf(r.addr),ctx)?`；跟其他地點（${ctx}）不同縣市，請再確認一次`:''))}
+        else if(ctx&&use.filter(r=>sameCty(countyOf(r.addr),ctx)).length===1){const r=use.find(r=>sameCty(countyOf(r.addr),ctx));c[k]=r.addr;setL();warn.push(`📍 ${lb}：「${v}」有同名地點（${use.filter(z=>z!==r).map(z=>z.addr).join('／')}），已依其他地點都在${ctx}帶入「${r.addr}」，請再確認一次`)}
         else if(!use.length)warn.push(`📍 ${lb}：客人填「${v}」，沒有門牌號碼，合約也沒有地址，Google 查不到確定的地點，請跟客人要完整地址`);
         else warn.push(`📍 ${lb}：客人只填「${v}」，Google 查到 ${use.length} 個可能的地點${ctx?`（其他地點在${ctx}）`:''}，沒有自動帶入，請確認：${use.slice(0,3).map(r=>r.addr).join('／')}`)});
       n++}
