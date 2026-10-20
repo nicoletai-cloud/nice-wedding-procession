@@ -1281,7 +1281,7 @@ function xTxt(x,L){return L.map(e=>`${String(e.n||'加項').trim()} ${money(xAmt
 function balExpr(x,r){const cfOt=!!x.cfOtH||((x.cfLast&&x.cfLast.warn)||[]).some(w=>/超過合約/.test(w));   /* 2026-10-20 只有客人行前確認的用車時間超過合約時才列加時算式 */
   if(r.mon)return money(r.balance);const parts=[];let sub=0;
   if(cfOt&&r.ot>0){const ps=MODELS.filter(m=>num(x.cars[m])>0&&num(S.ot[m])>0).map(m=>money(num(S.ot[m]))+(num(x.cars[m])>1?'*'+num(x.cars[m]):''));const per=ps.join('+');parts.push(`加時 ${r.eh}HR ${r.eh>1?`(${per})*${r.eh}`:per}`);sub+=r.ot}
-  lateX(x).forEach(e=>{parts.push(`${String(e.n||'加項').trim()} ${money(xAmt(x,e))}`);sub+=xAmt(x,e)});
+  lateX(x).forEach(e=>{parts.push(e.otAuto?otExpr(x,e):`${String(e.n||'加項').trim()} ${money(xAmt(x,e))}`);sub+=xAmt(x,e)});
   if(!parts.length||r.balance-sub<=0)return money(r.balance);return `${money(r.balance-sub)}+${parts.join('+')}=${money(r.balance)}`}
 function qtyWord(q,lang){if(lang==='en')return '×'+q;if(lang==='ja')return q+'台';return (ZHN[q]||q)+'台'}
 function carsText(x,lang){const parts=MODELS.filter(m=>num(x.cars[m])>0).map((m,i,arr)=>((MBRAND[m]==='Tesla'&&(i===0||MBRAND[arr[i-1]]!=='Tesla'))?'Tesla ':'')+MNAME[m]+(lang==='en'?' ':' ')+qtyWord(num(x.cars[m]),lang));return parts.join(lang==='en'?', ':'、')||'—'}
@@ -2453,6 +2453,10 @@ document.addEventListener('click',e=>{const h=e.target&&e.target.closest?e.targe
 document.addEventListener('click',e=>{const b=e.target&&e.target.closest?e.target.closest('[data-attdel]'):null;if(!b||!o)return;e.preventDefault();const i=+b.dataset.attdel;(o.attach||[]).splice(i,1);save();renderAttach();try{renderMemo()}catch(_){}toast('已移除附件（Drive 裡的檔案還在）')});
 function ctHint5(){const el=$('ctHint5');if(!el||!o)return;const c=o.c||{},h=(+o.hours||0)+(+o.cfOtH||0),ce=ctEnd(o),ov=ctOver(o);el.innerHTML=!c.start?'':`合約 ${hrsLabel(o.hours)}${+o.cfOtH?`＋加時 ${o.cfOtH}HR`:''}：${esc(c.start)} 開始 → 合約結束 ${esc(ce||'—')}${ov&&!o.otOk?`　<b style="color:#c0392b">結束時間超過合約 ${ov} 分鐘</b>`:''}${o.otOk?`　<b style="color:var(--ok,#2f7d4f)">已和客人確認加時 ${o.otOk.min} 分鐘，尾款加 ${money(o.otOk.amt)}</b>`:''}`+(ov||o.otOk?`<label class="row" style="gap:6px;align-items:center;margin-top:6px;cursor:pointer;color:var(--fg)"><input type="checkbox" id="otOkChk" ${o.otOk?'checked':''} style="width:18px;height:18px">已和客人確認加時${!o.otOk&&ov?`（${ov} 分鐘，約 ${money(otCalc(o,ov))}，勾選後加到尾款）`:''}</label>`:'')}
 /* 2026-10-20 Nicole：用車時間超過合約 → 勾「已和客人確認加時」，加時金額自動加進尾款（列在加項） */
+/* 2026-10-21 Nicole：尾款寫成「尾款 $3,900+1HR $1,000x2=$5,900」，不寫「加時 60 分鐘 $2,000」 */
+function otExpr(x,e){const ov=+((x.otOk||{}).min)||+((String(e.n||'').match(/(\d+)\s*分鐘/)||[])[1])||0;if(!ov)return `${String(e.n||'加時').trim()} ${money(xAmt(x,e))}`;const u=+x.hours>0&&+x.hours<3?30:60,n=Math.ceil(ov/u),h=n*u/60;
+  const ps=MODELS.filter(m=>num((x.cars||{})[m])>0&&num(S.ot[m])>0).map(m=>money(num(S.ot[m]))+(num(x.cars[m])>1?'x'+num(x.cars[m]):''));if(!ps.length)return `${h}HR ${money(xAmt(x,e))}`;
+  const per=ps.join('+');return `${h}HR ${n>1?`(${per})x${n}`:per}`}
 function otCalc(x,ov){const u=+x.hours>0&&+x.hours<3?30:60,n=Math.ceil(ov/u);return MODELS.reduce((a,m)=>a+num((x.cars||{})[m])*num(S.ot[m]),0)*n}
 document.addEventListener('change',e=>{const t=e.target;if(!t||t.id!=='otOkChk'||!o)return;o.extras=(o.extras||[]).filter(z=>!(z&&z.otAuto));
   if(t.checked){const ov=ctOver(o);if(!ov){t.checked=false;toast('目前用車時間沒有超過合約');return}const amt=otCalc(o,ov);o.otOk={min:ov,amt,at:Date.now()};o.extras.push({n:`加時 ${ov} 分鐘`,a:amt,late:true,at:Date.now(),otAuto:1});toast(`已確認加時 ${ov} 分鐘，尾款加 ${money(amt)}`)}
