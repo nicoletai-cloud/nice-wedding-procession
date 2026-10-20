@@ -1368,7 +1368,10 @@ function fleetOf(x){const want=expandCars(x);const cur=x.fleet||[];const pool=cu
   return out.sort((a,b)=>ord(a.role)-ord(b.role))}
 /* 升等：只列出比原車款價格高的車款 */
 function upOptions(f){const base=num(S.price[f.m]),cur=String(f.up||'').trim();const L=S.models.filter(m=>m.id!==f.m&&num(S.price[m.id])>base).sort((a,b)=>num(S.price[a.id])-num(S.price[b.id]));
-  return '<option value="">不升等</option>'+L.map(m=>`<option value="${esc(m.name)}"${cur===m.name?' selected':''}>${esc(m.name)}</option>`).join('')+(cur&&!L.some(m=>m.name===cur)?`<option value="${esc(cur)}" selected>${esc(cur)}</option>`:'')}
+  return '<option value="">不升等</option>'+L.map(m=>`<option value="${esc(m.name)}"${cur===m.name?' selected':''}>${esc(m.name)}</option>`).join('')+(cur&&!L.some(m=>m.name===cur)?`<option value="${esc(cur)}" selected>${esc(cur)}</option>`:'')+'<option value="__custom">其他車款（自己輸入）…</option>'}
+/* 2026-10-20 Nicole：升等的車款不在清單（例：BMW G30）→ 選「其他車款」自己輸入 */
+document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!/\.up$/.test(t.dataset.fl||'')||t.value!=='__custom')return;const i=+t.dataset.fl.split('.')[0],f=(o&&o.fleet||[])[i];const v=(prompt('升等為哪個車款？（例：BMW G30 530i）',f&&f.up||'')||'').trim();
+  if(!v){t.value=f&&f.up||'';e.stopImmediatePropagation();return}const op=document.createElement('option');op.value=v;op.textContent=v;t.insertBefore(op,t.lastElementChild);t.value=v},true);
 function syncFleet(){o.fleet=fleetOf(o);applyColorReq(o)}
 /* 指定車色：自動帶入車隊顏色（主禮車優先；指定台數空白＝全部）；手動改過的那台不再覆蓋 */
 function applyColorReq(x){if(!x||!x.colorReq||!(x.fleet||[]).length)return false;const n=num(x.colorQty)||x.fleet.length;
