@@ -603,6 +603,12 @@ nav.tabs button{scroll-snap-align:start}
         <div class="flowGrid"><!-- 2026-10-20 Nicole：左邊看客人填的完整行前確認，右邊改流程 -->
         <details class="cfSide" open><summary><b>客人填的行前確認</b> <small style="color:var(--muted)">（對照用）</small></summary><div id="cfSide"></div></details>
         <div class="flowEdit">
+        <div class="fields" style="margin-bottom:4px"><!-- 2026-10-20 Nicole：第 5 頁也能改用車時間 -->
+          <label class="f">開始用車<input type="time" data-b="c.start"></label>
+          <label class="f">結束用車<input type="time" data-b="c.end"></label>
+          <label class="f">司機集合時間<input type="time" data-b="c.gather"></label>
+        </div>
+        <div class="hint" id="ctHint5" style="margin:0 0 12px"></div>
         <div id="flowPts" style="margin-bottom:12px"></div>   <!-- 2026-10-20 Nicole：A–D 地點名稱、地址可以在這裡改；下面附客人原本填的 -->
         <div class="fields" style="margin-bottom:6px">
           <label class="f">流程代號<input id="d_path" data-b="path" placeholder="A - B - A"></label>
@@ -1988,12 +1994,14 @@ function fillInputs(){try{renderXList()}catch(e){}document.querySelectorAll('[da
 document.addEventListener('input',e=>{const el=e.target;
   if(el.dataset.b){let v=el.value;if(el.hasAttribute('data-num'))v=el.value===''?0:num(el.value);if(el.hasAttribute('data-bool'))v=el.value==='1';
     if(el.dataset.b==='depOverride')v=el.value===''?'':num(el.value);
-    setPath(o,el.dataset.b,v);o.sample=false;{const xm=el.dataset.b.match(/^extras\.(\d+)\.(a|late)$/);if(xm&&o.extras[+xm[1]])o.extras[+xm[1]].at=Date.now()}if(/^(c\.(meet|wed|o\d+)(L|T|Map|S)?|path)$/.test(el.dataset.b))o.locEditAt=Date.now();
+    const prevV=getPath(o,el.dataset.b);setPath(o,el.dataset.b,v);o.sample=false;{const xm=el.dataset.b.match(/^extras\.(\d+)\.(a|late)$/);if(xm&&o.extras[+xm[1]])o.extras[+xm[1]].at=Date.now()}if(/^(c\.(meet|wed|o\d+)(L|T|Map|S)?|path)$/.test(el.dataset.b))o.locEditAt=Date.now();
     if(el.dataset.b==='src.vendor'&&v&&!(o.src&&o.src.from)){o.src.from='婚顧／廠商介紹';if($('q_from'))$('q_from').value=o.src.from}
     if(el.dataset.b==='c.meet'&&!o.cityA&&countyOf(o.c.meet)){o.cityA=countyOf(o.c.meet);$('q_cityA').value=o.cityA}
     if(el.dataset.b==='c.wed'&&!o.cityB&&countyOf(o.c.wed)){o.cityB=countyOf(o.c.wed);$('q_cityB').value=o.cityB}
-    if(el.dataset.b==='c.start'&&o.c.start){if(!o.c.gather||o.c.gather===o._autoG){o.c.gather=addMin(o.c.start,-20);o._autoG=o.c.gather;$('c_gather').value=o.c.gather}
-      if(o.flow[0]&&!o.flow[0].t){o.flow[0].t=o.c.start;renderFlow()}}
+    if(el.dataset.b==='c.start'&&o.c.start){if(!o.c.gather||o.c.gather===o._autoG||(prevV&&o.c.gather===addMin(prevV,-20))){o.c.gather=addMin(o.c.start,-20);o._autoG=o.c.gather}
+      {const h=Math.round(((+o.hours||0)+(+o.cfOtH||0))*60);if(prevV&&h>0&&o.c.end===addMin(prevV,h))o.c.end=ctEnd(o)}   /* 2026-10-20 開始時間改了：集合時間、結束時間（原本＝開始＋合約時數）、第一段流程時間跟著改 */
+      document.querySelectorAll('[data-b="c.gather"]').forEach(z=>{if(z!==el)z.value=o.c.gather||''});document.querySelectorAll('[data-b="c.end"]').forEach(z=>{if(z!==el)z.value=o.c.end||''});
+      if(o.flow[0]&&(!o.flow[0].t||o.flow[0].t===prevV)){o.flow[0].t=o.c.start;renderFlow()}}
     if(/^cars|hours/.test(el.dataset.b)){syncFleet();renderFleet();renderCars()}
     if(el.id==='q_addrD'||el.id==='q_addrA'||el.id==='q_addrB'||el.id==='q_addrC'){const km=$('kmMsg');if(km&&/總里程約/.test(km.textContent))km.textContent='路線或地址有變更，請重新按「計算總里程」'}
     save();renderAll();return}
@@ -2298,7 +2306,8 @@ document.addEventListener('change',async e=>{const t=e.target;if(!t||t.id!=='att
   if(n){save();renderAttach();try{renderMemo()}catch(_){}toast('已新增 '+n+' 個附件；派車單和確認單請按一次「產生／更新」')}});
 document.addEventListener('click',e=>{const h=e.target&&e.target.closest?e.target.closest('[data-atthide]'):null;if(h&&o){e.preventDefault();o.attHide=(o.attHide||[]).concat([h.dataset.atthide]);save();renderAttach();try{renderMemo()}catch(_){}toast('已撤掉這個附件（確認單和派車單不再顯示）');}});
 document.addEventListener('click',e=>{const b=e.target&&e.target.closest?e.target.closest('[data-attdel]'):null;if(!b||!o)return;e.preventDefault();const i=+b.dataset.attdel;(o.attach||[]).splice(i,1);save();renderAttach();try{renderMemo()}catch(_){}toast('已移除附件（Drive 裡的檔案還在）')});
-function renderAll(){try{renderAttach()}catch(e){}try{renderQx()}catch(e){}try{renderFormDataBtn()}catch(e){}renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派車頭':''].filter(Boolean),tr=[k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就派司機':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月派司機':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月派司機':'白色特斯拉：用車前一週派司機'):''].filter(Boolean);$('headHint').textContent=(rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):k.tesla&&!k.lux?'特斯拉由你擔任車頭，不用指派車頭。':'本單沒有提前指派車頭的需求。')+(tr.length?'　'+tr.join('；'):'')+(String(o.carHead||'').trim()?'　✅ 已找車頭：司機由車頭安排，用車前 3 天再確認司機資料即可。':'')}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=cfMsg(o);try{renderCfSt()}catch(e){}try{renderCfFlow()}catch(e){}try{renderMemoOk()}catch(e){}renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
+function ctHint5(){const el=$('ctHint5');if(!el||!o)return;const c=o.c||{},h=(+o.hours||0)+(+o.cfOtH||0),ce=ctEnd(o),ov=ctOver(o);el.innerHTML=!c.start?'':`合約 ${hrsLabel(o.hours)}${+o.cfOtH?`＋加時 ${o.cfOtH}HR`:''}：${esc(c.start)} 開始 → 合約結束 ${esc(ce||'—')}${ov?`　<b style="color:#c0392b">結束時間超過合約 ${ov} 分鐘</b>`:''}`}
+function renderAll(){try{ctHint5()}catch(e){}try{renderAttach()}catch(e){}try{renderQx()}catch(e){}try{renderFormDataBtn()}catch(e){}renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派車頭':''].filter(Boolean),tr=[k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就派司機':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月派司機':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月派司機':'白色特斯拉：用車前一週派司機'):''].filter(Boolean);$('headHint').textContent=(rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):k.tesla&&!k.lux?'特斯拉由你擔任車頭，不用指派車頭。':'本單沒有提前指派車頭的需求。')+(tr.length?'　'+tr.join('；'):'')+(String(o.carHead||'').trim()?'　✅ 已找車頭：司機由車頭安排，用車前 3 天再確認司機資料即可。':'')}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=cfMsg(o);try{renderCfSt()}catch(e){}try{renderCfFlow()}catch(e){}try{renderMemoOk()}catch(e){}renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
   $('outQuote').textContent=quoteText(o,'zh');if($('outQuoteAdd'))$('outQuoteAdd').textContent=QUOTE_ADD;$('outOrder').textContent=orderText(o,'zh');
   renderFind();$('contractPaper').innerHTML=contractHTML(o);ctTuneFill();renderSigned();renderMemo();
   ['meet','wed','o1','o2'].forEach(k=>{$('c_'+k+'S').placeholder=shortArea(o.c[k])||'自動'});
