@@ -2201,8 +2201,10 @@ function renderFlow(){try{renderFlowPts()}catch(e){console.warn(e)}setTimeout(re
   <button class="btn sm" data-fdel="${i}" aria-label="刪除這段">✕</button></div>`).join('');if(WHO_OPEN!=null){const pp=document.querySelector(`[data-whop="${WHO_OPEN}"]`);if(pp)pp.hidden=false}}
 /* 2026-10-20 Nicole：流程每段的車輛改成勾選（全車隊或哪幾台），選項照這張單的車隊（含親友車）；每段可以上下移動 */
 var WHO_OPEN=null;
-function whoRoles(){let R=[];try{R=fleetWithFriends(o).map(f=>String(f.role||'').trim()).filter(Boolean)}catch(_){}
-  if(!R.length){const n=Object.values(o.cars||{}).reduce((a,v)=>a+num(v),0);for(let p=1;p<=n;p++)R.push(frDefRole(p,n))}return [...new Set(R)]}
+function whoRoles(){let R=[];try{const F=fleetWithFriends(o);R=F.map((f,i)=>String(f.role||'').trim()||frDefRole(i+1,F.length)).filter(Boolean)}catch(_){}
+  if(!R.length){const n=Object.values(o.cars||{}).reduce((a,v)=>a+num(v),0);for(let p=1;p<=n;p++)R.push(frDefRole(p,n))}
+  /* 2026-10-20 Nicole：主禮車選項不見 → 兩台以上一定要有主禮車（放在前導車後面） */
+  if(R.length>=2&&!R.includes('主禮車')){const k=R.indexOf('前導車');R.splice(k>=0?k+1:0,0,'主禮車')}return [...new Set(R)]}
 function whoParse(v){return String(v||'').split(/[+＋、,，\s]+/).map(z=>z.trim()).filter(Boolean)}
 function whoSel(v,i){const R=whoRoles(),cur=whoParse(v),all=!cur.length;const lb=all?'全車隊':cur.join('、');
   return `<div class="whoSel"><button type="button" class="btn sm whoBtn" data-whob="${i}" aria-label="車輛" title="${esc(lb)}">${esc(lb)} ▾</button><div class="whoPop" data-whop="${i}" hidden>
