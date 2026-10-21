@@ -548,7 +548,7 @@ nav.tabs button{scroll-snap-align:start}
 
   <!-- 5 車隊與流程 -->
   <section class="tab" id="tab-dispatch" hidden>
-<div class="card lgTop" style="margin-bottom:14px;padding:10px 14px"><div class="row" style="gap:8px;align-items:center;flex-wrap:nowrap"><b style="white-space:nowrap">群組名稱</b><input id="lgName5" readonly style="flex:1;min-width:0"><button class="btn sm pri" data-copyv="lgName5">複製</button></div></div>   <!-- 2026-10-20 車隊與流程、派車單頁上方都能複製群組名稱 -->
+<div class="card lgTop" style="margin-bottom:14px;padding:10px 14px"><div class="row" style="gap:8px;align-items:center;flex-wrap:nowrap"><b style="white-space:nowrap">群組名稱</b><input id="lgName5" readonly style="flex:1;min-width:0"><button class="btn sm pri" data-copyv="lgName5">複製</button></div><div class="lgWarn" id="lgWarn5" hidden style="margin-top:6px;font-size:.9rem;color:var(--warn)"></div></div>   <!-- 2026-10-20 車隊與流程、派車單頁上方都能複製群組名稱 -->
     <div class="stack">
       <div class="card" id="xCard5"><h3>加項 <small>客人傳過行前確認後才加的款項，填在這裡會列在尾款（尾款 $X+項目 $Y=$Z）</small></h3><div class="xList" data-xw="5"></div></div>
       <div class="card" id="ptCard" hidden style="border-color:#A77D4C"><h3>同業單 <small>只要選司機；不用出合約、memo、派車單</small></h3><datalist id="ptCoList"></datalist><div id="ptCardBody"></div></div>
@@ -624,7 +624,7 @@ nav.tabs button{scroll-snap-align:start}
 
   <!-- 6 memo -->
   <section class="tab" id="tab-memo" hidden>
-<div class="card lgTop" style="margin-bottom:14px;padding:10px 14px"><div class="row" style="gap:8px;align-items:center;flex-wrap:nowrap"><b style="white-space:nowrap">群組名稱</b><input id="lgName6" readonly style="flex:1;min-width:0"><button class="btn sm pri" data-copyv="lgName6">複製</button></div></div>   <!-- 2026-10-20 車隊與流程、派車單頁上方都能複製群組名稱 -->
+<div class="card lgTop" style="margin-bottom:14px;padding:10px 14px"><div class="row" style="gap:8px;align-items:center;flex-wrap:nowrap"><b style="white-space:nowrap">群組名稱</b><input id="lgName6" readonly style="flex:1;min-width:0"><button class="btn sm pri" data-copyv="lgName6">複製</button></div><div class="lgWarn" id="lgWarn6" hidden style="margin-top:6px;font-size:.9rem;color:var(--warn)"></div></div>   <!-- 2026-10-20 車隊與流程、派車單頁上方都能複製群組名稱 -->
     <div id="memoCall" class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 12px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2,#faf5ee)" hidden></div>
     <div id="ptMemo"></div>   <!-- 2026-10-20 同業單：服務確認單＝同業原始內容；司機派車單＝加上匯回、每台實拿 -->
     <div class="row" style="margin-bottom:12px;gap:14px">
@@ -2855,7 +2855,11 @@ function renderLgCard(){const el=$('lgCard');if(!el||!o)return;if(o.sample||!lgO
   el.innerHTML=`<div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer"><input type="checkbox" data-lgdone="${esc(o.id)}" style="width:auto"${o.lgAt?' checked':''}>群組已建立</label><label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;white-space:nowrap" title="只有車頭的群組：不需要綁定車卡，也不發禮車教案"><input type="checkbox" data-headonly="${esc(o.id)}" style="width:auto"${o.headOnly?' checked':''}>此群組只有車頭</label>${o.headOnly?'<span class="hint" style="margin:0">只有車頭：不需綁定車卡、不發禮車教案</span>':`<button class="btn sm" data-lgbind="${esc(o.id)}"${g&&g.ok?'':' disabled'}>📨 傳綁定車卡</button>${lgMentBtn(o,g)}`}<button class="btn sm" id="btnLgCardRefresh" title="剛建好或改名的群組，按這裡重新偵測">🔄 重新偵測</button><span class="hint" style="margin:0">${g==null?'查詢群組中…':g.ok?'🤖 禮車助手已在群組':'⚠️ 還沒偵測到群組（群組名稱要有代碼、禮車助手要在群組裡）'}</span></div>`
     +`<div class="hint" style="margin:6px 0 0">${!bd.total?'還沒派司機':bd.miss.length?`<b style="color:var(--warn)">未綁車卡 ${bd.miss.length}/${bd.total}：${esc(bd.miss.join('、'))}</b>`:`✅ 司機 ${bd.total} 位都已綁車卡`}</div>${lgUbLine(g)}`
     +((o.fleet||[]).some(f=>String(f.driver||'').trim())?`<div class="row" style="gap:4px 14px;flex-wrap:wrap;margin-top:6px;font-size:.9rem">${(o.fleet||[]).map((f,i)=>String(f.driver||'').trim()?`<label style="display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;color:var(--muted)"><input type="checkbox" data-nogrp="${i}" style="width:auto"${f.noGrp?' checked':''}>${esc(f.role||'')} ${esc(String(f.driver).trim())} 不進群組</label>`:'').join('')}</div>`:'');   /* 2026-10-20 Nicole：某台車司機不進群組（不用綁車卡、不用報到） */
+  try{lgNameWarn(g)}catch(_){}
   if(g==null)lgStatus([o])}
+/* 2026-10-21 Nicole：LINE 群組現在的名稱和系統建議的不一樣（例：地點改過，新莊→三重）→ 提醒改名 */
+function lgNameWarn(g){const want=lgName(o),flat=v=>String(v||'').replace(/\s+/g,'');const diff=!!(g&&g.ok&&g.name&&flat(g.name)!==flat(want));
+  document.querySelectorAll('.lgWarn').forEach(el=>{el.hidden=!diff;el.innerHTML=diff?`LINE 群組目前叫「${esc(g.name)}」，跟上面建議的名稱不一樣（可能是地點改過）。要一致的話，到 LINE 把群組改名成上面的名稱；不改也可以，代號還在就不影響派車單和提醒。`:''})}
 /* 群組裡還沒綁定車卡、系統可以 @ 的人（LINE 名稱）：有人加入或在群組說過話才認得 */
 function lgUbLine(g){if(!g||!g.ok||!Array.isArray(g.ub))return '';return `<div class="sub" style="margin-top:2px">${g.ub.length?`📣 群組裡可以 @ 的未綁定成員：<b>${esc(g.ub.join('、'))}</b>`:'群組裡沒有可以 @ 的未綁定成員（沒在群組說過話、或禮車助手加入前就在群組的人認不到）'}</div>`}
 function lgMentBtn(x,g){const n=g&&g.ok&&Array.isArray(g.ub)?g.ub.length:0;return n?`<button class="btn sm" data-lgment="${esc(x.id)}" title="在群組 @ 還沒綁定的人，並附上綁定車卡按鈕">📣 @ 沒綁定的人（${n}）</button>`:''}
