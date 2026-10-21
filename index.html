@@ -1393,7 +1393,7 @@ function otDrvAdd(m,x){const h=otHrs(x);if(!h||+x.hours===0)return 0;const a=dri
 /* 2026-10-20 Nicole：負責人對講機要夠（客人預約幾台車就要幾支，親友車不算）；客人要固定甘蔗時主禮車要有甘蔗固定器；主禮車要有車頭彩。資料來自司機在禮車助手填的車卡 */
 function eqIssues(x){const out=[];if(!x||x.sample||x.lost)return out;const F=x.fleet||[];if(!F.length)return out;
   const ld=F.find(f=>f.lead&&String(f.driver||'').trim());
-  if(ld){const d=drvOf(ld),need=F.length;if(d){const r=String(d.radios==null?'':d.radios).trim();if(r==='')out.push(`負責人 ${ld.driver} 車卡沒填對講機數量（需要 ${need} 支）`);else if(+r<need)out.push(`負責人 ${ld.driver} 只有 ${+r} 支對講機，需要 ${need} 支`)}}
+  if(ld){const d=drvOf(ld),need=F.length;if(d){const r=String(d.radios==null?'':d.radios).trim();if(r==='')out.push(`負責人[${ld.driver}]車卡沒填對講機數量（需要 ${need} 支）`);else if(+r<need)out.push(`負責人[${ld.driver}]只有 ${+r} 支對講機，需要 ${need} 支`)}}
   const mc=F.find(f=>f.role==='主禮車'&&String(f.driver||'').trim());
   if(mc){const d=drvOf(mc);if(d){const t=String(d.tools||'');if(!t.trim())out.push(`主禮車 ${mc.driver} 車卡沒填裝備（車頭彩／甘蔗固定器）`);else{if(t.indexOf('車頭彩')<0)out.push(`主禮車 ${mc.driver} 沒有車頭彩`);if(caneOf(x)==='是'&&!/甘蔗/.test(t))out.push(`客人要固定甘蔗，主禮車 ${mc.driver} 沒有甘蔗固定器`)}}}
   return out}
@@ -2116,7 +2116,7 @@ document.addEventListener('change',e=>{if(e.target.dataset.fl&&e.target.dataset.
   if(e.target.classList&&e.target.classList.contains('balMode')){const d=new Date(),v=e.target.value,was=!!o.balPaid;{const pv=o.balPaid?(o.balRed?'nored':'all'):'',lb={'':'司機現場收尾款＋紅包',all:'客人已匯尾款＋紅包（司機只收加時）',nored:'客人已匯尾款，紅包現場給司機'};   /* 2026-10-20 Nicole：會發通知的動作都先確認 */
     if(v!==pv&&!confirm(`尾款收款方式改成「${lb[v]}」？\n\n${o.pubAt?'派車單已經發到司機群組：按確定後，禮車助手會在群組通知禮車負責人。':'派車單還沒發到群組：只會更新派車單和確認單內容，不會通知司機。'}`)){document.querySelectorAll('.balMode').forEach(s=>s.value=pv);return}}o.balPaid=!!v;if(o.balPaid&&!was)o.balPaidTs=Date.now();if(!o.balPaid)o.balPaidTs=0;o.balRed=v==='nored';o.balPaidAt=o.balPaid?`${d.getMonth()+1}/${d.getDate()}`:'';document.querySelectorAll('.balMode').forEach(s=>s.value=v);save();renderMemo();renderAll();toast(v==='all'?'已標記：客人已匯尾款＋紅包，司機只收加時':v==='nored'?'已標記：客人已匯尾款，司機現場收紅包':'已改回：司機現場收尾款');
     /* 2026-10-19 尾款入帳狀態改了：派車單自動更新；已在群組發佈過派車單 → 通知禮車負責人 */
-    {const x=o,r=calc(x),no=orderNo(x),ld=lead(x)||{},who=ld.driver?'禮車負責人 '+ld.driver:'禮車負責人';memoDocsFor(x);
+    {const x=o,r=calc(x),no=orderNo(x),ld=lead(x)||{},who=ld.driver?'禮車負責人['+ld.driver+']':'禮車負責人';memoDocsFor(x);
       if(x.pubAt){const t=`📣 尾款收款更新｜${no} ${coupleName(x)}\n`+(v==='all'?'客人已匯尾款（含司機禮），現場不用收款，只收加時費用（如有）':v==='nored'?`客人已匯尾款，${who}當天只需收司機禮 ${money(r.red)}`:`尾款改回現場收取：請${who}當天向客人收取尾款 ${money(r.balance)}${r.red?'（含司機禮）':''}`);
         lgCall({op:'notice',keys:lgKeys(x),text:t}).then(j=>toast('已在「'+(j.name||'司機群組')+'」通知尾款收款更新')).catch(err=>alert('司機群組通知沒送出，請自己告知禮車負責人：\n\n'+t+'\n\n（'+(err&&err.message||err)+'）'))}}}
   if(e.target.dataset&&e.target.dataset.settle){const x=DB.orders[e.target.dataset.settle];if(x){x.settled=e.target.checked;if(o.id===x.id)o.settled=x.settled;store('nwcw_orders',DB);renderSettle()}}});
