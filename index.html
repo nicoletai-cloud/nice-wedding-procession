@@ -1290,7 +1290,7 @@ function balExpr(x,r){const cfOt=!!x.cfOtH||((x.cfLast&&x.cfLast.warn)||[]).some
   if(!parts.length||r.balance-sub<=0)return money(r.balance);return `${money(r.balance-sub)}+${parts.join('+')}=${money(r.balance)}`}
 function qtyWord(q,lang){if(lang==='en')return '×'+q;if(lang==='ja')return q+'台';return (ZHN[q]||q)+'台'}
 function carsText(x,lang){const parts=MODELS.filter(m=>num(x.cars[m])>0).map((m,i,arr)=>((MBRAND[m]==='Tesla'&&(i===0||MBRAND[arr[i-1]]!=='Tesla'))?'Tesla ':'')+MNAME[m]+(lang==='en'?' ':' ')+qtyWord(num(x.cars[m]),lang));return parts.join(lang==='en'?', ':'、')||'—'}
-function planName(x){const r=calc(x);const parts=MODELS.filter(m=>num(x.cars[m])>0).map(m=>MABBR[m]+(num(x.cars[m])>1?'*'+num(x.cars[m]):''));
+function planName(x){const r=calc(x);const parts=MODELS.filter(m=>num(x.cars[m])>0).map(m=>MABBR[m]+(num(x.cars[m])>1||r.n===1?'*'+num(x.cars[m]):''));   /* 2026-10-22 Nicole：只有一台也要寫數量（Tesla MX*1） */
   const nm=r.b?r.b.name:(r.n>1?(ZHN[r.n]||r.n)+'台禮車':'');
   const allT=MODELS.filter(m=>num(x.cars[m])>0).every(m=>MBRAND[m]==='Tesla');return (allT?'Tesla ':'')+parts.join('+')+(nm?' '+nm+'方案':'')}
 const L={
