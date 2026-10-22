@@ -2378,7 +2378,7 @@ function hotelName(c){const raw=String(c.meet||'').replace(/臺/g,'台');if(!HOT
   if(!h&&HOTEL_RE.test(c.meetL||'')&&!/^(飯店|酒店)$/.test(c.meetL))h=c.meetL;return h.slice(0,16)}
 function meetPlace(c){const h=hotelName(c);if(h)return h;const a=String(c.meet||'').replace(/臺/g,'台').replace(/^\s*\d{3,6}\s*/,'');const m=a.match(new RegExp(CTY_RE+'[縣市]\\s*([^\\s\\d]{1,3}?)[區鎮鄉市]'));const cty=m?m[1]:countyOf(a),tw=m?{t:m[2]}:townOf(a);return (cty||'')+(tw?tw.t:'')||(c.meetL&&!/^(男方家|女方家)$/.test(c.meetL)?c.meetL:'')}
 /* 2026-10-22 Nicole：10/26 以後的群組名稱改成「日期 縣市 新郎名字 代碼」（只寫縣市、不寫區，客人改地點比較不會變） */
-function meetCounty(c){const a=String(c.meet||c.wed||'').replace(/臺/g,'台').replace(/^\s*\d{3,6}\s*/,'');const m=a.match(new RegExp(CTY_RE+'[縣市]'));return m?m[1]:(countyOf(a)||'')}
+function meetCounty(c){for(const v of [c.meet,c.wed]){const k=countyOf(String(v||''));if(k)return k}return ''}
 function lgName(x){const c=x.c||{},p=dparts(x.date);if(String(x.date||'')>='2026-10-26'){const g=String(c.groom||c.bride||'').trim();return [p?p.m+'/'+p.d:'',meetCounty(c)||meetPlace(c),g,tripCode(x)].filter(Boolean).join(' ')}return [p?p.m+'/'+p.d:'',meetPlace(c),tripCode(x)].filter(Boolean).join(' ')}
 function lgMsg(x){const c=x.c,p=dparts(x.date),L=x.memoLinks||{},ld=lead(x)||{};
   const cars=x.fleet.map(f=>[`${f.role}｜${(f.up||'').trim()&&f.up.trim()!==MNAME[f.m]?f.up.trim()+'(升等)':MNAME[f.m]} ${f.color||''}｜${f.plate||'—'}`,`　${f.driver||'（未派）'}${f.lead?'（負責人）':''} ${ph(f.phone)}`.trimEnd(),f.emg?`　緊急聯絡：${ph(f.emg)}`:''].filter(Boolean).join('\n'));
