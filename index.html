@@ -1392,6 +1392,8 @@ document.addEventListener('input',e=>{const t=e.target;if(!t||!t.dataset)return;
   if(t.dataset.fl&&/\.color$/.test(t.dataset.fl)){const f=o.fleet[+t.dataset.fl.split('.')[0]];if(f){f.colorSet=true;save()}return}
   if(t.id==='q_color'||t.id==='q_colorQty')setTimeout(()=>{if(applyColorReq(o)){save();renderFleet()}},0)});
 document.addEventListener('change',e=>{const t=e.target;if(t&&(t.id==='q_color'||t.id==='q_colorQty'))setTimeout(()=>{if(applyColorReq(o)){save();renderFleet()}},0)});
+/* 2026-10-22 哪台司機酬勞含甘蔗固定費：有勾 f.cane，或客人要固定甘蔗且這台酬勞剛好比價目多一筆甘蔗固定費 */
+function caneCar(f,x){x=x||o;if(f.cane)return true;if(!(num(x.cane)>0)||(x.fleet||[]).some(g=>g.cane)||f.pay===''||f.pay==null)return false;let b=null;try{b=driverBasePay(f.m,x)}catch(_){}if(b==null)return false;const d=num(f.pay)+otDrvAdd(f.m,x)-b;return d>0&&(d===num(S.cane)||d===ptCaneFee())}
 function payOf(f,x){x=x||o;return f.pay!==''&&f.pay!=null?num(f.pay)+otDrvAdd(f.m,x):driverBasePay(f.m,x)}
 /* 2026-10-21 Nicole：已和客人確認加時 → 司機酬勞改成加時後時數（例：3HR＋1HR＝4HR 的酬勞） */
 function otHrs(x){const mn=+((x&&x.otOk)||{}).min||0;if(!mn)return 0;const u=+x.hours>0&&+x.hours<3?30:60;return Math.ceil(mn/u)*u/60}
@@ -1493,9 +1495,9 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
     else if(x.balPlan==='transfer')pay=[`尾款 ${balExpr(x,r)}${r.red?'(含司機禮)':''}`,`您選擇提前匯款：請於用車前一日前匯款到以下帳號 (假日會計無法即時查帳，請勿用車當日匯款)`,'',S.bankBal?`匯款資訊 [幹部帳戶]`:`匯款資訊`,S.bankBal||S.bank,'',`加時：${otl}`];
     else pay=[`尾款 ${balExpr(x,r)}${r.red?'(含司機禮)':''}`,`請於用車前一日前匯款到以下帳號，或是當天一整包現金交給現場負責人 (假日會計無法即時查帳，請勿用車當日匯款)`,'',S.bankBal?`匯款資訊 [幹部帳戶]`:`匯款資訊`,S.bankBal||S.bank,'',`加時：${otl}`];   // 2026-10-19 Nicole 指定文字
   }else{
-    const groups={};x.fleet.forEach(f=>{const v=payOf(f,x);const key=v==null?'?':v;(groups[key]=groups[key]||[]).push(f.role)});
+    const groups={};x.fleet.forEach(f=>{const v=payOf(f,x);const key=(v==null?'?':v)+(caneCar(f,x)?'|c':'');(groups[key]=groups[key]||[]).push(f.role)});
     pay=[r.mon?(r.onsite?`收取${[r.red?`紅包 ${money(S.red)}/台`:'',r.cane?`甘蔗固定費 ${money(r.cane)}`:''].filter(Boolean).join('、')}`:'現場不用收款'):x.balPaid?(postX(x).length?(x.balRed&&r.red?`尾款客人已匯款，現場收司機紅包 ${money(S.red)}/台（共 ${money(r.red)}）＋${xTxt(x,postX(x))}`:`尾款 ${money(r.balance-sumX(x,postX(x)))} 客人已匯款，現場另收 ${xTxt(x,postX(x))}`):x.balRed&&r.red?`尾款客人已匯款，現場只收司機紅包 ${money(S.red)}/台（共 ${money(r.red)}）`:`尾款 ${money(r.balance)} 客人已匯款，現場不用收款`):x.balPlan==='transfer'?`客人選提前匯款；若當天還沒入帳，請收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`:`收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}${x.balPlan==='cash'?'・客人付現金':''}`];
-    Object.keys(groups).forEach(v=>{const roles=[...new Set(groups[v])].join('＋');pay.push(+x.hours===0?`${roles} 實拿${v==='?'?'（未設定）':money(+v)}（單程接送・綁彩）`:`${roles} ${v==='?'?'（未設定）':money(+v)}/${hrsLabel(drvHrs(x))}${r.red?'(含紅包)':''}`)});
+    Object.keys(groups).forEach(gk=>{const cn=/\|c$/.test(gk),v=gk.replace(/\|c$/,'');const roles=[...new Set(groups[gk])].join('＋');const inc=cn?(r.red?'(含司機禮+甘蔗固定)':'(含甘蔗固定)'):(r.red?'(含紅包)':'');pay.push(+x.hours===0?`${roles} 實拿${v==='?'?'（未設定）':money(+v)}（單程接送・綁彩）${cn?'(含甘蔗固定)':''}`:`${roles} ${v==='?'?'（未設定）':money(+v)}/${hrsLabel(drvHrs(x))}${inc}`)});   // 2026-10-22 Nicole：掛甘蔗那台寫(含司機禮+甘蔗固定)
     const ms=MODELS.filter(m=>num(x.cars[m])>0);
     if(+x.hours===0)pay.push(`等候 15 分鐘未出發，每半小時：${ms.map(m=>driverOtText(m,x).replace(' 等候每 0.5HR','')).join(' ; ')}`);
     else pay.push(x.hours<3?'未滿 3 小時方案無緩衝，超過即以每 0.5 小時計加時':'加時 15 分鐘內不計 ; 第 16 分鐘起收加時費用',`加時：${otl}`);
