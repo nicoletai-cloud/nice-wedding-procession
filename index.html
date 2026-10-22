@@ -1501,7 +1501,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
     const ms=MODELS.filter(m=>num(x.cars[m])>0);
     if(+x.hours===0)pay.push(`等候 15 分鐘未出發，每半小時：${ms.map(m=>driverOtText(m,x).replace(' 等候每 0.5HR','')).join(' ; ')}`);
     else pay.push(x.hours<3?'未滿 3 小時方案無緩衝，超過即以每 0.5 小時計加時':'加時 15 分鐘內不計 ; 第 16 分鐘起收加時費用',`加時：${otl}`);
-    const back=r.balance-r.dsum;if(r.mon){if(r.dok&&r.dsum>r.onsite)pay.push('',`差額 ${money(r.dsum-r.onsite)} 由公司匯款`)}else if(x.balPaid)pay.push('',(x.balRed&&r.red?'酬勞扣除紅包後由公司匯款':'酬勞由公司匯款')+(postX(x).length?`；現場另收的 ${money(sumX(x,postX(x)))} 匯回公司`:''));else if(!r.mon&&r.dok&&back>0)pay.push('',`匯回 ${money(back)}`);else if(!r.mon&&r.dok&&back<0)pay.push('',`差額 ${money(-back)} 由公司匯款`);
+    const back=r.balance-r.dsum;if(r.mon){if(r.dok&&r.dsum>r.onsite)pay.push('',`差額 ${money(r.dsum-r.onsite)} 由公司匯款`)}else if(x.balPaid)pay.push('',(x.balRed&&r.red?'酬勞扣除紅包後當日由公司匯款':'酬勞當日由公司匯款')+'(婚禮日公司會比較忙，若次日上午仍未收到匯款請主動詢問)'+(postX(x).length?`；現場另收的 ${money(sumX(x,postX(x)))} 匯回公司`:''));else if(!r.mon&&r.dok&&back>0)pay.push('',`匯回 ${money(back)}`);else if(!r.mon&&r.dok&&back<0)pay.push('',`差額 ${money(-back)} 由公司匯款`);
     if(x.headOnly){const bk=pay[pay.length-1];payHead=[pay[0]].concat(pay.length>1&&/匯回|由公司匯款/.test(bk||'')?[bk]:[]);pay=[]}   // 2026-10-20 只有車頭的群組：派車單不列款項，另外複製給車頭
   }
   return{payHead,who,no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(useEnd(x))}`,gather:ap(c.gather||addMin(c.start,-20)),
