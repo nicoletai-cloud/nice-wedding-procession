@@ -811,6 +811,11 @@ nav.tabs button{scroll-snap-align:start}
         <div class="tbl"><table style="min-width:520px"><thead><tr><th>日期</th><th>訂單編號</th><th>廠商</th><th>推薦人</th><th>方案費用</th><th>回金</th></tr></thead><tbody id="refBody"></tbody></table></div>
         <div class="sum" id="refSum" style="margin-top:10px"></div>
       </div>
+      <div class="card" style="margin-top:18px"><!-- 2026-10-22 Nicole：看每個來源的詢問數、成交數、成交率，判斷廣告預算 -->
+        <h3>客人來源成效 <small>依報價建立的月份；成交＝已收訂</small></h3>
+        <div class="tbl"><table style="min-width:420px"><thead><tr><th>客人怎麼找到我們</th><th>詢問</th><th>成交</th><th>成交率</th></tr></thead><tbody id="srcBody"></tbody></table></div>
+        <div class="sum" id="srcSum" style="margin-top:10px"></div>
+      </div>
   </div>
 </div>
 <div id="billModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
@@ -2433,7 +2438,14 @@ function renderOrdRef(){const el=$('ordRef');if(!el||!o)return;{const rc=$('refR
   if(isPt(o)){const p=o.partner||{},k=ptCalc(o);el.innerHTML=`<div class="sum">${row('同業公司',esc(p.co||'—'))}${p.prepaid?row('同業應付我',money(k.owe)):row('司機現場收（尾款＋司機禮）',money(num(p.collect)))}${row('司機酬勞合計',money(k.pay))}${p.prepaid?'':row('司機交回我',money(k.back))}${row('匯回同業',money(k.remit),1)}<div class="tot"><span>我的回佣</span><span style="color:#2F6B4F">${money(k.profit)}</span></div></div>`;return}
   const v=vendorOf(o),r=calc(o);if(!v){el.innerHTML='<p class="hint" style="margin:0">這張單沒有廠商／婚顧推薦，不用回金。</p>';return}
   el.innerHTML=`<div class="sum">${row('廠商',esc(v.name))}${o.src&&o.src.ref?row('推薦人',esc(o.src.ref)):''}${row('方案費用',money(r.planFee))}<div class="tot"><span>${isMonthly(o)?'月結（不另付回金）':'回金'}</span><span>${isMonthly(o)?'月結':money(r.refAmt)}</span></div></div>`}
-function renderRefs(){try{renderOrdRef()}catch(e){console.warn(e)}renderSettle();const mEl=$('refMonth');if(!mEl.value){const d=new Date();mEl.value=`${d.getFullYear()}-${p2(d.getMonth()+1)}`}const ym=mEl.value;
+/* 2026-10-22 Nicole：客人來源成效（詢問→成交），沒填來源的列出來方便補 */
+function renderSrcStats(ym){const B=$('srcBody'),S2=$('srcSum');if(!B)return;const mo=t=>{const d=new Date(+t||0);return isNaN(d)||!+t?'':`${d.getFullYear()}-${p2(d.getMonth()+1)}`};
+  const L=Object.values(DB.orders).filter(x=>x&&!x.sample&&!x.partner&&mo(x.inqAt||x.orderedAt)===ym);const g={},miss=[];
+  L.forEach(x=>{const k=String((x.src||{}).from||'').trim()||'（未填）';g[k]=g[k]||{n:0,w:0};g[k].n++;if(x.paid)g[k].w++;if(k==='（未填）')miss.push(x)});
+  const ks=Object.keys(g).sort((a,b)=>g[b].n-g[a].n);const tot=L.length,won=L.filter(x=>x.paid).length;
+  B.innerHTML=ks.length?ks.map(k=>`<tr><td>${esc(k)}</td><td>${g[k].n}</td><td>${g[k].w}</td><td>${g[k].n?Math.round(g[k].w/g[k].n*100)+'%':'—'}</td></tr>`).join('')+`<tr><td><b>合計</b></td><td><b>${tot}</b></td><td><b>${won}</b></td><td><b>${tot?Math.round(won/tot*100)+'%':'—'}</b></td></tr>`:'<tr><td colspan="4" class="hint">這個月還沒有報價</td></tr>';
+  S2.innerHTML=miss.length?`還沒填來源的報價 ${miss.length} 筆（到「報價・下單」的「客人怎麼找到我們」補上，數字才準）：<br>${miss.slice(0,20).map(x=>esc(orderNo(x)+' '+([x.c&&x.c.groom,x.c&&x.c.bride].filter(Boolean).join('&')||(x.c&&x.c.chatName)||''))).join('、')}`:'這個月的報價都有填來源'}
+function renderRefs(){try{renderOrdRef()}catch(e){console.warn(e)}renderSettle();const mEl=$('refMonth');if(!mEl.value){const d=new Date();mEl.value=`${d.getFullYear()}-${p2(d.getMonth()+1)}`}const ym=mEl.value;try{renderSrcStats(ym)}catch(e){console.warn(e)}
   const list=Object.values(DB.orders).filter(x=>!x.sample&&x.date&&x.date.slice(0,7)===ym&&vendorOf(x)).sort((a,b)=>a.date.localeCompare(b.date));
   $('refBody').innerHTML=list.map(x=>{const r=calc(x),v=vendorOf(x);return `<tr><td>${esc(x.date.slice(5).replace('-','/'))}</td><td>${esc(orderNo(x))}</td><td>${esc(v.name)}</td><td>${esc(x.src.ref||'')}</td><td>${money(r.planFee)}</td><td>${isMonthly(x)?'月結':money(r.refAmt)}</td></tr>`}).join('')||'<tr><td colspan="6" class="hint">這個月沒有廠商推薦的訂單。</td></tr>';
   const by={};list.filter(x=>!isMonthly(x)).forEach(x=>{const k=vendorOf(x).name+(x.src.ref?' / '+x.src.ref:'');by[k]=(by[k]||0)+calc(x).refAmt});
