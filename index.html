@@ -946,20 +946,25 @@ nav.tabs button{scroll-snap-align:start}
           <label class="f">B 標註<input id="c_wedL" data-b="c.wedL" placeholder="女方家"></label>
           <label class="f wide">B 導航定位連結（地址搜尋不到才填）<input id="c_wedMap" data-b="c.wedMap" placeholder="https://maps.app.goo.gl/…"></label>
           <label class="f">B 短地區<input id="c_wedS" data-b="c.wedS" placeholder="自動"></label>
-          <label class="f wide">C. 其他地點 1<input id="c_o1" data-b="c.o1"></label>
-          <datalist id="placeTypes"><option value="新家"><option value="祭祖地點"><option value="證婚地點"><option value="儀式地點"><option value="入房地點"><option value="宴客餐廳"></datalist><label class="f">C 標註<input id="c_o1L" data-b="c.o1L" list="placeTypes" placeholder="例：新家、宴客餐廳"></label>
+          <label class="f wide">C. 地點地址（完整地址）<input id="c_o1" data-b="c.o1"></label>
+          <label class="f">C 類型<select id="c_o1T" data-b="c.o1T" class="oType"><option value="">自動判斷</option><option>迎娶地點</option><option>入房地點</option><option>宴客地點</option><option>證婚地點</option><option>其他地點</option></select></label>
+          <label class="f">C 名稱<input id="c_o1L" data-b="c.o1L" placeholder="例：寬和宴會廳"></label>
           <label class="f wide">C 導航定位連結（地址搜尋不到才填）<input id="c_o1Map" data-b="c.o1Map" placeholder="https://maps.app.goo.gl/…"></label>
           <label class="f">C 短地區<input id="c_o1S" data-b="c.o1S" placeholder="自動"></label>
-          <label class="f wide">D. 其他地點 2<input id="c_o2" data-b="c.o2"></label>
-          <label class="f">D 標註<input id="c_o2L" data-b="c.o2L" list="placeTypes" placeholder="例：祭祖地點"></label>
+          <label class="f wide">D. 地點地址（完整地址）<input id="c_o2" data-b="c.o2"></label>
+          <label class="f">D 類型<select id="c_o2T" data-b="c.o2T" class="oType"><option value="">自動判斷</option><option>迎娶地點</option><option>入房地點</option><option>宴客地點</option><option>證婚地點</option><option>其他地點</option></select></label>
+          <label class="f">D 名稱<input id="c_o2L" data-b="c.o2L" placeholder="例：祭祖、新家"></label>
           <label class="f wide">D 導航定位連結（地址搜尋不到才填）<input id="c_o2Map" data-b="c.o2Map" placeholder="https://maps.app.goo.gl/…"></label>
           <label class="f">D 短地區<input id="c_o2S" data-b="c.o2S" placeholder="自動"></label>
-          <label class="f wide">其他地點 3（填寫頁）<input id="c_o3" data-b="c.o3"></label>
-          <label class="f">標註<input id="c_o3L" data-b="c.o3L" list="placeTypes"></label>
-          <label class="f wide">其他地點 4（填寫頁）<input id="c_o4" data-b="c.o4"></label>
-          <label class="f">標註<input id="c_o4L" data-b="c.o4L" list="placeTypes"></label>
-          <label class="f wide">其他地點 5（填寫頁）<input id="c_o5" data-b="c.o5"></label>
-          <label class="f">標註<input id="c_o5L" data-b="c.o5L" list="placeTypes"></label>
+          <label class="f wide">E. 地點地址（完整地址）<input id="c_o3" data-b="c.o3"></label>
+          <label class="f">E 類型<select id="c_o3T" data-b="c.o3T" class="oType"><option value="">自動判斷</option><option>迎娶地點</option><option>入房地點</option><option>宴客地點</option><option>證婚地點</option><option>其他地點</option></select></label>
+          <label class="f">E 名稱<input id="c_o3L" data-b="c.o3L" placeholder="例：女方家、飯店"></label>
+          <label class="f wide">F. 地點地址（完整地址）<input id="c_o4" data-b="c.o4"></label>
+          <label class="f">F 類型<select id="c_o4T" data-b="c.o4T" class="oType"><option value="">自動判斷</option><option>迎娶地點</option><option>入房地點</option><option>宴客地點</option><option>證婚地點</option><option>其他地點</option></select></label>
+          <label class="f">F 名稱<input id="c_o4L" data-b="c.o4L" placeholder="例：女方家、飯店"></label>
+          <label class="f wide">G. 地點地址（完整地址）<input id="c_o5" data-b="c.o5"></label>
+          <label class="f">G 類型<select id="c_o5T" data-b="c.o5T" class="oType"><option value="">自動判斷</option><option>迎娶地點</option><option>入房地點</option><option>宴客地點</option><option>證婚地點</option><option>其他地點</option></select></label>
+          <label class="f">G 名稱<input id="c_o5L" data-b="c.o5L" placeholder="例：女方家、飯店"></label>
           <label class="f wide">路線說明<textarea id="c_route" data-b="c.route"></textarea></label>
           <label class="f">車頂掛實體甘蔗<select id="c_caneA" data-b="c.caneAns"><option value="">—</option><option>是</option><option>否</option><option>待確認</option></select></label>
           <label class="f">付費指定車頭彩<select id="c_decoA" data-b="c.decoAns"><option value="">—</option><option>是</option><option>否</option><option>待確認</option></select></label>
@@ -2115,7 +2120,8 @@ function renderXList(){if(!o)return;if(!Array.isArray(o.extras)||!o.extras.lengt
   const c5=$('xCard5');if(c5)c5.hidden=isPt(o)||isMonthly(o);
   document.querySelectorAll('.xList').forEach(el=>{if(el.contains(document.activeElement)&&el.querySelectorAll('[data-b$=".n"]').length===o.extras.length)return;const w=el.dataset.xw;
   el.innerHTML=(w==='1'?`<div style="font-size:0.867rem;color:var(--muted);margin-bottom:4px">加項（例：指定路線、跨縣市）</div>`:'')+o.extras.map((e,i)=>`<div class="row" style="gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><input data-b="extras.${i}.n" placeholder="項目，例：指定路線" style="flex:1 1 140px;min-width:0"><input type="number" data-b="extras.${i}.a" data-num placeholder="金額" style="width:100px"><select data-b="extras.${i}.late" data-bool style="width:auto"><option value="0">訂金前已談好</option><option value="1">出發前新增（列在尾款）</option></select>${o.extras.length>1||e.n||num(e.a)?`<button class="btn sm" data-xdel="${i}" title="刪除">✕</button>`:''}</div>`).join('')+`<button class="btn sm" data-xadd="${w}">＋ 新增款項</button>`})}
-function fillInputs(){if(DN_DIRTY&&(!o||o.id!==DN_ID))dnDirty(false);try{renderXList()}catch(e){}document.querySelectorAll('[data-b]').forEach(el=>{if(DN_DIRTY&&el.closest('#drvNoteCard'))return;const v=getPath(o,el.dataset.b);if(el.hasAttribute('data-bool'))el.value=v?'1':'0';else el.value=v==null||(el.dataset.b==='tripKm'&&!+v)?'':v});try{nlAll()}catch(e){}
+function oTypeSplit(x){const c=x&&x.c;if(!c)return;for(let i=1;i<=5;i++){const l=String(c['o'+i+'L']||'').trim(),m=l.match(/^(迎娶地點|入房地點|宴客地點|證婚地點|儀式地點|其他地點)(?:・(.*))?$/);if(m&&!c['o'+i+'T']){c['o'+i+'T']=m[1]==='儀式地點'?'證婚地點':m[1];c['o'+i+'L']=(m[2]||'').trim()}}}   /* 2026-10-24 新人資料：停靠地點改成「類型下拉＋名稱」 */
+function fillInputs(){try{oTypeSplit(o)}catch(_){}if(DN_DIRTY&&(!o||o.id!==DN_ID))dnDirty(false);try{renderXList()}catch(e){}document.querySelectorAll('[data-b]').forEach(el=>{if(DN_DIRTY&&el.closest('#drvNoteCard'))return;const v=getPath(o,el.dataset.b);if(el.hasAttribute('data-bool'))el.value=v?'1':'0';else el.value=v==null||(el.dataset.b==='tripKm'&&!+v)?'':v});try{nlAll()}catch(e){}
   document.querySelectorAll('[data-s]').forEach(el=>{el.value=S[el.dataset.s]==null?'':S[el.dataset.s]});
   try{renderFormPlaces()}catch(e){}
   try{renderChats()}catch(e){}
