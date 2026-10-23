@@ -1199,7 +1199,7 @@ const FD_COLS=[['no','訂單編號'],['groom','新郎姓名'],['bride','新娘�
 function fdMap(){const M={};Object.keys(FORMDATA||{}).forEach(k=>{const v=FORMDATA[k],n=normNo(k);if(v&&v.f&&(!M[n]||+v.at>+M[n].at))M[n]=v});return M}
 function fdRes(fd){const cl=v=>String(v==null?'':v).replace(/[\t\n\r]+/g,' ');return parseForm(FD_COLS.map(c=>c[1]).join('\t')+'\n'+FD_COLS.map(c=>cl(fd.f[c[0]])).join('\t'))}
 function formAutoOne(x,fd){const res=fdRes(fd);delete res.orderNo;const t=clone(x);t.flow=t.flow||[];t.c=t.c||{};const keep=o;try{o=t;applyForm(res)}finally{o=keep}
-  x.c=x.c||{};const c=x.c,tc=t.c,fills=[],diffs=[],emp=v=>!String(v==null?'':v).trim(),nz=v=>toHalf(String(v||'')).replace(/[\s()（）・·,，]/g,'').replace(/臺/g,'台').toUpperCase();
+  ['start','end'].forEach(k=>{const v=String(fd.f[k]||'').trim();if(!v||/^0?0[:：]00$/.test(v))t.c[k]=''});x.c=x.c||{};const c=x.c,tc=t.c,fills=[],diffs=[],emp=v=>!String(v==null?'':v).trim(),nz=v=>toHalf(String(v||'')).replace(/[\s()（）・·,，]/g,'').replace(/臺/g,'台').toUpperCase();
   const LB={groom:'新郎',bride:'新娘',phone:'聯絡電話',start:'開始用車',end:'結束用車',meet:'集合地點',wed:'迎娶地點',o1:'停靠地點 1',o2:'停靠地點 2',o3:'停靠地點 3',o4:'停靠地點 4',o5:'停靠地點 5',route:'路線說明',caneAns:'甘蔗固定',decoAns:'指定車頭彩'};
   if(emp(c.phone)&&emp(c.contact)&&!emp(tc.phone)){c.role=tc.role||c.role;c.contact=tc.contact||'';if(tc.rel)c.rel=tc.rel;if(tc.role!=='新郎'&&tc.role!=='新娘'||tc.contact)fills.push('聯絡人')}
   Object.keys(LB).forEach(k=>{const a=c[k],b=tc[k];if(emp(b))return;const unk=k==='caneAns'||k==='decoAns'?(emp(a)||a==='待確認'):emp(a);
