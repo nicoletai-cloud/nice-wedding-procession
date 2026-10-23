@@ -1194,7 +1194,7 @@ function mapUrl(a){return 'https://www.google.com/maps/search/?api=1&query='+enc
 function renderFormDataBtn(){try{renderFormAutoMsg()}catch(_){}const b=$('btnFormData');if(!b||!o)return;const fd=FORMDATA[normNo(orderNo(o))];b.hidden=!fd;if(fd)b.title='客人填寫時間：'+new Date(fd.at).toLocaleString()}
 const WED_FORM_URL='https://love.niceweddingcar.com/wed-form';let FORMDATA={};
 /* 2026-10-23 Nicole：客人填寫頁送出後，同步時自動帶入合約。只補空白欄位；跟合約已填的不同就列出差異、不覆蓋；不動日期／單號／時數／金額；同單號有兩張單就不帶 */
-const FORM_AUTO_SINCE=Date.parse('2026-10-23T09:00:00Z');let FORM_BACKFILL=new URLSearchParams(location.search).get('formfill')==='all';
+const FORM_AUTO_SINCE=Date.parse('2026-10-23T09:00:00Z');let FORM_BACKFILL=(()=>{const v=new URLSearchParams(location.search).get('formfill')||'';return v==='all'?true:v?v.split(',').map(z=>z.replace(/\s/g,'').toUpperCase()).filter(Boolean):false})();
 const FD_COLS=[['no','訂單編號'],['groom','新郎姓名'],['bride','新娘姓名'],['role','主要聯絡人'],['rel','主要聯絡人身份'],['phone','主要聯絡人電話'],['start','預計開始用車時間'],['end','預計結束用車時間'],['meet','禮車集合地點'],['meetL','集合地點名稱'],['wed','迎娶地點'],['wedL','迎娶地點名稱'],['o1','其他停靠地點 1（選填）'],['o1L','其他停靠地點 1 是什麼地點？（選填）'],['o2','其他停靠地點 2（選填）'],['o2L','其他停靠地點 2 是什麼地點？（選填）'],['o3','其他停靠地點 3（選填）'],['o3L','其他停靠地點 3 是什麼地點？（選填）'],['o4','其他停靠地點 4（選填）'],['o4L','其他停靠地點 4 是什麼地點？（選填）'],['o5','其他停靠地點 5（選填）'],['o5L','其他停靠地點 5 是什麼地點？（選填）'],['route','路線說明'],['cane','車頂甘蔗固定需求'],['deco','車頭彩安排'],['decoStyle','指定車頭彩款式'],['decoSign','客製化英文名牌'],['decoFee','車頭彩費用'],['foundVia','怎麼知道好好禮車']];
 function fdMap(){const M={};Object.keys(FORMDATA||{}).forEach(k=>{const v=FORMDATA[k],n=normNo(k);if(v&&v.f&&(!M[n]||+v.at>+M[n].at))M[n]=v});return M}
 function fdRes(fd){const cl=v=>String(v==null?'':v).replace(/[\t\n\r]+/g,' ');return parseForm(FD_COLS.map(c=>c[1]).join('\t')+'\n'+FD_COLS.map(c=>cl(fd.f[c[0]])).join('\t'))}
@@ -1215,7 +1215,7 @@ function formAutoOne(x,fd){const res=fdRes(fd);delete res.orderNo;const t=clone(
 function formAutoAll(all){const M=fdMap(),cnt={},out=[],today=new Date().toISOString().slice(0,10);
   Object.values(DB.orders).forEach(x=>{if(x.sample||x.lost)return;const k=normNo(orderNo(x));cnt[k]=(cnt[k]||0)+1});
   Object.values(DB.orders).forEach(x=>{if(x.sample||x.lost||!x.date||x.date<today)return;const k=normNo(orderNo(x)),fd=M[k];if(!fd||!fd.f)return;
-    if(normNo(fd.f.no)!==k||cnt[k]>1)return;if(+fd.at<=(+x.formApplied||0))return;if(!all&&+fd.at<FORM_AUTO_SINCE)return;if(+x.cfApplyAt>=+fd.at)return;
+    if(normNo(fd.f.no)!==k||cnt[k]>1)return;if(+fd.at<=(+x.formApplied||0))return;if(Array.isArray(all)&&all.indexOf(k)<0)return;if(!all&&+fd.at<FORM_AUTO_SINCE)return;if(+x.cfApplyAt>=+fd.at)return;
     try{if(all&&!(+x.formApplied)){const tr=formAutoOne(clone(x),fd);if(!tr.fills.length)return}out.push({x,r:formAutoOne(x,fd)})}catch(e){console.warn('formAuto',orderNo(x),e)}});return out}
 function renderFormAutoMsg(){const el=$('formAutoMsg');if(!el||!o)return;const a=o.formAuto;el.hidden=!a;if(!a)return;const d=new Date(a.at);
   el.innerHTML=`已於 ${p2(d.getMonth()+1)}/${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())} 自動帶入客人填寫頁：${esc(a.fills.length?a.fills.join('、'):'沒有空白欄位需要補')}`+(a.diffs.length?`<br><b style="color:#A0453A">跟合約不同（沒有覆蓋，請核對）：</b><br>${a.diffs.map(esc).join('<br>')}`:'')}
