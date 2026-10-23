@@ -483,7 +483,7 @@ nav.tabs button{scroll-snap-align:start}
   <!-- 3 合約 -->
   <section class="tab" id="tab-contract" hidden>
     <div class="row" style="margin-bottom:12px;justify-content:space-between">
-      <span class="hint" style="margin:0" id="contractHint">資料來自「報價」與「新人資料」，改那邊這裡就會更新。</span>
+      <span class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><button class="btn pri" id="btnCoupleCt" type="button">修改新人資料</button><span class="hint" style="margin:0" id="contractHint">資料來自「報價」與「新人資料」，改那邊這裡就會更新。</span></span>
       <div class="row"><a class="btn" id="signedOpen" hidden target="_blank" rel="noopener" style="text-decoration:none">開新分頁</a><button class="btn" id="btnShowDraft" type="button" hidden>看原始合約（未簽名版）</button><span class="hint" id="driveLink" style="margin:0"></span><button class="btn" id="btnDrive" hidden>存到 Google Drive</button><button class="btn pri" id="btnPrint" hidden>列印／存成 PDF</button></div>
     </div>
     <div id="signedView" hidden>
@@ -3038,7 +3038,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnTodo':$('todoModal').hidden=false;renderTodo();break;
    case 'btnRemind':showRemind(o);break;
    case 'btnTodoClose':$('todoModal').hidden=true;break;
-   case 'btnCouple':$('coupleModal').hidden=false;break;
+   case 'btnCouple':case 'btnCoupleCt':$('coupleModal').hidden=false;break;
    case 'btnCoupleClose':$('coupleModal').hidden=true;break;
    case 'btnToAir':{const C=o.c||{},role=C.role||'新郎',nm=role==='新娘'?C.bride:role==='其他'?C.contact:C.groom;const A=[];const add=(l,a)=>{a=String(a||'').trim();if(a&&!A.some(x=>x.address===a))A.push({label:l,address:a})};add(C.meetL||'男方家',C.meet);add(C.wedL||'女方家',C.wed);if(/新家/.test(C.o1L||''))add('新家',C.o1);if(/新家/.test(C.o2L||''))add('新家',C.o2);
     if(!nm&&!C.chatName&&!C.phone){toast('這張單還沒有客人資料');break}
