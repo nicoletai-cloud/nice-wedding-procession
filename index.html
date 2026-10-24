@@ -298,6 +298,7 @@ nav.tabs button{scroll-snap-align:start}
         <button class="btn" id="btnDecoCal">車頭彩檔期</button>
         <button class="btn" id="btnHosts" title="行前確認填的儀式老師／主持人名單，可以註記合作狀況">主持人</button>
         <button class="btn" id="btnAnn" title="選用車日期，禮車助手把公告發到當天的車趟群組（例：颱風出勤提醒）">群組公告</button>
+        <button class="btn" id="btnMjOpen" title="整理給嫁給我（小洪）的確認訊息（預設明天的用車日）">小洪訊息</button>   <!-- 2026-10-24 Nicole：手機版找不到小洪訊息 -->
       </div>
       <div class="more-g">新增</div>
       <div class="more-grid">
@@ -3068,6 +3069,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnInboxReload':loadInbox();break;
    case 'btnScCopy':{const v=$('scText').value;if(!v.trim())break;copy(v,$('scText'));logSent($('scKey').value);break}
    case 'btnTodo':$('todoModal').hidden=false;renderTodo();break;
+   case 'btnMjOpen':{$('todoModal').hidden=false;renderTodo();const mb=$('mjBox');if(mb){mb.open=true;try{renderMj()}catch(_){}setTimeout(()=>mb.scrollIntoView({block:'start',behavior:'smooth'}),60)}break}
    case 'btnRemind':showRemind(o);break;
    case 'btnTodoClose':$('todoModal').hidden=true;break;
    case 'btnCouple':case 'btnCoupleCt':$('coupleModal').hidden=false;break;
