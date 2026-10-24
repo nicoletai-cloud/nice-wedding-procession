@@ -949,6 +949,7 @@ nav.tabs button{scroll-snap-align:start}
           <label class="f">B 名稱<input id="c_wedL" data-b="c.wedL" placeholder="女方家"></label>
           <label class="f wide">B 導航定位連結（地址搜尋不到才填）<input id="c_wedMap" data-b="c.wedMap" placeholder="https://maps.app.goo.gl/…"></label>
           <label class="f" hidden>B 短地區<input id="c_wedS" data-b="c.wedS" placeholder="自動"></label>
+          <div class="f wide" style="text-align:right;margin-top:-4px"><button type="button" class="btn sm" data-pdel="wed">刪除 B 地點</button></div>
           </div>
           <div class="pblk" data-pk="o1" style="display:contents">
           <label class="f wide">C. 地點地址（完整地址）<input id="c_o1" data-b="c.o1"></label>
@@ -956,6 +957,7 @@ nav.tabs button{scroll-snap-align:start}
           <label class="f">C 名稱<input id="c_o1L" data-b="c.o1L" placeholder="例：寬和宴會廳"></label>
           <label class="f wide">C 導航定位連結（地址搜尋不到才填）<input id="c_o1Map" data-b="c.o1Map" placeholder="https://maps.app.goo.gl/…"></label>
           <label class="f" hidden>C 短地區<input id="c_o1S" data-b="c.o1S" placeholder="自動"></label>
+          <div class="f wide" style="text-align:right;margin-top:-4px"><button type="button" class="btn sm" data-pdel="o1">刪除 C 地點</button></div>
           </div>
           <div class="pblk" data-pk="o2" style="display:contents">
           <label class="f wide">D. 地點地址（完整地址）<input id="c_o2" data-b="c.o2"></label>
@@ -963,21 +965,25 @@ nav.tabs button{scroll-snap-align:start}
           <label class="f">D 名稱<input id="c_o2L" data-b="c.o2L" placeholder="例：祭祖、新家"></label>
           <label class="f wide">D 導航定位連結（地址搜尋不到才填）<input id="c_o2Map" data-b="c.o2Map" placeholder="https://maps.app.goo.gl/…"></label>
           <label class="f" hidden>D 短地區<input id="c_o2S" data-b="c.o2S" placeholder="自動"></label>
+          <div class="f wide" style="text-align:right;margin-top:-4px"><button type="button" class="btn sm" data-pdel="o2">刪除 D 地點</button></div>
           </div>
           <div class="pblk" data-pk="o3" style="display:contents">
           <label class="f wide">E. 地點地址（完整地址）<input id="c_o3" data-b="c.o3"></label>
           <label class="f">E 類型<select id="c_o3T" data-b="c.o3T" class="oType"><option value="">自動判斷</option><option>迎娶地點</option><option>入房地點</option><option>宴客地點</option><option>證婚地點</option><option>其他地點</option></select></label>
           <label class="f">E 名稱<input id="c_o3L" data-b="c.o3L" placeholder="例：女方家、飯店"></label>
+          <div class="f wide" style="text-align:right;margin-top:-4px"><button type="button" class="btn sm" data-pdel="o3">刪除 E 地點</button></div>
           </div>
           <div class="pblk" data-pk="o4" style="display:contents">
           <label class="f wide">F. 地點地址（完整地址）<input id="c_o4" data-b="c.o4"></label>
           <label class="f">F 類型<select id="c_o4T" data-b="c.o4T" class="oType"><option value="">自動判斷</option><option>迎娶地點</option><option>入房地點</option><option>宴客地點</option><option>證婚地點</option><option>其他地點</option></select></label>
           <label class="f">F 名稱<input id="c_o4L" data-b="c.o4L" placeholder="例：女方家、飯店"></label>
+          <div class="f wide" style="text-align:right;margin-top:-4px"><button type="button" class="btn sm" data-pdel="o4">刪除 F 地點</button></div>
           </div>
           <div class="pblk" data-pk="o5" style="display:contents">
           <label class="f wide">G. 地點地址（完整地址）<input id="c_o5" data-b="c.o5"></label>
           <label class="f">G 類型<select id="c_o5T" data-b="c.o5T" class="oType"><option value="">自動判斷</option><option>迎娶地點</option><option>入房地點</option><option>宴客地點</option><option>證婚地點</option><option>其他地點</option></select></label>
           <label class="f">G 名稱<input id="c_o5L" data-b="c.o5L" placeholder="例：女方家、飯店"></label>
+          <div class="f wide" style="text-align:right;margin-top:-4px"><button type="button" class="btn sm" data-pdel="o5">刪除 G 地點</button></div>
           </div>
           <div class="f wide"><button type="button" class="btn" id="btnAddPlace">＋ 新增地點</button></div>
           <div class="f wide"><span style="font-size:0.867rem;color:var(--muted)">路線說明（依序點地點代號）</span><div class="row" id="rtChips" style="gap:6px;flex-wrap:wrap;margin:6px 0"></div><div class="row" style="gap:6px;flex-wrap:wrap"><button type="button" class="btn sm" data-crt="back">倒退</button><button type="button" class="btn sm" data-crt="clear">清除</button><button type="button" class="btn sm" data-crt="loop">繞圈</button><button type="button" class="btn sm" data-crt="later">行前一週確認</button></div></div>
@@ -2148,6 +2154,12 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 document.addEventListener('input',e=>{if(e.target&&/^c_(meet|wed|o\d)(L|T)?$/.test(e.target.id||''))setTimeout(renderRtChips,0)});document.addEventListener('change',e=>{if(e.target&&/^c_(meet|wed|o\d)(L|T)?$/.test(e.target.id||''))setTimeout(renderRtChips,0)});
 const PBLK_OPEN={};function renderPlaceBlocks(){if(!o)return;const c=o.c||{},op=PBLK_OPEN[o.id]||0;let shown=0;document.querySelectorAll('.pblk').forEach((d,i)=>{const k=d.dataset.pk,has=!!String(c[k]||'').trim();const on=has||i<op;d.hidden=!on;if(on)shown=i+1});const ks=[...document.querySelectorAll('.pblk')];if(op<shown)PBLK_OPEN[o.id]=shown;const b=$('btnAddPlace');if(b)b.hidden=shown>=ks.length}
 document.addEventListener('click',e=>{if(!e.target||e.target.id!=='btnAddPlace'||!o)return;const ks=[...document.querySelectorAll('.pblk')];const n=Math.min(ks.length,Math.max(PBLK_OPEN[o.id]||0,ks.filter(d=>!d.hidden).length)+1);PBLK_OPEN[o.id]=n;renderPlaceBlocks();const d=ks[n-1];if(d){const inp=d.querySelector('input');if(inp)inp.focus()}});
+/* 2026-10-24 Nicole：新人資料可以刪除地點；後面的地點往前遞補，路線說明的代號一起調整 */
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-pdel]');if(!b||!o)return;e.preventDefault();o.c=o.c||{};const c=o.c,K=['wed','o1','o2','o3','o4','o5'],LT='BCDEFG',FS=['','T','L','Map','S'],j=K.indexOf(b.dataset.pdel);if(j<0)return;
+  const has=FS.some(f=>String(c[K[j]+f]||'').trim()&&f!=='T');if(has&&!confirm('刪除 '+LT[j]+' 地點？後面的地點會往前遞補，路線說明的代號也會一起調整。'))return;
+  for(let i=j;i<K.length;i++){const nx=K[i+1];FS.forEach(f=>{let v=nx?c[nx+f]:'';if(K[i]==='wed'&&f==='T')v=v||(nx&&String(c[nx]||'').trim()?'其他地點':'迎娶地點');if(v==null||v==='')delete c[K[i]+f];else c[K[i]+f]=v})}
+  const del=LT[j],cur=String(c.route||'').trim();if(cur&&!/行前一週確認/.test(cur)){const out=[];cur.split(/\s*>\s*/).forEach(p=>{const m=p.match(/^([A-G])(?=（|\(|$|\s)/);if(m&&m[1]===del)return;if(m&&m[1]>del)p=String.fromCharCode(m[1].charCodeAt(0)-1)+p.slice(1);if(out.length&&out[out.length-1]===p)return;out.push(p)});c.route=out.join(' > ')}
+  if(PBLK_OPEN[o.id])PBLK_OPEN[o.id]=Math.max(0,PBLK_OPEN[o.id]-1);o.updated=Date.now();save();renderAll();try{renderPlaceBlocks()}catch(_){}try{renderRtChips()}catch(_){}toast('已刪除 '+del+' 地點')});
 function oTypeSplit(x){const c=x&&x.c;if(!c)return;for(let i=1;i<=5;i++){const l=String(c['o'+i+'L']||'').trim(),m=l.match(/^(迎娶地點|入房地點|宴客地點|證婚地點|儀式地點|其他地點)(?:・(.*))?$/);if(m&&!c['o'+i+'T']){c['o'+i+'T']=m[1]==='儀式地點'?'證婚地點':m[1];c['o'+i+'L']=(m[2]||'').trim()}}}   /* 2026-10-24 新人資料：停靠地點改成「類型下拉＋名稱」 */
 function fillInputs(){try{oTypeSplit(o)}catch(_){}try{if(o&&o.c&&!o.c.wedT)o.c.wedT='迎娶地點'}catch(_){}setTimeout(()=>{try{renderPlaceBlocks()}catch(_){}try{renderRtChips()}catch(_){}},0);if(DN_DIRTY&&(!o||o.id!==DN_ID))dnDirty(false);try{renderXList()}catch(e){}document.querySelectorAll('[data-b]').forEach(el=>{if(DN_DIRTY&&el.closest('#drvNoteCard'))return;const v=getPath(o,el.dataset.b);if(el.hasAttribute('data-bool'))el.value=v?'1':'0';else el.value=v==null||(el.dataset.b==='tripKm'&&!+v)?'':v});try{nlAll()}catch(e){}
   document.querySelectorAll('[data-s]').forEach(el=>{el.value=S[el.dataset.s]==null?'':S[el.dataset.s]});
