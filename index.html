@@ -350,6 +350,7 @@ nav.tabs button{scroll-snap-align:start}
                 <option value="0">單程接送</option><option value="1">1HR</option><option value="1.5">1.5HR</option><option value="2">2HR</option><option value="3">3HR</option><option value="4">4HR</option><option value="5">5HR</option><option value="6">6HR</option><option value="7">7HR</option><option value="8">8HR</option>
               </select></label>
             <label class="f">總行程里程（公里）<input type="number" id="q_trip" data-b="tripKm" data-num min="0" placeholder="填地址後按「計算總里程」"></label>
+            <label class="f" id="zRateXWrap" hidden>非特斯拉里程費（每 35 公里／台）<input type="number" id="q_zRateX" data-b="zRateX" data-num min="0" placeholder="例：1000"></label>
             <label class="f">集合縣市<select id="q_cityA" data-b="cityA"><option value="">—</option><option>台北</option><option>新北</option><option>基隆</option><option>桃園</option><option>新竹</option><option>苗栗</option><option>台中</option><option>彰化</option><option>南投</option><option>雲林</option><option>嘉義</option><option>台南</option><option>高雄</option><option>屏東</option><option>宜蘭</option><option>花蓮</option><option>台東</option><option>澎湖</option><option>金門</option><option>連江</option></select></label>
             <label class="f">迎娶縣市<select id="q_cityB" data-b="cityB"><option value="">—</option><option>台北</option><option>新北</option><option>基隆</option><option>桃園</option><option>新竹</option><option>苗栗</option><option>台中</option><option>彰化</option><option>南投</option><option>雲林</option><option>嘉義</option><option>台南</option><option>高雄</option><option>屏東</option><option>宜蘭</option><option>花蓮</option><option>台東</option><option>澎湖</option><option>金門</option><option>連江</option></select></label>
             <label class="f">縣市代碼（留空＝自動）<input id="q_code" data-b="code" placeholder="自動"></label>
@@ -1276,6 +1277,11 @@ function zoneUnitKm(x){const k=overKm(x);if(!k)return 0;const raw=k/35*num(S.zRa
 function zoneStops(x){const c=x.c||{};return [x.cityA||countyOf(c.meet),x.cityB||countyOf(c.wed),countyOf(c.o1),countyOf(c.o2)].filter(Boolean).map(z=>z==='新北'?'台北':z)}
 function zoneCross(x){return Math.max(0,new Set(zoneStops(x)).size-1)}
 function zoneUnit(x){return Math.max(zoneUnitKm(x),zoneCross(x)*num(S.zRate||500))}
+/* 2026-10-24 Nicole：特斯拉以外的車款，里程費在報價頁直接填「每 35 公里／台」單價（x.zRateX）；沒填照舊（豪車另行報價） */
+function isTeslaM(m){const md=(S.models||[]).find(z=>z.id===m);return !!md&&/tesla/i.test(md.brand||'')}
+function teslaN(x){return MODELS.reduce((a,m)=>a+(isTeslaM(m)?num(x.cars[m]):0),0)}
+function zoneXOn(x){return num(x.zRateX)>0&&carCount(x)-teslaN(x)>0}
+function zoneXUnit(x){if(!zoneXOn(x))return 0;const b=Math.max(Math.ceil(overKm(x)/35-1e-9),zoneCross(x));return b*num(x.zRateX)}
 function luxN(x){return MODELS.reduce((a,m)=>a+(num(x.cars[m])>0&&cPrice(m,x.hours).v>=10000?num(x.cars[m]):0),0)}
 function zoneLabel(x){const zc=zoneCross(x),km=zoneUnitKm(x);return zc*num(S.zRate||500)>=km&&zc?`跨區 ${zc} 區`:`里程 ${num(x.tripKm)}km`}
 function dzExtra(x){const k=overKm(x);return k>0&&zoneCross(x)>0?Math.ceil(k/num(S.dzKm||35)-1e-9)*num(S.dzAmt):0}
@@ -1315,7 +1321,7 @@ function calc(x){
   let base=0;const miss=[];MODELS.forEach(m=>{if(!num(x.cars[m]))return;const cp=cPrice(m,x.hours);if(cp.miss)miss.push(blank(S.price[m])?`${MNAME[m]} 客人價未設定`:`${MNAME[m]} ${hrsLabel(x.hours)}價未設定，暫用 3HR 價`);base+=num(x.cars[m])*cp.v});
   const listBase=base;if(b)base=num(b.price);const vb=vendorBase(x);if(vb!=null)base=vb;
   let ot=0;MODELS.forEach(m=>ot+=num(x.cars[m])*num(S.ot[m])*eh);
-  const zone=zoneUnit(x)*Math.max(0,n-luxN(x)),cane=num(x.cane)*num(S.cane),deco=num(x.deco);
+  const zone=zoneXOn(x)?zoneUnit(x)*teslaN(x)+zoneXUnit(x)*(n-teslaN(x)):zoneUnit(x)*Math.max(0,n-luxN(x)),cane=num(x.cane)*num(S.cane),deco=num(x.deco);
   const extras=x.extras.reduce((a,e)=>a+num(e.a),0),red=x.red?n*num(S.red):0,disc=num(x.discAmt);
   const colorAdd=x.colorReq&&x.colorMode==='add'?num(x.colorFee)*(num(x.colorQty)||n):0;
   const pre=base+ot+zone+cane+deco+extras+colorAdd-disc;
@@ -1365,8 +1371,8 @@ function feeLines(x,lang){const t=L[lang],r=calc(x),hl=hrsLabel(x.hours),out=[];
     if(lang==='zh')out.push(a?`指定${x.colorReq} ${money(a)}*${cq}=${money(a*cq)}${x.colorMode==='add'?'':`(${wv}免收)`}`:`指定${x.colorReq}`);else if(r.colorAdd)out.push(`${lang==='ja'?'指定カラー':'Custom color'} ${mult(a,cq,lang)}`)}
   if(lang==='zh')String(x.promoText||'').split('\n').forEach(l=>{const m=l.split(/[=＝]/);const n=(m[0]||'').trim(),a=num(m[1]);if(n&&a)out.push(`${n} ${money(a)}*${r.n}=${money(a*r.n)}(限時優惠免收)`)});
   if(r.eh)MODELS.forEach(m=>{const q=num(x.cars[m]);if(q)out.push(`${MNAME[m]} ${t.ot} ${r.eh}HR ${mult(num(S.ot[m])*r.eh,q,lang)}`)});
-  if(r.zone){const zc=zoneCross(x),byKm=!(zc*num(S.zRate||500)>=zoneUnitKm(x)&&zc);const zl=lang==='en'?(byKm?`Mileage fee (over ${num(S.zBase||35)} km)`:`Cross-region fee (${zc} region${zc>1?'s':''})`):lang==='ja'?(byKm?`距離料金（${num(S.zBase||35)}km超過分）`:`エリア外料金（${zc}エリア）`):(byKm?`里程費（超過 ${num(S.zBase||35)} 公里）`:`跨區費（跨 ${zc} 區）`);out.push(`${zl} ${mult(zoneUnit(x),r.n-luxN(x),lang)}`)}
-  if(zoneUnit(x)&&luxN(x)&&lang==='zh')out.push('豪車跨區費另行報價');
+  if(r.zone){const zc=zoneCross(x),byKm=!(zc*num(S.zRate||500)>=zoneUnitKm(x)&&zc);const zl=lang==='en'?(byKm?`Mileage fee (over ${num(S.zBase||35)} km)`:`Cross-region fee (${zc} region${zc>1?'s':''})`):lang==='ja'?(byKm?`距離料金（${num(S.zBase||35)}km超過分）`:`エリア外料金（${zc}エリア）`):(byKm?`里程費（超過 ${num(S.zBase||35)} 公里）`:`跨區費（跨 ${zc} 區）`);if(zoneXOn(x)){const tn=teslaN(x),on=r.n-tn;if(tn&&zoneUnit(x))out.push(`${zl} ${mult(zoneUnit(x),tn,lang)}`);if(on&&zoneXUnit(x))out.push(`${lang==='en'?`Mileage fee (${money(num(x.zRateX),lang)} per ${35} km)`:lang==='ja'?`距離料金（35km ごと ${money(num(x.zRateX),lang)}）`:`里程費（每 35 公里 ${money(num(x.zRateX))}）`} ${mult(zoneXUnit(x),on,lang)}`)}else out.push(`${zl} ${mult(zoneUnit(x),r.n-luxN(x),lang)}`)}
+  if(zoneUnit(x)&&luxN(x)&&!zoneXOn(x)&&lang==='zh')out.push('豪車跨區費另行報價');
   if(r.cane)out.push(`${t.cane} ${mult(num(S.cane),num(x.cane),lang)}`);
   if(r.deco)out.push(`${t.deco}${lang==='zh'?decoTag(x):''} ${money(r.deco,lang)}`);
   x.extras.forEach(e=>{if(num(e.a))out.push(`${e.n||'加項'} ${money(num(e.a),lang)}`)});
@@ -2160,6 +2166,7 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   for(let i=j;i<K.length;i++){const nx=K[i+1];FS.forEach(f=>{let v=nx?c[nx+f]:'';if(K[i]==='wed'&&f==='T')v=v||(nx&&String(c[nx]||'').trim()?'其他地點':'迎娶地點');if(v==null||v==='')delete c[K[i]+f];else c[K[i]+f]=v})}
   const del=LT[j],cur=String(c.route||'').trim();if(cur&&!/行前一週確認/.test(cur)){const out=[];cur.split(/\s*>\s*/).forEach(p=>{const m=p.match(/^([A-G])(?=（|\(|$|\s)/);if(m&&m[1]===del)return;if(m&&m[1]>del)p=String.fromCharCode(m[1].charCodeAt(0)-1)+p.slice(1);if(out.length&&out[out.length-1]===p)return;out.push(p)});c.route=out.join(' > ')}
   if(PBLK_OPEN[o.id])PBLK_OPEN[o.id]=Math.max(0,PBLK_OPEN[o.id]-1);o.updated=Date.now();save();renderAll();try{renderPlaceBlocks()}catch(_){}try{renderRtChips()}catch(_){}toast('已刪除 '+del+' 地點')});
+{const _raZ=renderAll;renderAll=function(){_raZ.apply(this,arguments);try{const w=$('zRateXWrap');if(w&&o)w.hidden=!(carCount(o)-teslaN(o)>0)}catch(_){}}}
 function oTypeSplit(x){const c=x&&x.c;if(!c)return;for(let i=1;i<=5;i++){const l=String(c['o'+i+'L']||'').trim(),m=l.match(/^(迎娶地點|入房地點|宴客地點|證婚地點|儀式地點|其他地點)(?:・(.*))?$/);if(m&&!c['o'+i+'T']){c['o'+i+'T']=m[1]==='儀式地點'?'證婚地點':m[1];c['o'+i+'L']=(m[2]||'').trim()}}}   /* 2026-10-24 新人資料：停靠地點改成「類型下拉＋名稱」 */
 function fillInputs(){try{oTypeSplit(o)}catch(_){}try{if(o&&o.c&&!o.c.wedT)o.c.wedT='迎娶地點'}catch(_){}setTimeout(()=>{try{renderPlaceBlocks()}catch(_){}try{renderRtChips()}catch(_){}},0);if(DN_DIRTY&&(!o||o.id!==DN_ID))dnDirty(false);try{renderXList()}catch(e){}document.querySelectorAll('[data-b]').forEach(el=>{if(DN_DIRTY&&el.closest('#drvNoteCard'))return;const v=getPath(o,el.dataset.b);if(el.hasAttribute('data-bool'))el.value=v?'1':'0';else el.value=v==null||(el.dataset.b==='tripKm'&&!+v)?'':v});try{nlAll()}catch(e){}
   document.querySelectorAll('[data-s]').forEach(el=>{el.value=S[el.dataset.s]==null?'':S[el.dataset.s]});
@@ -2222,7 +2229,7 @@ function renderCars(){const brands=[];MODELS.forEach(m=>{const b=MBRAND[m]||'其
 document.addEventListener('toggle',e=>{const d=e.target;if(d.classList&&d.classList.contains('brand-grp')){if(d.open)openBrands.add(d.dataset.brand);else openBrands.delete(d.dataset.brand)}},true);
 function renderSum(){const r=calc(o);const rows=[];
   rows.push([r.b?`${r.b.name}方案`:'車資',money(r.base)]);if(r.b&&r.listBase>r.base)rows.push([`<span class="sub">原價 ${money(r.listBase)}，省 ${money(r.listBase-r.base)}</span>`,'']);
-  if(r.ot)rows.push([`加時 ${r.eh}HR`,money(r.ot)]);if(r.zone)rows.push([`跨區/里程費（${zoneLabel(o)}）`,money(r.zone)]);if(zoneUnit(o)&&luxN(o))rows.push(['豪車跨區費','另行評估']);if(r.cane)rows.push(['甘蔗固定費',money(r.cane)]);if(r.colorAdd)rows.push([`指定${o.colorReq}`,money(r.colorAdd)]);if(r.deco)rows.push(['指定車頭彩'+esc(decoTag(o)),money(r.deco)]);
+  if(r.ot)rows.push([`加時 ${r.eh}HR`,money(r.ot)]);if(r.zone)rows.push([`跨區/里程費（${zoneLabel(o)}）`,money(r.zone)]);if(zoneUnit(o)&&luxN(o)&&!zoneXOn(o))rows.push(['豪車跨區費','另行評估']);if(r.cane)rows.push(['甘蔗固定費',money(r.cane)]);if(r.colorAdd)rows.push([`指定${o.colorReq}`,money(r.colorAdd)]);if(r.deco)rows.push(['指定車頭彩'+esc(decoTag(o)),money(r.deco)]);
   if(r.vb!=null)rows.push([`<span class="sub">${esc(vendorOf(o).name)}配套價</span>`,'']);
   (o.extras||[]).forEach(e=>{if(num(e.a))rows.push([`${String(e.n||'加項').trim()}${e.late?'（出發前新增）':''}`,money(num(e.a))])});if(r.disc)rows.push([o.discName||'折扣','-'+money(r.disc)]);if(r.tax)rows.push(['5% 營業稅',money(r.tax)]);if(r.red)rows.push([`司機禮 ×${r.n}`,money(r.red)]);
   $('sumBox').innerHTML=rows.map(([a,b])=>`<div><span>${a}</span><span>${b}</span></div>`).join('')+
