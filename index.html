@@ -3440,9 +3440,9 @@ const PT_CN={一:1,二:2,兩:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9,十:10}
 function ptGuess(t){t=String(t||'').replace(/：/g,':');const g={date:'',cars:{},color:''};
   const dm=t.match(/(明年|今年)?\s*(\d{1,2})\s*[\/月]\s*(\d{1,2})\s*日?/);if(dm){const now=new Date(),M=+dm[2],D=+dm[3];if(M>=1&&M<=12&&D>=1&&D<=31){let y=now.getFullYear();if(dm[1]==='明年')y++;else if(!dm[1]){const td=new Date(y,M-1,D);if(td<new Date(now.getFullYear(),now.getMonth(),now.getDate()))y++}g.date=`${y}-${p2(M)}-${p2(D)}`}}
   const N=v=>/^\d+$/.test(v)?+v:(PT_CN[v]||0),C=v=>v?v.replace(/色$/,'')+'色':'';
-  const re1=/([一二兩三四五六七八九十\d]+)\s*台\s*(黑|白|紅)?色?\s*(?:tesla\s*)?(?:model\s*|m)?(X|Y|3|S)(?![a-z])/gi,re2=/(黑|白|紅)?色?\s*(?:tesla\s*)?(?:model\s*|m)?(X|Y|3|S)(?![a-z])\s*[x×*]?\s*([一二兩三四五六七八九十\d]+)\s*台/gi;let m;
-  while((m=re1.exec(t))){const k=m[3].toUpperCase();g.cars[k]=(g.cars[k]||0)+N(m[1]);if(m[2])g.color=C(m[2])}
-  if(!Object.keys(g.cars).length)while((m=re2.exec(t))){const k=m[2].toUpperCase();g.cars[k]=(g.cars[k]||0)+N(m[3]);if(m[1])g.color=C(m[1])}
+  /* 截圖常有引用回覆，同一句會出現兩次：同車款取最大值，不相加 */const re1=/([一二兩三四五六七八九十\d]+)\s*台\s*(黑|白|紅)?色?\s*(?:tesla\s*)?(?:model\s*|m)?(X|Y|3|S)(?![a-z])/gi,re2=/(黑|白|紅)?色?\s*(?:tesla\s*)?(?:model\s*|m)?(X|Y|3|S)(?![a-z])\s*[x×*]?\s*([一二兩三四五六七八九十\d]+)\s*台/gi;let m;
+  while((m=re1.exec(t))){const k=m[3].toUpperCase();g.cars[k]=Math.max(g.cars[k]||0,N(m[1]));if(m[2])g.color=C(m[2])}
+  if(!Object.keys(g.cars).length)while((m=re2.exec(t))){const k=m[2].toUpperCase();g.cars[k]=Math.max(g.cars[k]||0,N(m[3]));if(m[1])g.color=C(m[1])}
   return g}
 function ptGuessFill(){const t=$('ptRaw').value,r=$('ptRaw')._r||{},g=ptGuess(t);
   if(!r.date&&g.date&&!$('ptDateIn').value)$('ptDateIn').value=g.date;
