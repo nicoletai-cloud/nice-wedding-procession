@@ -807,7 +807,7 @@ nav.tabs button{scroll-snap-align:start}
     <div class="card" style="margin-bottom:18px">
       <h3>任務結束帳款 <small>選日期看當天要處理的款項；之前沒處理完的收在最下面，處理好打勾</small></h3>
       <div class="row" style="margin-bottom:8px"><label class="f" style="max-width:200px">日期<input type="date" id="setDate"></label></div>
-      <div class="tbl"><table style="min-width:680px"><thead><tr><th>日期</th><th>訂單</th><th>尾款</th><th>要處理的款項</th><th>完成</th></tr></thead><tbody id="setBody"></tbody></table></div>
+      <div class="tbl"><table style="min-width:680px"><thead><tr><th>完成</th><th>日期</th><th>訂單</th><th>尾款</th><th>要處理的款項</th></tr></thead><tbody id="setBody"></tbody></table></div>
       <div id="setDrv" style="margin-top:14px"></div>
     </div>
     <div class="row" style="margin-bottom:12px"><label class="f" style="max-width:200px">月份<input type="month" id="refMonth"></label></div>
@@ -2530,7 +2530,7 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 function renderSettle(){const el=$('setDate');if(!el)return;if(!el.value){const d=new Date();el.value=`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`}const day=el.value;
   const list=Object.values(DB.orders).filter(x=>!x.sample&&x.date&&(x.date===day||x.date<day&&!x.settled&&settleInfo(x).act)).sort((a,b)=>a.date.localeCompare(b.date));
   /* 2026-10-25 Nicole：選哪天只顯示那天；之前未處理的收在最下面，點開才看 */
-  const rowOf=(x,old)=>{const s=settleInfo(x);return `<tr${old?' data-setold'+(window.__setOldOpen?'':' hidden'):''}${x.settled?' style="opacity:.55"':''}><td>${esc(x.date.slice(5).replace('-','/'))}${x.date<day?' <span class="chip" style="color:var(--warn)">未處理</span>':''}</td><td>${esc(orderNo(x))}<br><small>${esc([x.c.groom,x.c.bride].filter(Boolean).join('&'))}</small></td><td>${esc(s.st)}</td><td>${s.act?esc(s.act):'<span class="hint" style="margin:0">不用處理</span>'}</td><td style="text-align:center">${s.act?`<input type="checkbox" data-settle="${x.id}" id="st_${x.id}" ${x.settled?'checked':''} style="width:auto" aria-label="已處理">`:''}</td></tr>`};
+  const rowOf=(x,old)=>{const s=settleInfo(x);return `<tr${old?' data-setold'+(window.__setOldOpen?'':' hidden'):''}${x.settled?' style="opacity:.55"':''}><td style="text-align:center">${s.act?`<label style="display:flex;flex-direction:column;align-items:center;gap:2px;margin:0;cursor:pointer;font-size:.8rem;white-space:nowrap${x.settled?';color:#2f7d4f':''}"><input type="checkbox" data-settle="${x.id}" id="st_${x.id}" ${x.settled?'checked':''} style="width:24px;height:24px" aria-label="已處理">${x.settled?'已處理':'打勾'}</label>`:''}</td><td>${esc(x.date.slice(5).replace('-','/'))}${x.date<day?' <span class="chip" style="color:var(--warn)">未處理</span>':''}</td><td>${esc(orderNo(x))}<br><small>${esc([x.c.groom,x.c.bride].filter(Boolean).join('&'))}</small></td><td>${esc(s.st)}</td><td>${s.act?esc(s.act):'<span class="hint" style="margin:0">不用處理</span>'}</td></tr>`};   /* 2026-10-25 Nicole：手機上看不到最右邊的打勾 → 打勾移到最左邊 */
   const cur=list.filter(x=>x.date===day),old=list.filter(x=>x.date<day);
   $('setBody').innerHTML=(cur.map(x=>rowOf(x,0)).join('')||'<tr><td colspan="5" class="hint">這天沒有任務。</td></tr>')+(old.length?`<tr><td colspan="5" style="padding-top:12px"><button class="btn sm" id="setOldTg">${window.__setOldOpen?'收起':'展開'}之前未處理 (${old.length} 筆)</button></td></tr>`+old.map(x=>rowOf(x,1)).join(''):'');try{renderDrvTransfers(day)}catch(err){console.warn(err)}}
 /* 2026-10-20 Nicole：回金頁只看目前這張訂單：同業單＝匯回同業＋我的回佣；一般訂單＝廠商／婚顧回金 */
