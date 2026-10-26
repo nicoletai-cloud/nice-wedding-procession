@@ -46,6 +46,7 @@ header.top .orderbar .kw-search{grid-column:auto!important;min-width:0;position:
 .ft td.nw{white-space:nowrap;font-weight:600}
 .ft a.tel,.ft a[href^="tel"]{white-space:nowrap}
 .ft .em{color:var(--muted,#7a7066);font-size:12.5px;margin-top:3px}
+input.xd:placeholder-shown{border-color:var(--warn,#c0782a);background:rgba(192,120,42,.06)}
 </style>
 <title>好好禮車婚禮派車</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23B8323A'/%3E%3Ctext x='32' y='48' font-size='46' text-anchor='middle' fill='%23F6D9A8' font-family='PingFang TC,Noto Sans TC,sans-serif'%3E%E5%9B%8D%3C/text%3E%3C/svg%3E">
@@ -1357,7 +1358,7 @@ function calc(x){
   const total=pre+tax+red;
   // driver pay
   const fl=fleetOf(x);let dsum=0,dok=fl.length>0;
-  fl.forEach(f=>{const v=f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x);if(v==null)dok=false;else dsum+=v});
+  fl.forEach(f=>{const v=plusX(f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x),f,x);if(v==null)dok=false;else dsum+=v});
   let deposit;const dTot=total-sumX(x,lateX(x));   // 2026-10-20 出發前新增的款項不算進訂金，全部列在尾款
   if(x.depOverride!==''&&x.depOverride!=null)deposit=num(x.depOverride);
   else if(isMonthly(x))deposit=0;
@@ -1485,7 +1486,13 @@ document.addEventListener('input',e=>{const t=e.target;if(!t||!t.dataset)return;
 document.addEventListener('change',e=>{const t=e.target;if(t&&(t.id==='q_color'||t.id==='q_colorQty'))setTimeout(()=>{if(applyColorReq(o)){save();renderFleet()}},0)});
 /* 2026-10-22 哪台司機酬勞含甘蔗固定費：有勾 f.cane，或客人要固定甘蔗且這台酬勞剛好比價目多一筆甘蔗固定費 */
 function caneCar(f,x){x=x||o;if(f.cane)return true;if(!(num(x.cane)>0)||(x.fleet||[]).some(g=>g.cane)||f.pay===''||f.pay==null)return false;let b=null;try{b=driverBasePay(f.m,x)}catch(_){}if(b==null)return false;const d=num(f.pay)+otDrvAdd(f.m,x)-b;return d>0&&(d===num(S.cane)||d===ptCaneFee())}
-function payOf(f,x){x=x||o;return f.pay!==''&&f.pay!=null?num(f.pay)+otDrvAdd(f.m,x):driverBasePay(f.m,x)}
+/* 2026-10-26 Nicole：加項可填「司機額外酬勞」(例：多一趟單程接送)；車頭彩等公司收入填 0。預設算在第一台(主禮車)，多台車可選哪一台 */
+function xDefCar(L){let i=L.findIndex(g=>g.lead);if(i<0)i=L.findIndex(g=>g.role==='主禮車');return i<0?0:i}
+function xDrvList(f,x){if(!x||x.partner)return[];const L=fleetOf(x);const i=L.indexOf(f);if(i<0)return[];const d0=xDefCar(L);return (x.extras||[]).filter(e=>e&&num(e.d)>0&&(e.dc===''||e.dc==null?d0:num(e.dc))===i)}
+function xDrv(f,x){return xDrvList(f,x).reduce((s,e)=>s+num(e.d),0)}
+function xTag(f,x){return xDrvList(f,x).map(e=>'+'+(/接送/.test(String(e.n||''))?'接送':String(e.n||'加項').trim())).join('')}
+function plusX(v,f,x){return v==null?null:v+xDrv(f,x)}
+function payOf(f,x){x=x||o;return plusX(f.pay!==''&&f.pay!=null?num(f.pay)+otDrvAdd(f.m,x):driverBasePay(f.m,x),f,x)}
 /* 2026-10-21 Nicole：已和客人確認加時 → 司機酬勞改成加時後時數（例：3HR＋1HR＝4HR 的酬勞） */
 function otHrs(x){const mn=+((x&&x.otOk)||{}).min||0;if(!mn)return 0;const u=+x.hours>0&&+x.hours<3?30:60;return Math.ceil(mn/u)*u/60}
 function drvHrs(x){return +x.hours===0?0:+x.hours+otHrs(x)}
@@ -1586,9 +1593,9 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
     else if(x.balPlan==='transfer')pay=[`尾款 ${balExpr(x,r)}${r.red?'(含司機禮)':''}`,`您選擇提前匯款：請於用車前一日前匯款到以下帳號 (假日會計無法即時查帳，請勿用車當日匯款)`,'',S.bankBal?`匯款資訊 [幹部帳戶]`:`匯款資訊`,S.bankBal||S.bank,'',`加時：${otl}`];
     else pay=[`尾款 ${balExpr(x,r)}${r.red?'(含司機禮)':''}`,`請於用車前一日前匯款到以下帳號，或是當天一整包現金交給現場負責人 (假日會計無法即時查帳，請勿用車當日匯款)`,'',S.bankBal?`匯款資訊 [幹部帳戶]`:`匯款資訊`,S.bankBal||S.bank,'',`加時：${otl}`];   // 2026-10-19 Nicole 指定文字
   }else{
-    const groups={};x.fleet.forEach(f=>{const v=payOf(f,x);const key=(v==null?'?':v)+(caneCar(f,x)?'|c':'');(groups[key]=groups[key]||[]).push(f.role)});
+    const groups={};x.fleet.forEach(f=>{const v=payOf(f,x);const key=(v==null?'?':v)+'§'+xTag(f,x)+(caneCar(f,x)?'|c':'');(groups[key]=groups[key]||[]).push(f.role)});
     pay=[r.mon?(r.onsite?`收取${[r.red?`紅包 ${money(S.red)}/台`:'',r.cane?`甘蔗固定費 ${money(r.cane)}`:''].filter(Boolean).join('、')}`:'現場不用收款'):x.balPaid?(postX(x).length?(x.balRed&&r.red?`尾款客人已匯款，現場收司機紅包 ${money(S.red)}/台（共 ${money(r.red)}）＋${xTxt(x,postX(x))}`:`尾款 ${money(r.balance-sumX(x,postX(x)))} 客人已匯款，現場另收 ${xTxt(x,postX(x))}`):x.balRed&&r.red?`尾款客人已匯款，現場只收司機紅包 ${money(S.red)}/台（共 ${money(r.red)}）`:`尾款 ${money(r.balance)} 客人已匯款，現場不用收款`):x.balPlan==='transfer'?`客人選提前匯款；若當天還沒入帳，請收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`:`收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}${x.balPlan==='cash'?'・客人付現金':''}`];
-    Object.keys(groups).forEach(gk=>{const cn=/\|c$/.test(gk),v=gk.replace(/\|c$/,'');const roles=[...new Set(groups[gk])].join('＋');const inc=cn?(r.red?'(含司機禮+甘蔗固定)':'(含甘蔗固定)'):(r.red?'(含紅包)':'');pay.push(+x.hours===0?`${roles} 實拿${v==='?'?'（未設定）':money(+v)}（單程接送・綁彩）${cn?'(含甘蔗固定)':''}`:`${roles} ${v==='?'?'（未設定）':money(+v)}/${hrsLabel(drvHrs(x))}${inc}`)});   // 2026-10-22 Nicole：掛甘蔗那台寫(含司機禮+甘蔗固定)
+    Object.keys(groups).forEach(gk=>{const cn=/\|c$/.test(gk),g0=gk.replace(/\|c$/,''),v=g0.split('§')[0],tg=g0.split('§')[1]||'';const roles=[...new Set(groups[gk])].join('＋');const inc=cn?(r.red?'(含司機禮+甘蔗固定)':'(含甘蔗固定)'):(r.red?(tg?'(含司機禮)':'(含紅包)'):'');pay.push(+x.hours===0?`${roles} 實拿${v==='?'?'（未設定）':money(+v)}（單程接送・綁彩）${cn?'(含甘蔗固定)':''}`:`${roles} ${v==='?'?'（未設定）':money(+v)}/${hrsLabel(drvHrs(x))}${tg}${inc}`)});   // 2026-10-22 Nicole：掛甘蔗那台寫(含司機禮+甘蔗固定)
     const ms=MODELS.filter(m=>num(x.cars[m])>0);
     if(+x.hours===0)pay.push(`等候 15 分鐘未出發，每半小時：${ms.map(m=>driverOtText(m,x).replace(' 等候每 0.5HR','')).join(' ; ')}`);
     else pay.push(x.hours<3?'未滿 3 小時方案無緩衝，超過即以每 0.5 小時計加時':'加時 15 分鐘內不計 ; 第 16 分鐘起收加時費用',`加時：${otl}`);
@@ -1708,9 +1715,9 @@ function kwCodeOpen(raw){const t=String(raw||'').trim();if(!t||/\s/.test(t))retu
 function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr);const fl0=x.findM?x.fleet.filter(f=>f.m===x.findM):x.fleet;/* 只算還沒派司機的車；全部都派了才顯示全部 */const fl=fl0.some(f=>!String(f.driver||'').trim())?fl0.filter(f=>!String(f.driver||'').trim()):fl0;
   const CNN=['零','一','兩','三','四','五','六','七','八','九','十'];const n2=n=>CNN[n]||String(n);
   const ng={};fl.forEach(f=>{const k=`${(f.color||'').trim()} ${MNAME[f.m]}`.trim();ng[k]=(ng[k]||0)+1});
-  const pg={};fl.forEach(f=>{const v=payOf(f,x);const k=v==null?'?':String(v);(pg[k]=pg[k]||new Set()).add(MNAME[f.m])});
+  const pg={};fl.forEach(f=>{const v=payOf(f,x);const k=(v==null?'?':String(v))+'§'+xTag(f,x);(pg[k]=pg[k]||new Set()).add(MNAME[f.m])});
   const pk=Object.keys(pg),hl=hrsLabel(drvHrs(x));
-  const payOne=v=>v==='?'?'（待定）':+x.hours===0?`實拿 ${money(+v)}（單程接送・綁彩）`:`${money(+v)}/${hl}${r.red?'（含紅包）':''}`;
+  const payOne=k=>{const v=k.split('§')[0],tg=k.split('§')[1]||'';return v==='?'?'（待定）':+x.hours===0?`實拿 ${money(+v)}（單程接送・綁彩）`:`${money(+v)}/${hl}${tg}${r.red?(tg?'(含司機禮)':'（含紅包）'):''}`};
   const payL=pk.length===1?payOne(pk[0]):pk.map(v=>`${[...pg[v]].join('、')} ${payOne(v)}`).join('；');
   const cane=caneOf(x),deco=(c.decoAns||'').trim();
   /* 找司機訊息只放司機需要知道的：方案備註（同業單才帶同業的備註）；內部備註（婚顧、回金、報價、訂金…）不給司機看 */
@@ -2175,7 +2182,7 @@ function setPath(obj,path,v){const ks=path.split('.');const last=ks.pop();const 
 function renderXList(){if(!o)return;if(!Array.isArray(o.extras)||!o.extras.length)o.extras=[{n:'',a:0}];   /* 2026-10-20 加項可以多筆（第 1 頁、第 5 頁同一份）；出發前新增的列在尾款 */
   const c5=$('xCard5');if(c5)c5.hidden=isPt(o)||isMonthly(o);
   document.querySelectorAll('.xList').forEach(el=>{if(el.contains(document.activeElement)&&el.querySelectorAll('[data-b$=".n"]').length===o.extras.length)return;const w=el.dataset.xw;
-  el.innerHTML=(w==='1'?`<div style="font-size:0.867rem;color:var(--muted);margin-bottom:4px">加項（例：指定路線、跨縣市）</div>`:'')+o.extras.map((e,i)=>`<div class="row" style="gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><input data-b="extras.${i}.n" placeholder="項目，例：指定路線" style="flex:1 1 140px;min-width:0"><input type="number" data-b="extras.${i}.a" data-num placeholder="金額" style="width:100px"><select data-b="extras.${i}.late" data-bool style="width:auto"><option value="0">訂金前已談好</option><option value="1">出發前新增（列在尾款）</option></select>${o.extras.length>1||e.n||num(e.a)?`<button class="btn sm" data-xdel="${i}" title="刪除">✕</button>`:''}</div>`).join('')+`<button class="btn sm" data-xadd="${w}">＋ 新增款項</button>`})}
+  el.innerHTML=(w==='1'?`<div style="font-size:0.867rem;color:var(--muted);margin-bottom:4px">加項（例：指定路線、跨縣市）・有加項請問司機有沒有額外酬勞，車頭彩等公司收入填 0</div>`:'')+o.extras.map((e,i)=>`<div class="row" style="gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><input data-b="extras.${i}.n" placeholder="項目，例：指定路線" style="flex:1 1 140px;min-width:0"><input type="number" data-b="extras.${i}.a" data-num placeholder="金額" style="width:100px"><input type="number" class="xd" data-b="extras.${i}.d" data-num placeholder="司機額外酬勞" title="司機有沒有額外酬勞？沒有請填 0" style="width:120px">${(()=>{const L=fleetOf(o);return L.length>1?`<select data-b="extras.${i}.dc" style="width:auto" title="酬勞給哪一台">${(()=>{const g=L[xDefCar(L)]||{};return `<option value="">酬勞給 ${esc(g.role||'')} ${esc(MNAME[g.m]||'')}</option>`})()}${L.map((f,j)=>j===xDefCar(L)?'':`<option value="${j}">酬勞給 ${esc(f.role||'')} ${esc(MNAME[f.m]||'')}</option>`).join('')}</select>`:''})()}<select data-b="extras.${i}.late" data-bool style="width:auto"><option value="0">訂金前已談好</option><option value="1">出發前新增（列在尾款）</option></select>${o.extras.length>1||e.n||num(e.a)?`<button class="btn sm" data-xdel="${i}" title="刪除">✕</button>`:''}</div>`).join('')+`<button class="btn sm" data-xadd="${w}">＋ 新增款項</button>`})}
 /* 2026-10-24 Nicole：新人資料預設只顯示 A；B 之後有資料或按「新增地點」才出現 */
 /* 2026-10-24 Nicole：新人資料的路線說明用按鈕點選（跟新人填寫頁一樣：地點代號＋倒退／清除／繞圈／行前一週確認） */
 function rtPlaces(){const c=(o&&o.c)||{},L=[];if(String(c.meet||'').trim()||true)L.push({k:'A',n:String(c.meetL||'').trim()||'集合地點'});const T=k=>String(c[k+'T']||'').trim();[['B','wed'],['C','o1'],['D','o2'],['E','o3'],['F','o4'],['G','o5']].forEach(([k,f])=>{if(!String(c[f]||'').trim())return;const nm=String(c[f+'L']||'').trim();L.push({k,n:nm||T(f)||(f==='wed'?'迎娶地點':'地點')})});return L}
@@ -2267,8 +2274,8 @@ function renderSum(){const r=calc(o);const rows=[];
     <div class="sub"><span>${r.mon?'司機現場收（紅包＋甘蔗）':'尾款（含司機禮，當天交主禮車司機）'}</span><span>${money(r.balance)}</span></div>
     <div class="sub"><span>司機車資合計</span><span>${r.dok?money(r.dsum):'未設定'}</span></div>`;
   $('bundleChip').innerHTML=r.b?`<span class="chip ok">已套用 ${esc(r.b.name)}方案 ${money(r.b.price)}</span>`:(o.hours<3?`<span class="chip">${hrsLabel(o.hours)}不適用優惠方案</span>`:'')+r.miss.map(t=>`<span class="chip" style="color:var(--warn)">${esc(t)}</span>`).join('');
-  $('payBox').innerHTML=o.fleet.map(f=>{const v=payOf(f);return `<div><span>${esc(f.role)}・${MNAME[f.m]}</span><span>${v==null?'未設定':money(v)}</span></div>`}).join('')+`<div class="tot"><span>合計</span><span>${r.dok?money(r.dsum):'—'}</span></div>`}
-function renderFleet(){try{renderFr()}catch(_){}try{setTimeout(renderEq,0)}catch(_){}$('fleetBody').innerHTML=o.fleet.map((f,i)=>{const dp=driverBasePay(f.m,o);return `<tr><td><b>${MNAME[f.m]}</b></td>
+  $('payBox').innerHTML=o.fleet.map(f=>{const v=payOf(f),xl=xDrvList(f,o);return `<div><span>${esc(f.role)}・${MNAME[f.m]}${xl.length?`<small style="color:var(--muted)"> (含${xl.map(e=>` ${esc(String(e.n||'加項').trim())} ${money(num(e.d))}`).join('、')})</small>`:''}</span><span>${v==null?'未設定':money(v)}</span></div>`}).join('')+`<div class="tot"><span>合計</span><span>${r.dok?money(r.dsum):'—'}</span></div>`}
+function renderFleet(){try{renderFr()}catch(_){}try{setTimeout(renderEq,0)}catch(_){}$('fleetBody').innerHTML=o.fleet.map((f,i)=>{const dp=plusX(driverBasePay(f.m,o),f,o);return `<tr><td><b>${MNAME[f.m]}</b></td>
   <td><select data-fl="${i}.role" id="fl_r${i}" style="min-width:104px">${ROLES.map(r=>`<option${r===f.role?' selected':''}>${r}</option>`).join('')}</select></td>
   <td><input data-fl="${i}.plate" id="fl_p${i}" value="${esc(f.plate)}" placeholder="ABC-1234"></td>
   <td><input data-fl="${i}.driver" id="fl_d${i}" value="${esc(f.driver)}"><div style="display:flex;gap:4px;margin-top:4px;align-items:center"><select class="drvPick" data-dp="${i}" style="font-size:0.8rem;max-width:150px">${drvOptions(f)}</select>${(f.driver||f.phone||f.plate)?`<button class="btn sm" data-drvclr="${i}" title="移除這台的司機、電話、車號、緊急聯絡" style="padding:2px 7px;color:#A0453A">✕ 移除</button>`:''}</div></td>
@@ -2523,13 +2530,13 @@ function renderSrc(){const v=vendorOf(o),r=calc(o);
   $('srcHint').textContent=!v?'有婚顧或廠商推薦時填寫，TimeTree 標題會加上「x推薦人」。':isMonthly(o)?`月結廠商：訂金為 $0，下單訊息不會要求匯款，費用列入「回金・月結」分頁的月結請款。`:`回金 ${money(r.refAmt)}（方案費用 ${money(r.planFee)} × ${refRate(o)}%），每月在「回金・月結」分頁彙整。`;
   $('outRefRow').textContent=refRowText(o)}
 function settleInfo(x){const r=calc(x),ld=lead(x)||{},who=ld.driver||'負責人';
-  const ds=(x.fleet||[]).map(f=>{const v=f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x);return `${f.driver||f.role} ${v==null?'未設定':money(v)}`}).join('、');
+  const ds=(x.fleet||[]).map(f=>{const v=plusX(f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x),f,x);return `${f.driver||f.role} ${v==null?'未設定':money(v)}`}).join('、');
   if(!r.dok)return{st:r.mon?'月結':'',act:'司機酬勞還沒設定'};
-  if(r.mon){const rp=x.red?num(S.red):0,dd=(x.fleet||[]).map(f=>{const v=f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x);return `${f.driver||f.role} ${money(v-rp)}`}).join('、'),gap=r.dsum-r.onsite;
+  if(r.mon){const rp=x.red?num(S.red):0,dd=(x.fleet||[]).map(f=>{const v=plusX(f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x),f,x);return `${f.driver||f.role} ${money(v-rp)}`}).join('、'),gap=r.dsum-r.onsite;
     return{st:`月結・司機收紅包 ${money(r.red)}${r.cane?`＋甘蔗 ${money(r.cane)}`:''}`,act:gap>0?`公司匯差額給司機：${r.cane?'':dd+'（'}共 ${money(gap)}${r.cane?'':'）'}`:''}}
   if(x.partner){const k=ptCalc(x),co=x.partner.co||'同業';if(x.partner.prepaid)return{st:`同業單（${co}）客人已匯同業`,act:`公司匯酬勞給司機：${ds}（共 ${money(r.dsum)}）；${co} 應付我 ${money(k.owe)}${k.remit?`、我匯回 ${money(k.remit)}`:''}`};
     return{st:`同業單（${co}）司機現場收 ${money(num(x.partner.collect))}`,act:[k.back>0?`${who} 交回 ${money(k.back)}`:k.back<0?`公司匯差額 ${money(-k.back)} 給 ${who}`:'',k.remit?`匯回 ${co} ${money(k.remit)}`:''].filter(Boolean).join('；')}}
-  if(x.balPaid&&x.balRed&&r.red){const rp=num(S.red),dd=(x.fleet||[]).map(f=>{const v=f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x);return `${f.driver||f.role} ${money(v-rp)}`}).join('、');const pX=sumX(x,postX(x));return{st:`客人已匯尾款，司機收紅包 ${money(r.red)}${pX?`＋現場另收 ${money(pX)}`:''}`,act:`公司匯酬勞（已扣紅包）給司機：${dd}（共 ${money(r.dsum-r.red)}）${pX?`；${who} 交回現場另收 ${money(pX)}`:''}`}}
+  if(x.balPaid&&x.balRed&&r.red){const rp=num(S.red),dd=(x.fleet||[]).map(f=>{const v=plusX(f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x),f,x);return `${f.driver||f.role} ${money(v-rp)}`}).join('、');const pX=sumX(x,postX(x));return{st:`客人已匯尾款，司機收紅包 ${money(r.red)}${pX?`＋現場另收 ${money(pX)}`:''}`,act:`公司匯酬勞（已扣紅包）給司機：${dd}（共 ${money(r.dsum-r.red)}）${pX?`；${who} 交回現場另收 ${money(pX)}`:''}`}}
   if(x.balPaid){const pX=sumX(x,postX(x));return{st:`${money(r.balance-pX)} 客人已匯款（含紅包）${pX?`＋現場另收 ${money(pX)}`:''}`,act:`公司匯酬勞給司機：${ds}（共 ${money(r.dsum)}）${pX?`；${who} 交回現場另收 ${money(pX)}`:''}`}}
   const back=r.balance-r.dsum;
   if(back>0)return{st:`${money(r.balance)} 司機現場收`,act:`${who} 匯回 ${money(back)}`};
@@ -2537,7 +2544,7 @@ function settleInfo(x){const r=calc(x),ld=lead(x)||{},who=ld.driver||'負責人'
   return{st:`${money(r.balance)} 司機現場收`,act:''}}
 /* 當天要轉帳給哪些司機／哪些司機要交回（自己的單＋同業單一起算） */
 function drvTransfers(day){const pay={},back={},add=(M,f,amt,no)=>{if(!amt)return;const k=(f.driver||'').trim()||`（${no} ${f.role||''} 未派司機）`;const z=M[k]=M[k]||{amt:0,phone:f.phone||'',items:[]};z.amt+=amt;if(!z.phone&&f.phone)z.phone=f.phone;z.items.push(`${no} ${money(amt)}`)};
-  Object.values(DB.orders).filter(x=>!x.sample&&!x.lost&&x.date===day&&!x.settled).forEach(x=>{const r=calc(x),no=orderNo(x),F=x.fleet||[],ld=lead(x)||{},pv=f=>f.pay!==''&&f.pay!=null?num(f.pay):num(driverBasePay(f.m,x));
+  Object.values(DB.orders).filter(x=>!x.sample&&!x.lost&&x.date===day&&!x.settled).forEach(x=>{const r=calc(x),no=orderNo(x),F=x.fleet||[],ld=lead(x)||{},pv=f=>num(plusX(f.pay!==''&&f.pay!=null?num(f.pay):num(driverBasePay(f.m,x)),f,x));
     if(x.partner){if(x.partner.prepaid)F.forEach(f=>add(pay,f,pv(f),no));else{const k=ptCalc(x);if(k.back>0)add(back,ld,k.back,no);else if(k.back<0)add(pay,ld,-k.back,no)}return}
     if(!r.dok)return;
     if(r.mon){const rp=x.red?num(S.red):0;if(r.dsum>r.onsite)F.forEach(f=>add(pay,f,pv(f)-rp,no));return}
