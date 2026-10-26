@@ -1744,11 +1744,11 @@ const CT2_CSS=`.ct2{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei
 .ct2 .seal table td{text-align:center;color:#9E4C43;font-size:21pt;line-height:1.05}`;
 function ctTuneFill(){['ctTime','ctNote'].forEach(id=>{const el=$(id);if(el&&document.activeElement!==el)el.value=o[id]||''})}
 ['ctTime','ctNote'].forEach(id=>{const el=document.getElementById(id);if(!el)return;el.addEventListener('input',()=>{o[id]=el.value;save();$('contractPaper').innerHTML=contractHTML(o)})});
-function contractHTML(x){const r=calc(x),c=x.c,rin=r.red>0   /* 2026-10-14 Nicole：合約租金總計一律含司機紅包 */,rent=rin?r.total:r.rent;const E=v=>esc(v==null?'':String(v));
+function contractHTML(x){const r=calc(x),c=x.c,rin=r.red>0   /* 2026-10-14 Nicole：合約租金總計一律含司機紅包 */,rent=rin?r.total:r.rent;const E=v=>esc(v==null?'':String(v));const NY=n=>String(n||'').replace(/\s*[（(]\s*(?:19|20)\d{2}(?:\s*[-–~～至]\s*(?:(?:19|20)?\d{2}|今))?\s*[)）]/g,'').trim();   /* 2026-10-26 Nicole：合約上不顯示車子年份 */
   const user=[c.groom,c.bride].filter(Boolean).join('、')||contactName(x);
-  const cars=MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MBRAND[m]==='Tesla'?'Tesla ':''}${MNAME[m]} × ${num(x.cars[m])}`);
+  const cars=MODELS.filter(m=>num(x.cars[m])>0).map(m=>`${MBRAND[m]==='Tesla'?'Tesla ':''}${NY(MNAME[m])} × ${num(x.cars[m])}`);
   const short=+x.hours>0&&x.hours<3;
-  const otRows=MODELS.map(m=>`${MNAME[m]} ${money(S.ot[m])}/${short?'每 0.5 小時':'時'}`).filter((s,i)=>num(x.cars[MODELS[i]])>0);
+  const otRows=MODELS.map(m=>`${NY(MNAME[m])} ${money(S.ot[m])}/${short?'每 0.5 小時':'時'}`).filter((s,i)=>num(x.cars[MODELS[i]])>0);
   const cv=caneOf(x),caneTxt=(c.caneAns||caneYN(c.caneNote))?(cv+(x.cane?`（${x.cane} 台）`:'')):(x.cane?`是（${x.cane} 台）`:'');
   const pd=c.payDate?fmtDate(c.payDate):'';const pa=c.payAmt?money(num(String(c.payAmt).replace(/[^\d.]/g,''))):'';
   const hasDeco=!!(String(x.decoStyle||'').trim()||num(x.deco)>0),decoTxt=hasDeco?'司機紅包及指定車頭彩費用':'司機紅包';
