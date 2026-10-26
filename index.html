@@ -1160,7 +1160,7 @@ function wedPair(fresh){
     wedPairT=setInterval(()=>{
       if(Date.now()>end){clearInterval(wedPairT);wedPairT=null;try{localStorage.removeItem('wed_pair_sec')}catch(e){}document.getElementById('pairMsgW').textContent='配對碼過期了，請關閉後再按一次';return}
       post({action:'pairPoll',sec}).then(r=>{
-        if(r&&r.ok&&r.token){clearInterval(wedPairT);wedPairT=null;try{localStorage.removeItem('wed_pair_sec');if(!localStorage.getItem('hhlc_bot_token')){localStorage.setItem('hhlc_bot_token',r.token);localStorage.setItem('hhlc_bot_url',U)}}catch(e){}
+        if(r&&r.ok&&r.token){clearInterval(wedPairT);wedPairT=null;try{localStorage.removeItem('wed_pair_sec');localStorage.setItem('hhlc_bot_token',r.token);localStorage.setItem('hhlc_bot_url',U);}catch(e){}
           S.driveKey=r.token;S.driveUrl=U;store('nwcw_settings',S);const o2=document.getElementById('pairOv');if(o2)o2.remove();toast('已設定同步，正在下載訂單…');doSync()}
         else if(r&&!r.ok&&r.error==='expired'){clearInterval(wedPairT);wedPairT=null;wedPair(true)}
       }).catch(()=>{});
