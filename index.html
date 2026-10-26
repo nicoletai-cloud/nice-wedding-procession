@@ -1075,6 +1075,7 @@ const clone=x=>JSON.parse(JSON.stringify(x));
 let REV=null;
 function store(k,v){try{if(v===undefined){const s=localStorage.getItem(k);return s?JSON.parse(s):null}localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
 let S=Object.assign(clone(DEF_S),store('nwcw_settings')||{});
+/* 2026-10-26 同一台裝置首頁已配對過，直接沿用金鑰 */ if(!S.driveKey){try{const hk=localStorage.getItem('hhlc_bot_token');if(hk){S.driveKey=hk;S.driveUrl=S.driveUrl||DEF_S.driveUrl;store('nwcw_settings',S)}}catch(e){}}
 if(!S.dp||!S.dp.X||S.dp.X.h1===undefined)S.dp=clone(DEF_S.dp);
 if(!S.models||!S.models.length){S.models=clone(DEF_S.models)}else{DEF_S.models.forEach(m=>{if(!S.models.some(x=>x.id===m.id)&&!(S.removed||[]).includes(m.id))S.models.push(clone(m))})}
 [...MK,'dp'].forEach(k=>{S[k]=Object.assign(clone(DEF_S[k]),S[k]||{})});
@@ -1138,6 +1139,32 @@ function saveS(){if(syncReady)S._ts=Date.now();store('nwcw_settings',S);pushSync
 let syncReady=false,syncBusy=false,syncTimer=null,syncAgain=false;
 function syncStat(t){const el=$('btnSync');if(el)el.textContent=t}
 async function syncFresh(){for(let i=0;i<120&&syncBusy;i++)await new Promise(r=>setTimeout(r,500));await doSync()}   /* 2026-10-20 等正在跑的同步結束，再同步一次，確保拿到最新版 */
+
+/* 2026-10-26 新裝置用 6 位數配對碼取得同步金鑰(不用找金鑰、不用貼) */
+let wedPairT=null;
+function wedPair(fresh){
+  if(wedPairT)return;const U=S.driveUrl||DEF_S.driveUrl;
+  let ov=document.getElementById('pairOv');
+  if(!ov){ov=document.createElement('div');ov.id='pairOv';ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+    ov.innerHTML='<div style="background:var(--card,#221e1a);color:var(--ink,#f3eadf);border:1px solid #c9a46a;border-radius:16px;padding:22px 18px;max-width:340px;width:100%;text-align:center"><div style="font-size:15px;opacity:.8">配對碼(10 分鐘內有效)</div><div id="pairCodeW" style="font-size:40px;font-weight:700;letter-spacing:6px;margin:6px 0">------</div><div id="pairMsgW" style="font-size:14px;opacity:.8">把這 6 位數字傳給 Claude，核准後會自動開始同步</div><button type="button" id="pairCloseW" class="btn sm" style="margin-top:14px">關閉</button></div>';
+    document.body.appendChild(ov);document.getElementById('pairCloseW').onclick=()=>{ov.remove();if(wedPairT){clearInterval(wedPairT);wedPairT=null}}}
+  let sec=fresh?'':(localStorage.getItem('wed_pair_sec')||'');
+  if(!sec){const a=new Uint8Array(24);crypto.getRandomValues(a);sec=Array.from(a,x=>x.toString(16).padStart(2,'0')).join('');try{localStorage.setItem('wed_pair_sec',sec)}catch(e){}}
+  const post=b=>fetch(U,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(b),cache:'no-store'}).then(r=>r.json());
+  const end=Date.now()+600000;
+  post({action:'pairReq',sec}).then(j=>{
+    if(!j||!j.ok||!j.code){document.getElementById('pairMsgW').textContent='取得配對碼失敗，請關閉後再按一次';return}
+    document.getElementById('pairCodeW').textContent=j.code;
+    wedPairT=setInterval(()=>{
+      if(Date.now()>end){clearInterval(wedPairT);wedPairT=null;try{localStorage.removeItem('wed_pair_sec')}catch(e){}document.getElementById('pairMsgW').textContent='配對碼過期了，請關閉後再按一次';return}
+      post({action:'pairPoll',sec}).then(r=>{
+        if(r&&r.ok&&r.token){clearInterval(wedPairT);wedPairT=null;try{localStorage.removeItem('wed_pair_sec');if(!localStorage.getItem('hhlc_bot_token')){localStorage.setItem('hhlc_bot_token',r.token);localStorage.setItem('hhlc_bot_url',U)}}catch(e){}
+          S.driveKey=r.token;S.driveUrl=U;store('nwcw_settings',S);const o2=document.getElementById('pairOv');if(o2)o2.remove();toast('已設定同步，正在下載訂單…');doSync()}
+        else if(r&&!r.ok&&r.error==='expired'){clearInterval(wedPairT);wedPairT=null;wedPair(true)}
+      }).catch(()=>{});
+    },4000);
+  }).catch(()=>{document.getElementById('pairMsgW').textContent='連不到機器人，請確認網路後再試'});
+}
 function pushSync(){if(!syncReady)return;clearTimeout(syncTimer);syncTimer=setTimeout(doSync,1500)}
 async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl;if(!S.driveUrl||!S.driveKey){syncStat('點我設定同步');return}if(syncBusy&&Date.now()-syncBusy<120000){syncAgain=true;return}syncBusy=Date.now();syncStat('同步中…');
   try{const send={};Object.values(DB.orders).forEach(x=>{if(x.sample)return;let k=null;try{const r=calc(x),v=vendorOf(x);k={total:r.total,deposit:r.deposit,balance:r.balance,dsum:r.dsum,dok:r.dok,mon:r.mon,onsite:r.onsite,red:r.red,refAmt:r.refAmt,bill:r.bill,vendor:v?v.name:'',lux:carKind(x).lux,tesla:carKind(x).tesla}}catch(_){}send[x.id]=Object.assign({},x,{_no:orderNo(x),_trip:tripCode(x),_area:ptArea(x),_calc:k})});
@@ -3088,7 +3115,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnFormData':{const fd=FORMDATA[normNo(orderNo(o))];if(!fd||!fd.f){toast('這張單還沒有客人填寫頁回覆');break}const cols=[['no','訂單編號'],['groom','新郎姓名'],['bride','新娘姓名'],['role','主要聯絡人'],['rel','主要聯絡人身份'],['phone','主要聯絡人電話'],['start','預計開始用車時間'],['end','預計結束用車時間'],['meet','禮車集合地點'],['meetL','集合地點名稱'],['wed','迎娶地點'],['wedL','迎娶地點名稱'],['o1','其他停靠地點 1（選填）'],['o1L','其他停靠地點 1 是什麼地點？（選填）'],['o2','其他停靠地點 2（選填）'],['o2L','其他停靠地點 2 是什麼地點？（選填）'],['o3','其他停靠地點 3（選填）'],['o3L','其他停靠地點 3 是什麼地點？（選填）'],['o4','其他停靠地點 4（選填）'],['o4L','其他停靠地點 4 是什麼地點？（選填）'],['o5','其他停靠地點 5（選填）'],['o5L','其他停靠地點 5 是什麼地點？（選填）'],['route','路線說明'],['cane','車頂甘蔗固定需求'],['deco','車頭彩安排'],['decoStyle','指定車頭彩款式'],['decoSign','客製化英文名牌'],['decoFee','車頭彩費用'],['foundVia','怎麼知道好好禮車']];const cl=v=>String(v==null?'':v).replace(/[\t\n\r]+/g,' ');$('pasteBox').value=cols.map(c=>c[1]).join('\t')+'\n'+cols.map(c=>cl(fd.f[c[0]])).join('\t');$('btnParse').click();break}
     case 'btnParse':{const res=parseForm($('pasteBox').value);const n=applyForm(res);save();fillInputs();renderCars();syncFleet();renderFleet();renderFlow();renderAll();
      $('parseMsg').textContent=n?`已帶入 ${n} 個欄位，請核對。`:'沒有認出欄位，請確認貼上的是表單回覆。';break}
-   case 'btnSync':{if(!S.driveKey){const k=(prompt('輸入同步金鑰（在電腦「價目設定」的 Drive 金鑰）')||'').trim();if(!k)break;S.driveKey=k;if(!S.driveUrl)S.driveUrl=DEF_S.driveUrl;store('nwcw_settings',S);toast('已設定同步，正在下載訂單…')}doSync();break}
+   case 'btnSync':{if(!S.driveKey){wedPair();break}doSync();break}
    case 'btnSetupLink':{if(!S.driveUrl||!S.driveKey){toast('請先填 Drive 網址和金鑰');break}const u=`${location.origin}${location.pathname}#setup=${encodeURIComponent(JSON.stringify({u:S.driveUrl,k:S.driveKey}))}`;if(navigator.clipboard)navigator.clipboard.writeText(u).then(()=>toast('已複製手機設定連結，傳給自己後用手機打開一次即可'),()=>toast('複製失敗'));break}
    case 'btnPhotoCopy':{if(!o.c.photoUrl){toast('先貼上照片資料夾連結');break}copy($('outPhoto').textContent,$('outPhoto'));o.photoSentAt=Date.now();save();renderAll();renderOrderSel();break}
    case 'btnInbox':$('inboxModal').hidden=false;renderInbox();loadInbox();break;
