@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#faf7f2">
+<title>挑選照片｜好好禮車</title>
+<style>
+html,body{margin:0;height:100%;background:#faf7f2;font:15px -apple-system,"PingFang TC",sans-serif;color:#8a7f70}
+iframe{position:fixed;inset:0;width:100%;height:100%;border:0;display:block}
+#ld{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;gap:10px}
+#ld i{width:18px;height:18px;border:2px solid rgba(0,0,0,.12);border-top-color:#a9793b;border-radius:50%;animation:s .8s linear infinite}
+@keyframes s{to{transform:rotate(360deg)}}
+</style></head><body>
+<div id="ld"><i></i>照片載入中…</div>
+<script>
+/* 2026-10-27 照片挑選頁外框：直接開 script.google.com 手機上方會有 Google 橫幅，包在這裡就不會顯示 */
+(function(){
+  var EXEC='https://script.google.com/macros/s/AKfycbwoKk13j5YOtkA5cTh3FtvECekYm0uMBPsid1H--kB7bhUVpDFvSnSA0iTzCfc8IT11_Q/exec';
+  var k=new URLSearchParams(location.search).get('k')||'';
+  if(!k){document.getElementById('ld').textContent='連結不完整';return}
+  var f=document.createElement('iframe');
+  f.src=EXEC+'?action=pick&k='+encodeURIComponent(k);
+  f.allow='clipboard-write';
+  f.onload=function(){var l=document.getElementById('ld');if(l)l.remove()};
+  document.body.appendChild(f);
+})();
+</script>
+</body></html>
