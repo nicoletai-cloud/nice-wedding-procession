@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#faf7f2">
+<meta name="robots" content="noindex">
+<title>婚禮側拍花絮｜好好禮車</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#faf7f2;color:#3a312a;font:16px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;-webkit-text-size-adjust:100%}
+.w{max-width:480px;margin:0 auto;padding:40px 20px calc(32px + env(safe-area-inset-bottom))}
+.brand{font-size:13px;letter-spacing:.2em;color:#a9793b;text-align:center}
+h1{font-size:26px;text-align:center;margin:10px 0 6px;font-weight:700}
+.sub{text-align:center;color:#8a7f70;font-size:14px;line-height:1.7;margin:0 0 28px}
+.card{background:#fff;border:1px solid #ece3d3;border-radius:18px;padding:18px;box-shadow:0 2px 10px rgba(80,60,30,.05)}
+a.btn{display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;border-radius:14px;padding:15px 16px;font-size:17px;font-weight:600;margin-top:10px;transition:transform .08s,filter .08s;-webkit-tap-highlight-color:transparent}
+a.btn:active{transform:scale(.97);filter:brightness(.9)}
+a.dl{background:#3b302a;color:#fff}
+a.dl:first-child{margin-top:0}
+.note{font-size:12px;color:#a99a88;text-align:center;margin-top:12px}
+.gift{margin-top:22px;background:linear-gradient(135deg,#fff8ec,#f6e7cc);border:1px solid #e8d2a8}
+.gift .t{font-weight:700;font-size:17px;color:#8a6d3b}
+.gift .d{font-size:14px;color:#6f6253;line-height:1.7;margin:6px 0 4px}
+a.nw{background:#c9a063;color:#fff}
+.foot{text-align:center;color:#b8ab99;font-size:12px;margin-top:28px}
+</style></head><body>
+<div class="w">
+  <div class="brand">NICE WEDDING CAR</div>
+  <h1>婚禮側拍花絮</h1>
+  <p class="sub" id="sub">恭喜兩位新婚快樂 🎉<br>好好禮車的司機當天幫兩位隨手拍了一些花絮<br>點下面按鈕就能下載留念</p>
+  <div class="card" id="dl"></div>
+  <div class="note">連結將在一週後失效，請盡早下載</div>
+  <div class="card gift" id="gift">
+    <div class="t">🎁 新人專屬優惠</div>
+    <div class="d">機場接送 95 折，蜜月、回門、出國都適用。<br>按下面按鈕傳訊息給好好禮車官方 LINE 就能領取。</div>
+    <a class="btn nw" id="nwBtn" href="#">我是本場新人，領取優惠</a>
+  </div>
+  <div class="foot">好好禮車 Nice Wedding Car</div>
+</div>
+<script>
+(function(){
+  var q=new URLSearchParams(location.search);
+  var ids=(q.get('f')||'').split(',').filter(function(s){return /^[\w-]{10,}$/.test(s)});
+  var labels=(q.get('l')||'').split('|');
+  var code=(q.get('c')||'').replace(/[^A-Za-z0-9]/g,'').slice(0,8);
+  var d=(q.get('d')||'').replace(/[^0-9\/]/g,'').slice(0,5);
+  var box=document.getElementById('dl');
+  if(!ids.length){box.innerHTML='<div style="text-align:center;color:#8a7f70">連結不完整，請聯絡好好禮車</div>';document.getElementById('gift').style.display='none';return}
+  ids.forEach(function(id,i){
+    var a=document.createElement('a');a.className='btn dl';a.target='_blank';a.rel='noopener';
+    a.href='https://drive.google.com/drive/folders/'+encodeURIComponent(id);
+    var lb=(labels[i]||'').trim();a.textContent='下載照片'+(lb?' '+lb:'');
+    box.appendChild(a);
+  });
+  var msg='我是 '+(d?d+' ':'')+code+' 的新人，想領取新人專屬優惠';
+  document.getElementById('nwBtn').href='https://line.me/R/oaMessage/@niceweddingcar/?'+encodeURIComponent(msg);
+  if(!code)document.getElementById('gift').style.display='none';
+})();
+</script>
+</body></html>
