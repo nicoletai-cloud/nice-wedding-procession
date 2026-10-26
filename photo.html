@@ -32,7 +32,7 @@ a.nw{background:#c9a063;color:#fff}
   <div class="card gift" id="gift">
     <div class="t">🎁 新人專屬優惠</div>
     <div class="d">機場接送 95 折，蜜月、回門、出國都適用。<br>按下面按鈕傳訊息給好好禮車官方 LINE 就能領取。</div>
-    <a class="btn nw" id="nwBtn" href="#">我是本場新人，領取優惠</a>
+    <a class="btn nw" id="nwBtn" href="#">我是本場新人，領取好好新人專屬優惠</a>
   </div>
   <div class="foot">好好禮車 Nice Wedding Car</div>
 </div>
@@ -51,7 +51,7 @@ a.nw{background:#c9a063;color:#fff}
     var lb=(labels[i]||'').trim();a.textContent='下載照片'+(lb?' '+lb:'');
     box.appendChild(a);
   });
-  var msg='我是 '+(d?d+' ':'')+code+' 的新人，想領取新人專屬優惠';
+  var msg='我是 '+(d?d+' ':'')+code+' 的新人，想領取好好新人專屬優惠';
   document.getElementById('nwBtn').href='https://line.me/R/oaMessage/@niceweddingcar/?'+encodeURIComponent(msg);
   if(!code)document.getElementById('gift').style.display='none';
 })();
