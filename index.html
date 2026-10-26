@@ -1351,7 +1351,7 @@ function calc(x){
   const listBase=base;if(b)base=num(b.price);const vb=vendorBase(x);if(vb!=null)base=vb;
   let ot=0;MODELS.forEach(m=>ot+=num(x.cars[m])*num(S.ot[m])*eh);
   const zone=zoneXOn(x)?zoneUnit(x)*teslaN(x)+zoneXUnit(x)*(n-teslaN(x)):zoneUnit(x)*Math.max(0,n-luxN(x)),cane=num(x.cane)*num(S.cane),deco=num(x.deco);
-  const extras=x.extras.reduce((a,e)=>a+num(e.a),0),red=x.red?n*num(S.red):0,disc=num(x.discAmt);
+  const extras=x.extras.reduce((a,e)=>a+eAmt(e),0),red=x.red?n*num(S.red):0,disc=num(x.discAmt);
   const colorAdd=x.colorReq&&x.colorMode==='add'?num(x.colorFee)*(num(x.colorQty)||n):0;
   const pre=base+ot+zone+cane+deco+extras+colorAdd-disc;
   const tax=x.invoice?Math.round(pre*0.05):0;
@@ -1370,7 +1370,10 @@ function calc(x){
 
 /* 2026-10-20 尾款有加時：寫成「$11,000+加時 1HR $1,200+$800*2=$13,800」 */
 /* 2026-10-20 Nicole：出發前新增的款項（訂金後才加）列在尾款：「尾款 $11,000+指定路線 $1,000=$12,000」；客人匯完尾款後才加的 → 用車當天交給現場負責人 */
-function xAmt(x,e){const a=num(e.a);return x.invoice?Math.round(a*1.05):a}
+/* 2026-10-26 Nicole：加項可填數量(例：單程接送 $1,500×3) */
+function eQty(e){const q=Math.floor(num(e&&e.q));return q>1?q:1}
+function eAmt(e){return num(e&&e.a)*eQty(e)}
+function xAmt(x,e){const a=eAmt(e);return x.invoice?Math.round(a*1.05):a}
 function lateX(x){return (x.extras||[]).filter(e=>e&&e.late&&num(e.a))}
 function postX(x){if(!x.balPaid)return[];return lateX(x).filter(e=>!x.balPaidTs||+e.at>+x.balPaidTs)}
 function sumX(x,L){return L.reduce((a,e)=>a+xAmt(x,e),0)}
@@ -1404,7 +1407,7 @@ function feeLines(x,lang){const t=L[lang],r=calc(x),hl=hrsLabel(x.hours),out=[];
   if(zoneUnit(x)&&luxN(x)&&!zoneXOn(x)&&lang==='zh')out.push('豪車跨區費另行報價');
   if(r.cane)out.push(`${t.cane} ${mult(num(S.cane),num(x.cane),lang)}`);
   if(r.deco)out.push(`${t.deco}${lang==='zh'?decoTag(x):''} ${money(r.deco,lang)}`);
-  x.extras.forEach(e=>{if(num(e.a))out.push(`${e.n||'加項'} ${money(num(e.a),lang)}`)});
+  x.extras.forEach(e=>{if(num(e.a))out.push(`${e.n||'加項'} ${mult(num(e.a),eQty(e),lang)}`)});
   if(r.disc)out.push(`${x.discName||t.disc} -${money(r.disc,lang)}`);
   if(r.tax)out.push(`${t.tax} ${money(r.tax,lang)}`);
   if(r.red)out.push(`${t.red} ${mult(num(S.red),r.n,lang)}`);
@@ -2183,7 +2186,7 @@ function setPath(obj,path,v){const ks=path.split('.');const last=ks.pop();const 
 function renderXList(){if(!o)return;if(!Array.isArray(o.extras)||!o.extras.length)o.extras=[{n:'',a:0}];   /* 2026-10-20 加項可以多筆（第 1 頁、第 5 頁同一份）；出發前新增的列在尾款 */
   const c5=$('xCard5');if(c5)c5.hidden=isPt(o)||isMonthly(o);
   document.querySelectorAll('.xList').forEach(el=>{if(el.contains(document.activeElement)&&el.querySelectorAll('[data-b$=".n"]').length===o.extras.length)return;const w=el.dataset.xw;
-  el.innerHTML=(w==='1'?`<div style="font-size:0.867rem;color:var(--muted);margin-bottom:4px">加項（例：指定路線、跨縣市）・有加項請問司機有沒有額外酬勞，車頭彩等公司收入填 0</div>`:'')+o.extras.map((e,i)=>`<div class="row" style="gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><input data-b="extras.${i}.n" placeholder="項目，例：指定路線" style="flex:1 1 140px;min-width:0"><input type="number" data-b="extras.${i}.a" data-num placeholder="金額" style="width:100px">${(()=>{const L=fleetOf(o);if(L.length<=1)return `<input type="number" class="xd" data-b="extras.${i}.d" data-num placeholder="司機額外酬勞" title="司機有沒有額外酬勞？沒有請填 0" style="width:120px">`;if(!e.dm||typeof e.dm!=='object')e.dm={};return `<div style="flex:1 1 100%;display:flex;gap:6px;flex-wrap:wrap;align-items:center"><span class="hint" style="margin:0">司機額外酬勞(每台可不同，沒有填 0):</span>${L.map((f,j)=>`<label class="row" style="gap:4px;align-items:center;display:inline-flex;font-size:.867rem">${esc(f.role||'')} ${esc(MNAME[f.m]||'')}<input type="number" class="xd" data-b="extras.${i}.dm.${j}" data-num placeholder="0" style="width:84px"></label>`).join('')}</div>`})()}<select data-b="extras.${i}.late" data-bool style="width:auto"><option value="0">訂金前已談好</option><option value="1">出發前新增（列在尾款）</option></select>${o.extras.length>1||e.n||num(e.a)?`<button class="btn sm" data-xdel="${i}" title="刪除">✕</button>`:''}</div>`).join('')+`<button class="btn sm" data-xadd="${w}">＋ 新增款項</button>`})}
+  el.innerHTML=(w==='1'?`<div style="font-size:0.867rem;color:var(--muted);margin-bottom:4px">加項（例：指定路線、跨縣市）・有加項請問司機有沒有額外酬勞，車頭彩等公司收入填 0</div>`:'')+o.extras.map((e,i)=>`<div class="row" style="gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><input data-b="extras.${i}.n" placeholder="項目，例：指定路線" style="flex:1 1 140px;min-width:0"><input type="number" data-b="extras.${i}.a" data-num placeholder="單價" style="width:100px"><span class="hint" style="margin:0">×</span><input type="number" min="1" step="1" data-b="extras.${i}.q" data-num placeholder="1" title="數量" style="width:60px">${(()=>{const L=fleetOf(o);if(L.length<=1)return `<input type="number" class="xd" data-b="extras.${i}.d" data-num placeholder="司機額外酬勞" title="司機有沒有額外酬勞？沒有請填 0" style="width:120px">`;if(!e.dm||typeof e.dm!=='object')e.dm={};return `<div style="flex:1 1 100%;display:flex;gap:6px;flex-wrap:wrap;align-items:center"><span class="hint" style="margin:0">司機額外酬勞(每台可不同，沒有填 0):</span>${L.map((f,j)=>`<label class="row" style="gap:4px;align-items:center;display:inline-flex;font-size:.867rem">${esc(f.role||'')} ${esc(MNAME[f.m]||'')}<input type="number" class="xd" data-b="extras.${i}.dm.${j}" data-num placeholder="0" style="width:84px"></label>`).join('')}</div>`})()}<select data-b="extras.${i}.late" data-bool style="width:auto"><option value="0">訂金前已談好</option><option value="1">出發前新增（列在尾款）</option></select>${o.extras.length>1||e.n||num(e.a)?`<button class="btn sm" data-xdel="${i}" title="刪除">✕</button>`:''}</div>`).join('')+`<button class="btn sm" data-xadd="${w}">＋ 新增款項</button>`})}
 /* 2026-10-24 Nicole：新人資料預設只顯示 A；B 之後有資料或按「新增地點」才出現 */
 /* 2026-10-24 Nicole：新人資料的路線說明用按鈕點選（跟新人填寫頁一樣：地點代號＋倒退／清除／繞圈／行前一週確認） */
 function rtPlaces(){const c=(o&&o.c)||{},L=[];if(String(c.meet||'').trim()||true)L.push({k:'A',n:String(c.meetL||'').trim()||'集合地點'});const T=k=>String(c[k+'T']||'').trim();[['B','wed'],['C','o1'],['D','o2'],['E','o3'],['F','o4'],['G','o5']].forEach(([k,f])=>{if(!String(c[f]||'').trim())return;const nm=String(c[f+'L']||'').trim();L.push({k,n:nm||T(f)||(f==='wed'?'迎娶地點':'地點')})});return L}
@@ -2267,7 +2270,7 @@ function renderSum(){const r=calc(o);const rows=[];
   rows.push([r.b?`${r.b.name}方案`:'車資',money(r.base)]);if(r.b&&r.listBase>r.base)rows.push([`<span class="sub">原價 ${money(r.listBase)}，省 ${money(r.listBase-r.base)}</span>`,'']);
   if(r.ot)rows.push([`加時 ${r.eh}HR`,money(r.ot)]);if(r.zone)rows.push([`跨區/里程費（${zoneLabel(o)}）`,money(r.zone)]);if(zoneUnit(o)&&luxN(o)&&!zoneXOn(o))rows.push(['豪車跨區費','另行評估']);if(r.cane)rows.push(['甘蔗固定費',money(r.cane)]);if(r.colorAdd)rows.push([`指定${o.colorReq}`,money(r.colorAdd)]);if(r.deco)rows.push(['指定車頭彩'+esc(decoTag(o)),money(r.deco)]);
   if(r.vb!=null)rows.push([`<span class="sub">${esc(vendorOf(o).name)}配套價</span>`,'']);
-  (o.extras||[]).forEach(e=>{if(num(e.a))rows.push([`${String(e.n||'加項').trim()}${e.late?'（出發前新增）':''}`,money(num(e.a))])});if(r.disc)rows.push([o.discName||'折扣','-'+money(r.disc)]);if(r.tax)rows.push(['5% 營業稅',money(r.tax)]);if(r.red)rows.push([`司機禮 ×${r.n}`,money(r.red)]);
+  (o.extras||[]).forEach(e=>{if(num(e.a))rows.push([`${String(e.n||'加項').trim()}${eQty(e)>1?` ${money(num(e.a))}×${eQty(e)}`:''}${e.late?'（出發前新增）':''}`,money(eAmt(e))])});if(r.disc)rows.push([o.discName||'折扣','-'+money(r.disc)]);if(r.tax)rows.push(['5% 營業稅',money(r.tax)]);if(r.red)rows.push([`司機禮 ×${r.n}`,money(r.red)]);
   $('sumBox').innerHTML=rows.map(([a,b])=>`<div><span>${a}</span><span>${b}</span></div>`).join('')+
    `<div class="tot"><span>合計</span><span>${money(r.total)}</span></div>
     <div><span>應付訂金${o.depOverride!==''?'（手動）':isMonthly(o)?'（月結）':S.depMode==='driver'&&r.dok?'（總額−司機車資）':`（${S.depPct}%）`}</span><span>${money(r.deposit)}</span></div>
