@@ -403,7 +403,7 @@ nav.tabs button{scroll-snap-align:start}
         <div class="card">
           <h3>案件來源 <span id="srcChip"></span></h3>
           <div class="fields">
-            <label class="f">客人怎麼找到我們<select id="q_from" data-b="src.from"><option value="">（還不知道）</option><option>Google 搜尋／地圖</option><option>IG</option><option>FB</option><option>FB/IG 廣告</option><option>Google 廣告</option><option>婚顧／廠商介紹</option><option>朋友介紹</option><option>老客回購</option><option>官網</option><option>網路文章／論壇</option><option>其他</option></select></label>
+            <label class="f">客人怎麼找到我們<select id="q_from" data-b="src.from"><option value="">（還不知道）</option><option>Google 搜尋／地圖</option><option>IG</option><option>FB</option><option>FB/IG 廣告</option><option>Google 廣告</option><option>婚顧／廠商介紹</option><option>朋友介紹</option><option>老客回購</option><option>官網</option><option>網路文章／論壇</option><option>AI 推薦</option><option>其他</option></select></label>
             <label class="f">合作廠商／婚顧<input id="q_vendor" data-b="src.vendor" list="vendorList" placeholder="直客免填"></label>
             <label class="f">婚顧方式<select id="q_vmode" data-b="src.mode"><option value="">—</option><option value="推薦">推薦（客人自己訂車）</option><option value="代訂">代訂（婚顧幫客人訂車）</option></select></label>
             <label class="f">婚顧窗口<input id="q_vagent" data-b="src.agent" placeholder="例：Demi、Jungle"></label>
@@ -2204,7 +2204,7 @@ function renderConfirmResult(r){const b=$('confirmResult');if(!r){b.innerHTML=''
    (o._suggestH?`<div class="row" style="margin-top:8px"><button class="btn sm" id="btnApplyH">合約時數改成 ${hrsLabel(o._suggestH)}</button></div>`:'')+
    `<p class="hint">流程已依回覆重排；司機派車單和禮車服務確認單已更新，請到「車隊與流程」檢查時間。</p>`}
 function applyForm(res){const c=o.c;let n=0;o.sample=false;const set=(k,v)=>{if(v){c[k]=v;n++}};
-  {const fv=String(res.foundVia||'').trim();if(fv){o.src=o.src||{};if(!o.src.from){const M={'Instagram':'IG','Facebook':'FB','婚顧／婚禮廠商介紹':'婚顧／廠商介紹'},KN=['Google 搜尋／地圖','IG','FB','婚顧／廠商介紹','朋友介紹','網路文章／論壇'],v=M[fv]||fv;if(KN.indexOf(v)>=0)o.src.from=v;else{o.src.from='其他';o.src.fromNote=fv}n++}}}
+  {const fv=String(res.foundVia||'').trim();if(fv){o.src=o.src||{};if(!o.src.from){const M={'Instagram':'IG','Facebook':'FB','婚顧／婚禮廠商介紹':'婚顧／廠商介紹'},KN=['Google 搜尋／地圖','IG','FB','婚顧／廠商介紹','朋友介紹','網路文章／論壇','AI 推薦'],v=M[fv]||fv;if(KN.indexOf(v)>=0)o.src.from=v;else{o.src.from='其他';o.src.fromNote=fv}n++}}}
   set('groom',res.groom);set('bride',res.bride);
   if(res.role){if(/新郎/.test(res.role))c.role='新郎';else if(/新娘/.test(res.role))c.role='新娘';else{c.role='其他';c.contact=res.role;if(res.rel)c.rel=res.rel}n++}
   set('phone',res.phone);set('start',normTime(res.start));set('end',normTime(res.end));
@@ -3182,7 +3182,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
     if(!nm&&!C.chatName&&!C.phone){toast('這張單還沒有客人資料');break}
     try{localStorage.setItem('hhlc_handoff',JSON.stringify({from:'wed',ts:Date.now(),wedId:o.id,wedDate:o.date||'',name:nm||C.groom||C.bride||'',phone:C.phone||'',chatName:C.chatName||'',channel:C.channel||'LINE',addrs:A}))}catch(e){toast('無法交接資料');break}
     window.open(location.origin+'/nice-wedding-car/','_blank');toast('已開啟機場接送報價');break}
-   case 'btnNew':{o=newOrder();DB.orders[o.id]=o;syncFleet();save();loadOrder();toast('已建立新訂單');break}
+   case 'btnNew':{o=newOrder();DB.orders[o.id]=o;syncFleet();save();loadOrder();showTab('quote');{const ms=$('moreSheet');if(ms)ms.hidden=true}setTimeout(()=>{const f=$('q_chat');if(f){f.scrollIntoView({behavior:'smooth',block:'center'});try{f.focus({preventScroll:true})}catch(_){}}},150);toast('已建立新訂單');break}   /* 2026-10-28 Nicole：按新訂單直接跳到第一個分頁填客人資料 */
    case 'btnAlbum':{albumPicker();break}
    case 'btnDup':{const n=clone(o);n.id=newOrder().id;n.sample=false;n.seq='';n._seqKey='';n._seq='';n.c=Object.assign(newOrder().c,{});n.fleet=n.fleet.map(f=>Object.assign(f,{plate:'',driver:'',phone:''}));Object.assign(n,{paid:false,paidAt:'',paidTs:'',contractUrl:'',memoLinks:null,driveFolder:'',inqAt:Date.now(),orderedAt:'',followAt:'',lost:false,formAt:'',cfSentAt:'',cfDoneAt:'',cfSchedAt:'',revAskAt:'',revLinkAt:'',revSkip:false,photoSentAt:'',carHead:'',balPaid:false,settled:false,sent:[],quotes:[],need:clone(newOrder().need)});o=n;DB.orders[o.id]=o;save();loadOrder();toast('已複製車款與價格到新訂單');break}
    case 'btnDel':{const h=$('delHint'),reset=()=>{delStep=0;t.textContent='🗑 刪除此訂單';h.textContent=''};clearTimeout(delTimer);
