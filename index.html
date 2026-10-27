@@ -1435,8 +1435,8 @@ function mult(unit,q,lang){return q>1?`${money(unit,lang)}×${q} = ${money(unit*
 function feeLines(x,lang){const t=L[lang],r=calc(x),hl=hrsLabel(x.hours),out=[];const short=x.hours<3;
   const within=t.within(+x.hours>3?hrsLabel(3):hl,num(x.km));
   if(r.eh&&+x.hours>3)out.push(lang==='en'?`${hl} total quote (3HR base + ${r.eh}HR overtime)`:lang==='ja'?`合計 ${hl} のお見積り（基本 3HR＋延長 ${r.eh}HR）`:`以下為 ${hl} 報價（基本 3HR＋加時 ${r.eh}HR）`);
-  if(r.b){const nm=MODELS.filter(m=>num(x.cars[m])>0).map(m=>MNAME[m]+(num(x.cars[m])>1?'*'+num(x.cars[m]):'')).join(' + ');
-    out.push(lang==='zh'?`${comboText(x.cars)}=${money(r.b.price,lang)} ${within}`:`${nm} ${t.bundle} ${money(r.b.price,lang)} ${within}`)}
+  if(r.b||r.vb!=null){const nm=MODELS.filter(m=>num(x.cars[m])>0).map(m=>MNAME[m]+(num(x.cars[m])>1?'*'+num(x.cars[m]):'')).join(' + ');const bp=r.vb!=null?r.vb:r.b.price;   /* 2026-10-27 廠商配套價（幸福故事館）要顯示配套價，不是一般方案價 */
+    out.push(lang==='zh'?`${comboText(x.cars)}=${money(bp,lang)} ${within}`:`${nm} ${t.bundle} ${money(bp,lang)} ${within}`)}
   else MODELS.forEach(m=>{const q=num(x.cars[m]);if(q)out.push(`${MNAME[m]} ${mult(cPrice(m,x.hours).v,q,lang)} ${+x.hours===0?(lang==='en'?'(one-way transfer)':lang==='ja'?'(片道送迎)':'(單程接送)'):within}`)});
   if(x.colorReq){const a=num(x.colorFee),cq=num(x.colorQty)||r.n,v=vendorOf(x),wv=x.colorWaive==='婚顧'?`${(x.src&&x.src.ref)||(v&&v.name)||'婚顧'}優惠`:(x.colorWaive||'限時優惠');
     if(lang==='zh')out.push(a?`指定${x.colorReq} ${money(a)}*${cq}=${money(a*cq)}${x.colorMode==='add'?'':`(${wv}免收)`}`:`指定${x.colorReq}`);else if(r.colorAdd)out.push(`${lang==='ja'?'指定カラー':'Custom color'} ${mult(a,cq,lang)}`)}
