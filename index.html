@@ -512,6 +512,10 @@ nav.tabs button{scroll-snap-align:start}
         <pre class="out" id="outPaid"></pre>
       </div>
     </div>
+    <div class="card" id="cfFlowCard" style="max-width:900px;margin:16px auto 0"><!-- 2026-10-27 Nicole：行前確認移到「合約」頁最下面 -->
+        <h3>行前確認 <small>客人回填的內容，送出後會自動帶入「車隊與流程」</small></h3>
+        <div id="cfFlowBody"></div>
+    </div>
   </section>
 
   <!-- 4 找司機 -->
@@ -592,10 +596,6 @@ nav.tabs button{scroll-snap-align:start}
         <pre class="out" id="ttMemo"></pre>
         <div id="ttCheck2" class="row" style="margin-top:10px;gap:8px;align-items:center"></div>
         <div id="callCheck" class="row" style="margin-top:10px;gap:8px;align-items:center;flex-wrap:wrap" hidden></div>
-      </div>
-      <div class="card" id="cfFlowCard"><!-- 2026-10-17 客人回填的行前確認整合進車隊與流程 -->
-        <h3>行前確認 <small>客人回填的內容，送出後已自動帶入下面的流程</small></h3>
-        <div id="cfFlowBody"></div>
       </div>
       <div class="card" id="drvNoteCard"><!-- 2026-10-19 給司機的補充：派車單和禮車服務確認單都會出現（確認單寫「已轉達司機」） -->
         <h3>給司機的補充 <small>派車單和禮車服務確認單都會出現（確認單上寫「已轉達司機」，客人知道有轉達）；客人行前確認填的「想提醒司機」和上傳的附件會自動帶進來</small></h3>
