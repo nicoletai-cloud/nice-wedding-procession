@@ -423,6 +423,7 @@ nav.tabs button{scroll-snap-align:start}
             <label class="f">優惠名稱<select id="q_colorWaive" data-b="colorWaive"><option>限時優惠</option><option>早鳥優惠</option><option>主管優惠</option><option value="婚顧">婚顧優惠（用推薦廠商名稱）</option></select></label>
             <label class="f">車款<select id="q_colorRare" data-b="colorRare" data-bool><option value="0">一般車款</option><option value="1">稀有車款（合約加註）</option></select></label>
             <label class="f wide">限時優惠（只顯示、不影響金額；一行一項：名稱=每台金額）<textarea id="q_promo" data-b="promoText" rows="2" placeholder="指定白色=800"></textarea></label>
+            <label class="f wide">報價備註（會顯示在報價和合約；一行一點）<textarea id="q_qnote" data-b="qNote" data-nl rows="2" placeholder="例：主禮車 Tesla Model X 指定白色車身、黑色內裝"></textarea></label>   <!-- 2026-10-28 Nicole：報價和合約共用的備註 -->
             <label class="f">實體甘蔗台數<input type="number" id="q_cane" data-b="cane" data-num min="0"></label>
             <label class="f">指定車頭彩費用<input type="number" id="q_deco" data-b="deco" data-num min="0" placeholder="800–1000"></label>
             <label class="f">指定車頭彩款式<select id="q_decoStyle" data-b="decoStyle"></select></label>
@@ -1474,18 +1475,20 @@ function quoteBody(x,lang){const r=calc(x),f=feeLines(x,lang);const rt=routeLine
  const kmL=lang==='en'?[rt?`Route: ${rt}`:'',tk?`Estimated distance: approx. ${tk} km`:'']:lang==='ja'?[rt?`ルート：${rt}`:'',tk?`予想走行距離：約 ${tk}km`:'']:[rt?`預計流程：${rt}`:'',tk?`預估里程：約 ${tk} 公里`:''];
  const kmN=oneWay?'':tk&&tk<=zb?(lang==='en'?`* Estimated ${tk} km, within ${zb} km — no mileage fee.`:lang==='ja'?`＊予想走行距離 約${tk}km（${zb}km以内）のため、距離料金はかかりません。`:`＊預估約 ${tk} 公里，在 ${zb} 公里內，不另收里程費`):lang==='en'?`* Includes up to ${zb} km; beyond that, ${money(zr,lang)} per car for every additional ${zb} km (pro-rated${zu?`, rounded up to ${money(zu,lang)}`:''}).`:lang==='ja'?`＊${zb}km以内の料金です。超過分は${zb}kmごとに1台 ${money(zr,lang)}（按分${zu?`、${money(zu,lang)}単位で切り上げ`:''}）。`:`＊用車含 ${zb} 公里內，超過加收里程費用`;const d=x.date?fmtDate(x.date)+(()=>{const p=dparts(x.date);return lang==='en'?` (${WD.en[p.w]})`:`（${WD[lang][p.w]}）`})():(lang==='en'?'TBD':lang==='ja'?'未定':'未定');
  if(lang==='en')return [`[Nice Wedding Car] Quote`,`Date: ${d}`,(+x.hours===0?'Service: one-way transfer':`Hours: ${hrsLabel(x.hours)} (within ${num(x.km)} km)`),`Vehicle(s): ${carsText(x,lang)}`,...kmL,`Charges:`,...f,`Total = ${money(r.total,lang)}`,r.deposit?`Deposit: ${money(r.deposit,lang)} (balance ${money(r.balance,lang)})`:'','',
-   kmN,x.invoice?'* Price includes 5% business tax.':'* Cash price; 5% business tax not included.',(+x.hours>0&&+x.hours<3?`* Plans under 3 hours include no buffer time; overtime is charged per 30 minutes: ${otRates(x,lang)}`:`* Overtime starts from the 16th minute, charged per started hour: ${otRates(x,lang)}`),
+   kmN,...qNotes(x,'* '),x.invoice?'* Price includes 5% business tax.':'* Cash price; 5% business tax not included.',(+x.hours>0&&+x.hours<3?`* Plans under 3 hours include no buffer time; overtime is charged per 30 minutes: ${otRates(x,lang)}`:`* Overtime starts from the 16th minute, charged per started hour: ${otRates(x,lang)}`),
    r.cane?'':`* Real sugarcane on the roof: ${money(S.cane,lang)}/car (optional)`,`* A driver red envelope of ${money(S.red,lang)}/car is customary.`].filter(s=>s!=='').join('\n');
  if(lang==='ja')return [`【好好禮車】お見積り`,`ご利用日：${d}`,(+x.hours===0?'ご利用内容：片道送迎':`ご利用時間：${hrsLabel(x.hours)}（${num(x.km)}km以内）`),`ご予約車種：${carsText(x,lang)}`,...kmL,`料金明細：`,...f,`合計 = ${money(r.total,lang)}`,r.deposit?`手付金：${money(r.deposit,lang)}（残金 ${money(r.balance,lang)}）`:'','',
-   kmN,x.invoice?'＊5%営業税込みの金額です。':'＊現金価格です（5%営業税別）。',(+x.hours>0&&+x.hours<3?`＊3時間未満のプランは余裕時間を含まず、延長は30分単位で計算します：${otRates(x,lang)}`:`＊16分目から延長料金が発生し、1時間未満は1時間で計算します：${otRates(x,lang)}`),
+   kmN,...qNotes(x,'＊'),x.invoice?'＊5%営業税込みの金額です。':'＊現金価格です（5%営業税別）。',(+x.hours>0&&+x.hours<3?`＊3時間未満のプランは余裕時間を含まず、延長は30分単位で計算します：${otRates(x,lang)}`:`＊16分目から延長料金が発生し、1時間未満は1時間で計算します：${otRates(x,lang)}`),
    r.cane?'':`＊車の屋根に本物のサトウキビを付ける場合：${money(S.cane,lang)}/台`].filter(s=>s!=='').join('\n');
- return [`【好好禮車 報價】`,`用車日期：${d}`,(+x.hours===0?`用車方式：單程接送`:`用車時數：${hrsLabel(x.hours)}（${num(x.km)} 公里內）`),`預約車款：${carsText(x,lang)}`,...kmL,`費用明細：`,...f,`合計=${money(r.total)}`,r.deposit?`訂金：${money(r.deposit)}（尾款 ${money(r.balance)}）`:'','',kmN,
+ return [`【好好禮車 報價】`,`用車日期：${d}`,(+x.hours===0?`用車方式：單程接送`:`用車時數：${hrsLabel(x.hours)}（${num(x.km)} 公里內）`),`預約車款：${carsText(x,lang)}`,...kmL,`費用明細：`,...f,`合計=${money(r.total)}`,r.deposit?`訂金：${money(r.deposit)}（尾款 ${money(r.balance)}）`:'','',kmN,...qNotes(x,'＊'),
    x.invoice?'＊以上含發票 5% 營業稅':'＊以上為現金價，不含發票 5% 營業稅',
    +x.hours===0||!otRates(x,lang)?'':`＊加時 ${otRates(x,lang)}`,
    r.red?'':`＊不含司機紅包 ${money(S.red)}/台`,
    +x.hours>0&&+x.hours<3?'\n溫馨提醒：未滿 3 小時之服務方案不含緩衝時間，若加時將以每 30 分鐘為單位計收加時費用。建議依實際行程預留充足時間，審慎選擇合適方案。':''].filter(s=>s!=='').join('\n')}
 
 /* 綠界：訂金付款連結 */
+/* 2026-10-28 Nicole：報價備註，一行一點，報價與合約共用 */
+function qNotes(x,pre){return String(x.qNote||'').split('\n').map(t=>t.trim()).filter(Boolean).map(t=>pre+t)}
 function payLink(x){const b=String(S.payBase||'').trim().replace(/\/$/,'');return b?`${b}/p/${x.id}`:`${S.driveUrl}?action=pay&id=${encodeURIComponent(x.id)}`}
 function useEcpay(x){return !!S.ecpayOn&&!x.partner&&!isMonthly(x)}
 function bankAltText(x){const r=calc(x);return [`若轉帳連結無法使用，也可以匯款至以下帳戶：`,S.bankAlt||S.bank,`金額：${money(r.deposit)}（訂單 ${orderNo(x)} 訂金）`,'',`匯款後請告訴我們匯款帳號後五碼，我們確認後馬上為您保留車輛🙏`].join('\n')}
@@ -1810,7 +1813,7 @@ function contractHTML(x){const r=calc(x),c=x.c,rin=r.red>0   /* 2026-10-14 Nicol
   const rows=[[`A. 集合地點`,addr(c.meet,c.meetL)]];if(oL(c.wed))rows.push([`B. ${E(oL(c.wedT)||'迎娶地點')}`,addr(c.wed,c.wedL)]);
   [1,2,3,4,5].forEach(i=>{const v=oL(c['o'+i]);if(!v)return;let l=oL(c['o'+i+'L']),t=oL(c['o'+i+'T']);const m=l.match(/^(迎娶地點|入房地點|宴客地點|證婚地點|儀式地點|其他地點)(?:・(.*))?$/);if(m){t=t||m[1];l=oL(m[2])}rows.push([`${LT[rows.length]}. ${E(oType(t,l))}`,addr(v,l)])});   /* 2026-10-24 新人填寫頁的地點名稱存成「類型・名稱」 */
   rows.push(['路線說明',String(c.route||x.path||'').trim()?E(c.route||x.path):'行前一週確認']);
-  const B=['用車時間自禮車出發起算；司機於出發前 20 分鐘抵達',short?'短時數方案無緩衝時間，加時以每 0.5 小時收取一小時費用（超過用車時間即開始計算）':'超過 15 分鐘內不加收加時費；超過 16 分鐘起計算加時費用（未滿一小時以一小時計）',num(x.cane)>0?`以上費用含駕駛、油資、過路費及甘蔗固定費 ${money(S.cane)}*${num(x.cane)}台`:'以上費用含駕駛、油資、過路費','尾款請於用車當日結清',(()=>{const u=MODELS.filter(m=>num(x.cars[m])>0),t=u.filter(m=>MBRAND[m]==='Tesla').length;return t&&t<u.length?'隨車附手把彩：特斯拉每車 2 個、其他車款每車 4 個，新娘座車另附車頭彩 1 組':`隨車附手把彩每車 ${u.length&&!t?4:2} 個，新娘座車另附車頭彩 1 組`})()];String(x.ctNote||'').split('\n').map(t=>t.trim()).filter(Boolean).forEach(t=>B.push(t));
+  const B=['用車時間自禮車出發起算；司機於出發前 20 分鐘抵達',short?'短時數方案無緩衝時間，加時以每 0.5 小時收取一小時費用（超過用車時間即開始計算）':'超過 15 分鐘內不加收加時費；超過 16 分鐘起計算加時費用（未滿一小時以一小時計）',num(x.cane)>0?`以上費用含駕駛、油資、過路費及甘蔗固定費 ${money(S.cane)}*${num(x.cane)}台`:'以上費用含駕駛、油資、過路費','尾款請於用車當日結清',(()=>{const u=MODELS.filter(m=>num(x.cars[m])>0),t=u.filter(m=>MBRAND[m]==='Tesla').length;return t&&t<u.length?'隨車附手把彩：特斯拉每車 2 個、其他車款每車 4 個，新娘座車另附車頭彩 1 組':`隨車附手把彩每車 ${u.length&&!t?4:2} 個，新娘座車另附車頭彩 1 組`})()];qNotes(x,'').forEach(t=>B.push(t));String(x.ctNote||'').split('\n').map(t=>t.trim()).filter(Boolean).forEach(t=>B.push(t));
   const ul=a=>`<ul>${a.map(s=>`<li>${E(s)}</li>`).join('')}</ul>`;
   const ft=p=>`<table class="ft"><tr><td>好好禮車&nbsp;&nbsp;NICE WEDDING CAR</td><td class="p">${p}</td></tr></table>`;
   const amt=(k,v)=>`<td class="c"><span class="k">${k}</span>NT${E(money(v))}</td>`;
