@@ -325,7 +325,7 @@ nav.tabs button{scroll-snap-align:start}
 
   <nav class="tabs" role="tablist" id="tabs">
     <button role="tab" data-tab="quote" aria-selected="true"><span class="n">1</span>報價・下單</button>
-    <button role="tab" data-tab="contract"><span class="n">2</span>合約</button>
+    <button role="tab" data-tab="contract"><span class="n">2</span><span class="noBus">合約</span><span class="busOnly">用車說明</span></button>
     <button role="tab" data-tab="find"><span class="n">3</span>找司機</button>
     <button role="tab" data-tab="dispatch"><span class="n">4</span>車隊與流程</button>
     <button role="tab" data-tab="memo"><span class="n">5</span>服務確認單／派車單</button>
@@ -502,7 +502,20 @@ nav.tabs button{scroll-snap-align:start}
 
   <!-- 3 合約 -->
   <section class="tab" id="tab-contract" hidden>
-    <div class="row" style="margin-bottom:12px;justify-content:space-between">
+    <!-- 2026-10-28 Nicole：遊覽車不用合約，改用機場接送的方式給客人用車說明 -->
+    <div class="card busOnly" id="busInfoCard" style="max-width:900px;margin:0 auto 14px">
+      <h3>遊覽車用車說明 <small>遊覽車不用合約；客人付款、填完表單後，把這份用車說明傳給客人</small></h3>
+      <div class="fields">
+        <label class="f">當天聯絡人<input id="bus_cName" data-b="busCName" placeholder="客人填表後自動帶入"></label>
+        <label class="f">聯絡人電話<input id="bus_cPhone" data-b="busCPhone" type="tel" inputmode="tel" placeholder="09xxxxxxxx"></label>
+        <label class="f wide">司機資料（給客人看，選填）<input id="bus_driver" data-b="busDriver" placeholder="例：陳司機 0912-345-678，車號 KAA-1234"></label>
+        <label class="f wide">注意事項（一行一點；所有遊覽車單共用）<textarea id="bus_notice" rows="4"></textarea></label>
+      </div>
+      <p class="hint" id="busFormHint" style="margin:8px 0 0"></p>
+      <div class="row" style="justify-content:flex-end;gap:8px;margin:8px 0"><button class="btn sm pri" id="btnBusInfoCopy" type="button">複製用車說明</button></div>
+      <pre class="out" id="outBusInfo"></pre>
+    </div>
+    <div class="row noBus" style="margin-bottom:12px;justify-content:space-between">
       <span class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><button class="btn pri" id="btnCoupleCt" type="button">修改新人資料</button><span class="hint" style="margin:0" id="contractHint">資料來自「報價」與「新人資料」，改那邊這裡就會更新。</span></span>
       <div class="row"><a class="btn" id="signedOpen" hidden target="_blank" rel="noopener" style="text-decoration:none">開新分頁</a><button class="btn" id="btnShowDraft" type="button" hidden>看原始合約（未簽名版）</button><span class="hint" id="driveLink" style="margin:0"></span><button class="btn" id="btnDrive" hidden>存到 Google Drive</button><button class="btn pri" id="btnPrint" hidden>列印／存成 PDF</button></div>
     </div>
@@ -510,15 +523,15 @@ nav.tabs button{scroll-snap-align:start}
       <div class="paperwrap"><div id="signedPages" class="signed-pages"></div></div>
       <iframe id="signedFrame" hidden title="已簽署合約" style="display:block;width:794px;max-width:100%;height:80vh;margin:0 auto;border:0;border-radius:4px;background:#fff"></iframe>
     </div>
-    <div class="card" id="ctTuneCard" style="max-width:900px;margin:0 auto 14px">
+    <div class="card noBus" id="ctTuneCard" style="max-width:900px;margin:0 auto 14px">
       <h3>合約微調 <small>只改合約，不影響報價、新人資料和 memo；留空就照原本資料</small></h3>
       <div class="row" style="gap:12px;align-items:flex-start;flex-wrap:wrap">
         <label class="f" style="flex:1 1 220px">合約上的使用時間<input id="ctTime" placeholder="例如：06:50 – 09:50"></label>
         <label class="f" style="flex:3 1 380px">補充說明（一行一點，會加在「付款與用車說明」）<textarea id="ctNote" rows="3" placeholder="例如：本合約先以 3 小時計；如需延長用車，請於婚前一週告知，加時依加時費用另計"></textarea></label>
       </div>
     </div>
-    <div class="paperwrap" id="draftWrap"><div class="paper" id="contractPaper"></div></div>
-    <div class="card" id="ctSendCard" style="max-width:900px;margin:16px auto 0">
+    <div class="paperwrap noBus" id="draftWrap"><div class="paper" id="contractPaper"></div></div>
+    <div class="card noBus" id="ctSendCard" style="max-width:900px;margin:16px auto 0">
       <h3>傳合約給客人 <small>附注意事項；有指定車色會自動拿掉第 7 點</small></h3>
       <div id="ctStep1"><p class="hint">請先檢查上面的合約：日期、時間、車款、金額、地址都正確後，再按下一步。</p><button class="btn pri" id="btnCtOk">合約內容確認無誤，下一步</button></div>
       <div id="ctStep2" hidden>
@@ -528,7 +541,7 @@ nav.tabs button{scroll-snap-align:start}
         <pre class="out" id="outPaid"></pre>
       </div>
     </div>
-    <div class="card" id="cfFlowCard" style="max-width:900px;margin:16px auto 0"><!-- 2026-10-27 Nicole：行前確認移到「合約」頁最下面 -->
+    <div class="card noBus" id="cfFlowCard" style="max-width:900px;margin:16px auto 0"><!-- 2026-10-27 Nicole：行前確認移到「合約」頁最下面 -->
         <h3>行前確認 <small>客人回填的內容，送出後會自動帶入「車隊與流程」</small></h3>
         <div id="cfFlowBody"></div>
     </div>
@@ -1316,7 +1329,7 @@ const FORM_AUTO_SINCE=Date.parse('2026-10-23T09:00:00Z');let FORM_BACKFILL=(()=>
 const FD_COLS=[['no','訂單編號'],['groom','新郎姓名'],['bride','新娘姓名'],['role','主要聯絡人'],['rel','主要聯絡人身份'],['phone','主要聯絡人電話'],['start','預計開始用車時間'],['end','預計結束用車時間'],['meet','禮車集合地點'],['meetL','集合地點名稱'],['wed','迎娶地點'],['wedL','迎娶地點名稱'],['o1','其他停靠地點 1（選填）'],['o1L','其他停靠地點 1 是什麼地點？（選填）'],['o2','其他停靠地點 2（選填）'],['o2L','其他停靠地點 2 是什麼地點？（選填）'],['o3','其他停靠地點 3（選填）'],['o3L','其他停靠地點 3 是什麼地點？（選填）'],['o4','其他停靠地點 4（選填）'],['o4L','其他停靠地點 4 是什麼地點？（選填）'],['o5','其他停靠地點 5（選填）'],['o5L','其他停靠地點 5 是什麼地點？（選填）'],['route','路線說明'],['cane','車頂甘蔗固定需求'],['deco','車頭彩安排'],['decoStyle','指定車頭彩款式'],['decoSign','客製化英文名牌'],['decoFee','車頭彩費用'],['foundVia','怎麼知道好好禮車']];
 function fdMap(){const M={};Object.keys(FORMDATA||{}).forEach(k=>{const v=FORMDATA[k],n=normNo(k);if(v&&v.f&&(!M[n]||+v.at>+M[n].at))M[n]=v});return M}
 function fdRes(fd){const cl=v=>String(v==null?'':v).replace(/[\t\n\r]+/g,' ');return parseForm(FD_COLS.map(c=>c[1]).join('\t')+'\n'+FD_COLS.map(c=>cl(fd.f[c[0]])).join('\t'))}
-function formAutoOne(x,fd){const res=fdRes(fd);delete res.orderNo;const t=clone(x);t.flow=t.flow||[];t.c=t.c||{};const keep=o;try{o=t;applyForm(res)}finally{o=keep}
+function formAutoOne(x,fd){if(x.bus)return busFormAuto(x,fd);const res=fdRes(fd);delete res.orderNo;const t=clone(x);t.flow=t.flow||[];t.c=t.c||{};const keep=o;try{o=t;applyForm(res)}finally{o=keep}
   ['start','end'].forEach(k=>{const v=String(fd.f[k]||'').trim();if(!v||/^0?0[:：]00$/.test(v))t.c[k]=''});x.c=x.c||{};const c=x.c,tc=t.c,fills=[],diffs=[],emp=v=>!String(v==null?'':v).trim(),nz=v=>toHalf(String(v||'')).replace(/[\s()（）・·,，]/g,'').replace(/臺/g,'台').toUpperCase();
   const LB={groom:'新郎',bride:'新娘',phone:'聯絡電話',start:'開始用車',end:'結束用車',meet:'集合地點',wed:'迎娶地點',o1:'停靠地點 1',o2:'停靠地點 2',o3:'停靠地點 3',o4:'停靠地點 4',o5:'停靠地點 5',route:'路線說明',caneAns:'甘蔗固定',decoAns:'指定車頭彩'};
   if(emp(c.phone)&&emp(c.contact)&&!emp(tc.phone)){c.role=tc.role||c.role;c.contact=tc.contact||'';if(tc.rel)c.rel=tc.rel;if(tc.role!=='新郎'&&tc.role!=='新娘'||tc.contact)fills.push('聯絡人')}
@@ -1351,7 +1364,7 @@ document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest
   if(t.id==='fpReset'){S.formPlaces=null;delete S.formPlaces;saveS();renderFormPlaces();toast('已恢復預設地點按鈕');return}
   if(t.dataset.fpadd){const k=t.dataset.fpadd,P=fpGet();if(!P[k].includes(t.dataset.v))P[k].push(t.dataset.v);S.formPlaces=Object.assign({},fpGet(),{[k]:P[k]});saveS();renderFormPlaces();toast('已加入「'+t.dataset.v+'」');return}});
 
-function formLink(x){return `${WED_FORM_URL}?no=${encodeURIComponent(orderNo(x))}`}
+function formLink(x){return `${WED_FORM_URL}?no=${encodeURIComponent(orderNo(x))}`+(x.bus?'&t=bus':'')}
 function formLinkGoogle(x){const fb=/docs\.google\.com\/forms|forms\.gle/.test(S.formBase||'')?S.formBase:DEF_S.formBase;const base=fb.split('?')[0];return `${base}?usp=pp_url&${S.formEntry}=${encodeURIComponent(orderNo(x))}`}
 function carCount(x){return MODELS.reduce((a,m)=>a+num(x.cars[m]),0)}
 function contactName(x){const c=x.c;return c.role==='新郎'?c.groom:c.role==='新娘'?c.bride:c.contact}
@@ -1561,7 +1574,7 @@ function orderText(x,lang){const r=calc(x),f=feeLines(x,lang),no=orderNo(x),link
    r.red?`[ ご祝儀 ${money(S.red,lang)}/台 は残金と一緒にメインカーのドライバーへ直接お渡しください ]`:'','','',...(useEcpay(x)?[`手付金のお支払い（台湾のATM／ネットバンキング振込）：`,payLink(x),`（リンクを開くと専用の振込口座が発行されます。2日以内にお振込みください。入金は自動で確認されます）`,'',`お支払い後、下記フォームにご記入いただくとご予約完了となります：`]:[`お振込先：`,S.bank,'',`2日以内に上記口座へ手付金をお振込みの上、下記フォームにご記入いただくとご予約完了となります：`]),link,`（該当しない項目は N/A とご記入ください）`].join('\n');
  if(isMonthly(x))return [`您本次的訂單 (訂單編號：${no} ) 內容如下：`,`用車日期：${fmtDate(x.date)} `,`預約車款：${carsText(x,lang)}`,`車資由${vendorOf(x).name}統一結算，無需匯款訂金。`,'',
    (r.red||r.cane)?`用車當天請準備以下費用交給主禮車司機：`:'',r.red?`司機紅包 ${money(S.red)}×${r.n} = ${money(r.red)}`:'',r.cane?`甘蔗固定費 ${money(S.cane)}×${num(x.cane)} = ${money(r.cane)}`:'','',`請填寫以下表單以完成訂車流程：`,link,'',`＊填寫完表單後，請回覆訊息通知客服，我們確認後會提供合約給您。`,`＊表單中的行程與用車時間可先填寫大致內容，方便我們製作合約；用車前一週會再與您核對確切時間與行程。`].filter((t,i,a)=>t!==''||a[i-1]!=='').join('\n');
- return [`您本次的訂單 (訂單編號：${no} ) 內容如下：`,`用車日期：${fmtDate(x.date)} `,`預約車款：${carsText(x,lang)}`,`費用明細：`,...f,`合計=${money(r.total)}`,/* 2026-10-28 Nicole：遊覽車單合計後直接接付款連結，不寫方案金額／應付金額 */...(x.bus?(r.balance>0?[`[ 尾款 ${money(r.balance)} ]`]:[]):[`方案金額：${money(r.total)} `,`應付訂金：${money(r.deposit)} `,`[ 尾款${r.red?'(含司機禮)':''} ${money(r.balance)} 整包於用車當日交給司機即可 ]`]),'','',...(useEcpay(x)?[x.bus?`費用付款（ATM／網路銀行轉帳），請於兩日內完成：`:`訂金付款（ATM／網路銀行轉帳）：`,payLink(x),`（點開連結選擇銀行，會產生您專屬的轉帳帳號，請於兩日內轉帳剛好的金額，系統會自動確認入帳）`,'',`付款後請填寫以下表單以完成訂車流程：`,link,'',`＊付款並填寫完表單後，我們會提供合約給您。`]:[`匯款資訊：`,S.bank,'',(x.bus?`費用請於兩日內匯款至上列帳戶後填寫以下表單以完成訂車流程：`:`請於兩日內將訂金匯款至上列帳戶後填寫以下表單以完成訂車流程：`),link,'',`＊匯款並填寫完表單後，請回覆訊息通知客服，我們確認入帳後會提供合約給您。`]),`＊表單中的行程與用車時間可先填寫大致內容，方便我們製作合約；用車前一週會再與您核對確切時間與行程。`].join('\n')}
+ return [`您本次的訂單 (訂單編號：${no} ) 內容如下：`,`用車日期：${fmtDate(x.date)} `,`預約車款：${carsText(x,lang)}`,`費用明細：`,...f,`合計=${money(r.total)}`,/* 2026-10-28 Nicole：遊覽車單合計後直接接付款連結，不寫方案金額／應付金額 */...(x.bus?(r.balance>0?[`[ 尾款 ${money(r.balance)} ]`]:[]):[`方案金額：${money(r.total)} `,`應付訂金：${money(r.deposit)} `,`[ 尾款${r.red?'(含司機禮)':''} ${money(r.balance)} 整包於用車當日交給司機即可 ]`]),'','',...(useEcpay(x)?[x.bus?`費用付款（ATM／網路銀行轉帳），請於兩日內完成：`:`訂金付款（ATM／網路銀行轉帳）：`,payLink(x),`（點開連結選擇銀行，會產生您專屬的轉帳帳號，請於兩日內轉帳剛好的金額，系統會自動確認入帳）`,'',`付款後請填寫以下表單以完成訂車流程：`,link,'',x.bus?`＊付款並填寫完表單後，我們會在用車前提供用車說明給您。`:`＊付款並填寫完表單後，我們會提供合約給您。`]:[`匯款資訊：`,S.bank,'',(x.bus?`費用請於兩日內匯款至上列帳戶後填寫以下表單以完成訂車流程：`:`請於兩日內將訂金匯款至上列帳戶後填寫以下表單以完成訂車流程：`),link,'',x.bus?`＊匯款並填寫完表單後，請回覆訊息通知客服，我們確認入帳後會在用車前提供用車說明給您。`:`＊匯款並填寫完表單後，請回覆訊息通知客服，我們確認入帳後會提供合約給您。`]),x.bus?`＊表單中的行程與時間可先填寫大致內容，用車前一週會再與您核對確切時間與行程。`:`＊表單中的行程與用車時間可先填寫大致內容，方便我們製作合約；用車前一週會再與您核對確切時間與行程。`].join('\n')}
 
 /* ---------- fleet ---------- */
 function expandCars(x){const a=[];MODELS.forEach(m=>{for(let i=0;i<num(x.cars[m]);i++)a.push(m)});return a}
@@ -3822,6 +3835,25 @@ function renderRev(){const el=$('revSt'),cb=$('revSkipCb');if(!el||!cb||!o)retur
   const E=v=>esc(String(v==null?'':v)),hn=String(o.busHeadNote||'').trim();
   const html=`<div><span>車型</span><span>${E(busText(o,'zh'))}</span></div><div><span>車頭</span><span>${E(String(o.busHead||'').trim()||'還沒填')}</span></div><div><span>車頭聯絡</span><span style="white-space:pre-line;text-align:right">${hn?E(hn):'還沒填'}</span></div><div><span>車頭成本</span><span>${r.dok?money(r.dsum):'還沒填'}</span></div>`;
   document.querySelectorAll('.busHeadInfo').forEach(el=>el.innerHTML=html);busStopsRender()}catch(err){console.warn(err)}}}
+/* 2026-10-28 Nicole：遊覽車用車說明（像機場接送的乘客資訊）＋客人填寫頁帶入 */
+const BUS_NOTICE_DEF='司機會在上車時間前抵達上車地點，請依約定時間上車。\n行程（時間、地點、人數）如有變動，請提前告知客服。\n用車當天如需聯繫，請直接撥打司機電話。';
+function busNotice(){return S.busNotice==null?BUS_NOTICE_DEF:String(S.busNotice)}
+function busInfoText(x){const L=['【好好禮車｜遊覽車用車說明】',`訂單編號：${orderNo(x)}`,`用車日期：${fmtDate(x.date)}`,`車型：${busText(x,'zh')}`,'','行程：'],r=busRouteLines(x);L.push(...(r.length?r:['（待確認）']));
+  const cn=String(x.busCName||'').trim(),cp=String(x.busCPhone||'').trim();if(cn||cp)L.push('',`當天聯絡人：${[cn,cp].filter(Boolean).join(' ')}`);
+  const d=String(x.busDriver||'').trim();L.push('',`司機資料：${d||'用車前一天提供'}`);
+  const n=busNotice().split('\n').map(t=>t.trim()).filter(Boolean);if(n.length)L.push('','注意事項：',...n.map(t=>/^[＊*・]/.test(t)?t:'＊'+t));return L.join('\n')}
+function busFormAuto(x,fd){const f=fd.f||{},fills=[],diffs=[],emp=v=>!String(v==null?'':v).trim();
+  if(!emp(f.role)){if(emp(x.busCName)){x.busCName=String(f.role).trim();fills.push('當天聯絡人')}else if(String(x.busCName).trim()!==String(f.role).trim())diffs.push(`當天聯絡人：原本「${x.busCName}」／客人填「${f.role}」`)}
+  if(!emp(f.phone)){if(emp(x.busCPhone)){x.busCPhone=String(f.phone).trim();fills.push('聯絡人電話')}else if(String(x.busCPhone).replace(/\D/g,'')!==String(f.phone).replace(/\D/g,''))diffs.push(`聯絡人電話：原本「${x.busCPhone}」／客人填「${f.phone}」`)}
+  let st=[];try{st=JSON.parse(f.busJ||'[]')}catch(_){}st=(Array.isArray(st)?st:[]).map(r=>({t:normTime(String(r.t||''))||String(r.t||''),from:String(r.from||'').trim(),via:String(r.via||'').trim(),to:String(r.to||'').trim()})).filter(r=>r.t||r.from||r.to);
+  if(st.length){const cur=busStopLines(x).join('\n'),nw=busStopLines({busStops:st}).join('\n');if(cur!==nw){if(cur)diffs.push('行程已改成客人填的版本（原本：'+cur.replace(/\n/g,'；')+'）');x.busStops=st;fills.push('行程')}}
+  if(!emp(f.note)){const nt=String(f.note).trim();if(String(x.busRoute||'').indexOf(nt)<0){x.busRoute=(String(x.busRoute||'').trim()?String(x.busRoute).trim()+'\n':'')+nt;fills.push('行程補充說明')}}
+  x.formApplied=+fd.at;x.formAuto={at:Date.now(),fdAt:+fd.at,fills,diffs};x.updated=Date.now();return x.formAuto}
+{const _raBi=renderAll;renderAll=function(){_raBi.apply(this,arguments);try{if(!o||!o.bus)return;const t=$('bus_notice');if(t&&document.activeElement!==t)t.value=busNotice();
+  const fd=FORMDATA[normNo(orderNo(o))],h=$('busFormHint');if(h)h.textContent=fd?'客人填寫時間：'+new Date(fd.at).toLocaleString('zh-TW')+(o.formAuto&&o.formAuto.fdAt===+fd.at?'（已自動帶入）':''):'客人還沒填寫表單；填完會自動帶入當天聯絡人和行程。';
+  const out=$('outBusInfo');if(out)out.textContent=busInfoText(o)}catch(err){console.warn(err)}}}
+document.addEventListener('input',e=>{if(!e.target||e.target.id!=='bus_notice')return;S.busNotice=e.target.value;saveS();const out=$('outBusInfo');if(out&&o)out.textContent=busInfoText(o)});
+document.addEventListener('click',e=>{if(!e.target.closest||!e.target.closest('#btnBusInfoCopy')||!o)return;copy(busInfoText(o),$('outBusInfo'))});
 /* 2026-10-28 Nicole：遊覽車行程列（時間／上車／中停／下車），可新增、刪除 */
 function busStopsRender(){const w=$('busStops');if(!w||!o||!o.bus)return;if(!Array.isArray(o.busStops)||!o.busStops.length)o.busStops=[{t:'',from:'',via:'',to:''}];const k=o.id+'|'+o.busStops.length;
   if(w.dataset.k!==k){w.dataset.k=k;w.innerHTML=o.busStops.map((r,i)=>`<div class="bstop"><div class="bh"><span>第 ${i+1} 段</span><button type="button" class="btn sm" data-busdel="${i}" title="刪除這段"${o.busStops.length<2?' disabled':''}>×</button></div><div class="bg"><span>時間</span><input type="time" step="300" class="t" data-b="busStops.${i}.t" aria-label="時間"><span>上車地點</span><input data-b="busStops.${i}.from" placeholder="例:新竹市東區光復路一段 100 號"><span>中停地點</span><input data-b="busStops.${i}.via" placeholder="選填"><span>下車地點</span><input data-b="busStops.${i}.to" placeholder="例:台中市西屯區台灣大道"></div></div>`).join('')}
