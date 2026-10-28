@@ -257,7 +257,7 @@ nav.tabs button{scroll-snap-align:start}
 #kwDateBtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
 </style>
 
-<style>/* 2026-10-28 Nicole：遊覽車接駁單 */body:not(.isBus) .busOnly{display:none!important}body.isBus .noBus{display:none!important}.busLn{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.8fr) minmax(0,1.2fr);gap:8px;align-items:end;margin-bottom:8px}.busLn b{align-self:center;font-size:.95rem}.busNotice{border-color:#A77D4C}</style>
+<style>/* 2026-10-28 Nicole：遊覽車接駁單 */body:not(.isBus) .busOnly{display:none!important}body.isBus .noBus{display:none!important}.bstop{display:grid;grid-template-columns:110px 1fr 1fr 1fr 40px;gap:6px;margin-bottom:6px;align-items:center}.bstop input{min-width:0;width:100%;box-sizing:border-box}@media (max-width:640px){.bstop{grid-template-columns:1fr 40px;padding-bottom:8px;margin-bottom:8px;border-bottom:1px dashed var(--line,#ddd)}.bstop input{grid-column:1}.bstop button{grid-column:2;grid-row:1}}.busLn{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.8fr) minmax(0,1.2fr);gap:8px;align-items:end;margin-bottom:8px}.busLn b{align-self:center;font-size:.95rem}.busNotice{border-color:#A77D4C}</style>
 <style>/* 2026-10-23 車頭彩目錄 */.dpk{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}.dpc{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px;border:1px solid var(--line,#e5ddd2);border-radius:10px;background:var(--surface,#fff);font:inherit;font-size:0.8rem;line-height:1.35;cursor:pointer;color:inherit;text-align:center}.dpc img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;background:#f4f1ec}.dpc.on{border:2px solid var(--accent,#8a6d43);background:#f6ece6}.dpc i{font-style:normal;color:#A0453A;font-size:0.75rem}</style>
 </head>
 <body>
@@ -407,7 +407,8 @@ nav.tabs button{scroll-snap-align:start}
           <div class="busLn"><b>大巴 43 人座</b><label class="f">台數<input type="number" id="bus_q43" data-b="busLines.0.q" data-num min="0" inputmode="numeric"></label><label class="f">每台一口價<input type="number" id="bus_p43" data-b="busLines.0.p" data-num min="0" inputmode="numeric" placeholder="例：18000"></label></div>
           <div class="busLn"><b>中巴 26 人座</b><label class="f">台數<input type="number" id="bus_q26" data-b="busLines.1.q" data-num min="0" inputmode="numeric"></label><label class="f">每台一口價<input type="number" id="bus_p26" data-b="busLines.1.p" data-num min="0" inputmode="numeric" placeholder="例：12000"></label></div>
           <div class="fields">
-            <label class="f wide">行程（一行一段）<textarea id="bus_route" data-b="busRoute" rows="4" placeholder="例：08:00 新竹市 男方家 出發&#10;09:30 台中 女方家 迎娶&#10;12:00 台中 宴客餐廳"></textarea></label>
+            <div class="f wide"><span>行程（時間：上車地點／中停地點／下車地點）</span><div id="busStops"></div><button type="button" class="btn sm" id="busStopAdd" style="margin-top:4px">＋ 新增一段</button></div>   <!-- 2026-10-28 Nicole：遊覽車行程一段一列 -->
+            <label class="f wide">行程補充說明（選填，一行一點）<textarea id="bus_route" data-b="busRoute" rows="2" placeholder="例：回程送客到台中高鐵站"></textarea></label>
             <label class="f">車頭（遊覽車公司）<input id="bus_head" data-b="busHead" placeholder="例：北部 OO 遊覽車"></label>
             <label class="f">車頭成本（付給車頭）<input type="number" id="bus_cost" data-b="busCost" data-num min="0" inputmode="numeric" placeholder="例：40000"></label>
             <label class="f wide">車頭聯絡人／電話／車號<textarea id="bus_headNote" data-b="busHeadNote" rows="2" placeholder="例：王經理 0912-345-678，車號 KAA-1234"></textarea></label>
@@ -1118,7 +1119,7 @@ function newOrder(){return{
   fleet:[],path:'',flow:[],lang:{q:'zh',o:'zh',m:'zh'},memoWho:'cust',mapLinks:true,
   need:{dateSt:'',month:'',brand:'',care:'',pax:'',budget:'',next:'',note:'',avail:''},sent:[],quotes:[],
   inqAt:Date.now(),orderedAt:'',followAt:'',lost:false,formAt:'',paidTs:'',cfSentAt:'',cfDoneAt:'',cfSchedAt:'',revAskAt:'',revLinkAt:'',revSkip:false,photoSentAt:'',carHead:'',
-  bus:false,busLines:[{m:'43',q:0,p:0},{m:'26',q:0,p:0}],busRoute:'',busHead:'',busHeadNote:'',busCost:0,   /* 2026-10-28 Nicole：遊覽車接駁單 */
+  bus:false,busLines:[{m:'43',q:0,p:0},{m:'26',q:0,p:0}],busStops:[{t:'',from:'',via:'',to:''}],busRoute:'',busHead:'',busHeadNote:'',busCost:0,   /* 2026-10-28 Nicole：遊覽車接駁單 */
   updated:Date.now()}}
 function sampleOrder(){const o=newOrder();Object.assign(o,{sample:true,cityA:'彰化',cityB:'台中',date:'2026-10-06',hours:3,
   cars:{X:1,S:0,Y:0,'3':2},path:'A - B - A'});
@@ -1405,6 +1406,9 @@ function vendorBase(x){const v=vendorOf(x);if(!v||!S.vprices||!S.vprices[v.name]
   let sum=0;for(const m of MODELS){const q=num(x.cars[m]);if(!q)continue;const one=rows.find(r=>Object.keys(r.cars).length===1&&num(r.cars[m])===1);if(!one)return null;sum+=one.price*q}return sum}
 /* 2026-10-28 Nicole：遊覽車接駁單：車型、台數、一口價 */
 const BUSM={'43':{zh:'大巴 43 人座',en:'Large bus (43 seats)',ja:'大型バス（43 人乗り）'},'26':{zh:'中巴 26 人座',en:'Midsize bus (26 seats)',ja:'中型バス（26 人乗り）'}};
+/* 2026-10-28 Nicole：遊覽車行程：時間 上車 → 中停 → 下車，一段一列 */
+function busStopLines(x){return (Array.isArray(x.busStops)?x.busStops:[]).filter(r=>r&&(String(r.from||'').trim()||String(r.to||'').trim())).map(r=>{const t=String(r.t||'').trim(),f=String(r.from||'').trim(),v=String(r.via||'').trim(),d=String(r.to||'').trim();return (t?t+' ':'')+[f?'上車：'+f:'',v?'中停：'+v:'',d?'下車：'+d:''].filter(Boolean).join(' → ')})}
+function busRouteLines(x){return [...busStopLines(x),...String(x.busRoute||'').split('\n').map(t=>t.trim()).filter(Boolean)]}
 function busRows(x){return (x&&x.bus&&Array.isArray(x.busLines)?x.busLines:[]).filter(l=>l&&num(l.q)>0)}
 function busN(x){return busRows(x).reduce((a,l)=>a+num(l.q),0)}
 function busName(m,lang){const b=BUSM[m]||{zh:'遊覽車 '+m+' 人座',en:'Bus ('+m+' seats)',ja:'バス（'+m+' 人乗り）'};return b[lang]||b.zh}
@@ -1495,14 +1499,14 @@ function busFeeLines(x,lang){const t=L[lang]||L.zh,r=calc(x),out=[];
   if(r.tax)out.push(`${t.tax} ${money(r.tax,lang)}`);
   return out}
 function busQuote(x,lang){const r=calc(x),f=busFeeLines(x,lang),d=x.date?fmtDate(x.date)+(()=>{const p=dparts(x.date);return lang==='en'?` (${WD.en[p.w]})`:`（${WD[lang][p.w]}）`})():(lang==='en'?'TBD':'未定');
-  const rt=String(x.busRoute||'').split('\n').map(t=>t.trim()).filter(Boolean),v=vendorOf(x);
+  const rt=busRouteLines(x),v=vendorOf(x);
   if(lang==='en')return [`[Nice Wedding Car] Tour Bus Shuttle Quote`,`Date: ${d}`,`Service: tour bus shuttle (flat day rate)`,`Vehicle(s): ${busText(x,lang)}`,...(rt.length?['Itinerary:',...rt]:[]),`Charges:`,...f,`Total = ${money(r.total,lang)}`,...qNotes(x,'* '),
-    r.mon?`* Billed via ${v.name}; no deposit needed.`:'* Full payment is required to confirm the booking.',x.invoice?'* Price includes 5% business tax.':'* Cash price; 5% business tax not included.'].filter(s=>s!=='').join('\n');
+    r.mon?`* Billed via ${v.name}; no deposit needed.`:'',x.invoice?'* Price includes 5% business tax.':'* Cash price; 5% business tax not included.'].filter(s=>s!=='').join('\n');
   if(lang==='ja')return [`【好好禮車】観光バス送迎のお見積り`,`ご利用日：${d}`,`ご利用内容：観光バス送迎（1日定額）`,`ご予約車種：${busText(x,lang)}`,...(rt.length?['行程：',...rt]:[]),`料金明細：`,...f,`合計 = ${money(r.total,lang)}`,...qNotes(x,'＊'),
-    r.mon?`＊料金は${v.name}にて一括精算のため、手付金は不要です。`:'＊観光バスは全額お支払いでご予約完了となります。',x.invoice?'＊5%営業税込みの金額です。':'＊現金価格です（5%営業税別）。'].filter(s=>s!=='').join('\n');
+    r.mon?`＊料金は${v.name}にて一括精算のため、手付金は不要です。`:'',x.invoice?'＊5%営業税込みの金額です。':'＊現金価格です（5%営業税別）。'].filter(s=>s!=='').join('\n');
   return [`【好好禮車 遊覽車接駁報價】`,`用車日期：${d}`,`用車方式：遊覽車接駁（一天一口價）`,`預約車型：${busText(x,'zh')}`,...(rt.length?['行程：',...rt]:[]),`費用明細：`,...f,`合計=${money(r.total)}`,
     r.deposit&&r.deposit!==r.total?`訂金：${money(r.deposit)}（尾款 ${money(r.balance)}）`:'',...qNotes(x,'＊'),
-    r.mon?`＊車資由${v.name}統一結算，無需匯款訂金`:'＊遊覽車需全額付清才完成預約',x.invoice?'＊以上含發票 5% 營業稅':'＊以上為現金價，不含發票 5% 營業稅'].filter(s=>s!=='').join('\n')}
+    r.mon?`＊車資由${v.name}統一結算，無需匯款訂金`:'',x.invoice?'＊以上含發票 5% 營業稅':'＊以上為現金價，不含發票 5% 營業稅'].filter(s=>s!=='').join('\n')}
 function otRates(x,lang){const ms=MODELS.filter(m=>num(x.cars[m])>0),half=+x.hours>0&&+x.hours<3;   // 2026-10-18 短時數方案（90 分鐘等）加時是每 0.5 小時收一小時費用
   return ms.map(m=>`${MNAME[m]} ${money(S.ot[m],lang)}${half?(lang==='en'?'/30 min':lang==='ja'?'/30分':'/0.5 時'):(lang==='en'?'/hr':lang==='ja'?'/時間':'/時')}`).join(lang==='en'?', ':'、')}
 
@@ -1555,7 +1559,7 @@ function orderText(x,lang){const r=calc(x),f=feeLines(x,lang),no=orderNo(x),link
  if(isMonthly(x))return [`您本次的訂單 (訂單編號：${no} ) 內容如下：`,`用車日期：${fmtDate(x.date)} `,`預約車款：${carsText(x,lang)}`,`車資由${vendorOf(x).name}統一結算，無需匯款訂金。`,'',
    (r.red||r.cane)?`用車當天請準備以下費用交給主禮車司機：`:'',r.red?`司機紅包 ${money(S.red)}×${r.n} = ${money(r.red)}`:'',r.cane?`甘蔗固定費 ${money(S.cane)}×${num(x.cane)} = ${money(r.cane)}`:'','',`請填寫以下表單以完成訂車流程：`,link,'',`＊填寫完表單後，請回覆訊息通知客服，我們確認後會提供合約給您。`,`＊表單中的行程與用車時間可先填寫大致內容，方便我們製作合約；用車前一週會再與您核對確切時間與行程。`].filter((t,i,a)=>t!==''||a[i-1]!=='').join('\n');
  return [`您本次的訂單 (訂單編號：${no} ) 內容如下：`,`用車日期：${fmtDate(x.date)} `,`預約車款：${carsText(x,lang)}`,`費用明細：`,...f,`合計=${money(r.total)}`,`方案金額：${money(r.total)} `,(x.bus?`應付金額(全額)：${money(r.deposit)} `:`應付訂金：${money(r.deposit)} `),
-   x.bus?(r.balance>0?`[ 尾款 ${money(r.balance)} ]`:'[ 遊覽車需全額付清才完成預約 ]'):`[ 尾款${r.red?'(含司機禮)':''} ${money(r.balance)} 整包於用車當日交給司機即可 ]`,   /* 2026-10-28 Nicole：遊覽車接駁單收全額 */'','',...(useEcpay(x)?[x.bus?`費用付款（ATM／網路銀行轉帳），請於兩日內完成：`:`訂金付款（ATM／網路銀行轉帳）：`,payLink(x),`（點開連結選擇銀行，會產生您專屬的轉帳帳號，請於兩日內轉帳剛好的金額，系統會自動確認入帳）`,'',`付款後請填寫以下表單以完成訂車流程：`,link,'',`＊付款並填寫完表單後，我們會提供合約給您。`]:[`匯款資訊：`,S.bank,'',(x.bus?`費用請於兩日內匯款至上列帳戶後填寫以下表單以完成訂車流程：`:`請於兩日內將訂金匯款至上列帳戶後填寫以下表單以完成訂車流程：`),link,'',`＊匯款並填寫完表單後，請回覆訊息通知客服，我們確認入帳後會提供合約給您。`]),`＊表單中的行程與用車時間可先填寫大致內容，方便我們製作合約；用車前一週會再與您核對確切時間與行程。`].join('\n')}
+   x.bus?(r.balance>0?`[ 尾款 ${money(r.balance)} ]`:''):`[ 尾款${r.red?'(含司機禮)':''} ${money(r.balance)} 整包於用車當日交給司機即可 ]`,   /* 2026-10-28 Nicole：遊覽車接駁單收全額 */'','',...(useEcpay(x)?[x.bus?`費用付款（ATM／網路銀行轉帳），請於兩日內完成：`:`訂金付款（ATM／網路銀行轉帳）：`,payLink(x),`（點開連結選擇銀行，會產生您專屬的轉帳帳號，請於兩日內轉帳剛好的金額，系統會自動確認入帳）`,'',`付款後請填寫以下表單以完成訂車流程：`,link,'',`＊付款並填寫完表單後，我們會提供合約給您。`]:[`匯款資訊：`,S.bank,'',(x.bus?`費用請於兩日內匯款至上列帳戶後填寫以下表單以完成訂車流程：`:`請於兩日內將訂金匯款至上列帳戶後填寫以下表單以完成訂車流程：`),link,'',`＊匯款並填寫完表單後，請回覆訊息通知客服，我們確認入帳後會提供合約給您。`]),`＊表單中的行程與用車時間可先填寫大致內容，方便我們製作合約；用車前一週會再與您核對確切時間與行程。`].join('\n')}
 
 /* ---------- fleet ---------- */
 function expandCars(x){const a=[];MODELS.forEach(m=>{for(let i=0;i<num(x.cars[m]);i++)a.push(m)});return a}
@@ -1866,7 +1870,7 @@ function contractHTML(x){const BUS=!!(x&&x.bus);   /* 2026-10-28 Nicole：遊覽
   const rows=[[`A. 集合地點`,addr(c.meet,c.meetL)]];if(oL(c.wed))rows.push([`B. ${E(oL(c.wedT)||'迎娶地點')}`,addr(c.wed,c.wedL)]);
   [1,2,3,4,5].forEach(i=>{const v=oL(c['o'+i]);if(!v)return;let l=oL(c['o'+i+'L']),t=oL(c['o'+i+'T']);const m=l.match(/^(迎娶地點|入房地點|宴客地點|證婚地點|儀式地點|其他地點)(?:・(.*))?$/);if(m){t=t||m[1];l=oL(m[2])}rows.push([`${LT[rows.length]}. ${E(oType(t,l))}`,addr(v,l)])});   /* 2026-10-24 新人填寫頁的地點名稱存成「類型・名稱」 */
   rows.push(['路線說明',String(c.route||x.path||'').trim()?E(c.route||x.path):'行前一週確認']);
-  if(BUS){rows.length=0;const rt=String(x.busRoute||'').split('\n').map(t=>t.trim()).filter(Boolean);rows.push(['行程',rt.length?rt.map(E).join('<br>'):'依雙方確認之行程'])}   /* 2026-10-28 Nicole：遊覽車接駁單行程 */
+  if(BUS){rows.length=0;const rt=busRouteLines(x);rows.push(['行程',rt.length?rt.map(E).join('<br>'):'依雙方確認之行程'])}   /* 2026-10-28 Nicole：遊覽車接駁單行程 */
   const B=['用車時間自禮車出發起算；司機於出發前 20 分鐘抵達',short?'短時數方案無緩衝時間，加時以每 0.5 小時收取一小時費用（超過用車時間即開始計算）':'超過 15 分鐘內不加收加時費；超過 16 分鐘起計算加時費用（未滿一小時以一小時計）',num(x.cane)>0?`以上費用含駕駛、油資、過路費及甘蔗固定費 ${money(S.cane)}*${num(x.cane)}台`:'以上費用含駕駛、油資、過路費','尾款請於用車當日結清',(()=>{const u=MODELS.filter(m=>num(x.cars[m])>0),t=u.filter(m=>MBRAND[m]==='Tesla').length;return t&&t<u.length?'隨車附手把彩：特斯拉每車 2 個、其他車款每車 4 個，新娘座車另附車頭彩 1 組':`隨車附手把彩每車 ${u.length&&!t?4:2} 個，新娘座車另附車頭彩 1 組`})()];if(BUS)B.splice(0,B.length,'本服務為遊覽車接駁，以一天一口價計費，依雙方確認之行程派車','遊覽車需於用車前全額付清，完成付款後保留車輛','行程如需變更，請於用車三天前告知，變更後費用另行報價','乘車人數請勿超過車型核定座位數','以上費用含駕駛、油資、過路費');   /* 2026-10-28 Nicole：遊覽車接駁單條款 */
   qNotes(x,'').forEach(t=>B.push(t));String(x.ctNote||'').split('\n').map(t=>t.trim()).filter(Boolean).forEach(t=>B.push(t));
   const ul=a=>`<ul>${a.map(s=>`<li>${E(s)}</li>`).join('')}</ul>`;
@@ -3814,7 +3818,13 @@ function renderRev(){const el=$('revSt'),cb=$('revSkipCb');if(!el||!cb||!o)retur
   const r=calc(o),h=$('busHint');if(h)h.textContent=`共 ${r.n} 台，合計 ${money(r.total)}，應付 ${money(r.deposit)}`+(r.dok?`；車頭成本 ${money(r.dsum)}，毛利 ${money(r.total-r.tax-r.dsum-r.refAmt)}`:'');
   const E=v=>esc(String(v==null?'':v)),hn=String(o.busHeadNote||'').trim();
   const html=`<div><span>車型</span><span>${E(busText(o,'zh'))}</span></div><div><span>車頭</span><span>${E(String(o.busHead||'').trim()||'還沒填')}</span></div><div><span>車頭聯絡</span><span style="white-space:pre-line;text-align:right">${hn?E(hn):'還沒填'}</span></div><div><span>車頭成本</span><span>${r.dok?money(r.dsum):'還沒填'}</span></div>`;
-  document.querySelectorAll('.busHeadInfo').forEach(el=>el.innerHTML=html)}catch(err){console.warn(err)}}}
+  document.querySelectorAll('.busHeadInfo').forEach(el=>el.innerHTML=html);busStopsRender()}catch(err){console.warn(err)}}}
+/* 2026-10-28 Nicole：遊覽車行程列（時間／上車／中停／下車），可新增、刪除 */
+function busStopsRender(){const w=$('busStops');if(!w||!o||!o.bus)return;if(!Array.isArray(o.busStops)||!o.busStops.length)o.busStops=[{t:'',from:'',via:'',to:''}];const k=o.id+'|'+o.busStops.length;
+  if(w.dataset.k!==k){w.dataset.k=k;w.innerHTML=o.busStops.map((r,i)=>`<div class="bstop"><input type="time" step="300" class="t" data-b="busStops.${i}.t" aria-label="時間"><input data-b="busStops.${i}.from" placeholder="上車地點"><input data-b="busStops.${i}.via" placeholder="中停地點（選填）"><input data-b="busStops.${i}.to" placeholder="下車地點"><button type="button" class="btn sm" data-busdel="${i}" title="刪除這段"${o.busStops.length<2?' disabled':''}>×</button></div>`).join('')}
+  w.querySelectorAll('[data-b]').forEach(el=>{if(document.activeElement!==el){const v=getPath(o,el.dataset.b);el.value=v==null?'':v}})}
+document.addEventListener('click',e=>{const t=e.target;if(!t||!t.closest||!o)return;if(t.closest('#busStopAdd')){o.busStops=(o.busStops||[]).concat([{t:'',from:'',via:'',to:''}]);save();renderAll();const w=$('busStops');const l=w&&w.querySelectorAll('.bstop');if(l&&l.length)l[l.length-1].querySelector('input').focus();return}
+  const d=t.closest('[data-busdel]');if(d){const i=+d.dataset.busdel;if((o.busStops||[]).length>1){o.busStops.splice(i,1);const w=$('busStops');if(w)w.dataset.k='';save();renderAll()}}});
 try{renderRev()}catch(e){}
 document.addEventListener('change',e=>{if(e.target.id!=='revSkipCb')return;o.revSkip=e.target.checked;save();renderAll();renderOrderSel();toast(o.revSkip?'已標註當天有缺失，不會自動詢問評價':'已取消缺失標註')});
 document.addEventListener('click',async e=>{if(!e.target.closest||!e.target.closest('#btnPhotoBot'))return;e.preventDefault();
