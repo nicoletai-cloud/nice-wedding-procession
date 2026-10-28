@@ -355,8 +355,8 @@ nav.tabs button{scroll-snap-align:start}
               </select></label>
             <label class="f noBus">總行程里程（公里）<input type="number" id="q_trip" data-b="tripKm" data-num min="0" placeholder="填地址後按「計算總里程」"></label>
             <label class="f noBus" id="zRateXWrap" hidden>非特斯拉里程費（每 35 公里／台）<input type="number" id="q_zRateX" data-b="zRateX" data-num min="0" placeholder="例：1000"></label>
-            <label class="f">集合縣市<select id="q_cityA" data-b="cityA"><option value="">—</option><option>台北</option><option>新北</option><option>基隆</option><option>桃園</option><option>新竹</option><option>苗栗</option><option>台中</option><option>彰化</option><option>南投</option><option>雲林</option><option>嘉義</option><option>台南</option><option>高雄</option><option>屏東</option><option>宜蘭</option><option>花蓮</option><option>台東</option><option>澎湖</option><option>金門</option><option>連江</option></select></label>
-            <label class="f">迎娶縣市<select id="q_cityB" data-b="cityB"><option value="">—</option><option>台北</option><option>新北</option><option>基隆</option><option>桃園</option><option>新竹</option><option>苗栗</option><option>台中</option><option>彰化</option><option>南投</option><option>雲林</option><option>嘉義</option><option>台南</option><option>高雄</option><option>屏東</option><option>宜蘭</option><option>花蓮</option><option>台東</option><option>澎湖</option><option>金門</option><option>連江</option></select></label>
+            <label class="f noBus">集合縣市<select id="q_cityA" data-b="cityA"><option value="">—</option><option>台北</option><option>新北</option><option>基隆</option><option>桃園</option><option>新竹</option><option>苗栗</option><option>台中</option><option>彰化</option><option>南投</option><option>雲林</option><option>嘉義</option><option>台南</option><option>高雄</option><option>屏東</option><option>宜蘭</option><option>花蓮</option><option>台東</option><option>澎湖</option><option>金門</option><option>連江</option></select></label>
+            <label class="f noBus">迎娶縣市<select id="q_cityB" data-b="cityB"><option value="">—</option><option>台北</option><option>新北</option><option>基隆</option><option>桃園</option><option>新竹</option><option>苗栗</option><option>台中</option><option>彰化</option><option>南投</option><option>雲林</option><option>嘉義</option><option>台南</option><option>高雄</option><option>屏東</option><option>宜蘭</option><option>花蓮</option><option>台東</option><option>澎湖</option><option>金門</option><option>連江</option></select></label>
             <label class="f">縣市代碼（留空＝自動）<input id="q_code" data-b="code" placeholder="自動"></label>
             <label class="f">第幾組（留空＝自動）<input id="q_seq" data-b="seq" placeholder="自動"></label>
             <label class="f">訂單編號<input id="q_no" readonly tabindex="-1"></label>
@@ -1283,7 +1283,9 @@ function ctOver(x){const c=x.c||{},ce=ctEnd(x);if(!ce||!c.end||c.end===ce)return
 function addMin(t,mins){if(!t)return '';let [h,m]=t.split(':').map(Number);let x=h*60+m+mins;x=(x+1440)%1440;return `${p2(Math.floor(x/60))}:${p2(x%60)}`}
 function hrsLabel(h){return +h===0?'單程':h+'HR'}
 function dstr(x){const p=dparts(x.date);return p?`${p.y}${p2(p.m)}${p2(p.d)}`:'YYYYMMDD'}
-function autoCode(x){const cs=[x.cityA,x.cityB].filter(Boolean);return [...new Set(cs)].map(c=>S.cc[c]||'').join('')}
+function autoCode(x){const cs=x.bus?busCounties(x):[x.cityA,x.cityB].filter(Boolean);return [...new Set(cs)].map(c=>S.cc[c]||'').join('')}
+/* 2026-10-28 遊覽車：沒有迎娶地點，縣市代碼依上車／中停／下車地點的縣市 */
+function busCounties(x){const r=[];(x.busStops||[]).forEach(t=>{if(t)['from','via','to'].forEach(k=>{const c=countyOf(String(t[k]||''));if(c)r.push(c)})});return r}
 function codeOf(x){return (x.code||autoCode(x)||'').toUpperCase()}
 /* 同日期＋同縣市代碼的第幾組：第一次決定後就固定，刪掉別張單也不會變號 */
 function autoSeq(x){const key=dstr(x)+codeOf(x);if(x._seqKey===key&&x._seq)return x._seq;
@@ -2766,6 +2768,7 @@ function scFill(t){const r=calc(o),p=dparts(o.date);const cars=MODELS.filter(m=>
   const map={'婚期':p?`${p.y}/${p.m}/${p.d}`:(o.need.month||''),'車款台數':cars,'預估合計':r&&r.total?num(r.total).toLocaleString('en-US'):''};
   return t.replace(/【(.+?)】/g,(m,k)=>map[k]?map[k]:m)}
 function needMiss(){const n=o.need,c=o.c,miss=[];
+  if(o.bus){if(!o.date)miss.push(['date','用車日期']);const st=(o.busStops||[]).filter(r=>r&&String(r.from||'').trim());if(!st.length)miss.push(['','上車地點']);if(!st.some(r=>r.t))miss.push(['','上車時間']);if(!(o.busLines||[]).some(l=>num(l.q)>0))miss.push(['','車型台數']);return miss}
   if(!o.date&&!n.month)miss.push(['date','婚期']);else if(!o.date&&n.month)miss.push(['','婚期暫定（'+n.month+'）']);
   if(!o.cityA&&!c.meet)miss.push(['area','男方出發地']);if(!o.cityB&&!c.wed)miss.push(['area','女方迎娶地']);
   if(!c.o1)miss.push(['after','後續目的地']);if(!c.start)miss.push(['time','用車時段']);
