@@ -1400,7 +1400,8 @@ function selLabel(x){const c=x.c||{},ch=x.partner?'同業 '+(x.partner.co||''):(
   const cp=[c.groom,c.bride].filter(Boolean).join('&'),v=vLabel(x),st=x.sample?'範例':progLabel(x);
   return [orderNo(x)+(x.bus?'(遊覽車)':''),'('+ch+')'+who,cp+(v?`(${v})`:''),st].filter(t=>t&&t!=='()').join('-')}   /* 2026-10-28 Nicole：遊覽車接駁單標示 */
 function coupleName(x){const c=[x.c.groom,x.c.bride].filter(Boolean).join('&'),v=vLabel(x);return c+(v?`(${v})`:'')}
-function refRate(x){const v=vendorOf(x);if(!v)return 0;return x.src.rate!==''&&x.src.rate!=null?num(x.src.rate):num(v.rate)}
+/* 2026-10-28 Nicole：婚顧廠商介紹遊覽車／接駁車都沒有回金（要例外可手動填回金 %） */
+function refRate(x){const v=vendorOf(x);if(!v)return 0;return x.src.rate!==''&&x.src.rate!=null?num(x.src.rate):x.bus?0:num(v.rate)}
 function isMonthly(x){const v=vendorOf(x);return !!(v&&v.monthly)}
 function vendorBase(x){const v=vendorOf(x);if(!v||!S.vprices||!S.vprices[v.name]||x.hours<3)return null;
   const rows=S.vprices[v.name].split('\n').map(l=>{const m=l.split(/[=＝]/);return m.length>1?{cars:parseCombo(m[0]),price:num(m[1])}:null}).filter(r=>r&&Object.keys(r.cars).length);
@@ -2635,9 +2636,9 @@ function refRowText(x){const r=calc(x),v=vendorOf(x);const p=dparts(x.date);
   return [p?`${p.y}/${p.m}/${p.d}`:'',orderNo(x),planName(x).replace(/^Tesla /,'').replace(/ \S*禮車方案$/,''),v?v.name:'',x.src.ref||'',money(r.planFee),v?refRate(x)+'%':'',v&&r.refAmt?money(r.refAmt):'','',isMonthly(x)?'月結':''].join('\t')}
 function renderSrc(){const v=vendorOf(o),r=calc(o);
   $('vendorList').innerHTML=(S.vendors||[]).map(d=>`<option value="${esc(d.name)}">`).join('');$('refList').innerHTML=(S.refs||[]).map(n=>`<option value="${esc(n)}">`).join('');
-  $('q_rate').placeholder=v?String(v.rate):'自動';
-  $('srcChip').innerHTML=!v?'<span class="chip">直客</span>':isMonthly(o)?`<span class="chip" style="color:var(--warn)">${esc(v.name)}・月結</span>`:`<span class="chip ok">${esc(v.name)}${o.src.ref?' / '+esc(o.src.ref):''}・回金 ${refRate(o)}%</span>`;
-  $('srcHint').textContent=!v?'有婚顧或廠商推薦時填寫，TimeTree 標題會加上「x推薦人」。':isMonthly(o)?`月結廠商：訂金為 $0，下單訊息不會要求匯款，費用列入「回金・月結」分頁的月結請款。`:`回金 ${money(r.refAmt)}（方案費用 ${money(r.planFee)} × ${refRate(o)}%），每月在「回金・月結」分頁彙整。`;
+  $('q_rate').placeholder=v?(o.bus?'0（遊覽車無回金）':String(v.rate)):'自動';
+  $('srcChip').innerHTML=!v?'<span class="chip">直客</span>':isMonthly(o)?`<span class="chip" style="color:var(--warn)">${esc(v.name)}・月結</span>`:`<span class="chip ok">${esc(v.name)}${o.src.ref?' / '+esc(o.src.ref):''}・${o.bus&&!refRate(o)?'遊覽車無回金':'回金 '+refRate(o)+'%'}</span>`;
+  $('srcHint').textContent=!v?'有婚顧或廠商推薦時填寫，TimeTree 標題會加上「x推薦人」。':isMonthly(o)?`月結廠商：訂金為 $0，下單訊息不會要求匯款，費用列入「回金・月結」分頁的月結請款。`:o.bus&&!refRate(o)?'遊覽車接駁沒有回金，回金・月結分頁不會列入。':`回金 ${money(r.refAmt)}（方案費用 ${money(r.planFee)} × ${refRate(o)}%），每月在「回金・月結」分頁彙整。`;
   $('outRefRow').textContent=refRowText(o)}
 function settleInfo(x){const r=calc(x),ld=lead(x)||{},who=ld.driver||'負責人';
   const ds=(x.fleet||[]).map(f=>{const v=plusX(f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x),f,x);return `${f.driver||f.role} ${v==null?'未設定':money(v)}`}).join('、');
@@ -2690,7 +2691,7 @@ function renderSrcStats(ym){const B=$('srcBody'),S2=$('srcSum');if(!B)return;con
   B.innerHTML=ks.length?ks.map(k=>`<tr><td>${esc(k)}</td><td>${g[k].n}</td><td>${g[k].w}</td><td>${g[k].n?Math.round(g[k].w/g[k].n*100)+'%':'—'}</td></tr>`).join('')+`<tr><td><b>合計</b></td><td><b>${tot}</b></td><td><b>${won}</b></td><td><b>${tot?Math.round(won/tot*100)+'%':'—'}</b></td></tr>`:'<tr><td colspan="4" class="hint">這個月還沒有報價</td></tr>';
   S2.innerHTML=miss.length?`還沒填來源的報價 ${miss.length} 筆（到「報價・下單」的「客人怎麼找到我們」補上，數字才準）：<br>${miss.slice(0,20).map(x=>esc(orderNo(x)+' '+([x.c&&x.c.groom,x.c&&x.c.bride].filter(Boolean).join('&')||(x.c&&x.c.chatName)||''))).join('、')}`:'這個月的報價都有填來源'}
 function renderRefs(){try{renderOrdRef()}catch(e){console.warn(e)}renderSettle();const mEl=$('refMonth');if(!mEl.value){const d=new Date();mEl.value=`${d.getFullYear()}-${p2(d.getMonth()+1)}`}const ym=mEl.value;try{renderSrcStats(ym)}catch(e){console.warn(e)}
-  const list=Object.values(DB.orders).filter(x=>!x.sample&&x.date&&x.date.slice(0,7)===ym&&vendorOf(x)).sort((a,b)=>a.date.localeCompare(b.date));
+  const list=Object.values(DB.orders).filter(x=>!x.sample&&x.date&&x.date.slice(0,7)===ym&&vendorOf(x)&&!(x.bus&&!isMonthly(x)&&!refRate(x))).sort((a,b)=>a.date.localeCompare(b.date));
   $('refBody').innerHTML=list.map(x=>{const r=calc(x),v=vendorOf(x);return `<tr><td>${esc(x.date.slice(5).replace('-','/'))}</td><td>${esc(orderNo(x))}</td><td>${esc(v.name)}</td><td>${esc(x.src.ref||'')}</td><td>${money(r.planFee)}</td><td>${isMonthly(x)?'月結':money(r.refAmt)}</td></tr>`}).join('')||'<tr><td colspan="6" class="hint">這個月沒有廠商推薦的訂單。</td></tr>';
   const by={};list.filter(x=>!isMonthly(x)).forEach(x=>{const k=vendorOf(x).name+(x.src.ref?' / '+x.src.ref:'');by[k]=(by[k]||0)+calc(x).refAmt});
   $('refSum').innerHTML=Object.keys(by).map(k=>`<div><span>${esc(k)}</span><span>${money(by[k])}</span></div>`).join('')+(Object.keys(by).length?`<div class="tot"><span>本月應付回金</span><span>${money(Object.values(by).reduce((a,b)=>a+b,0))}</span></div>`:'');
