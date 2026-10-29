@@ -2274,16 +2274,24 @@ function renderMemoOk(){const el=$('memoOkSt'),card=$('memoOkCard');if(!el||!o)r
   if(o.memoSentAt&&!o.memoOkAt&&!(o.memoHoldAt&&+o.memoHoldAt===+o.memoSentAt&&!(+((MEMOS&&MEMOS[normNo(orderNo(o))])||{}).sentAt>+o.memoHoldAt))){if(o.memoQAt&&+o.memoQAt===+o.memoSentAt&&Date.now()<q10(o.memoQAt))L.push(`🕙 已排程：${tm(o.memoQAt)} 按了傳送，現在是 22:00–10:00 不打擾客人，系統會在 ${tm(q10(o.memoQAt))} 自動傳給客人核對`);else L.push(`⏳ 已傳給客人（${tm(o.memoQAt&&+o.memoQAt===+o.memoSentAt?q10(o.memoQAt):o.memoSentAt)}），客人還沒確認`)}
   if(o.memoPushErr)L.push(`⚠️ 上次傳送失敗：${o.memoPushErr}（可按「複製核對連結」手動傳）`);
   el.textContent=L.join('\n')||'還沒傳給客人核對'}
+/* 2026-10-30 自訂按鈕文字的選擇視窗（瀏覽器內建的確認視窗只能寫「確定／取消」）；點外面或按 Esc＝第一個選項 */
+function askChoice(title,msg,btns){return new Promise(res=>{const w=document.createElement('div');w.setAttribute('style','position:fixed;inset:0;z-index:200;background:rgba(40,30,20,.45);display:flex;align-items:center;justify-content:center;padding:16px');
+  const b=document.createElement('div');b.setAttribute('style','background:var(--surface,#fff);border-radius:16px;padding:20px 20px 16px;max-width:420px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25)');
+  b.innerHTML='<h3 style="margin:0 0 10px"></h3><p style="margin:0 0 18px;white-space:pre-line;line-height:1.7;color:var(--muted)"></p><div class="row" style="justify-content:flex-end;gap:10px;flex-wrap:wrap"></div>';
+  b.querySelector('h3').textContent=title;b.querySelector('p').textContent=msg;const row=b.querySelector('.row');
+  const done=v=>{document.removeEventListener('keydown',kd,true);w.remove();res(v)},kd=e=>{if(e.key==='Escape'){e.preventDefault();done(btns[0][0])}};
+  btns.forEach(([v,l],i)=>{const x=document.createElement('button');x.type='button';x.className='btn'+(i===btns.length-1?' pri':'');x.style.minHeight='44px';x.textContent=l;x.onclick=()=>done(v);row.appendChild(x)});
+  w.addEventListener('click',e=>{if(e.target===w)done(btns[0][0])});document.addEventListener('keydown',kd,true);w.appendChild(b);document.body.appendChild(w);setTimeout(()=>{try{row.lastChild.focus()}catch(_){}},30)})}
 async function memoPush(){if(!S.driveUrl||!S.driveKey){toast('還沒設定機器人連線');return}let r=calc(o);
   const qh=(h=>h<10||h>=22)(new Date().getHours());
-  if(!confirm(`要傳禮車服務確認單給客人核對嗎？${qh?'\n\n🕙 現在是 22:00–10:00，按確定後系統會在 10:00 才傳給客人（不打擾客人休息）':''}\n\n客人會看到整份確認單，並選擇尾款付款方式：\n・用車當天付現金 ${money(r.balance)}（尾款＋司機禮）\n・提前匯款（最晚用車前一天）\n\n（傳之前請先確認第 6 頁的確認單內容都是最新的）`))return;
-  const now1=qh&&confirm('客人正在等嗎？\n\n按「確定」＝現在立刻傳給客人\n按「取消」＝照原本排到 10:00 再傳');   /* 2026-10-20 Nicole：22:00 後客人在等也能立刻傳 */
+  if(!confirm(`要傳禮車服務確認單給客人核對嗎？${qh?'\n\n🕙 現在是 22:00–10:00，按確定後系統會在 10:00 才傳給客人（不打擾客人休息）':''}\n\n客人會看到整份確認單，並選擇尾款付款方式：\n・用車當天付現金 ${money(r.balance)}（尾款＋司機禮）\n・提前匯款（最晚用車前一天）\n\n（傳之前請先確認「行前」頁的確認單內容都是最新的）`))return;
+  const now1=qh&&(await askChoice('客人正在等嗎？','「白日傳送」＝照原本排到 10:00 再傳，不打擾客人休息\n「立即傳送」＝現在立刻傳給客人',[['day','白日傳送'],['now','立即傳送']]))==='now';   /* 2026-10-30 Nicole：按鈕改成「白日傳送」「立即傳送」 */   /* 2026-10-20 Nicole：22:00 後客人在等也能立刻傳 */
   toast('傳送中…（約 10–20 秒，請不要關閉或重新整理）');{const st=$('memoOkSt');if(st)st.textContent='⏳ 傳送中…請不要關閉或重新整理';}try{await syncFresh()}catch(_){}
   r=calc(o);const text=memoText(memoModel(o,'cust','zh'),false);   /* 2026-10-20 先同步拿到最新版再產生確認單內容（避免用到這台舊的資料） */
   let grp='';try{grp=await lgMsgReady()}catch(_){}   // 2026-10-19 客人確認後要自動發到司機群組的開場訊息（含派車單連結）
   const j=await cfQApi({action:'memoSend',now:now1||undefined,items:[{id:o.id,text,bal:r.balance,mon:!!r.mon,grp}]});if(!j||!j.ok){const er=(j&&j.error)||'連不到機器人（網路或機器人忙碌，請稍等再按一次）';o.memoPushErr=er;o.updated=Date.now();save();renderMemoOk();alert('確認單沒有送出：'+er);return}
   const res=(j.res||[])[0]||{},now=Date.now();if(res.ok&&res.held){o.memoSentAt=now;o.memoSentText=text;o.memoHoldAt=now;o.memoHoldNames=(res.names||[]).join('、');o.memoQAt=0;o.memoDone=true;o.memoPushErr='';o.memoOkAt=0;o.memoFixAt=0;alert(`🪪 先請司機綁定車卡\n\n群組裡還有司機沒綁定車卡：${o.memoHoldNames||'—'}\n\n${res.quiet?'現在是 22:00–10:00，系統會在 10:00 在群組 @ 他們綁定。':'已在群組 @ 他們綁定。'}\n全部綁好後，系統會自動把確認單傳給客人核對（夜間會排到 10:00）。`)}
-  else if(res.ok){o.memoSentAt=now;o.memoSentText=text;o.memoHoldAt=0;o.memoQAt=res.queued?now:0;o.memoDone=true;o.memoPushErr='';o.memoOkAt=0;o.memoFixAt=0;if(res.agent)o.memoAgent=res.agent;if(res.agent&&!res.queued)alert(`確認單已傳給代填行前確認的「${res.agent}」（主持人／婚顧）核對。\n這張是私人 LINE 的單，系統沒有新人的官方 LINE。`);else if(res.queued)alert('🕙 已排程\n\n現在是 22:00–10:00，確認單會在 10:00 自動傳給客人核對。\n第 6 頁會顯示「已排程」，10:00 傳出後會變成「已傳給客人」。');else toast('已傳給客人核對')}else{o.memoPushErr=res.err||'';alert('傳不到客人：'+(res.err||'')+'\n\n確認單內容已存好，可以按「複製核對連結」手動傳給客人。')}
+  else if(res.ok){o.memoSentAt=now;o.memoSentText=text;o.memoHoldAt=0;o.memoQAt=res.queued?now:0;o.memoDone=true;o.memoPushErr='';o.memoOkAt=0;o.memoFixAt=0;if(res.agent)o.memoAgent=res.agent;if(res.agent&&!res.queued)alert(`確認單已傳給代填行前確認的「${res.agent}」（主持人／婚顧）核對。\n這張是私人 LINE 的單，系統沒有新人的官方 LINE。`);else if(res.queued)alert('🕙 已排程\n\n現在是 22:00–10:00，確認單會在 10:00 自動傳給客人核對。\n「行前」頁會顯示「已排程」，10:00 傳出後會變成「已傳給客人」。');else toast('已傳給客人核對')}else{o.memoPushErr=res.err||'';alert('傳不到客人：'+(res.err||'')+'\n\n確認單內容已存好，可以按「複製核對連結」手動傳給客人。')}
   o.updated=now;save();pushSync();renderMemoOk();try{renderTodo()}catch(_){}}
 /* 2026-10-19 複製核對連結：先把最新確認單內容存到機器人（不傳 LINE），客人打開才看得到 */
 function memoLinkCopy(){const url=memoOkUrl(o),xid=o.id;
