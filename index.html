@@ -1513,12 +1513,13 @@ function calc(x){
   const tax=x.invoice?Math.round(pre*0.05):0;
   const total=pre+tax+red;
   // driver pay
-  const fl=fleetOf(x);let dsum=0,dok=fl.length>0;
-  fl.forEach(f=>{const v=plusX(f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x),f,x);if(v==null)dok=false;else dsum+=v});
+  const fl=fleetOf(x);let dsum=0,dsum0=0,dok=fl.length>0;
+  /* 2026-10-30 Nicole：手動填的司機酬勞也要加上確認後的加時（跟派車單每台金額一致），匯回＝尾款－司機酬勞合計才會對；訂金仍照原本算法，不影響已收的訂金 */
+  fl.forEach(f=>{const man=f.pay!==''&&f.pay!=null,v0=plusX(man?num(f.pay):driverBasePay(f.m,x),f,x),v=man&&v0!=null?v0+otDrvAdd(f.m,x):v0;if(v==null)dok=false;else{dsum+=v;dsum0+=v0}});
   let deposit;const dTot=total-sumX(x,lateX(x));   // 2026-10-20 出發前新增的款項不算進訂金，全部列在尾款
   if(x.depOverride!==''&&x.depOverride!=null)deposit=num(x.depOverride);
   else if(isMonthly(x))deposit=0;
-  else if(S.depMode==='driver'&&dok&&dsum<dTot)deposit=dTot-dsum;
+  else if(S.depMode==='driver'&&dok&&dsum0<dTot)deposit=dTot-dsum0;
   else deposit=ceil100(dTot*num(S.depPct)/100);
   const planFee=base+ot-disc;const refAmt=Math.round(planFee*refRate(x)/100);
   const mon=isMonthly(x);const onsite=red+cane;const bill=total-onsite;
