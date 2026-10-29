@@ -1113,6 +1113,15 @@ nav.tabs button{scroll-snap-align:start}
     /* 6 結案 */
     var q6=col();[C.photo,C.rev].forEach(function(c){if(c){c.classList.add('noBus');put(c,q6)}});if(C.photo)C.photo.id='photoCard';tr.insertBefore(q6,tr.firstChild);tr.appendChild(next('',' ',['memo','行前']));
     td.remove();
+    /* 2026-10-30 Nicole：遊覽車沒有司機群組，派單像機場接送／包車：在「派車」填車頭並複製派車單給車頭；「行前」只放用車說明 */
+    document.querySelectorAll('.busNotice').forEach(function(c){ c.remove(); });
+    var bd=document.createElement('div');bd.className='card busOnly';bd.id='busDispCard';
+    bd.innerHTML='<h3>車頭派車 <small>遊覽車由車頭（遊覽車公司）派車；跟機場接送一樣，把派車單傳給車頭</small></h3><div class="fields" id="busDispFields"></div><div class="row" style="justify-content:space-between;align-items:center;margin:12px 0 6px"><b>派車單（給車頭）</b><button class="btn sm pri" type="button" id="btnBusDispCopy">複製派車單</button></div><pre class="out" id="outBusDisp"></pre>';
+    var bf=bd.querySelector('#busDispFields');['bus_head','bus_cost','bus_headNote'].forEach(function(id){ var el=$(id); var lb=el&&el.closest('label'); if(lb) bf.appendChild(lb); });
+    q4.insertBefore(bd,q4.firstChild);
+    [C.lg5,C.pt,C.fleet,C.tt,C.group].forEach(function(c){ if(c) c.classList.add('noBus'); });
+    var bi=$('busInfoCard');if(bi){ bi.style.margin='0 0 18px'; var bsm=bi.querySelector('h3 small'); if(bsm) bsm.textContent='用車前一天，把用車說明（含司機資料）傳給客人'; var an=tm.querySelector('.lgTop'); tm.insertBefore(bi, an?an.nextSibling:tm.firstChild); }
+    Array.prototype.slice.call(tm.children).forEach(function(c){ if(c.id!=='busInfoCard'&&c.id!=='xCard5'&&!c.classList.contains('nextStep')) c.classList.add('noBus'); });
     /* 名稱統一 */
     setH3(C.info,'詢價資料');setH3(C.pay,'收款狀態');setH3(C.x5,'追加款項','行前才追加的款項，會列在尾款（尾款 $X+項目 $Y=$Z）');
     setH3(C.cfSend,'行前回填','用車前一週傳給客人填');setH3(C.cfFlow,'客人的行前回填','客人送出後，會自動帶入下面的禮車流程');
@@ -2918,6 +2927,8 @@ function followPlan(x){const fn=+x.followN||0;if(fn>=3||(fn>=2&&!x.fv2))return n
 function dateLoad(x){return x.date?Object.values(DB.orders).filter(y=>y!==x&&y.id!==x.id&&!y.sample&&!y.lost&&!y.partner&&y.date===x.date&&(y.paid||y.orderedAt)).length:0}
 function revOf(x){if(REV===null)REV=store('nwcw_rev')||{};return REV[x.id]||{}}
 function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];const now=Date.now(),d=daysTo(x),T=[],ago=t=>(now-(+t||0))/DAY;
+  /* 2026-10-30 Nicole：遊覽車沒有司機群組、不綁車卡、不用合約／行前確認／服務確認單；只追：付款、客人填表、派車頭 */
+  if(x.bus&&st!=='inq'&&st!=='done'){const B=[];if(!x.paid)B.push({k:'unpaid',late:ago(x.orderedAt||x.updated)>=2});else{if(!String(x.busCName||'').trim()&&!x.formApplied)B.push({k:'noform',late:ago(x.paidTs||x.updated)>=1||(d!==null&&d<=3)});if(!String(x.busHead||'').trim())B.push({k:'nodrv',late:d!==null&&d<=7,why:'還沒派車頭（遊覽車公司）'})}return B}
   if(x.quiet&&st!=='done'){const nd=!x.drvDone&&(!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim()));return d!==null&&d<=30&&nd?[{k:'nodrv',late:true,why:'一個月前安排車子'}]:[]}
   if(x.c&&x.c.photoReq==='要'&&!x.photoSentAt)T.push({k:'photo',late:d!==null&&d<=-3});
   if(st==='done'){if(d>=-30&&x.paid&&!x.partner){const R=revOf(x),rp=R.reply,auto=x.date>='2026-10-12'&&!isPrivCh(x.c&&x.c.channel);if(x.revSkip||R.skip){}else if(rp&&rp.cls!=='pos'){if(!x.revLinkAt)T.push({k:'revcomp',late:true,why:(rp.cls==='neg'?'客人有抱怨':'看不出滿不滿意')+'：「'+String(rp.text||'').slice(0,30)+'」'})}else if(R.ask&&R.ask.ok){}else if(R.ask&&!R.ask.skip&&!x.revAskAt)T.push({k:'rev',late:true,why:'機器人沒發出去：'+R.ask.err});else if(auto&&!R.ask&&d>=-1){}else if(!x.revAskAt)T.push({k:'rev',late:d<=-2});else if(!x.revLinkAt)T.push({k:'revlink',late:false})}if(x.partner&&x.paid&&!x.lost&&d!==null&&d<0&&d>=-60&&x.date>='2026-10-05'&&!x.ptPhotoAt)T.push({k:'ptphoto',late:d<=-2});return T}
@@ -3383,7 +3394,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   }});
 /* 2026-10-20 Nicole：選好訂單後，已派好司機→停在派車單；還在等派司機→停在找司機（還沒出合約的單照原本） */
 /* 2026-10-29 Nicole：打開訂單時，直接跳到這張單目前做到的那一頁 */
-function stageTab(x){if(!x||x.sample||x.lost)return '';const noDrv=!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim());if(x.partner)return noDrv?'find':'memo';const st=stageOf(x);if(st==='inq')return (x.quotes||[]).length?'price':'quote';if(st==='unpaid'||st==='noform'||st==='nocontract')return 'contract';if(st==='ready')return noDrv?'find':'memo';if(st==='done')return 'refs';return ''}
+function stageTab(x){if(!x||x.sample||x.lost)return '';const noDrv=!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim());if(x.partner)return noDrv?'find':'memo';const st=stageOf(x);if(x.bus){if(st==='inq')return (x.quotes||[]).length?'price':'quote';if(st==='done')return 'refs';if(!x.paid)return 'contract';return String(x.busHead||'').trim()?'memo':'find'}if(st==='inq')return (x.quotes||[]).length?'price':'quote';if(st==='unpaid'||st==='noform'||st==='nocontract')return 'contract';if(st==='ready')return noDrv?'find':'memo';if(st==='done')return 'refs';return ''}
 function autoTab(x){try{const k=stageTab(x);if(k){showTab(k);try{window.scrollTo(0,0)}catch(_){}}}catch(e){console.warn(e)}}
 function goCard(id){const c=$(id);if(!c)return;const sec=c.closest('section.tab');if(sec)showTab(sec.id.replace(/^tab-/,''));setTimeout(()=>{try{c.scrollIntoView({behavior:'smooth',block:'start'})}catch(_){}},80)}
 function markTabs(){try{const k=stageTab(o),T=['quote','price','contract','find','memo','refs'],i=T.indexOf(k);document.querySelectorAll('#tabs button[data-tab]').forEach(b=>{const j=T.indexOf(b.dataset.tab);b.classList.toggle('done',i>0&&j>=0&&j<i);b.classList.toggle('cur',i>=0&&j===i)})}catch(e){}}
@@ -3928,6 +3939,9 @@ function busInfoText(x){const L=['【好好禮車｜遊覽車用車說明】',`�
   const cn=String(x.busCName||'').trim(),cp=String(x.busCPhone||'').trim();if(cn||cp)L.push('',`當天聯絡人：${[cn,cp].filter(Boolean).join(' ')}`);
   const d=String(x.busDriver||'').trim();L.push('',`司機資料：${d||'用車前一天提供'}`);
   const n=busNotice().split('\n').map(t=>t.trim()).filter(Boolean);if(n.length)L.push('','注意事項：',...n.map(t=>/^[＊*・]/.test(t)?t:'＊'+t));return L.join('\n')}
+function busDispText(x){const p=dparts(x.date),wd=p?'日一二三四五六'[new Date(p.y,p.m-1,p.d).getDay()]:'',r=busRouteLines(x),cn=String(x.busCName||'').trim(),cp=String(x.busCPhone||'').trim();
+  const L=['【遊覽車派車單】',`單號：${orderNo(x)}`,`用車日期：${fmtDate(x.date)}${wd?'（'+wd+'）':''}`,`車型：${busText(x,'zh')}`,'','行程：',...(r.length?r:['（待確認）']),'',`當天聯絡人：${cn||cp?[cn,cp].filter(Boolean).join(' '):'客人還沒填，填好再補給車頭'}`];
+  if(num(x.busCost))L.push(`車資：${money(num(x.busCost))}`);return L.join('\n')}
 function busFormAuto(x,fd){const f=fd.f||{},fills=[],diffs=[],emp=v=>!String(v==null?'':v).trim();
   if(!emp(f.role)){if(emp(x.busCName)){x.busCName=String(f.role).trim();fills.push('當天聯絡人')}else if(String(x.busCName).trim()!==String(f.role).trim())diffs.push(`當天聯絡人：原本「${x.busCName}」／客人填「${f.role}」`)}
   if(!emp(f.phone)){if(emp(x.busCPhone)){x.busCPhone=String(f.phone).trim();fills.push('聯絡人電話')}else if(String(x.busCPhone).replace(/\D/g,'')!==String(f.phone).replace(/\D/g,''))diffs.push(`聯絡人電話：原本「${x.busCPhone}」／客人填「${f.phone}」`)}
@@ -3937,9 +3951,10 @@ function busFormAuto(x,fd){const f=fd.f||{},fills=[],diffs=[],emp=v=>!String(v==
   x.formApplied=+fd.at;x.formAuto={at:Date.now(),fdAt:+fd.at,fills,diffs};x.updated=Date.now();return x.formAuto}
 {const _raBi=renderAll;renderAll=function(){_raBi.apply(this,arguments);try{if(!o||!o.bus)return;const t=$('bus_notice');if(t&&document.activeElement!==t)t.value=busNotice();
   const fd=FORMDATA[normNo(orderNo(o))],h=$('busFormHint');if(h)h.textContent=fd?'客人填寫時間：'+new Date(fd.at).toLocaleString('zh-TW')+(o.formAuto&&o.formAuto.fdAt===+fd.at?'（已自動帶入）':''):'客人還沒填寫表單；填完會自動帶入當天聯絡人和行程。';
-  const out=$('outBusInfo');if(out)out.textContent=busInfoText(o)}catch(err){console.warn(err)}}}
+  const out=$('outBusInfo');if(out)out.textContent=busInfoText(o);const od=$('outBusDisp');if(od)od.textContent=busDispText(o)}catch(err){console.warn(err)}}}
 document.addEventListener('input',e=>{if(!e.target||e.target.id!=='bus_notice')return;S.busNotice=e.target.value;saveS();const out=$('outBusInfo');if(out&&o)out.textContent=busInfoText(o)});
 document.addEventListener('click',e=>{if(!e.target.closest||!e.target.closest('#btnBusInfoCopy')||!o)return;copy(busInfoText(o),$('outBusInfo'))});
+document.addEventListener('click',e=>{if(!e.target.closest||!e.target.closest('#btnBusDispCopy')||!o)return;copy(busDispText(o),$('outBusDisp'))});
 /* 2026-10-29 Nicole：分頁進度（做完的打勾色）、下一步回到頁首、多張單找司機視窗 */
 {const _raMk=renderAll;renderAll=function(){_raMk.apply(this,arguments);markTabs()}}
 document.addEventListener('click',e=>{const t=e.target;if(!t||!t.closest)return;
