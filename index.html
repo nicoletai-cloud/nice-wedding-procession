@@ -249,7 +249,8 @@ nav.tabs button{scroll-snap-align:start}
 .kw-results button b{color:var(--accent);margin-right:6px}
 .kw-results button:hover,.kw-results button.on{background:var(--surface-2)}
 .kw-results .empty{padding:10px 12px;color:var(--muted);font-size:.9rem}
-#tab-memo.pt>:not(.lgTop):not(#ptMemo):not(#memoCall){display:none!important}#tab-memo:not(.pt) #ptMemo{display:none}
+#tab-memo.pt>:not(.lgTop):not(#ptMemo):not(#memoCall):not(.ptKeep):not(.nextStep){display:none!important}body.isPt .noPt{display:none!important}
+/* 2026-10-29 依流程 6 頁 */.flowcol{display:flex;flex-direction:column;gap:18px;max-width:1100px;margin:0 auto}.flowcol>*{margin-top:0!important;margin-bottom:0!important}.nextStep{display:flex;justify-content:space-between;align-items:center;gap:10px;max-width:1100px;margin:22px auto 10px}.nextStep .btn{min-height:44px}nav.tabs button.done .n,nav.tabs button.cur .n{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;opacity:1;color:#fff}nav.tabs button.done .n{background:#2f7d4f}@media (max-width:560px){nav.tabs button{padding:12px 4px!important;font-size:.88rem!important}nav.tabs button .n{margin-right:3px}nav.tabs{padding-right:44px}}nav.tabs button.cur .n{background:var(--accent)}#tab-memo:not(.pt) #ptMemo{display:none}
 .nl-row{display:flex;gap:6px;align-items:flex-start;margin:0 0 6px}.nl-row b{padding-top:9px;min-width:1.6em;text-align:right}.nl-row textarea{flex:1;min-width:0;resize:vertical;box-sizing:border-box;overflow:hidden}.nl-row .btn{flex:0 0 auto;margin-top:4px}
 .dr-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.dr-bar input[type=date]{width:auto;min-width:0}.dr-bar .lbl{font-weight:700;font-size:.9rem}
 .kw-date{position:relative}.kw-date-pop{position:absolute;right:0;top:calc(100% + 4px);z-index:71;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:12px;width:min(520px,calc(100vw - 32px))}
@@ -573,7 +574,7 @@ nav.tabs button{scroll-snap-align:start}
         </div>
         <div class="card">
           <h3>司機車資</h3>
-          <p class="hint" style="margin:0 0 10px">預設＝價目設定的司機酬勞（含紅包）＋加時；總行程超過 35km 且跨區（不同縣市；台北新北同區、新竹縣市同區），每多 35km 每台 +$300；同區不加。個別車輛可在「車隊與流程」再調。</p>
+          <p class="hint" style="margin:0 0 10px">預設＝價目設定的司機酬勞（含紅包）＋加時；總行程超過 35km 且跨區（不同縣市；台北新北同區、新竹縣市同區），每多 35km 每台 +$300；同區不加。個別車輛可在下面「車隊」再調。</p>
           <div class="sum" id="payBox"></div>
         </div>
       </div>
@@ -1063,6 +1064,76 @@ nav.tabs button{scroll-snap-align:start}
     </div>
   </div>
 </div>
+<script>/* 2026-10-29 Nicole：依接案流程分 6 頁（詢價→報價→成交→派車→行前→結案）。只搬區塊位置、改名稱，資料和功能都不動 */
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  function h3txt(c){var h=c.querySelector('h3');return h?h.textContent.replace(/\s+/g,' ').trim():''}
+  function card(root,t){if(!root)return null;var L=root.querySelectorAll('.card');for(var i=0;i<L.length;i++){if(h3txt(L[i]).indexOf(t)===0)return L[i]}return null}
+  function retitle(h,main,small){if(!h)return;var tn=null;for(var i=0;i<h.childNodes.length;i++){if(h.childNodes[i].nodeType===3&&h.childNodes[i].nodeValue.trim()){tn=h.childNodes[i];break}}if(tn)tn.nodeValue=main+' ';else h.insertBefore(document.createTextNode(main+' '),h.firstChild);if(small!=null){var sm=h.querySelector('small');if(sm)sm.textContent=small;else{var e=document.createElement('small');e.textContent=small;h.appendChild(e)}}}
+  function setH3(c,main,small){if(c)retitle(c.querySelector('h3'),main,small)}
+  function col(){var d=document.createElement('div');d.className='flowcol';return d}
+  function next(key,label,prev){var d=document.createElement('div');d.className='nextStep';d.innerHTML=(prev?'<button type="button" class="btn" data-tab="'+prev[0]+'">← '+prev[1]+'</button>':'<span></span>')+(key?'<button type="button" class="btn pri" data-tab="'+key+'">下一步：'+label+' →</button>':'');return d}
+  function put(c,parent){if(c&&parent)parent.appendChild(c);return c}
+  try{
+    var tq=$('tab-quote'),tc=$('tab-contract'),tf=$('tab-find'),td=$('tab-dispatch'),tm=$('tab-memo'),tr=$('tab-refs'),cm=$('coupleModal');
+    /* 先把要搬的區塊找出來 */
+    var C={info:card(tq,'用車資訊'),need:card(tq,'客人需求'),script:card(tq,'話術'),mat:card(tq,'素材'),cars:card(tq,'車款'),bus:$('busCard'),src:card(tq,'案件來源'),extra:card(tq,'加項與折扣'),sum:card(tq,'金額試算'),quote:card(tq,'報價訊息'),order:card(tq,'下單訊息'),pay:card(tq,'收款確認'),ack:card(tq,'收到訂金回覆'),
+      head:card(tf,'車頭指派'),drvPay:card(tf,'司機車資'),findMsg:card(tf,'找司機訊息'),multi:card(tf,'多張單一起找司機'),
+      x5:$('xCard5'),pt:$('ptCard'),fleet:td.querySelector('.fdZone'),tt:card(td,'TimeTree'),drvNote:$('drvNoteCard'),flow:card(td,'禮車流程'),lg5:td.querySelector('.lgTop'),busD:td.querySelector('.busNotice'),
+      group:card(tm,'司機 LINE 群組'),cfFlow:$('cfFlowCard'),
+      cfSend:card(cm,'行前確認'),rev:card(cm,'評價詢問'),photo:card(cm,'側拍照片')};
+    var miss=Object.keys(C).filter(function(k){return !C[k]&&k!=='mat'});if(miss.length)console.warn('layout v2 找不到：',miss.join(','));
+    /* 1 詢價 */
+    var q1=col();[C.info,C.need,C.src,C.script,C.mat].forEach(function(c){put(c,q1)});
+    /* 2 報價 */
+    var tp=document.createElement('section');tp.className='tab';tp.id='tab-price';tp.hidden=true;var q2=col();[C.cars,C.bus,C.extra,C.sum,C.quote].forEach(function(c){put(c,q2)});
+    /* 3 成交：下單、收款放在合約上面 */
+    var q3=col();[C.order,C.pay,C.ack].forEach(function(c){put(c,q3)});
+    while(tq.firstChild)tq.removeChild(tq.firstChild);tq.appendChild(q1);tq.appendChild(next('price','報價'));
+    tp.appendChild(q2);tp.appendChild(next('contract','成交',['quote','詢價']));tq.parentNode.insertBefore(tp,tc);
+    tc.insertBefore(q3,tc.firstChild);if(C.cfFlow)C.cfFlow.remove();tc.appendChild(next('find','派車',['price','報價']));
+    /* 4 派車 */
+    var busF=tf.querySelector('.busNotice'),q4=col();
+    if(C.lg5)q4.appendChild(C.lg5);
+    [C.head,C.drvPay,C.findMsg].forEach(function(c){if(c){c.classList.add('noBus');c.style.margin='0';put(c,q4)}});
+    [C.pt,C.fleet,C.tt].forEach(function(c){put(c,q4)});
+    if(C.group){C.group.classList.add('noPt');C.group.style.margin='0';put(C.group,q4)}
+    while(tf.firstChild)tf.removeChild(tf.firstChild);if(busF)tf.appendChild(busF);tf.appendChild(q4);tf.appendChild(next('memo','行前',['contract','成交']));
+    /* 多張單一起找司機 → 「更多」裡的工具視窗 */
+    if(C.multi){var mw=document.createElement('div');mw.id='bfModal';mw.hidden=true;mw.setAttribute('style','position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px');
+      var mi=document.createElement('div');mi.setAttribute('style','max-width:980px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px');
+      mi.innerHTML='<div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">多張單一起找司機</h3><button class="btn" type="button" id="bfClose">關閉</button></div>';
+      C.multi.style.margin='0';mi.appendChild(C.multi);mw.appendChild(mi);document.body.appendChild(mw)}
+    /* 5 行前：直接放在 tab-memo 底下（同業單的顯示規則要用） */
+    var anchor=tm.querySelector('.lgTop');var after=anchor?anchor.nextSibling:tm.firstChild;
+    [C.cfSend,C.cfFlow,C.flow,C.drvNote,C.x5].forEach(function(c){if(!c)return;c.style.marginBottom='18px';tm.insertBefore(c,after)});
+    [C.flow,C.drvNote,C.x5].forEach(function(c){if(c)c.classList.add('ptKeep')});
+    if(C.cfSend){C.cfSend.id='cfSendCard';C.cfSend.classList.add('noBus')}
+    tm.appendChild(next('refs','結案',['find','派車']));
+    /* 6 結案 */
+    var q6=col();[C.photo,C.rev].forEach(function(c){if(c){c.classList.add('noBus');put(c,q6)}});if(C.photo)C.photo.id='photoCard';tr.insertBefore(q6,tr.firstChild);tr.appendChild(next('',' ',['memo','行前']));
+    td.remove();
+    /* 名稱統一 */
+    setH3(C.info,'詢價資料');setH3(C.pay,'收款狀態');setH3(C.x5,'追加款項','行前才追加的款項，會列在尾款（尾款 $X+項目 $Y=$Z）');
+    setH3(C.cfSend,'行前回填','用車前一週傳給客人填');setH3(C.cfFlow,'客人的行前回填','客人送出後，會自動帶入下面的禮車流程');
+    if(C.drvNote){var hs=C.drvNote.querySelectorAll('h3');retitle(hs[0],'司機備註');retitle(hs[1],'客人備註','只放在禮車服務確認單；空白＝確認單照用上面的「司機備註」')}
+    var mo=card(tm,'給客人核對');setH3(mo,'服務確認單','給客人核對內容、按確認，並選尾款付款方式（當天現金／最晚前一天匯款）');
+    var ml=$('memoLinkCard');if(ml)retitle(ml.querySelector('h3'),'派車單＋服務確認單連結');
+    var ad=document.querySelector('#quoteAddBox .hint');if(ad)ad.textContent='報價補充（貼完報價後接著傳）';
+    var ct=$('ctTuneCard');if(ct){var cs=ct.querySelector('h3 small');if(cs)cs.textContent='只改合約，不影響報價、訂單資料、服務確認單和派車單；留空就照原本資料'}
+    var cfs=document.querySelector('.cfSide summary b');if(cfs)cfs.textContent='客人填的行前回填';
+    var bc=$('btnCoupleCt');if(bc)bc.textContent='訂單資料';var b2=$('btnCouple');if(b2)b2.textContent='訂單資料';
+    var b3=$('btnMemoLinkCard');if(b3)b3.textContent='派車單連結';var b4=$('cfListBtn');if(b4)b4.textContent='行前回填';
+    if(cm){cm.querySelectorAll('h3').forEach(function(h){if(h.firstChild&&h.firstChild.nodeType===3&&/新人資料/.test(h.firstChild.nodeValue))h.firstChild.nodeValue=h.firstChild.nodeValue.replace('新人資料','訂單資料')})}
+    /* 多張單一起找司機：放到「更多」的總查詢 */
+    var g=$('cfListBtn');if(g&&C.multi){var nb=document.createElement('button');nb.className='btn';nb.type='button';nb.id='btnBfOpen';nb.textContent='多張單找司機';nb.title='同一天同車款、同顏色的單，一起產生找司機訊息';g.parentNode.insertBefore(nb,g)}
+    /* 分頁列 */
+    var nav=$('tabs');if(nav){var T=[['quote','詢價'],['price','報價'],['contract','成交'],['find','派車'],['memo','行前'],['refs','結案']];var st=nav.querySelector('[data-tab="settings"]');
+      nav.querySelectorAll('button[data-tab]').forEach(function(b){if(b.dataset.tab!=='settings')b.remove()});
+      T.forEach(function(t,i){var b=document.createElement('button');b.setAttribute('role','tab');b.dataset.tab=t[0];b.innerHTML='<span class="n">'+(i+1)+'</span>'+t[1];if(!i)b.setAttribute('aria-selected','true');nav.insertBefore(b,st)})}
+  }catch(e){console.error('layout v2',e)}
+})();
+</script>
 <script>
 (function(){
 'use strict';
@@ -1265,7 +1336,7 @@ async function doSync(){if(!S.driveUrl&&DEF_S.driveUrl)S.driveUrl=DEF_S.driveUrl
     if(j.settings&&(+j.settings._ts||0)>(+S._ts||0)){const keep={driveUrl:S.driveUrl,driveKey:S.driveKey};S=Object.assign(clone(DEF_S),j.settings,keep);store('nwcw_settings',S);rebuildModels();renderPriceSettings();cur=true}
     try{if(j.shopee)setTimeout(()=>spMerge(j.shopee),0)}catch(_){}
     try{if(j.review){REV=j.review;store('nwcw_rev',REV);let up=false;Object.keys(REV).forEach(id=>{const x=DB.orders[id],r=REV[id];if(x&&r.reply&&r.reply.photo&&x.c&&x.c.photoReq!=='要'){x.c.photoReq='要';x.updated=Date.now();up=true;if(id===o.id)cur=true}});if(up)syncAgain=true;try{renderRev()}catch(_){}}}catch(_){}
-    let upN=false;FORMDATA=j.formData||FORMDATA;CONFIRMS=j.confirms||CONFIRMS;MEMOS=j.memos||MEMOS;ECP=j.ecp||ECP;try{const mc=memoApply(MEMOS);if(mc.length){upN=true;(async()=>{for(const x of mc){try{await memoDocsFor(x)}catch(_){}}})();if(mc.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}}}catch(e){console.warn(e)}try{const qc=cfApplyQ(j.cfq);if(qc.length){upN=true;if(qc.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}}}catch(e){console.warn(e)}try{const nf=cfNoteFill();if(nf.length){upN=true;if(nf.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}setTimeout(()=>toast(`已補上 ${nf.length} 筆客人「想提醒司機」到注意事項：${nf.map(x=>orderNo(x)).join('、')}`),1600)}}catch(e){console.warn(e)}try{const ch=cfAuto();if(ch.length){upN=true;if(ch.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}setTimeout(()=>toast(`已帶入 ${ch.length} 筆客人行前確認：${ch.map(x=>orderNo(x)).join('、')}`),800)}}catch(e){console.warn(e)}try{const fa=formAutoAll(FORM_BACKFILL);FORM_BACKFILL=false;if(fa.length){upN=true;if(fa.some(z=>z.x.id===o.id)){o=DB.orders[o.id];cur=true}const dn=fa.filter(z=>z.r.diffs.length).length;setTimeout(()=>toast(`已自動帶入 ${fa.length} 筆客人填寫頁：${fa.map(z=>orderNo(z.x)).join('、')}`+(dn?`；其中 ${dn} 筆跟合約有不同，請到「合約」核對`:'')),2400)}}catch(e){console.warn(e)}try{renderFormDataBtn();renderFormPlaces()}catch(e){}{const F=j.forms||{},N=j.formNames||{};Object.values(DB.orders).forEach(x=>{const k=normNo(orderNo(x)),t=F[k],nm=N[k];if(t&&!x.formAt){x.formAt=t;if(x.id===o.id)cur=true}
+    let upN=false;FORMDATA=j.formData||FORMDATA;CONFIRMS=j.confirms||CONFIRMS;MEMOS=j.memos||MEMOS;ECP=j.ecp||ECP;try{const mc=memoApply(MEMOS);if(mc.length){upN=true;(async()=>{for(const x of mc){try{await memoDocsFor(x)}catch(_){}}})();if(mc.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}}}catch(e){console.warn(e)}try{const qc=cfApplyQ(j.cfq);if(qc.length){upN=true;if(qc.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}}}catch(e){console.warn(e)}try{const nf=cfNoteFill();if(nf.length){upN=true;if(nf.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}setTimeout(()=>toast(`已補上 ${nf.length} 筆客人「想提醒司機」到注意事項：${nf.map(x=>orderNo(x)).join('、')}`),1600)}}catch(e){console.warn(e)}try{const ch=cfAuto();if(ch.length){upN=true;if(ch.some(x=>x.id===o.id)){o=DB.orders[o.id];cur=true}setTimeout(()=>toast(`已帶入 ${ch.length} 筆客人行前確認：${ch.map(x=>orderNo(x)).join('、')}`),800)}}catch(e){console.warn(e)}try{const fa=formAutoAll(FORM_BACKFILL);FORM_BACKFILL=false;if(fa.length){upN=true;if(fa.some(z=>z.x.id===o.id)){o=DB.orders[o.id];cur=true}const dn=fa.filter(z=>z.r.diffs.length).length;setTimeout(()=>toast(`已自動帶入 ${fa.length} 筆客人填寫頁：${fa.map(z=>orderNo(z.x)).join('、')}`+(dn?`；其中 ${dn} 筆跟合約有不同，請到「成交」頁的合約核對`:'')),2400)}}catch(e){console.warn(e)}try{renderFormDataBtn();renderFormPlaces()}catch(e){}{const F=j.forms||{},N=j.formNames||{};Object.values(DB.orders).forEach(x=>{const k=normNo(orderNo(x)),t=F[k],nm=N[k];if(t&&!x.formAt){x.formAt=t;if(x.id===o.id)cur=true}
       if(nm&&(nm.groom||nm.bride)&&!x.c.groom&&!x.c.bride){x.c.groom=nm.groom||'';x.c.bride=nm.bride||'';x.updated=Date.now();upN=true;if(x.id===o.id)cur=true}})}
     DB.cur=o.id;store('nwcw_orders',DB);if(cur)loadOrder();else renderOrderSel();try{renderCfFlow()}catch(_){}setTimeout(()=>{cfGeoRun().catch(e=>console.warn(e))},1500);openFromHash();
     try{if(ttDrvSync())upN=true}catch(e){console.warn(e)}   // 2026-10-20 TimeTree 2768：答維正的趟次先存好司機派車單文字
@@ -1340,7 +1411,7 @@ function formAutoOne(x,fd){if(x.bus)return busFormAuto(x,fd);const res=fdRes(fd)
   if(!x.cityA&&t.cityA)x.cityA=t.cityA;if(!x.cityB&&t.cityB)x.cityB=t.cityB;
   if(t.src&&t.src.from&&!(x.src&&x.src.from)){x.src=Object.assign(x.src||{},{from:t.src.from});if(t.src.fromNote)x.src.fromNote=t.src.fromNote}
   if((!x.flow||!x.flow.length||x.flow.every(f=>!f.t))&&t.flow&&t.flow.some(f=>f.t)){x.flow=t.flow;if(t.path)x.path=t.path}
-  if(t.decoStyle&&!x.decoStyle){x.decoStyle=t.decoStyle;x.decoSignName=t.decoSignName||'';fills.push('車頭彩款式 '+t.decoStyle);if(!num(x.deco)&&num(t.deco))diffs.push(`客人指定車頭彩 ${t.decoStyle}，費用 ${money(num(t.deco))} 還沒加進合約，請到「報價・下單」填「指定車頭彩費用」`)}
+  if(t.decoStyle&&!x.decoStyle){x.decoStyle=t.decoStyle;x.decoSignName=t.decoSignName||'';fills.push('車頭彩款式 '+t.decoStyle);if(!num(x.deco)&&num(t.deco))diffs.push(`客人指定車頭彩 ${t.decoStyle}，費用 ${money(num(t.deco))} 還沒加進合約，請到「報價」頁填「指定車頭彩費用」`)}
   if(c.start&&c.end&&num(t.hours)&&num(t.hours)!==num(x.hours))diffs.push(`客人填的用車時間 ${c.start}-${c.end} 約 ${t.hours} 小時，合約是 ${x.hours} 小時（沒有改，請確認）`);
   x.formApplied=+fd.at;x.formAuto={at:Date.now(),fdAt:+fd.at,fills,diffs};x.updated=Date.now();return x.formAuto}
 function formAutoAll(all){const M=fdMap(),cnt={},out=[],today=new Date().toISOString().slice(0,10);
@@ -2281,7 +2352,7 @@ function renderConfirmResult(r){const b=$('confirmResult');if(!r){b.innerHTML=''
   b.innerHTML=(r.warn.length?`<div class="sum">${r.warn.map(w=>`<div style="color:var(--warn)">● ${esc(w)}</div>`).join('')}</div>`:'<span class="chip ok">跟合約沒有衝突</span>')+
    (r.diffs.length?`<div class="sum" style="margin-top:8px">${r.diffs.map(d=>`<div class="sub">${esc(d)}</div>`).join('')}</div>`:'')+
    (o._suggestH?`<div class="row" style="margin-top:8px"><button class="btn sm" id="btnApplyH">合約時數改成 ${hrsLabel(o._suggestH)}</button></div>`:'')+
-   `<p class="hint">流程已依回覆重排；司機派車單和禮車服務確認單已更新，請到「車隊與流程」檢查時間。</p>`}
+   `<p class="hint">流程已依回覆重排；司機派車單和禮車服務確認單已更新，請到「行前」頁的禮車流程檢查時間。</p>`}
 function applyForm(res){const c=o.c;let n=0;o.sample=false;const set=(k,v)=>{if(v){c[k]=v;n++}};
   {const fv=String(res.foundVia||'').trim();if(fv){o.src=o.src||{};if(!o.src.from){const M={'Instagram':'IG','Facebook':'FB','婚顧／婚禮廠商介紹':'婚顧／廠商介紹'},KN=['Google 搜尋／地圖','IG','FB','婚顧／廠商介紹','朋友介紹','網路文章／論壇','AI 推薦'],v=M[fv]||fv;if(KN.indexOf(v)>=0)o.src.from=v;else{o.src.from='其他';o.src.fromNote=fv}n++}}}
   set('groom',res.groom);set('bride',res.bride);
@@ -2701,7 +2772,7 @@ function renderSrcStats(ym){const B=$('srcBody'),S2=$('srcSum');if(!B)return;con
   L.forEach(x=>{const k=String((x.src||{}).from||'').trim()||'（未填）';g[k]=g[k]||{n:0,w:0};g[k].n++;if(x.paid)g[k].w++;if(k==='（未填）')miss.push(x)});
   const ks=Object.keys(g).sort((a,b)=>g[b].n-g[a].n);const tot=L.length,won=L.filter(x=>x.paid).length;
   B.innerHTML=ks.length?ks.map(k=>`<tr><td>${esc(k)}</td><td>${g[k].n}</td><td>${g[k].w}</td><td>${g[k].n?Math.round(g[k].w/g[k].n*100)+'%':'—'}</td></tr>`).join('')+`<tr><td><b>合計</b></td><td><b>${tot}</b></td><td><b>${won}</b></td><td><b>${tot?Math.round(won/tot*100)+'%':'—'}</b></td></tr>`:'<tr><td colspan="4" class="hint">這個月還沒有報價</td></tr>';
-  S2.innerHTML=miss.length?`還沒填來源的報價 ${miss.length} 筆（到「報價・下單」的「客人怎麼找到我們」補上，數字才準）：<br>${miss.slice(0,20).map(x=>esc(orderNo(x)+' '+([x.c&&x.c.groom,x.c&&x.c.bride].filter(Boolean).join('&')||(x.c&&x.c.chatName)||''))).join('、')}`:'這個月的報價都有填來源'}
+  S2.innerHTML=miss.length?`還沒填來源的報價 ${miss.length} 筆（到「詢價」頁的「客人怎麼找到我們」補上，數字才準）：<br>${miss.slice(0,20).map(x=>esc(orderNo(x)+' '+([x.c&&x.c.groom,x.c&&x.c.bride].filter(Boolean).join('&')||(x.c&&x.c.chatName)||''))).join('、')}`:'這個月的報價都有填來源'}
 function renderRefs(){try{renderOrdRef()}catch(e){console.warn(e)}renderSettle();const mEl=$('refMonth');if(!mEl.value){const d=new Date();mEl.value=`${d.getFullYear()}-${p2(d.getMonth()+1)}`}const ym=mEl.value;try{renderSrcStats(ym)}catch(e){console.warn(e)}
   const list=Object.values(DB.orders).filter(x=>!x.sample&&x.date&&x.date.slice(0,7)===ym&&vendorOf(x)&&!(x.bus&&!isMonthly(x)&&!refRate(x))).sort((a,b)=>a.date.localeCompare(b.date));
   $('refBody').innerHTML=list.map(x=>{const r=calc(x),v=vendorOf(x);return `<tr><td>${esc(x.date.slice(5).replace('-','/'))}</td><td>${esc(orderNo(x))}</td><td>${esc(v.name)}</td><td>${esc(x.src.ref||'')}</td><td>${money(r.planFee)}</td><td>${isMonthly(x)?'月結':money(r.refAmt)}</td></tr>`}).join('')||'<tr><td colspan="6" class="hint">這個月沒有廠商推薦的訂單。</td></tr>';
@@ -3039,7 +3110,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.c
   if(b.dataset.cfday){$('cfDate').value=b.dataset.cfday;cfSel.clear();renderCf();return}
   if(b.dataset.cff){cfF=b.dataset.cff;cfSel.clear();renderCf();return}
   if(b.dataset.cfprev){cfPreview([DB.orders[b.dataset.cfprev]]);return}
-  if(b.dataset.cfopen){const x=DB.orders[b.dataset.cfopen];if(x){o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();$('cfModal').hidden=true;$('coupleModal').hidden=false}return}
+  if(b.dataset.cfopen){const x=DB.orders[b.dataset.cfopen];if(x){o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();$('cfModal').hidden=true;goCard('cfSendCard')}return}
   if(b.dataset.cfcopy){const x=DB.orders[b.dataset.cfcopy];if(!x)return;clip(cfMsg(x));x.cfSentAt=x.cfSentAt||Date.now();x.updated=Date.now();store('nwcw_orders',DB);try{pushSync()}catch(_){}b.textContent='✅ 已複製，已標記已傳';try{renderAll();renderTodo()}catch(_){}if(!$('cfModal').hidden)renderCf();return}
   if(b.id==='btnCfPrevSched'){const L=cfPrevList.filter(x=>{const c=x.c||{};return !isPrivCh(c.channel)&&c.chatName&&cfCanSend(x)});if(!L.length)return;const v=$('cfPrevAt').value,at=v?new Date(v).getTime():0;if(!at||at<Date.now()+60000){toast('預約時間要在現在之後');return}if(!confirm(`預約在 ${new Date(at).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})} 傳行前確認按鈕給 ${L.length} 位新人，確定？`))return;b.disabled=true;b.textContent='預約中…';const ok=await cfSchedule(L,at);b.disabled=false;if(ok){L.forEach(x=>cfSel.delete(x.id));$('cfPrevModal').hidden=true;if(!$('cfModal').hidden)renderCf()}else b.textContent='⏰ 預約傳送';return}
   if(b.dataset.cfunsched){const x=DB.orders[b.dataset.cfunsched];if(!x)return;b.disabled=true;b.textContent='取消中…';const j=await cfQApi({action:'cfUnschedule',ids:[x.id]});if(j&&j.ok){x.cfSchedAt='';x.updated=Date.now();cfApplyQ(j.cfq);store('nwcw_orders',DB);try{pushSync()}catch(_){}toast('已取消預約')}else{b.disabled=false;b.textContent='取消預約';toast('取消失敗：'+((j&&j.error)||'連不到機器人'))}if(!$('cfModal').hidden)renderCf();return}
@@ -3219,7 +3290,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.tf){todoF=t.dataset.tf;todoSel.clear();renderTodo();return}
   if(t.dataset.tb){todoBatch(t.dataset.tb);return}
   if(t.dataset.tcall){e.preventDefault();const x=DB.orders[t.dataset.tcall];if(x){const now=Date.now();x.callAt=now;x.updated=now;if(o&&o.id===x.id){o.callAt=now;o.updated=now}store('nwcw_orders',DB);pushSync();try{renderAll()}catch(_){}renderTodo();toast('已記錄：'+orderNo(x)+' 負責人已聯絡新人')}return}
-  if(t.dataset.topen){e.preventDefault();const x=DB.orders[t.dataset.topen];if(x){const k=(tasksOf(x)[0]||{}).k;o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();$('todoModal').hidden=true;if(k==='cfsend'||k==='cfwait'||k==='photo')$('coupleModal').hidden=false;else if(ST_TAB[k])showTab(ST_TAB[k])}return}
+  if(t.dataset.topen){e.preventDefault();const x=DB.orders[t.dataset.topen];if(x){const k=(tasksOf(x)[0]||{}).k;o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();$('todoModal').hidden=true;if(k==='cfsend'||k==='cfwait')goCard('cfSendCard');else if(k==='photo')goCard('photoCard');else if(ST_TAB[k])showTab(ST_TAB[k])}return}
   if(t.dataset.copy==='lgMsg'){copyLgMsg();return}
   if(t.dataset.copy){copy($(t.dataset.copy).textContent,$(t.dataset.copy));if(t.dataset.copy==='outQuote'){snapQuote();const qb=$('quoteAddBox');if(qb){qb.scrollIntoView({behavior:'smooth',block:'center'});qb.style.boxShadow='0 0 0 3px var(--accent,#a67c45)';setTimeout(()=>qb.style.boxShadow='',2500)}setTimeout(()=>toast('已複製報價，貼上後再按「複製補充」'),300)}if(t.dataset.copy==='outOrder'&&!o.orderedAt){o.orderedAt=Date.now();save();renderOrderSel()}if(t.dataset.copy==='outConfirm'&&!o.cfSentAt){o.cfSentAt=Date.now();save();renderOrderSel()}return}
   if(t.dataset.copytext){const v=t.dataset.copytext;if(navigator.clipboard)navigator.clipboard.writeText(v).then(()=>toast('已複製'),()=>toast('複製失敗，請點開啟後從網址列複製'));return}
@@ -3241,7 +3312,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnCfSend2':{cfPreview([o]);break}
    case 'btnMemoSend':{memoPush();break}
    case 'btnMemoLink':{memoLinkCopy();break}
-   case 'btnCfMore':$('coupleModal').hidden=false;break;
+   case 'btnCfMore':goCard('cfSendCard');break;
    case 'btnCfNoteAdd':cfNoteAdd();break;
    case 'btnConfirm':{const res=parseConfirm($('confirmBox').value);if(!Object.keys(res).length){$('confirmResult').innerHTML='<p class="hint">沒有認出欄位，請確認貼上的是行前確認的回覆。</p>';break}const r=applyConfirm(res);o.cfDoneAt=Date.now();o.cfLast={at:Date.now(),diffs:r.diffs,warn:r.warn,manual:true};save();renderOrderSel();fillInputs();renderFlow();renderAll();renderConfirmResult(r);toast('已帶入行前確認');break}
    case 'btnApplyH':{if(o._suggestH){o.cfOtH=(+o._suggestH)-(+o.hours||0);o.hours=o._suggestH;o._suggestH=null;save();fillInputs();renderCars();renderFleet();renderAll();$('confirmResult').insertAdjacentHTML('beforeend','<p class="hint">合約時數已更新，報價、合約、memo 都已重算。</p>');t.remove()}break}
@@ -3268,7 +3339,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnNew':{o=newOrder();DB.orders[o.id]=o;syncFleet();save();loadOrder();showTab('quote');{const ms=$('moreSheet');if(ms)ms.hidden=true}setTimeout(()=>{const f=$('q_chat');if(f){f.scrollIntoView({behavior:'smooth',block:'center'});try{f.focus({preventScroll:true})}catch(_){}}},150);toast('已建立新訂單');break}   /* 2026-10-28 Nicole：按新訂單直接跳到第一個分頁填客人資料 */
    case 'btnBus':{o=newOrder();o.bus=true;o.red=false;DB.orders[o.id]=o;syncFleet();save();loadOrder();showTab('quote');{const ms=$('moreSheet');if(ms)ms.hidden=true}setTimeout(()=>{const f=$('q_chat');if(f){f.scrollIntoView({behavior:'smooth',block:'center'});try{f.focus({preventScroll:true})}catch(_){}}},150);toast('已建立遊覽車接駁單');break}   /* 2026-10-28 Nicole：遊覽車接駁單 */
    case 'btnAlbum':{albumPicker();break}
-   case 'btnDup':{const n=clone(o);n.id=newOrder().id;n.sample=false;n.seq='';n._seqKey='';n._seq='';n.c=Object.assign(newOrder().c,{});n.fleet=n.fleet.map(f=>Object.assign(f,{plate:'',driver:'',phone:''}));Object.assign(n,{paid:false,paidAt:'',paidTs:'',contractUrl:'',memoLinks:null,driveFolder:'',inqAt:Date.now(),orderedAt:'',followAt:'',lost:false,formAt:'',cfSentAt:'',cfDoneAt:'',cfSchedAt:'',revAskAt:'',revLinkAt:'',revSkip:false,photoSentAt:'',carHead:'',balPaid:false,settled:false,sent:[],quotes:[],need:clone(newOrder().need)});o=n;DB.orders[o.id]=o;save();loadOrder();toast('已複製車款與價格到新訂單');break}
+   case 'btnDup':{const n=clone(o);n.id=newOrder().id;n.sample=false;n.seq='';n._seqKey='';n._seq='';n.c=Object.assign(newOrder().c,{});n.fleet=n.fleet.map(f=>Object.assign(f,{plate:'',driver:'',phone:''}));Object.assign(n,{paid:false,paidAt:'',paidTs:'',contractUrl:'',memoLinks:null,driveFolder:'',inqAt:Date.now(),orderedAt:'',followAt:'',lost:false,formAt:'',cfSentAt:'',cfDoneAt:'',cfSchedAt:'',revAskAt:'',revLinkAt:'',revSkip:false,photoSentAt:'',carHead:'',balPaid:false,settled:false,sent:[],quotes:[],need:clone(newOrder().need)});o=n;DB.orders[o.id]=o;save();loadOrder();showTab('quote');{const ms=$('moreSheet');if(ms)ms.hidden=true}try{window.scrollTo(0,0)}catch(_){}toast('已複製車款與價格到新訂單');break}
    case 'btnDel':{const h=$('delHint'),reset=()=>{delStep=0;t.textContent='🗑 刪除此訂單';h.textContent=''};clearTimeout(delTimer);
      if(Date.now()-delArm>8000)delStep=0;delArm=Date.now();delStep++;
      if(delStep===1){t.textContent='確認刪除 '+orderNo(o)+'？';h.textContent='刪除後整張訂單（報價、合約、派車、memo）都會消失，無法復原。';delTimer=setTimeout(reset,8000);break}
@@ -3302,7 +3373,11 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
    case 'btnResetS':{const keep={bank:S.bank,phone:S.phone,email:S.email,formBase:S.formBase,formEntry:S.formEntry};S=Object.assign(clone(DEF_S),keep);saveS();renderPriceSettings();fillInputs();renderCars();renderAll();$('resetMsg').textContent='已恢復預設價目';break}
   }});
 /* 2026-10-20 Nicole：選好訂單後，已派好司機→停在派車單；還在等派司機→停在找司機（還沒出合約的單照原本） */
-function autoTab(x){try{if(!x||x.sample||x.lost)return;const st=stageOf(x);if(!x.partner&&st!=='ready'&&st!=='done')return;const noDrv=!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim());showTab(noDrv?'find':'memo')}catch(e){console.warn(e)}}
+/* 2026-10-29 Nicole：打開訂單時，直接跳到這張單目前做到的那一頁 */
+function stageTab(x){if(!x||x.sample||x.lost)return '';const noDrv=!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim());if(x.partner)return noDrv?'find':'memo';const st=stageOf(x);if(st==='inq')return (x.quotes||[]).length?'price':'quote';if(st==='unpaid'||st==='noform'||st==='nocontract')return 'contract';if(st==='ready')return noDrv?'find':'memo';if(st==='done')return 'refs';return ''}
+function autoTab(x){try{const k=stageTab(x);if(k){showTab(k);try{window.scrollTo(0,0)}catch(_){}}}catch(e){console.warn(e)}}
+function goCard(id){const c=$(id);if(!c)return;const sec=c.closest('section.tab');if(sec)showTab(sec.id.replace(/^tab-/,''));setTimeout(()=>{try{c.scrollIntoView({behavior:'smooth',block:'start'})}catch(_){}},80)}
+function markTabs(){try{const k=stageTab(o),T=['quote','price','contract','find','memo','refs'],i=T.indexOf(k);document.querySelectorAll('#tabs button[data-tab]').forEach(b=>{const j=T.indexOf(b.dataset.tab);b.classList.toggle('done',i>0&&j>=0&&j<i);b.classList.toggle('cur',i>=0&&j===i)})}catch(e){}}
 $('orderSel').addEventListener('change',e=>{o=DB.orders[e.target.value];save();loadOrder();autoTab(o)});
 function copy(text,el){const done=()=>toast('已複製');
   const fb=()=>{const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);try{document.execCommand('copy')?done():toast('已選取文字，請按複製')}catch(_){toast('已選取文字，請按複製')}};
@@ -3311,7 +3386,7 @@ let tt;function toast(s){const t=$('toast');t.textContent=s;t.classList.add('on'
 /* 2026-10-21 Nicole：客人聯絡電話必填：沒填不能確認合約／存 Drive／列印 */
 window.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#btnCtOk,#btnDrive,#btnPrint');if(!b||!o)return;if(String((o.c||{}).phone||'').trim())return;
   e.preventDefault();e.stopImmediatePropagation();toast('請先填客人的聯絡電話（必填）');{const md=$('coupleModal');if(md)md.hidden=false}setTimeout(()=>{const el=$('c_phone');if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.focus()}},120)},true);
-function showTab(name){if(name==='couple')name='quote';   /* 2026-10-21 確認款項併入報價・下單 */
+function showTab(name){if(name==='couple')name='contract';if(name==='dispatch')name='find';{const tb=document.querySelector(`#tabs button[data-tab="${name}"]`);if(tb&&tb.hidden)name='find'}   /* 2026-10-29 新分頁：收款在「成交」；車隊在「派車」 */   /* 2026-10-21 確認款項併入報價・下單 */
   document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===name));
   document.querySelectorAll('section.tab').forEach(s=>s.hidden=s.id!=='tab-'+name);{const z=$('delZone');if(z)z.hidden=name==='settings'||name==='refs';const b=$('btnDel');if(b&&delStep){delStep=0;clearTimeout(delTimer);b.textContent='🗑 刪除此訂單';$('delHint').textContent=''}}try{sessionStorage.setItem('nwcw_tab',name)}catch(_){}}
 
@@ -3722,7 +3797,7 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   if(b.id==='btnPtDrvRegen'){p.drvSheet='';save();renderPtMemo();toast('已依司機酬勞重新產生');return}
   const t=String(b.id==='btnPtCustCopy'?p.raw||'':(String(p.drvSheet||'').trim()?ptAddC(p.drvSheet,o):ptDrvGen(o))).trim();if(!t){toast('還沒有內容');return}clip(t);toast(b.id==='btnPtCustCopy'?'已複製同業原始派單內容':'已複製司機派車單')});   /* 2026-10-20 同業單的司機派車單 */
 document.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.pt==='prepaid'&&isPt(o)){o.partner.prepaid=t.checked;save();renderPtCard()}});
-function ptTabs(){const pt=isPt(o);{const tm=$('tab-memo');if(tm)tm.classList.toggle('pt',pt)}['quote','couple','contract'].forEach(k=>{const b=document.querySelector(`#tabs button[data-tab="${k}"]`);if(b)b.hidden=pt});const cur=document.querySelector('#tabs button[aria-selected="true"]');if(pt&&cur&&cur.hidden)showTab('dispatch')}
+function ptTabs(){const pt=isPt(o);{const tm=$('tab-memo');if(tm)tm.classList.toggle('pt',pt)}document.body.classList.toggle('isPt',pt);['quote','price','couple','contract'].forEach(k=>{const b=document.querySelector(`#tabs button[data-tab="${k}"]`);if(b)b.hidden=pt});const cur=document.querySelector('#tabs button[aria-selected="true"]');if(pt&&cur&&cur.hidden)showTab('dispatch')}
 function renderPtSettle(){const d=$('ptDate').value,mon=$('ptMonth').checked;const L=Object.values(DB.orders).filter(x=>isPt(x)&&!x.lost&&x.date&&(mon?x.date.slice(0,7)===d.slice(0,7):x.date===d)).sort((a,b)=>a.date.localeCompare(b.date));
   const G={};L.forEach(x=>{(G[x.partner.co||'（未填公司）']=G[x.partner.co||'（未填公司）']||[]).push(x)});
   $('ptSettleOut').innerHTML=Object.keys(G).length?Object.entries(G).map(([co,xs])=>{const s={pay:0,back:0,remit:0,owe:0,profit:0};xs.forEach(x=>{const k=ptCalc(x);for(const z in s)s[z]+=k[z]});const net=s.owe-s.remit;
@@ -3808,7 +3883,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.c
 setTimeout(()=>{loadDrivers(false);if($('drvSt')&&DRV.length)$('drvSt').textContent=`司機名單 ${DRV.length} 位`},1500);
 renderPriceSettings();loadOrder();
 let startTab='quote';try{startTab=sessionStorage.getItem('nwcw_tab')||'quote'}catch(_){}
-showTab(startTab);
+showTab(startTab);setTimeout(markTabs,300);
 {const m=location.hash.match(/setup=([^&]+)/);if(m){try{const v=JSON.parse(decodeURIComponent(m[1]));if(v.u&&v.k){S.driveUrl=v.u;S.driveKey=v.k;store('nwcw_settings',S);renderPriceSettings();toast('已設定同步，正在下載訂單…')}}catch(_){}history.replaceState(null,'',location.pathname)}}
 openFromHash();syncReady=true;doSync();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')doSync()});
@@ -3856,6 +3931,12 @@ function busFormAuto(x,fd){const f=fd.f||{},fills=[],diffs=[],emp=v=>!String(v==
   const out=$('outBusInfo');if(out)out.textContent=busInfoText(o)}catch(err){console.warn(err)}}}
 document.addEventListener('input',e=>{if(!e.target||e.target.id!=='bus_notice')return;S.busNotice=e.target.value;saveS();const out=$('outBusInfo');if(out&&o)out.textContent=busInfoText(o)});
 document.addEventListener('click',e=>{if(!e.target.closest||!e.target.closest('#btnBusInfoCopy')||!o)return;copy(busInfoText(o),$('outBusInfo'))});
+/* 2026-10-29 Nicole：分頁進度（做完的打勾色）、下一步回到頁首、多張單找司機視窗 */
+{const _raMk=renderAll;renderAll=function(){_raMk.apply(this,arguments);markTabs()}}
+document.addEventListener('click',e=>{const t=e.target;if(!t||!t.closest)return;
+  if(t.closest('.nextStep [data-tab]')){setTimeout(()=>{try{window.scrollTo(0,0)}catch(_){}},0);return}
+  if(t.closest('#btnBfOpen')){const m=$('bfModal');if(m){m.hidden=false;const ms=$('moreSheet');if(ms)ms.hidden=true}return}
+  if(t.closest('#bfClose')||t.id==='bfModal'){const m=$('bfModal');if(m)m.hidden=true}});
 /* 2026-10-28 Nicole：遊覽車行程列（時間／上車／中停／下車），可新增、刪除 */
 function busStopsRender(){const w=$('busStops');if(!w||!o||!o.bus)return;if(!Array.isArray(o.busStops)||!o.busStops.length)o.busStops=[{t:'',from:'',via:'',to:''}];const k=o.id+'|'+o.busStops.length;
   if(w.dataset.k!==k){w.dataset.k=k;w.innerHTML=o.busStops.map((r,i)=>`<div class="bstop"><div class="bh"><span>第 ${i+1} 段</span><button type="button" class="btn sm" data-busdel="${i}" title="刪除這段"${o.busStops.length<2?' disabled':''}>×</button></div><div class="bg"><span>時間</span><input type="time" step="300" class="t" data-b="busStops.${i}.t" aria-label="時間"><span>上車地點</span><input data-b="busStops.${i}.from" placeholder="例:新竹市東區光復路一段 100 號"><span>中停地點</span><input data-b="busStops.${i}.via" placeholder="選填"><span>下車地點</span><input data-b="busStops.${i}.to" placeholder="例:台中市西屯區台灣大道"></div></div>`).join('')}
