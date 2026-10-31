@@ -1234,9 +1234,12 @@ function fixTel(v){const t=String(v==null?'':v).trim();return /^9\d{2}[-\s]?\d{3
 Object.values(DB.orders).forEach(migrate);
 /* 2026-10-20 Nicole：B（迎娶）和 C（其他地點）同一個地址 → 合併成 B，標註接在後面（例：礁溪老爺酒店・餐廳），流程的 C 改成 B */
 function ptMerge(x){const c=x&&x.c;if(!c||!c.o1||!c.wed||c.o2)return false;const k=v=>String(v||'').replace(/[\s　,，]/g,'').replace(/臺/g,'台');if(k(c.o1)!==k(c.wed))return false;
-  const bl=String(c.wedL||'').trim(),parts=String(c.o1L||'').split(/[・\-－、\s]+/).map(z=>z.trim()).filter(z=>z&&bl.indexOf(z)<0);
+  const bl=String(c.wedL||'').trim(),parts=String(c.o1L||'').trim()?String(c.o1L||'').split(/[・\-－、\s]+/).map(z=>z.trim()).filter(z=>z&&bl.indexOf(z)<0):(bl.indexOf('餐廳')<0?['餐廳']:[]);   /* 2026-10-31 C 沒填名稱時預設標「餐廳」 */
   c.wedL=[bl,...parts].filter(Boolean).join('・');if(!c.wedMap&&c.o1Map)c.wedMap=c.o1Map;c.o1='';c.o1L='';c.o1Map='';c.o1S='';
-  const sw=t=>String(t||'').replace(/\bC\b/g,'B');x.path=sw(x.path);(x.flow||[]).forEach(f=>{f.seg=sw(f.seg)});return true}
+  const sw=t=>String(t||'').replace(/\bC\b/g,'B');x.path=sw(x.path).split(' - ').filter((k,i,a)=>!i||k!==a[i-1]).join(' - ');(x.flow||[]).forEach(f=>{f.seg=sw(f.seg)});x.flow=(x.flow||[]).filter(f=>!(/^\s*([A-Z])\s*-\s*\1\s*$/.test(f.seg||'')&&!f.t&&!f.who));return true}
+/* 2026-10-31 Nicole：餐廳地址打到一半／剛貼上跟女方家一樣時，不要立刻合併（之前會把資料清掉、畫面卻還留著地址，路線顯示「沒填地址」）；離開欄位時才合併，並更新畫面、提示 */
+function ptTyping(){const a=document.activeElement;return !!(a&&a.dataset&&/^c\.(wed|o1)$/.test(a.dataset.b||''))}
+document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!/^c\.(wed|o1)$/.test(t.dataset.b||'')||!o)return;setTimeout(()=>{try{if(ptMerge(o)){save();fillInputs();renderAll();try{renderFlow()}catch(_){}toast('餐廳地址跟女方家一樣，已合併成「'+(o.c.wedL||'女方家')+'」，路線不用再選餐廳')}}catch(_){}},0)});
 /* 2026-10-20 Nicole：第 5 頁地點／流程改完按「儲存」才寫進系統（之前只是草稿，可以取消） */
 let FDRAFT=null;var BASES={};   /* 2026-10-20 每張單最後一次跟伺服器一致的內容（衝突時用來合併） */
 function fdBegin(){if(!o)return;if(FDRAFT&&FDRAFT.id!==o.id)fdCommit(true);if(FDRAFT)return;FDRAFT={id:o.id,bak:clone({c:o.c,path:o.path,flow:o.flow,locEditAt:o.locEditAt||0,fleet:o.fleet,friends:o.friends||[],friendsManual:!!o.friendsManual,avoidZ:o.avoidZ||[],eqOk:o.eqOk||null})};setTimeout(renderFdBar,0)}
@@ -1249,7 +1252,7 @@ function renderFdBar(){if(FDRAFT&&o&&FDRAFT.id!==o.id){fdCommit(true);toast('上
 ['input','change','click'].forEach(ev=>document.addEventListener(ev,e=>{const t=e.target;if(!t||!t.closest)return;if(t.closest('#fdBar')||t.closest('.fdBar2')||t.closest('#eqWarn'))return;if(!t.closest('.flowEdit')&&!t.closest('.fdZone'))return;if(ev==='click'&&!t.closest('button'))return;fdBegin()},true));
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-fd]');if(!b)return;if(b.dataset.fd==='save')fdCommit();else fdCancel()});
 window.addEventListener('beforeunload',e=>{if(FDRAFT){e.preventDefault();e.returnValue=''}});
-function save(){try{ptMerge(o)}catch(_){}if(FDRAFT&&o&&FDRAFT.id===o.id){o.updated=Date.now();DB.orders[o.id]=o;setTimeout(renderFdBar,0);return}o.updated=Date.now();DB.cur=o.id;DB.orders[o.id]=o;store('nwcw_orders',DB);pushSync();drvAutoQ()}
+function save(){try{if(!ptTyping())ptMerge(o)}catch(_){}if(FDRAFT&&o&&FDRAFT.id===o.id){o.updated=Date.now();DB.orders[o.id]=o;setTimeout(renderFdBar,0);return}o.updated=Date.now();DB.cur=o.id;DB.orders[o.id]=o;store('nwcw_orders',DB);pushSync();drvAutoQ()}
 function saveS(){if(syncReady)S._ts=Date.now();store('nwcw_settings',S);pushSync()}
 let syncReady=false,syncBusy=false,syncTimer=null,syncAgain=false;
 function syncStat(t){const el=$('btnSync');if(el)el.textContent=t}
