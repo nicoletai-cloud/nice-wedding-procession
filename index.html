@@ -2932,6 +2932,7 @@ function invoiceOpen(name){const ym=$('billMonth').value,g=billGroups(ym).find(z
 .tot .r{background:#FAF5EE;justify-content:center;font-family:"Cormorant Garamond","Noto Serif TC",serif;font-weight:600;font-size:30px;flex-direction:column}.tot .r small{font-family:"Noto Sans TC";font-size:12px;color:var(--brown);font-weight:400}
 .sign{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:16px}.sign>div{border:1px solid var(--line);border-radius:6px;padding:14px 22px;height:200px;background:#fff}
 .sign h4{margin:0;padding-bottom:8px;border-bottom:1px solid var(--line);display:flex;gap:18px;align-items:baseline;font-size:18px;color:var(--brown)}.sign h4 .en{font-size:11px;color:var(--brown);font-weight:500}
+.cseal{position:absolute;right:28px;bottom:22px;width:84px;border:1.8px solid #9E4C43;border-radius:4px;padding:3px;transform:rotate(-2deg)}.cseal>div{border:.7px solid #9E4C43;border-radius:2px;padding:4px 0}.cseal table{width:100%;border-collapse:collapse}.cseal td{text-align:center;color:#9E4C43;font-family:"Noto Serif TC","Songti TC","PMingLiU",serif;font-weight:700;font-size:27px;line-height:1.05;padding:0;border:0}
 .note{margin-top:10px;font-size:12px;color:#8A7766;text-align:center}
 [contenteditable]:focus{outline:2px dashed var(--gold);outline-offset:2px}
 @media print{body{background:#fff}.bar{display:none}.page{margin:0;box-shadow:none;width:210mm;min-height:297mm}@page{size:A4;margin:0}}
@@ -2955,7 +2956,7 @@ function invoiceOpen(name){const ym=$('billMonth').value,g=billGroups(ym).find(z
 ${R2.map((r,i)=>r?`<tr><td class="no">${i+1}</td><td>${e(String(r.date).slice(5).replace('-','/'))}</td><td contenteditable>${e(r.no)}</td><td contenteditable>${e([r.what,r.who].filter(Boolean).join('｜'))}</td><td contenteditable>${e(r.agent)}</td><td class="n">${Math.round(+r.amt||0).toLocaleString('en-US')}</td><td contenteditable>${e(r.note)}</td></tr>`:`<tr><td class="no">${i+1}</td><td></td><td contenteditable></td><td contenteditable></td><td contenteditable></td><td class="n" contenteditable></td><td contenteditable></td></tr>`).join('')}
 </tbody></table>
 <div class="tot"><div class="l"><b>合計</b><span class="en">Total</span></div><div class="r">NT$ ${Math.round(+g.tot||0).toLocaleString('en-US')}<small>新台幣 ${twCap(g.tot)}</small></div></div></div>
-<div class="sign"><div><h4>部門主管<span class="en">Approved by</span></h4></div><div><h4>申請人<span class="en">Applicant</span></h4></div></div>
+<div class="sign"><div><h4>部門主管<span class="en">Approved by</span></h4></div><div style="position:relative"><h4>申請人<span class="en">Applicant</span></h4><div class="cseal"><div><table><tr><td>禮</td><td>好</td></tr><tr><td>車</td><td>好</td></tr></table></div></div></div></div>
 <div class="note" contenteditable>司機紅包、甘蔗固定費由司機現場收取，不列入請款。請款單號 ${e(no)}｜請款期間 ${y}.${m}.01 – ${y}.${m}.${last}</div>
 </div></body></html>`;
   w.document.open();w.document.write(html);w.document.close()}
