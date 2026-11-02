@@ -1086,7 +1086,7 @@ nav.tabs button{scroll-snap-align:start}
             <label class="f">客人要照片<select id="c_photoReq" data-b="c.photoReq"><option value="">不用</option><option>要</option></select></label>
             <label class="f wide">照片資料夾連結<input id="c_photoUrl" data-b="c.photoUrl" placeholder="https://drive.google.com/…"></label>
           </div>
-          <div class="row" style="justify-content:space-between;margin:10px 0 6px"><span class="hint" style="margin:0" id="photoSt"></span><span class="row" style="gap:6px"><button class="btn sm" id="btnPhotoCopy">複製並標記已傳</button><button class="btn sm pri" id="btnPhotoBot">用機器人傳給客人</button></span></div>
+          <div class="row" style="justify-content:space-between;margin:10px 0 6px"><span class="hint" style="margin:0" id="photoSt"></span><span class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn sm" id="btnPhotoAlbum" title="開啟這張單群組的相簿，挑要給客人的照片">篩選照片</button><button class="btn sm" id="btnPhotoCopy">複製並標記已傳</button><button class="btn sm pri" id="btnPhotoBot">用機器人傳給客人</button></span></div>
           <pre class="out" id="outPhoto"></pre>
           <div id="ptPhotoRow" class="row" hidden style="justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)"><span id="ptPhotoSt" class="hint" style="margin:0"></span><label class="row" style="gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="ptPhotoCb" style="width:auto">照片已傳同業</label></div>
         </div>
@@ -4200,6 +4200,8 @@ document.addEventListener('click',e=>{const t=e.target;if(!t||!t.closest||!o)ret
   const d=t.closest('[data-busdel]');if(d){const i=+d.dataset.busdel;if((o.busStops||[]).length>1){o.busStops.splice(i,1);const w=$('busStops');if(w)w.dataset.k='';save();renderAll()}}});
 try{renderRev()}catch(e){}
 document.addEventListener('change',e=>{if(e.target.id!=='revSkipCb')return;o.revSkip=e.target.checked;save();renderAll();renderOrderSel();toast(o.revSkip?'已標註當天有缺失，不會自動詢問評價':'已取消缺失標註')});
+/* 2026-11-02 Nicole：每張訂單都能直接進篩選照片（相簿） */
+document.addEventListener('click',e=>{if(!e.target.closest||!e.target.closest('#btnPhotoAlbum')||!o)return;e.preventDefault();if(!o.date){toast('這張單還沒有用車日');return}openAlbum(o)});
 /* 2026-11-02 Nicole：下單訊息直接用機器人傳給客人（官方 LINE／FB／IG），不用複製貼上 */
 function renderOrderBotSt(){const el=$('orderBotSt');if(!el||!o)return;const t=o.orderMsgSentAt;el.hidden=!t;if(t)el.textContent='已用機器人傳給客人：'+new Date(t).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}
 document.addEventListener('click',async e=>{if(!e.target.closest||!e.target.closest('#btnOrderBot')||!o)return;e.preventDefault();
