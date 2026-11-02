@@ -2933,15 +2933,15 @@ function invoiceHtml(name){const ym=$('billMonth').value,g=billGroups(ym).find(z
 .tot{display:grid;grid-template-columns:1.62fr 1fr;border:1px solid var(--line);border-top:0;border-radius:0 0 4px 4px;overflow:hidden}.tot>div{display:flex;align-items:center;padding:14px 18px}
 .tot .l{background:var(--soft);justify-content:flex-end;gap:14px;border-right:1px solid var(--line)}.tot .l b{font-family:"Noto Serif TC",serif;font-size:22px;letter-spacing:.2em}.tot .l .en{font-size:12px}
 .tot .r{background:#FAF5EE;justify-content:center;font-family:"Cormorant Garamond","Noto Serif TC",serif;font-weight:600;font-size:30px;flex-direction:column}.tot .r small{font-family:"Noto Sans TC";font-size:12px;color:var(--brown);font-weight:400}
-.sign{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:16px}.sign>div{border:1px solid var(--line);border-radius:6px;padding:14px 22px;height:200px;background:#fff}
+.sign{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:16px}.sign>div{border:1px solid var(--line);border-radius:6px;padding:10px 22px;height:118px;background:#fff;position:relative}.sign .sg{font-family:"Great Vibes",cursive;font-size:38px;color:#2B2420;line-height:1;padding:16px 0 0 6px;white-space:nowrap}
 .sign h4{margin:0;padding-bottom:8px;border-bottom:1px solid var(--line);display:flex;gap:18px;align-items:baseline;font-size:18px;color:var(--brown)}.sign h4 .en{font-size:11px;color:var(--brown);font-weight:500}
-.cseal{position:absolute;right:28px;bottom:22px;width:84px;border:1.8px solid #9E4C43;border-radius:4px;padding:3px;transform:rotate(-2deg)}.cseal>div{border:.7px solid #9E4C43;border-radius:2px;padding:4px 0}.cseal table{width:100%;border-collapse:collapse}.cseal td{text-align:center;color:#9E4C43;font-family:"Noto Serif TC","Songti TC","PMingLiU",serif;font-weight:700;font-size:27px;line-height:1.05;padding:0;border:0}
+.cseal{position:absolute;right:24px;bottom:12px;width:66px;border:1.8px solid #9E4C43;border-radius:4px;padding:3px;transform:rotate(-2deg)}.cseal>div{border:.7px solid #9E4C43;border-radius:2px;padding:4px 0}.cseal table{width:100%;border-collapse:collapse}.cseal td{text-align:center;color:#9E4C43;font-family:"Noto Serif TC","Songti TC","PMingLiU",serif;font-weight:700;font-size:21px;line-height:1.05;padding:0;border:0}
 .note{margin-top:10px;font-size:12px;color:#8A7766;text-align:center}
 [contenteditable]:focus{outline:2px dashed var(--gold);outline-offset:2px}
 @media print{body{background:#fff}.bar{display:none}.page{margin:0;box-shadow:none;width:210mm;min-height:297mm}@page{size:A4;margin:0}}
 @media (max-width:820px){.page{width:auto;min-height:0;margin:8px;padding:14px}.seal{width:56px;height:56px}.logo b{font-size:24px}.logo i{font-size:18px}.hd .en,.vbar{display:none}.ttl h1{font-size:26px}
  .info{grid-template-columns:96px 1fr}.info .k2,.info .v2{grid-row:auto}.info>div{font-size:14px;padding:10px 12px}.info .k2{justify-content:flex-start;border-left:0}.pay{grid-template-columns:1fr}.pay .lf{padding:12px;border-right:0;border-bottom:1px solid var(--line)}.pay td{font-size:14px;padding:10px 12px}.pay td.k{width:84px;letter-spacing:.1em}
- .det table{font-size:12px}.det th{font-size:12px}.det td{padding:8px 4px}.tot .r{font-size:22px}.sign{grid-template-columns:1fr}.sign>div{height:140px}}
+ .det table{font-size:12px}.det th{font-size:12px}.det td{padding:8px 4px}.tot .r{font-size:22px}.sign{grid-template-columns:1fr}.sign>div{height:104px}.sign .sg{font-size:32px}}
 </style></head><body>
 <div class="bar"><button onclick="print()">列印／存成 PDF</button><span>文字都可以直接點擊修改後再列印</span></div>
 <div class="page">
@@ -2959,7 +2959,7 @@ function invoiceHtml(name){const ym=$('billMonth').value,g=billGroups(ym).find(z
 ${R2.map((r,i)=>r?`<tr><td class="no">${i+1}</td><td>${e(String(r.date).slice(5).replace('-','/'))}</td><td contenteditable>${e(r.no)}</td><td contenteditable>${e([r.what,r.who].filter(Boolean).join('｜'))}</td><td contenteditable>${e(r.agent)}</td><td class="n">${Math.round(+r.amt||0).toLocaleString('en-US')}</td><td contenteditable>${e(r.note)}</td></tr>`:`<tr><td class="no">${i+1}</td><td></td><td contenteditable></td><td contenteditable></td><td contenteditable></td><td class="n" contenteditable></td><td contenteditable></td></tr>`).join('')}
 </tbody></table>
 <div class="tot"><div class="l"><b>合計</b><span class="en">Total</span></div><div class="r">NT$ ${Math.round(+g.tot||0).toLocaleString('en-US')}<small>新台幣 ${twCap(g.tot)}</small></div></div></div>
-<div class="sign"><div><h4>部門主管<span class="en">Approved by</span></h4></div><div style="position:relative"><h4>申請人<span class="en">Applicant</span></h4><div class="cseal"><div><table><tr><td>禮</td><td>好</td></tr><tr><td>車</td><td>好</td></tr></table></div></div></div></div>
+<div class="sign"><div><h4>部門主管<span class="en">Approved by</span></h4><div class="sg" contenteditable>Vincent Ta</div></div><div><h4>申請人<span class="en">Applicant</span></h4><div class="sg" contenteditable>Nicole Tai</div><div class="cseal"><div><table><tr><td>禮</td><td>好</td></tr><tr><td>車</td><td>好</td></tr></table></div></div></div></div>
 <div class="note" contenteditable>司機紅包、甘蔗固定費由司機現場收取，不列入請款。請款單號 ${e(no)}｜請款期間 ${y}.${m}.01 – ${y}.${m}.${last}</div>
 </div></body></html>`;
   return html}
