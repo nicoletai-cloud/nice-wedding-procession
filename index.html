@@ -891,6 +891,7 @@ nav.tabs button{scroll-snap-align:start}
       </details>
       <details class="card" style="margin-top:18px"><summary style="cursor:pointer;font-weight:700">機場月結客人設定</summary>
         <label class="f" style="margin-top:8px">一行一位：機場訂單上的名字=請款對象（同一個請款對象會合併成一張）<textarea id="s_airMonthly" rows="6"></textarea></label>
+        <label class="f" style="margin-top:8px">請款 LINE 群組：一行一個「請款對象=群組連結」<textarea id="s_billGroups" rows="3" placeholder="幸福故事館=https://line.me/ti/g/…"></textarea></label>
         <p class="hint">月結廠商（例：幸福故事館）在「價目設定」的「合作廠商與回金」加「,月結」。機場訂單標「收現」或「客人已付款」的不列入請款。</p>
       </details>
   </div>
@@ -2470,6 +2471,7 @@ document.addEventListener('input',e=>{const el=e.target;
     save();renderAll();return}
   if(el.id==='s_vp'){S.vprices=S.vprices||{};S.vprices['幸福故事館']=el.value;saveS();renderAll();return}
   if(el.id==='s_busHeads'){S.busHeads=el.value.split('\n').map(l=>{const m=l.split(/[=＝]/).map(z=>z.trim());if(!m[0])return null;const pw=m[3]||'';return{name:m[0],area:m[1]||'',contact:m[2]||'',pay:/訂金/.test(pw)?'dep':/用完|結束|再匯|後付|事後/.test(pw)?'after':'',note:m[4]||''}}).filter(Boolean);saveS();renderAll();return}   /* 2026-11-01 遊覽車車頭名單 */
+  if(el.id==='s_billGroups'){const o2={};el.value.split('\n').forEach(l=>{const m=l.match(/^(.+?)[=＝]\s*(https?:\/\/\S+)/);if(m)o2[m[1].trim()]=m[2]});S.billGroups=o2;saveS();renderBill();return}
   if(el.id==='s_airMonthly'){S.airMonthly=el.value;saveS();renderBill();return}
   if(el.id==='s_vendors'){S.vendors=el.value.split('\n').map(l=>{const m=l.split(/[=＝]/);if(!m[0].trim())return null;const rest=(m[1]||'');return{name:m[0].trim(),rate:num(rest),monthly:/月結/.test(rest)}}).filter(Boolean);saveS();renderAll();return}
   if(el.id==='refMonth'){renderRefs();return}
@@ -2859,10 +2861,11 @@ function billGroups(ym){const ymT=ym.replace('-','年')+'月',G=[];
     else G.push({dir,name,tot,sub:'手動帳款',ledger:L,rows:lrows,text:[`【好好禮車】${ymT} ${dir==='in'?'請款':'回金'}明細｜${name}`,...lines,`合計：${money(tot)}`].concat(dir==='in'?['',`匯款資訊：`,S.bank]:['','麻煩提供匯款帳號，謝謝🧡']).join('\n')})});
   return G}
 function renderBill(){const inEl=$('billIn'),outEl=$('billOut');if(!inEl)return;const bEl=$('billMonth');if(!bEl.value){const d=new Date();d.setMonth(d.getMonth()-1);bEl.value=`${d.getFullYear()}-${p2(d.getMonth()+1)}`}const ym=bEl.value;
+  {const tg=$('s_billGroups');if(tg&&document.activeElement!==tg)tg.value=Object.entries(S.billGroups||{}).map(([k,v])=>k+'='+v).join('\n')}
   const ta=$('s_airMonthly');if(ta&&document.activeElement!==ta)ta.value=S.airMonthly==null?AIR_MON_DEF:S.airMonthly;
   if(!AIRSYNC)airLoad();
   const G=billGroups(ym),lgDel=g=>(g.ledger||[]).map(l=>`<button type="button" class="btn sm" data-lgdel="${esc(l.id)}" style="padding:0 8px;margin:2px 4px 0 0">刪除 ${esc(String(l.date).slice(5))} ${money(num(l.amt))}</button>`).join('');
-  const blk=g=>billBlock(g.dir,ym,g.name,g.tot,g.text,g.sub)+(g.dir==='in'?`<div style="margin:-4px 0 8px"><button type="button" class="btn sm pri" data-invoice="${esc(g.name)}">產生請款單</button></div>`:'')+(g.ledger?`<div style="margin:-4px 0 8px">${lgDel(g)}</div>`:'');
+  const blk=g=>billBlock(g.dir,ym,g.name,g.tot,g.text,g.sub)+(g.dir==='in'?`<div style="margin:-4px 0 8px" class="row"><button type="button" class="btn sm pri" data-invoice="${esc(g.name)}">產生請款單</button>${(S.billGroups||{})[g.name]?`<a class="btn sm" href="${esc(S.billGroups[g.name])}" target="_blank" rel="noopener">開啟請款群組</a>`:''}</div>`:'')+(g.ledger?`<div style="margin:-4px 0 8px">${lgDel(g)}</div>`:'');
   inEl.innerHTML=(G.filter(g=>g.dir==='in').map(blk).join('')||'<p class="hint">這個月沒有要請款的。</p>')+(AIRSYNC?`<div class="row" style="justify-content:flex-end"><button class="btn sm" type="button" id="btnAirReload">重新讀取機場訂單</button></div>`:`<p class="hint">${AIRSYNC_ERR?'機場訂單讀不到：'+esc(AIRSYNC_ERR)+' <button class="btn sm" type="button" id="btnAirReload">重試</button>':'讀取機場訂單中…'}</p>`);
   outEl.innerHTML=G.filter(g=>g.dir==='out').map(blk).join('')||'<p class="hint">這個月沒有要匯的回金。</p>';
   /* 之前月份還沒勾的 */
