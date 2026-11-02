@@ -2832,7 +2832,7 @@ function renderRefs(){try{renderOrdRef()}catch(e){console.warn(e)}renderSettle()
   $('refBody').innerHTML=list.map(x=>{const r=calc(x),v=vendorOf(x);return `<tr><td>${esc(x.date.slice(5).replace('-','/'))}</td><td>${esc(orderNo(x))}</td><td>${esc(v.name)}</td><td>${esc(x.src.ref||'')}</td><td>${money(r.planFee)}</td><td>${isMonthly(x)?'月結':money(r.refAmt)}</td></tr>`}).join('')||'<tr><td colspan="6" class="hint">這個月沒有廠商推薦的訂單。</td></tr>';
   const by={};list.filter(x=>!isMonthly(x)).forEach(x=>{const k=vendorOf(x).name+(x.src.ref?' / '+x.src.ref:'');by[k]=(by[k]||0)+calc(x).refAmt});
   $('refSum').innerHTML=Object.keys(by).map(k=>`<div><span>${esc(k)}</span><span>${money(by[k])}</span></div>`).join('')+(Object.keys(by).length?`<div class="tot"><span>本月應付回金</span><span>${money(Object.values(by).reduce((a,b)=>a+b,0))}</span></div>`:'');
-  const bEl=$('billMonth');if(bEl&&!bEl.value)bEl.value=ym;try{renderBill()}catch(e){console.warn(e)}}
+  const bEl=$('billMonth');if(bEl&&!bEl.value)bEl.value=billDefYm();try{renderBill()}catch(e){console.warn(e)}}
 /* 2026-11-02 Nicole：月結＝我要收（月結廠商＋機場月結客人 Jeff Chen／Rainy…）＋我要匯（婚顧／廠商回金、退佣），每一筆都能勾已收／已匯 */
 const AIR_MON_DEF='Rainy=Rainy\n姜禮琦=Rainy\n姜禮瑀=Rainy\nJeff Chen=Jeff Chen\nLinda Tsai=Jeff Chen\n蔡逸帆=Jeff Chen';
 let AIRSYNC=null,AIRSYNC_AT=0,AIRSYNC_ERR='';
@@ -2860,7 +2860,9 @@ function billGroups(ym){const ymT=ym.replace('-','年')+'月',G=[];
     if(ex){ex.rows=(ex.rows||[]).concat(lrows);ex.tot+=tot;ex.text=ex.text.replace(/\n合計：[^\n]*/,'\n'+lines.join('\n')+'\n合計：'+money(ex.tot));ex.ledger=(ex.ledger||[]).concat(L)}
     else G.push({dir,name,tot,sub:'手動帳款',ledger:L,rows:lrows,text:[`【好好禮車】${ymT} ${dir==='in'?'請款':'回金'}明細｜${name}`,...lines,`合計：${money(tot)}`].concat(dir==='in'?['',`匯款資訊：`,S.bank]:['','麻煩提供匯款帳號，謝謝🧡']).join('\n')})});
   return G}
-function renderBill(){const inEl=$('billIn'),outEl=$('billOut');if(!inEl)return;const bEl=$('billMonth');if(!bEl.value){const d=new Date();d.setMonth(d.getMonth()-1);bEl.value=`${d.getFullYear()}-${p2(d.getMonth()+1)}`}const ym=bEl.value;
+/* 月結預設月份: 每月 1-15 號看上個月 (月初請款), 16 號以後看本月 */
+function billDefYm(){const d=new Date();if(d.getDate()<=15)d.setDate(0);return `${d.getFullYear()}-${p2(d.getMonth()+1)}`}
+function renderBill(){const inEl=$('billIn'),outEl=$('billOut');if(!inEl)return;const bEl=$('billMonth');if(!bEl.value)bEl.value=billDefYm();const ym=bEl.value;
   {const tg=$('s_billGroups');if(tg&&document.activeElement!==tg)tg.value=Object.entries(S.billGroups||{}).map(([k,v])=>k+'='+v).join('\n')}
   const ta=$('s_airMonthly');if(ta&&document.activeElement!==ta)ta.value=S.airMonthly==null?AIR_MON_DEF:S.airMonthly;
   if(!AIRSYNC)airLoad();
@@ -2903,7 +2905,7 @@ function invoiceHtml(name){const ym=$('billMonth').value,g=billGroups(ym).find(z
   const B=bank.join(' ').replace(/\s+/g,' '),bName=(B.match(/^(.*?)\s*帳號/)||[,bank[0]||''])[1].trim(),bAcct=(B.match(/帳號[:：]\s*([\d-]+)/)||[,''])[1];
   const R2=rows.concat(Array.from({length:Math.max(0,5-rows.length)},()=>null));
   const html=`<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>廠商請款單 ${e(no)} ${e(name)}</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&family=Great+Vibes&family=Sacramento&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&family=Great+Vibes&family=Corinthia&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#3A2A1C;--brown:#7A5530;--gold:#A9793B;--line:#CDB89C;--soft:#F3EADF;--soft2:#EEE3D4}
 *{box-sizing:border-box}body{margin:0;background:#E9E1D8;color:var(--ink);font-family:"Noto Sans TC",system-ui,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -2933,7 +2935,7 @@ function invoiceHtml(name){const ym=$('billMonth').value,g=billGroups(ym).find(z
 .tot{display:grid;grid-template-columns:1.62fr 1fr;border:1px solid var(--line);border-top:0;border-radius:0 0 4px 4px;overflow:hidden}.tot>div{display:flex;align-items:center;padding:14px 18px}
 .tot .l{background:var(--soft);justify-content:flex-end;gap:14px;border-right:1px solid var(--line)}.tot .l b{font-family:"Noto Serif TC",serif;font-size:22px;letter-spacing:.2em}.tot .l .en{font-size:12px}
 .tot .r{background:#FAF5EE;justify-content:center;font-family:"Cormorant Garamond","Noto Serif TC",serif;font-weight:600;font-size:30px;flex-direction:column}.tot .r small{font-family:"Noto Sans TC";font-size:12px;color:var(--brown);font-weight:400}
-.sign{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:16px}.sign>div{border:1px solid var(--line);border-radius:6px;padding:10px 22px;height:118px;background:#fff;position:relative}.sign .sg{font-family:"Sacramento",cursive;font-size:50px;color:#22385A;line-height:1;padding:12px 0 0 10px;white-space:nowrap}
+.sign{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:16px}.sign>div{border:1px solid var(--line);border-radius:6px;padding:10px 22px;height:118px;background:#fff;position:relative}.sign .sg{font-family:"Corinthia",cursive;font-size:60px;color:#22385A;line-height:1;padding:8px 0 0 10px;white-space:nowrap}
 .sign h4{margin:0;padding-bottom:8px;border-bottom:1px solid var(--line);display:flex;gap:18px;align-items:baseline;font-size:18px;color:var(--brown)}.sign h4 .en{font-size:11px;color:var(--brown);font-weight:500}
 .cseal{position:absolute;right:24px;bottom:12px;width:66px;border:1.8px solid #9E4C43;border-radius:4px;padding:3px}.cseal>div{border:.7px solid #9E4C43;border-radius:2px;padding:4px 0}.cseal table{width:100%;border-collapse:collapse}.cseal td{text-align:center;color:#9E4C43;font-family:"Noto Serif TC","Songti TC","PMingLiU",serif;font-weight:700;font-size:21px;line-height:1.05;padding:0;border:0}
 .note{margin-top:10px;font-size:12px;color:#8A7766;text-align:center}
@@ -2941,7 +2943,7 @@ function invoiceHtml(name){const ym=$('billMonth').value,g=billGroups(ym).find(z
 @media print{body{background:#fff}.bar{display:none}.page{margin:0;box-shadow:none;width:210mm;min-height:297mm}@page{size:A4;margin:0}}
 @media (max-width:820px){.page{width:auto;min-height:0;margin:8px;padding:14px}.seal{width:56px;height:56px}.logo b{font-size:24px}.logo i{font-size:18px}.hd .en,.vbar{display:none}.ttl h1{font-size:26px}
  .info{grid-template-columns:96px 1fr}.info .k2,.info .v2{grid-row:auto}.info>div{font-size:14px;padding:10px 12px}.info .k2{justify-content:flex-start;border-left:0}.pay{grid-template-columns:1fr}.pay .lf{padding:12px;border-right:0;border-bottom:1px solid var(--line)}.pay td{font-size:14px;padding:10px 12px}.pay td.k{width:84px;letter-spacing:.1em}
- .det table{font-size:12px}.det th{font-size:12px}.det td{padding:8px 4px}.tot .r{font-size:22px}.sign{grid-template-columns:1fr}.sign>div{height:104px}.sign .sg{font-size:42px}}
+ .det table{font-size:12px}.det th{font-size:12px}.det td{padding:8px 4px}.tot .r{font-size:22px}.sign{grid-template-columns:1fr}.sign>div{height:104px}.sign .sg{font-size:50px}}
 </style></head><body>
 <div class="bar"><button onclick="print()">列印／存成 PDF</button><span>文字都可以直接點擊修改後再列印</span></div>
 <div class="page">
@@ -4036,6 +4038,7 @@ document.addEventListener('click',e=>{{const u=e.target.closest&&e.target.closes
   const b=e.target.closest&&e.target.closest('#btnSettle,#btnBill,#btnPriceSet,[data-mclose]');if(!b)return;   /* 2026-10-20 每日帳款／月結／價目設定移到「更多」 */
   if(b.dataset.mclose){$(b.dataset.mclose).hidden=true;return}try{const ms=$('moreSheet');if(ms)ms.hidden=true}catch(_){}
   if(b.id==='btnPriceSet'){showTab('settings');try{window.scrollTo(0,0)}catch(_){}return}
+  if(b.id==='btnBill'){try{$('billMonth').value=billDefYm()}catch(_){}}
   renderRefs();$(b.id==='btnSettle'?'settleModal':'billModal').hidden=false});
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#btnPtDrvCopy,#btnPtCustCopy,#btnPtDrvRegen,#btnPtDrvPost');if(!b||!o||!isPt(o))return;const p=o.partner;
   if(b.id==='btnPtDrvPost'){const t=String(String(p.drvSheet||'').trim()?ptAddC(p.drvSheet,o):ptDrvGen(o)).trim();if(!t){toast('還沒有內容');return}if(!confirm(o.pubAt?'這份派車單已經發過了，確定要再發一次到群組？':'由禮車助手把這份司機派車單發到這趟的 LINE 群組？'))return;b.disabled=true;b.textContent='發送中…';
