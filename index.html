@@ -2851,7 +2851,7 @@ function billGroups(ym){const ymT=ym.replace('-','年')+'月',G=[];
   if(AIRSYNC){const R=airMonRules(),del=AIRSYNC.deleted||{},grp={};(AIRSYNC.orders||[]).forEach(o2=>{if(!o2||del[o2.id]||String(o2.date||'').slice(0,7)!==ym)return;if(o2.paymentMethod==='cash'||o2.paymentMethod==='paid')return;if(/取消/.test(String(o2.note||'')))return;
       const nm=[o2.custSourceName,o2.contactName,o2.riderName].map(z=>String(z||'').toLowerCase()).join(' ');const r=R.find(z=>nm.includes(z.k));if(!r)return;(grp[r.to]=grp[r.to]||[]).push(o2)});
     Object.keys(grp).forEach(k=>{const os=grp[k].sort((a,b)=>(a.date+(a.pickupTime||'')).localeCompare(b.date+(b.pickupTime||'')));const tot=os.reduce((a,z)=>a+num(z.amount),0);const miss=os.filter(z=>!num(z.amount)).length;
-      G.push({dir:'in',name:k,tot,sub:'機場月結客人',rows:os.map(z=>({date:String(z.date),no:z.formalNo||'',who:z.riderName||z.contactName||z.custSourceName||'',from:z.pickupAddr||'',to:z.dropoffAddr||'',svc:z.svcType||'',what:[z.svcType,z.pickupTime].filter(Boolean).join(' '),agent:'',amt:num(z.amount),note:num(z.amount)?'':'金額未填'})),text:[`【好好禮車】${ymT} 機場接送月結明細｜${k}`,...os.map(z=>`${String(z.date).slice(5).replace('-','/')} ${z.pickupTime||''} ${z.svcType||''} ${z.riderName||z.contactName||z.custSourceName||''} ${z.formalNo||''} ${num(z.amount)?money(num(z.amount)):'金額未填'}`.replace(/\s+/g,' ').trim()),`合計：${money(tot)}`+(miss?`（${miss} 趟金額未填）`:''),'',`匯款資訊：`,S.bank].join('\n')})})}
+      G.push({dir:'in',name:k,tot,sub:'機場月結客人',rows:os.map(z=>({date:String(z.date),no:z.formalNo||'',who:z.riderName||z.contactName||z.custSourceName||'',from:z.pickupAddr||billArea(z.pickupFullAddr),to:z.dropoffAddr||billArea(z.dropoffFullAddr),svc:z.svcType||'',what:[z.svcType,z.pickupTime].filter(Boolean).join(' '),agent:'',amt:num(z.amount),note:num(z.amount)?'':'金額未填'})),text:[`【好好禮車】${ymT} 機場接送月結明細｜${k}`,...os.map(z=>`${String(z.date).slice(5).replace('-','/')} ${z.pickupTime||''} ${z.svcType||''} ${z.riderName||z.contactName||z.custSourceName||''} ${z.formalNo||''} ${num(z.amount)?money(num(z.amount)):'金額未填'}`.replace(/\s+/g,' ').trim()),`合計：${money(tot)}`+(miss?`（${miss} 趟金額未填）`:''),'',`匯款資訊：`,S.bank].join('\n')})})}
   const by={};blist.filter(x=>!isMonthly(x)).forEach(x=>{const r=calc(x);if(!(r.refAmt>0))return;const k=vendorOf(x).name+(x.src&&x.src.ref?' / '+x.src.ref:'');(by[k]=by[k]||[]).push(x)});
   Object.keys(by).forEach(k=>{const os=by[k],tot=os.reduce((a,x)=>a+calc(x).refAmt,0);G.push({dir:'out',name:k,tot,sub:'',text:[`【好好禮車】${ymT} 回金明細｜${k}`,...os.map(x=>`${x.date.slice(5).replace('-','/')} ${orderNo(x)} ${[x.c.groom,x.c.bride].filter(Boolean).join('&')} 方案 ${money(calc(x).planFee)} 回金 ${money(calc(x).refAmt)}`),`合計：${money(tot)}`,'','麻煩提供匯款帳號，謝謝🧡'].join('\n')})});
   /* 手動帳款（系統外的單、試算表搬過來的） */
@@ -2869,7 +2869,7 @@ function renderBill(){const inEl=$('billIn'),outEl=$('billOut');if(!inEl)return;
   const ta=$('s_airMonthly');if(ta&&document.activeElement!==ta)ta.value=S.airMonthly==null?AIR_MON_DEF:S.airMonthly;
   if(!AIRSYNC)airLoad();
   const G=billGroups(ym),lgDel=g=>(g.ledger||[]).map(l=>`<button type="button" class="btn sm" data-lgdel="${esc(l.id)}" style="padding:0 8px;margin:2px 4px 0 0">刪除 ${esc(String(l.date).slice(5))} ${money(num(l.amt))}</button>`).join('');
-  const blk=g=>billBlock(g.dir,ym,g.name,g.tot,g.text,g.sub)+(g.dir==='in'?`<div style="margin:-4px 0 8px" class="row"><button type="button" class="btn sm pri" data-invoice="${esc(g.name)}">產生請款單</button><button type="button" class="btn sm" data-oabill="${esc(g.name)}">官方帳號傳請款</button>${g.sub==='禮車月結廠商'?'':`<button type="button" class="btn sm" data-oarcpt="${esc(g.name)}">官方帳號傳電子收據</button>`}${(S.billSent||{})[ym+'|'+g.name]?`<span class="hint" style="margin:0;align-self:center">請款已傳 ${new Date(S.billSent[ym+'|'+g.name]).toLocaleDateString('zh-TW')}</span>`:''}${(S.rcptSent||{})[ym+'|'+g.name]?`<span class="hint" style="margin:0;align-self:center">收據已傳 ${new Date(S.rcptSent[ym+'|'+g.name].at).toLocaleDateString('zh-TW')}</span>`:''}${(S.billGroups||{})[g.name]?`<a class="btn sm" href="${esc(S.billGroups[g.name])}" target="_blank" rel="noopener">開啟請款群組</a>`:''}</div>`:'')+(g.ledger?`<div style="margin:-4px 0 8px">${lgDel(g)}</div>`:'');
+  const blk=g=>billBlock(g.dir,ym,g.name,g.tot,g.text,g.sub)+(g.dir==='in'?`<div style="margin:-4px 0 8px" class="row"><button type="button" class="btn sm pri" data-oabill="${esc(g.name)}">產生請款單</button><button type="button" class="btn sm pri" data-oarcpt="${esc(g.name)}">產生電子收據</button>${(S.billSent||{})[ym+'|'+g.name]?`<span class="hint" style="margin:0;align-self:center">請款已傳 ${new Date(S.billSent[ym+'|'+g.name]).toLocaleDateString('zh-TW')}</span>`:''}${(()=>{const R=(S.rcptSent||{})[ym+'|'+g.name];return R?`<span class="hint" style="margin:0;align-self:center">${R.url?`<a href="${esc(R.url)}" target="_blank" rel="noopener">收據 ${esc(R.no||'')}</a>`:'收據'}${R.at?' 已傳 '+new Date(R.at).toLocaleDateString('zh-TW'):''}</span>`:''})()}${(S.billGroups||{})[g.name]?`<a class="btn sm" href="${esc(S.billGroups[g.name])}" target="_blank" rel="noopener">開啟請款群組</a>`:''}</div>`:'')+(g.ledger?`<div style="margin:-4px 0 8px">${lgDel(g)}</div>`:'');
   inEl.innerHTML=(G.filter(g=>g.dir==='in').map(blk).join('')||'<p class="hint">這個月沒有要請款的。</p>')+(AIRSYNC?`<div class="row" style="justify-content:flex-end"><button class="btn sm" type="button" id="btnAirReload">重新讀取機場訂單</button></div>`:`<p class="hint">${AIRSYNC_ERR?'機場訂單讀不到：'+esc(AIRSYNC_ERR)+' <button class="btn sm" type="button" id="btnAirReload">重試</button>':'讀取機場訂單中…'}</p>`);
   outEl.innerHTML=G.filter(g=>g.dir==='out').map(blk).join('')||'<p class="hint">這個月沒有要匯的回金。</p>';
   /* 之前月份還沒勾的 */
@@ -2981,28 +2981,45 @@ async function invoicePdf(name){const h=invoiceHtml(name);if(!h)throw new Error(
     return pdf.output('datauristring').split(',')[1]}finally{fr.remove()}}
 let OAG=null;async function oaGroups(){if(OAG)return OAG;const j=await gasCall({action:'billGroups'});OAG=(j.groups||[]).filter(g=>!g.left);return OAG}
 function oaPeriod(ym){const[y,m]=ym.split('-');return `${y} 年 ${+m} 月`}
+/* 2026-11-02 Nicole：請款分成「產生請款單」「產生電子收據」，兩個視窗都可以先產生／預覽，再選擇用官方帳號傳到請款群組 */
+/* 完整地址 → 短區域（台北士林）；機場等地標原樣保留 */
+function billArea(a){a=String(a||'').trim().replace(/^\d{3,6}/,'').replace(/^臺/,'台');if(!a)return '';if(/機場|航廈/.test(a))return a.replace(/^.*?(桃園國際機場|松山機場|台北松山機場|臺北松山機場|.{0,4}機場)/,'$1');const m=a.match(/^(.{2}?)[市縣](.{1,3}?)[區鄉鎮市]/);return m?m[1]+m[2]:a.slice(0,6)}
+function billRcptData(g,ym){const isV=g.sub==='禮車月結廠商',[y,mm]=ym.split('-'),done=(S.billDone||{})[ym+'|in|'+g.name],day=d=>{const z=new Date(d);return z.getFullYear()+'-'+String(z.getMonth()+1).padStart(2,'0')+'-'+String(z.getDate()).padStart(2,'0')};
+  const t=(g.rows||[]).map(r=>isV?[r.date,r.amt,[r.no,'結婚禮車',r.what].filter(Boolean).join(' '),'','']:[r.date,r.amt,r.from||'',r.to||'',r.from||r.to?'':(r.svc||r.what||'')]);
+  return {key:ym+'|'+g.name,n:g.name,m:'月結',d:done?day(done):day(Date.now()),t,note:`${+y} 年 ${+mm} 月${isV?'禮車月結':'接送費用結算'} (共 ${t.length} ${isV?'場':'趟'})`}}
 async function oaSendDlg(name,kind){const ym=$('billMonth').value,g=billGroups(ym).find(z=>z.dir==='in'&&z.name===name);if(!g){toast('找不到這筆請款');return}
-  let G=[];try{G=await oaGroups()}catch(e){toast('讀不到群組：'+e.message);return}
-  const isInv=kind==='bill'&&g.sub==='禮車月結廠商',tot=money(g.tot).replace('$','$ ');
-  const bank=String(S.bank||'').trim(),per=oaPeriod(ym);
-  const txt=kind==='rcpt'?`您好，這是好好禮車 ${per} 機場接送的電子收據 (編號 {RNO}，金額 NT${tot})，可以直接存檔:\n{RCPT}\n\n若需要公司抬頭或統編，再跟我們說，謝謝您🙏`
+  const isV=g.sub==='禮車月結廠商',isInv=kind==='bill'&&isV,tot=money(g.tot).replace('$','$ ');
+  const bank=String(S.bank||'').trim(),per=oaPeriod(ym),key=ym+'|'+name;
+  const txt=kind==='rcpt'?`您好，這是好好禮車 ${per} ${isV?'禮車':'機場接送'}的電子收據 (編號 {RNO}，金額 NT${tot})，可以直接存檔:\n{RCPT}\n\n若需要公司抬頭或統編，再跟我們說，謝謝您🙏`
     :isInv?`【好好禮車】${per} 請款單請查收🙏\n{PDF}\n\n合計: NT${tot}\n匯款資訊:\n${bank}\n\n匯款完成再麻煩告知帳號後五碼，謝謝您`
     :`您好🙂\n好好禮車 ${per} 接送費用合計 NT${tot}\n\n${(g.rows||[]).map(r=>`${String(r.date).slice(5).replace('-','/')} ${r.svc||''} ${r.who||''} ${money(r.amt)}`.replace(/\s+/g,' ')).join('\n')}\n\n❤️匯款資訊:\n${bank}\n金額: NT${tot}\n\n匯款完成再麻煩告知帳號後五碼，謝謝您`;
   const map=S.billGroupIds||{},cur=map[name]||'';let m=$('oaDlg');if(!m){m=document.createElement('div');m.id='oaDlg';m.style.cssText='position:fixed;inset:0;z-index:80;background:rgba(40,30,20,.45);overflow:auto;padding:24px 16px';document.body.appendChild(m)}
-  m.hidden=false;m.innerHTML=`<div style="max-width:560px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px"><h3 style="margin:0 0 10px">${kind==='rcpt'?'傳電子收據':'傳請款'}｜${esc(name)} <small>${esc(per)} NT${esc(tot)}</small></h3>
-    <label class="f">傳到哪個群組（好好禮車官方帳號要在群組裡）<select id="oaTo">${G.length?'<option value="">— 選擇群組 —</option>'+G.map(x=>`<option value="${esc(x.id)}"${x.id===cur?' selected':''}>${esc(x.name||'(未命名群組)')}</option>`).join(''):'<option value="">還沒有偵測到群組</option>'}</select></label>
-    ${G.length?'':'<p class="hint">把「好好禮車」官方帳號邀進請款群組後，在群組裡隨便傳一句話，系統就會認得這個群組。</p>'}
+  const R0=(S.rcptSent||{})[key]||null;
+  m.hidden=false;m.innerHTML=`<div style="max-width:560px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px"><div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="margin:0">${kind==='rcpt'?'電子收據':'請款單'}｜${esc(name)} <small>${esc(per)} NT${esc(tot)}</small></h3><button class="btn sm" type="button" id="oaCancel">關閉</button></div>
+    ${kind==='rcpt'?`<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><button class="btn pri" type="button" id="oaMake">${R0&&R0.url?'更新並開啟電子收據':'產生並開啟電子收據'}</button><span class="hint" id="oaMakeSt" style="margin:0">${R0&&R0.url?`已產生 <a href="${esc(R0.url)}" target="_blank" rel="noopener">${esc(R0.no||'收據')}</a>`:'格式同之前給 Jeff Chen 的電子收據，可下載 PDF'}</span></div>`
+      :`<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><button class="btn pri" type="button" id="oaPrev">預覽／列印請款單</button><span class="hint" style="margin:0">A4 請款單，可存成 PDF</span></div>`}
+    <div style="border-top:1px solid var(--line);margin:14px 0 10px"></div><b>用官方帳號傳到請款群組</b>
+    <label class="f" style="margin-top:6px">傳到哪個群組（好好禮車官方帳號要在群組裡）<select id="oaTo"><option value="">讀取群組中…</option></select></label>
+    <p class="hint" id="oaGrpHint" hidden>把「好好禮車」官方帳號邀進請款群組後，在群組裡隨便傳一句話，系統就會認得這個群組。</p>
     <label class="f" style="margin-top:8px">訊息（可以直接改）<textarea id="oaTxt" rows="10" style="width:100%">${esc(txt)}</textarea></label>
     <p class="hint" style="margin:6px 0">${isInv?'{PDF} 會換成請款單 PDF 連結（存在 Google Drive「好好禮車 請款單」）':kind==='rcpt'?'{RCPT} 會換成電子收據連結，{RNO} 是收據編號':''}</p>
-    <div class="row" style="justify-content:flex-end;gap:8px"><button class="btn" type="button" id="oaCancel">取消</button><button class="btn pri" type="button" id="oaGo">用官方帳號傳出</button></div></div>`;
+    <div class="row" style="justify-content:flex-end;gap:8px"><button class="btn pri" type="button" id="oaGo">用官方帳號傳出</button></div></div>`;
   $('oaCancel').onclick=()=>{m.hidden=true};
+  if($('oaPrev'))$('oaPrev').onclick=()=>invoiceOpen(name);
+  if($('oaMake'))$('oaMake').onclick=async()=>{const b=$('oaMake'),w=window.open('','_blank');if(w)w.document.write('<p style="font:16px -apple-system,sans-serif;padding:24px">產生電子收據中…</p>');b.disabled=true;b.textContent='產生中…';
+    try{const j=await gasCall({action:'billRcpt',rcpt:billRcptData(g,ym)});if(!j||!j.ok||!j.url)throw new Error((j&&j.error)||'沒有產生');
+      S.rcptSent=Object.assign({},S.rcptSent||{},{[key]:Object.assign({},(S.rcptSent||{})[key]||{},{url:j.url,no:j.no,made:Date.now()})});saveS();renderBill();
+      $('oaMakeSt').innerHTML=`已產生 <a href="${esc(j.url)}" target="_blank" rel="noopener">${esc(j.no)}</a>`;if(w)w.location.href=j.url;else window.open(j.url,'_blank')}
+    catch(e){if(w)w.close();toast('電子收據沒有產生：'+e.message)}finally{b.disabled=false;b.textContent='更新並開啟電子收據'}};
+  (async()=>{let G=[];try{G=await oaGroups()}catch(e){$('oaTo').innerHTML='<option value="">讀不到群組</option>';return}
+    $('oaTo').innerHTML=G.length?'<option value="">— 選擇群組 —</option>'+G.map(x=>`<option value="${esc(x.id)}"${x.id===cur?' selected':''}>${esc(x.name||'(未命名群組)')}</option>`).join(''):'<option value="">還沒有偵測到群組</option>';$('oaGrpHint').hidden=!!G.length})();
   $('oaGo').onclick=async()=>{const to=$('oaTo').value,msg=$('oaTxt').value.trim();if(!to){toast('請選群組');return}if(!msg)return;if(!confirm('確定用好好禮車官方帳號把這則訊息傳到群組？'))return;
     const b=$('oaGo');b.disabled=true;b.textContent='傳送中…';
     try{const body={action:'billSend',to,msgs:[msg]};
       if(isInv&&/\{PDF\}/.test(msg)){b.textContent='產生 PDF…';const [y,mm]=ym.split('-');body.pdf={name:`廠商請款單 ${name} ${y}${mm}.pdf`,b64:await invoicePdf(name)};b.textContent='傳送中…'}
-      if(kind==='rcpt')body.rcpt={key:ym+'|'+name,n:name,m:'月結',d:new Date().toISOString().slice(0,10),t:(g.rows||[]).map(r=>[r.date,r.amt,r.from||'',r.to||'',r.svc||r.what||''])};
-      const j=await gasCall(body);S.billGroupIds=Object.assign({},S.billGroupIds||{},{[name]:to});
-      if(kind==='rcpt')S.rcptSent=Object.assign({},S.rcptSent||{},{[ym+'|'+name]:{at:Date.now(),url:j.url,no:j.no}});else S.billSent=Object.assign({},S.billSent||{},{[ym+'|'+name]:Date.now()});
+      if(kind==='rcpt')body.rcpt=billRcptData(g,ym);
+      const j=await gasCall(body);if(!j||!j.ok)throw new Error((j&&j.error)||'傳送失敗');S.billGroupIds=Object.assign({},S.billGroupIds||{},{[name]:to});
+      if(kind==='rcpt')S.rcptSent=Object.assign({},S.rcptSent||{},{[key]:{at:Date.now(),url:j.url,no:j.no}});else S.billSent=Object.assign({},S.billSent||{},{[key]:Date.now()});
       saveS();m.hidden=true;renderBill();toast('已用官方帳號傳出')}catch(e){toast('傳送失敗：'+e.message);b.disabled=false;b.textContent='用官方帳號傳出'}}}
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-oabill],[data-oarcpt]');if(!t)return;t.dataset.oabill?oaSendDlg(t.dataset.oabill,'bill'):oaSendDlg(t.dataset.oarcpt,'rcpt')});
 function renderOrderSel(){const list=Object.values(DB.orders).filter(x=>!x.lost||x.id===o.id).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.updated-a.updated);
