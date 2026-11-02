@@ -872,6 +872,15 @@ nav.tabs button{scroll-snap-align:start}
         <h3>我要匯 <small>婚顧／廠商回金、退佣</small></h3>
         <div id="billOut"></div>
       </div>
+      <div class="card" style="margin-top:18px">
+        <h3>之前月份還沒處理 <small>勾了就不會再出現</small></h3>
+        <div id="billPrev"></div>
+      </div>
+      <details class="card" style="margin-top:18px"><summary style="cursor:pointer;font-weight:700">新增手動帳款 <small class="hint" style="margin:0">系統外的單（舊單、試算表的）</small></summary>
+        <div class="fields" style="margin-top:8px"><label class="f">日期<input type="date" id="lgDate"></label><label class="f">類型<select id="lgDir"><option value="out">我要匯（回金）</option><option value="in">我要收（請款）</option></select></label>
+        <label class="f">對象<input id="lgName" list="vendorList" placeholder="例：成家 / 念純"></label><label class="f">金額<input type="number" inputmode="numeric" id="lgAmt"></label><label class="f wide">說明<input id="lgNote" placeholder="例：20250517TP06 BMW F10+F30 方案 $7,000"></label></div>
+        <div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn sm pri" type="button" id="btnLgAdd">新增</button></div>
+      </details>
       <details class="card" style="margin-top:18px"><summary style="cursor:pointer;font-weight:700">機場月結客人設定</summary>
         <label class="f" style="margin-top:8px">一行一位：機場訂單上的名字=請款對象（同一個請款對象會合併成一張）<textarea id="s_airMonthly" rows="6"></textarea></label>
         <p class="hint">月結廠商（例：幸福故事館）在「價目設定」的「合作廠商與回金」加「,月結」。機場訂單標「收現」或「客人已付款」的不列入請款。</p>
@@ -2823,24 +2832,40 @@ function billKey(ym,dir,name){return ym+'|'+dir+'|'+name}
 function billDoneAt(k){return (S.billDone||{})[k]||0}
 function billBlock(dir,ym,name,tot,text,sub){const k=billKey(ym,dir,name),d=billDoneAt(k),id='bt_'+Math.abs([...k].reduce((h,c)=>(h*31+c.charCodeAt(0))|0,7));
   return `<div style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0${d?';opacity:.7':''}"><div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>${esc(name)}${sub?` <small class="hint" style="margin:0">${esc(sub)}</small>`:''}</b><span class="row" style="gap:8px;align-items:center"><b>${money(tot)}</b><label class="row" style="gap:4px;align-items:center;cursor:pointer"><input type="checkbox" data-billdone="${esc(k)}" style="width:auto"${d?' checked':''}>${dir==='in'?'已收款':'已匯款'}${d?' '+new Date(d).toLocaleDateString('zh-TW'):''}</label><button class="btn sm pri" data-copy="${id}">複製</button></span></div><pre class="out" id="${id}" style="margin-top:8px">${esc(text)}</pre></div>`}
-function renderBill(){const inEl=$('billIn'),outEl=$('billOut');if(!inEl)return;const bEl=$('billMonth');if(!bEl.value){const d=new Date();d.setMonth(d.getMonth()-1);bEl.value=`${d.getFullYear()}-${p2(d.getMonth()+1)}`}const ym=bEl.value,ymT=ym.replace('-','年')+'月';
-  const ta=$('s_airMonthly');if(ta&&document.activeElement!==ta)ta.value=S.airMonthly==null?AIR_MON_DEF:S.airMonthly;
+function billGroups(ym){const ymT=ym.replace('-','年')+'月',G=[];
   const blist=Object.values(DB.orders).filter(x=>!x.sample&&!x.lost&&x.date&&x.date.slice(0,7)===ym&&vendorOf(x)).sort((a,b)=>a.date.localeCompare(b.date));
-  const IN=[];(S.vendors||[]).filter(v=>v.monthly).forEach(v=>{const os=blist.filter(x=>vendorOf(x).name===v.name);if(!os.length)return;const tot=os.reduce((a,x)=>a+calc(x).bill,0);
-    IN.push(billBlock('in',ym,v.name,tot,[`【好好禮車】${ymT} 請款明細｜${v.name}`,...os.map(x=>`${x.date.slice(5).replace('-','/')} ${orderNo(x)} ${[x.c.groom,x.c.bride].filter(Boolean).join('&')} ${planName(x).replace(/^Tesla /,'').replace(/ \S*禮車方案$/,'')} ${money(calc(x).bill)}`),`合計：${money(tot)}`,`（司機紅包、甘蔗固定費由司機現場收取，不列入請款）`,'',`匯款資訊：`,S.bank].join('\n'),'禮車月結廠商'))});
-  /* 機場月結客人：讀機場派車工具的訂單 */
-  if(!AIRSYNC){airLoad();IN.push(`<p class="hint">${AIRSYNC_ERR?'機場訂單讀不到：'+esc(AIRSYNC_ERR)+' <button class="btn sm" type="button" id="btnAirReload">重試</button>':'讀取機場訂單中…'}</p>`)}
-  else{const R=airMonRules(),del=AIRSYNC.deleted||{},grp={};(AIRSYNC.orders||[]).forEach(o2=>{if(!o2||del[o2.id]||String(o2.date||'').slice(0,7)!==ym)return;if(o2.paymentMethod==='cash'||o2.paymentMethod==='paid')return;if(/取消/.test(String(o2.note||'')))return;
+  (S.vendors||[]).filter(v=>v.monthly).forEach(v=>{const os=blist.filter(x=>vendorOf(x).name===v.name);if(!os.length)return;const tot=os.reduce((a,x)=>a+calc(x).bill,0);
+    G.push({dir:'in',name:v.name,tot,sub:'禮車月結廠商',text:[`【好好禮車】${ymT} 請款明細｜${v.name}`,...os.map(x=>`${x.date.slice(5).replace('-','/')} ${orderNo(x)} ${[x.c.groom,x.c.bride].filter(Boolean).join('&')} ${planName(x).replace(/^Tesla /,'').replace(/ \S*禮車方案$/,'')} ${money(calc(x).bill)}`),`合計：${money(tot)}`,`（司機紅包、甘蔗固定費由司機現場收取，不列入請款）`,'',`匯款資訊：`,S.bank].join('\n')})});
+  if(AIRSYNC){const R=airMonRules(),del=AIRSYNC.deleted||{},grp={};(AIRSYNC.orders||[]).forEach(o2=>{if(!o2||del[o2.id]||String(o2.date||'').slice(0,7)!==ym)return;if(o2.paymentMethod==='cash'||o2.paymentMethod==='paid')return;if(/取消/.test(String(o2.note||'')))return;
       const nm=[o2.custSourceName,o2.contactName,o2.riderName].map(z=>String(z||'').toLowerCase()).join(' ');const r=R.find(z=>nm.includes(z.k));if(!r)return;(grp[r.to]=grp[r.to]||[]).push(o2)});
     Object.keys(grp).forEach(k=>{const os=grp[k].sort((a,b)=>(a.date+(a.pickupTime||'')).localeCompare(b.date+(b.pickupTime||'')));const tot=os.reduce((a,z)=>a+num(z.amount),0);const miss=os.filter(z=>!num(z.amount)).length;
-      IN.push(billBlock('in',ym,k,tot,[`【好好禮車】${ymT} 機場接送月結明細｜${k}`,...os.map(z=>`${String(z.date).slice(5).replace('-','/')} ${z.pickupTime||''} ${z.svcType||''} ${z.contactName||z.custSourceName||''} ${z.formalNo||''} ${num(z.amount)?money(num(z.amount)):'金額未填'}`.replace(/\s+/g,' ').trim()),`合計：${money(tot)}`+(miss?`（${miss} 趟金額未填）`:''),'',`匯款資訊：`,S.bank].join('\n'),'機場月結客人'))});
-    IN.push(`<div class="row" style="justify-content:flex-end"><button class="btn sm" type="button" id="btnAirReload">重新讀取機場訂單</button></div>`)}
-  inEl.innerHTML=IN.join('')||'<p class="hint">這個月沒有要請款的。</p>';
-  /* 我要匯：非月結的廠商／婚顧回金（依廠商＋推薦人分開） */
+      G.push({dir:'in',name:k,tot,sub:'機場月結客人',text:[`【好好禮車】${ymT} 機場接送月結明細｜${k}`,...os.map(z=>`${String(z.date).slice(5).replace('-','/')} ${z.pickupTime||''} ${z.svcType||''} ${z.contactName||z.custSourceName||''} ${z.formalNo||''} ${num(z.amount)?money(num(z.amount)):'金額未填'}`.replace(/\s+/g,' ').trim()),`合計：${money(tot)}`+(miss?`（${miss} 趟金額未填）`:''),'',`匯款資訊：`,S.bank].join('\n')})})}
   const by={};blist.filter(x=>!isMonthly(x)).forEach(x=>{const r=calc(x);if(!(r.refAmt>0))return;const k=vendorOf(x).name+(x.src&&x.src.ref?' / '+x.src.ref:'');(by[k]=by[k]||[]).push(x)});
-  outEl.innerHTML=Object.keys(by).map(k=>{const os=by[k],tot=os.reduce((a,x)=>a+calc(x).refAmt,0);
-    return billBlock('out',ym,k,tot,[`【好好禮車】${ymT} 回金明細｜${k}`,...os.map(x=>`${x.date.slice(5).replace('-','/')} ${orderNo(x)} ${[x.c.groom,x.c.bride].filter(Boolean).join('&')} 方案 ${money(calc(x).planFee)} 回金 ${money(calc(x).refAmt)}`),`合計：${money(tot)}`,'','麻煩提供匯款帳號，謝謝🧡'].join('\n'),'')}).join('')||'<p class="hint">這個月沒有要匯的回金。</p>'}
+  Object.keys(by).forEach(k=>{const os=by[k],tot=os.reduce((a,x)=>a+calc(x).refAmt,0);G.push({dir:'out',name:k,tot,sub:'',text:[`【好好禮車】${ymT} 回金明細｜${k}`,...os.map(x=>`${x.date.slice(5).replace('-','/')} ${orderNo(x)} ${[x.c.groom,x.c.bride].filter(Boolean).join('&')} 方案 ${money(calc(x).planFee)} 回金 ${money(calc(x).refAmt)}`),`合計：${money(tot)}`,'','麻煩提供匯款帳號，謝謝🧡'].join('\n')})});
+  /* 手動帳款（系統外的單、試算表搬過來的） */
+  const lg={};(S.ledger||[]).filter(l=>String(l.date||'').slice(0,7)===ym).forEach(l=>{const k=l.dir+'|'+l.name;(lg[k]=lg[k]||[]).push(l)});
+  Object.keys(lg).forEach(k=>{const L=lg[k].sort((a,b)=>String(a.date).localeCompare(String(b.date))),dir=L[0].dir,name=L[0].name,tot=L.reduce((a,l)=>a+num(l.amt),0);const ex=G.find(g=>g.dir===dir&&g.name===name);
+    const lines=L.map(l=>`${String(l.date).slice(5).replace('-','/')} ${l.note||''} ${money(num(l.amt))}`.replace(/\s+/g,' ').trim());
+    if(ex){ex.tot+=tot;ex.text=ex.text.replace(/\n合計：[^\n]*/,'\n'+lines.join('\n')+'\n合計：'+money(ex.tot));ex.ledger=(ex.ledger||[]).concat(L)}
+    else G.push({dir,name,tot,sub:'手動帳款',ledger:L,text:[`【好好禮車】${ymT} ${dir==='in'?'請款':'回金'}明細｜${name}`,...lines,`合計：${money(tot)}`].concat(dir==='in'?['',`匯款資訊：`,S.bank]:['','麻煩提供匯款帳號，謝謝🧡']).join('\n')})});
+  return G}
+function renderBill(){const inEl=$('billIn'),outEl=$('billOut');if(!inEl)return;const bEl=$('billMonth');if(!bEl.value){const d=new Date();d.setMonth(d.getMonth()-1);bEl.value=`${d.getFullYear()}-${p2(d.getMonth()+1)}`}const ym=bEl.value;
+  const ta=$('s_airMonthly');if(ta&&document.activeElement!==ta)ta.value=S.airMonthly==null?AIR_MON_DEF:S.airMonthly;
+  if(!AIRSYNC)airLoad();
+  const G=billGroups(ym),lgDel=g=>(g.ledger||[]).map(l=>`<button type="button" class="btn sm" data-lgdel="${esc(l.id)}" style="padding:0 8px;margin:2px 4px 0 0">刪除 ${esc(String(l.date).slice(5))} ${money(num(l.amt))}</button>`).join('');
+  const blk=g=>billBlock(g.dir,ym,g.name,g.tot,g.text,g.sub)+(g.ledger?`<div style="margin:-4px 0 8px">${lgDel(g)}</div>`:'');
+  inEl.innerHTML=(G.filter(g=>g.dir==='in').map(blk).join('')||'<p class="hint">這個月沒有要請款的。</p>')+(AIRSYNC?`<div class="row" style="justify-content:flex-end"><button class="btn sm" type="button" id="btnAirReload">重新讀取機場訂單</button></div>`:`<p class="hint">${AIRSYNC_ERR?'機場訂單讀不到：'+esc(AIRSYNC_ERR)+' <button class="btn sm" type="button" id="btnAirReload">重試</button>':'讀取機場訂單中…'}</p>`);
+  outEl.innerHTML=G.filter(g=>g.dir==='out').map(blk).join('')||'<p class="hint">這個月沒有要匯的回金。</p>';
+  /* 之前月份還沒勾的 */
+  const pv=$('billPrev');if(pv){const ms=new Set();Object.values(DB.orders).forEach(x=>{if(x.date&&!x.sample)ms.add(x.date.slice(0,7))});(S.ledger||[]).forEach(l=>ms.add(String(l.date||'').slice(0,7)));if(AIRSYNC)(AIRSYNC.orders||[]).forEach(z=>ms.add(String(z.date||'').slice(0,7)));
+    const prev=[...ms].filter(m=>/^\d{4}-\d{2}$/.test(m)&&m<ym).sort().reverse(),rows=[];prev.forEach(m=>billGroups(m).forEach(g=>{if(!billDoneAt(billKey(m,g.dir,g.name)))rows.push({m,g})}));
+    pv.innerHTML=rows.length?rows.map(({m,g})=>`<div class="row" style="justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line)"><span>${esc(m.replace('-','/'))}｜${g.dir==='in'?'要收':'要匯'}｜<b>${esc(g.name)}</b></span><span class="row" style="gap:8px;align-items:center"><b>${money(g.tot)}</b><button type="button" class="btn sm" data-billgo="${m}">看明細</button><label class="row" style="gap:4px;align-items:center;cursor:pointer"><input type="checkbox" data-billdone="${esc(billKey(m,g.dir,g.name))}" style="width:auto">${g.dir==='in'?'已收款':'已匯款'}</label></span></div>`).join(''):'<p class="hint">之前月份都處理完了。</p>'}}
 document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!t.dataset.billdone)return;S.billDone=Object.assign({},S.billDone||{});if(t.checked)S.billDone[t.dataset.billdone]=Date.now();else delete S.billDone[t.dataset.billdone];saveS();renderBill()});
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-billgo],[data-lgdel],#btnLgAdd');if(!t)return;
+  if(t.dataset.billgo){$('billMonth').value=t.dataset.billgo;renderBill();try{$('billModal').scrollTop=0}catch(_){}return}
+  if(t.dataset.lgdel){if(!confirm('刪除這筆手動帳款？'))return;S.ledger=(S.ledger||[]).filter(l=>l.id!==t.dataset.lgdel);saveS();renderBill();return}
+  const d=$('lgDate').value,dir=$('lgDir').value,name=$('lgName').value.trim(),amt=num($('lgAmt').value),note=$('lgNote').value.trim();if(!d||!name||!amt){toast('日期、對象、金額都要填');return}
+  S.ledger=(S.ledger||[]).concat([{id:'L'+Date.now().toString(36),date:d,dir,name,amt,note}]);saveS();$('lgName').value='';$('lgAmt').value='';$('lgNote').value='';$('billMonth').value=d.slice(0,7);renderBill();toast('已新增')});
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#btnAirReload')){AIRSYNC=null;AIRSYNC_ERR='';airLoad(true);renderBill()}});
 function renderOrderSel(){const list=Object.values(DB.orders).filter(x=>!x.lost||x.id===o.id).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.updated-a.updated);
   $('orderSel').innerHTML=list.map(x=>`<option value="${x.id}"${x.id===o.id?' selected':''}>${esc(selLabel(x))}</option>`).join('');renderTodoBadge();if(!$('todoModal').hidden)renderTodo()}
