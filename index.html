@@ -324,6 +324,7 @@ nav.tabs button{scroll-snap-align:start}
     </div>
   </div>
 
+  <div id="oTodoBar" class="card" hidden style="margin:8px 0;padding:10px 12px"></div>
   <nav class="tabs" role="tablist" id="tabs">
     <button role="tab" data-tab="quote" aria-selected="true"><span class="n">1</span>報價・下單</button>
     <button role="tab" data-tab="contract"><span class="n">2</span><span class="noBus">合約</span><span class="busOnly">用車說明</span></button>
@@ -1060,6 +1061,7 @@ nav.tabs button{scroll-snap-align:start}
           </div>
           <div class="row" style="justify-content:space-between;margin:10px 0 6px"><span class="hint" style="margin:0" id="photoSt"></span><span class="row" style="gap:6px"><button class="btn sm" id="btnPhotoCopy">複製並標記已傳</button><button class="btn sm pri" id="btnPhotoBot">用機器人傳給客人</button></span></div>
           <pre class="out" id="outPhoto"></pre>
+          <div id="ptPhotoRow" class="row" hidden style="justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)"><span id="ptPhotoSt" class="hint" style="margin:0"></span><label class="row" style="gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="ptPhotoCb" style="width:auto">照片已傳同業</label></div>
         </div>
       </div>
     </div>
@@ -2829,7 +2831,12 @@ function otCalc(x,ov){const u=+x.hours>0&&+x.hours<3?30:60,n=Math.ceil(ov/u);ret
 document.addEventListener('change',e=>{const t=e.target;if(!t||t.id!=='otOkChk'||!o)return;o.extras=(o.extras||[]).filter(z=>!(z&&z.otAuto));
   if(t.checked){const ov=ctOver(o);if(!ov){t.checked=false;toast('目前用車時間沒有超過合約');return}const amt=otCalc(o,ov);o.otOk={min:ov,amt,at:Date.now()};o.extras.push({n:`加時 ${ov} 分鐘`,a:amt,late:true,at:Date.now(),otAuto:1});toast(`已確認加時 ${ov} 分鐘，尾款加 ${money(amt)}`)}
   else{o.otOk=null;toast('已取消加時')}o.sample=false;save();try{renderXList()}catch(_){}renderAll()});
-function renderAll(){try{ctHint5()}catch(e){}try{renderAttach()}catch(e){}try{renderQx()}catch(e){}try{renderFormDataBtn()}catch(e){}renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派車頭':''].filter(Boolean),tr=[k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就派司機':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月派司機':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月派司機':'白色特斯拉：用車前一週派司機'):''].filter(Boolean);$('headHint').textContent=(rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):k.tesla&&!k.lux?'特斯拉由你擔任車頭，不用指派車頭。':'本單沒有提前指派車頭的需求。')+(tr.length?'　'+tr.join('；'):'')+(String(o.carHead||'').trim()?'　✅ 已找車頭：司機由車頭安排，用車前 3 天再確認司機資料即可。':'')}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=cfMsg(o);try{renderCfSt()}catch(e){}try{renderCfFlow()}catch(e){}try{renderMemoOk()}catch(e){}renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
+/* 2026-11-02 Nicole：待辦和訂單頁相通——訂單頁上方列出這張單目前的待辦，每項都能直接按完成；同業照片在側拍照片卡可打勾 */
+function renderOTodo(){const el=$('oTodoBar');if(!el||!o)return;const T=(o.sample?[]:tasksOf(o));el.hidden=!T.length;
+  el.innerHTML=T.length?`<div class="row" style="gap:6px;align-items:center;flex-wrap:wrap"><b style="margin-right:4px">這張單的待辦</b>${T.map(t=>`<span class="chip${t.late?' late':''}">${ST[t.k]}${t.why?'（'+esc(String(t.why).slice(0,40))+'）':''}</span>${TODO_DONE[t.k]?`<button type="button" class="btn sm" data-tdone="${o.id}|${t.k}" style="padding:2px 10px">${TODO_DONE_L[t.k]||'完成'}</button>`:''}`).join('')}</div>`:'';
+  const pr=$('ptPhotoRow');if(pr){const show=!!o.partner&&!!o.paid;pr.hidden=!show;if(show){$('ptPhotoCb').checked=!!o.ptPhotoAt;$('ptPhotoSt').textContent=o.ptPhotoAt?'已傳同業 '+new Date(+o.ptPhotoAt).toLocaleDateString('zh-TW'):'同業場次：照片要傳給同業負責人'}}}
+document.addEventListener('change',e=>{const t=e.target;if(!t||t.id!=='ptPhotoCb'||!o)return;o.ptPhotoAt=t.checked?Date.now():'';save();try{renderAll()}catch(_){}try{renderOrderSel()}catch(_){}try{renderTodoBadge()}catch(_){}});
+function renderAll(){try{renderOTodo()}catch(e){}try{ctHint5()}catch(e){}try{renderAttach()}catch(e){}try{renderQx()}catch(e){}try{renderFormDataBtn()}catch(e){}renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派車頭':''].filter(Boolean),tr=[k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就派司機':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月派司機':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月派司機':'白色特斯拉：用車前一週派司機'):''].filter(Boolean);$('headHint').textContent=(rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):k.tesla&&!k.lux?'特斯拉由你擔任車頭，不用指派車頭。':'本單沒有提前指派車頭的需求。')+(tr.length?'　'+tr.join('；'):'')+(String(o.carHead||'').trim()?'　✅ 已找車頭：司機由車頭安排，用車前 3 天再確認司機資料即可。':'')}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=cfMsg(o);try{renderCfSt()}catch(e){}try{renderCfFlow()}catch(e){}try{renderMemoOk()}catch(e){}renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
   $('outQuote').textContent=quoteText(o,'zh');if($('outQuoteAdd'))$('outQuoteAdd').textContent=o.bus?QUOTE_ADD_BUS:QUOTE_ADD;$('outOrder').textContent=orderText(o,'zh');
   renderFind();$('contractPaper').innerHTML=contractHTML(o);ctTuneFill();renderSigned();renderMemo();
   ['meet','wed','o1','o2'].forEach(k=>{$('c_'+k+'S').placeholder=shortArea(o.c[k])||'自動'});
@@ -2915,6 +2922,16 @@ const REV_LINK='感謝您選擇🧡好好禮車🧡，讓我們能有機會在�
 const PHOTO_TPL='提供司機不專業側拍給兩位下載 (連結將在一週後失效)：\n';
 const STAGE_LABEL={sample:'範例',lost:'訂單流失',done:'已完成',inq:'詢價',unpaid:'開單未付款',noform:'已收訂',nocontract:'已填表',ready:'已出合約'};
 const ST_TAB={busask:'price',busok:'find',busdep:'find',busbal:'find',equip:'dispatch',head:'find',inq:'quote',unpaid:'couple',noform:'couple',nocontract:'contract',nodrv:'find',nomemo:'memo',memowait:'memo',memofix:'memo',balxfer:'memo'};
+/* 2026-11-02 Nicole：每一項待辦都要能直接打勾完成（每列每個待辦旁邊一個「完成」，篩選單一待辦時也有批次「標記完成」） */
+const TODO_DONE={inq:x=>{x.followAt=Date.now();x.followN=(+x.followN||0)+1;x.fv2=true},unpaid:x=>{const d=new Date();x.paid=true;if(!x.ttDone)x.ttDone=false;x.paidTs=Date.now();x.paidAt=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`},
+  tt:x=>{x.ttDone=true;x.ttAt=Date.now()},noform:x=>x.formAt=Date.now(),nocontract:x=>x.contractDone=true,cfsend:x=>x.cfSentAt=Date.now(),cfwait:x=>x.cfDoneAt=Date.now(),nodrv:x=>x.drvDone=true,nomemo:x=>x.memoDone=true,
+  memowait:x=>x.memoOkAt=Date.now(),memofix:x=>x.memoOkAt=Date.now(),balxfer:x=>x.balPaid=true,call:x=>x.callAt=Date.now(),head:x=>x.headDone=true,equip:x=>{x.eqDoneSig=eqIssues(x).join('｜')},
+  rev:x=>x.revAskAt=Date.now(),revlink:x=>x.revLinkAt=Date.now(),revcomp:x=>x.revLinkAt=Date.now(),photo:x=>x.photoSentAt=Date.now(),ptphoto:x=>x.ptPhotoAt=Date.now(),
+  ptask:x=>{const d=new Date();x.paid=true;x.paidTs=Date.now();x.paidAt=`${d.getMonth()+1}/${d.getDate()} 同業`;x.ttDone=false;x.partner.stage='held'},ptinfo:x=>{x.partner.infoDone=true},
+  busask:x=>x.busAskDone=true,busok:x=>x.busHeadOkAt=Date.now(),busdep:x=>x.busHeadDepPaidAt=Date.now(),busbal:x=>x.busHeadPaidAt=Date.now()};
+const TODO_DONE_L={ptask:'確認留車',unpaid:'已收訂金',inq:'已追銷',busbal:'車頭尾款已匯',busdep:'車頭訂金已付',busok:'已跟車頭確認',ptphoto:'照片已傳同業',photo:'照片已傳',balxfer:'尾款已收'};
+function todoDone(ids,k){const f=TODO_DONE[k];if(!f)return 0;const now=Date.now();let n=0;ids.forEach(id=>{const x=(o&&o.id===id)?o:DB.orders[id];if(!x||!tasksOf(x).some(t=>t.k===k))return;f(x);x.updated=now;DB.orders[id]=x;n++});
+  if(n){store('nwcw_orders',DB);pushSync();try{renderOrderSel()}catch(_){}try{renderAll()}catch(_){}renderTodo();toast(`已標記完成：${ST[k]}（${n} 張）`)}return n}
 function stageOf(x){if(x.sample)return'sample';if(x.lost)return'lost';const d=daysTo(x);if(d!==null&&d<0)return'done';
   const ct=x.contractUrl||x.contractDone;if(!x.orderedAt&&!x.paid&&!ct)return'inq';if(!x.paid)return'unpaid';if(!x.formAt&&!ct)return'noform';if(!ct)return'nocontract';return'ready'}
 function carKind(x){const used=MODELS.filter(m=>num(x.cars[m])>0);return{lux:used.some(m=>cPrice(m,x.hours).v>=10000),tesla:used.some(m=>((S.models.find(z=>z.id===m)||{}).brand||'')==='Tesla')}}
@@ -2935,7 +2952,7 @@ function revOf(x){if(REV===null)REV=store('nwcw_rev')||{};return REV[x.id]||{}}
 function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];const now=Date.now(),d=daysTo(x),T=[],ago=t=>(now-(+t||0))/DAY;
   /* 2026-10-30 Nicole：遊覽車沒有司機群組、不綁車卡、不用合約／行前確認／服務確認單；只追：付款、客人填表、派車頭 */
   /* 2026-11-01 Nicole：遊覽車先問車頭（有車、報價、訂金）才報價；客人付款後跟車頭確認訂單；車頭要先收訂金的追訂金、用完車追尾款 */
-  if(x.bus&&st==='inq'&&!String(x.busHead||'').trim()&&!(x.busAsks||[]).some(a=>a.st==='ok'))return[{k:'busask',late:ago(x.orderedAt||x.updated)>=1}];
+  if(x.bus&&st==='inq'&&!x.busAskDone&&!String(x.busHead||'').trim()&&!(x.busAsks||[]).some(a=>a.st==='ok'))return[{k:'busask',late:ago(x.orderedAt||x.updated)>=1}];
   if(x.bus&&st==='done')return(String(x.busHead||'').trim()&&!x.busHeadPaidAt&&d!==null&&d>=-30)?[{k:'busbal',late:d<=-3}]:[];
   if(x.bus&&st!=='inq'&&st!=='done'){const B=[];if(!x.paid)B.push({k:'unpaid',late:ago(x.orderedAt||x.updated)>=2});else{if(!String(x.busCName||'').trim()&&!x.formApplied)B.push({k:'noform',late:ago(x.paidTs||x.updated)>=1||(d!==null&&d<=3)});if(!String(x.busHead||'').trim())B.push({k:'nodrv',late:d!==null&&d<=7,why:'還沒派車頭（遊覽車公司）'});else if(!x.busHeadOkAt)B.push({k:'busok',late:true});else if(busHeadPayOf(x)==='dep'&&!x.busHeadDepPaidAt)B.push({k:'busdep',late:d!==null&&d<=14})}return B}
   if(x.quiet&&st!=='done'){const nd=!x.drvDone&&(!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim()));return d!==null&&d<=30&&nd?[{k:'nodrv',late:true,why:'一個月前安排車子'}]:[]}
@@ -2946,9 +2963,9 @@ function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];c
   if(ttPending(x)&&st!=='done')T.push({k:'tt',late:true});
   if(st==='noform')T.push({k:'noform',late:ago(x.paidTs||x.updated)>=3});
   if(st==='nocontract')T.push({k:'nocontract',late:ago(x.formAt)>=2});
-  if(st!=='inq'&&!String(x.carHead||'').trim()){const R=headNeed(x,d);if(R.length)T.push({k:'head',late:R.some(r=>r.late),why:R.map(r=>r.why).join('、')})}
+  if(st!=='inq'&&!String(x.carHead||'').trim()&&!x.headDone){const R=headNeed(x,d);if(R.length)T.push({k:'head',late:R.some(r=>r.late),why:R.map(r=>r.why).join('、')})}
   if(x.paid&&d!==null){
-    {const E=eqIssues(x);if(E.length&&d>=0&&!eqResolved(x))T.push({k:'equip',late:d<=7,why:E.join('；')})}   /* 2026-10-20 對講機／車頭彩／甘蔗固定器 */
+    {const E=eqIssues(x);if(E.length&&d>=0&&!eqResolved(x)&&!(x.eqDoneSig&&x.eqDoneSig===E.join('｜')))T.push({k:'equip',late:d<=7,why:E.join('；')})}   /* 2026-10-20 對講機／車頭彩／甘蔗固定器 */
     if(!x.partner&&d<=7&&!x.cfSentAt&&!x.cfDoneAt)T.push({k:'cfsend',late:d<=5});
     if(!x.partner&&x.cfSentAt&&!x.cfDoneAt)T.push({k:'cfwait',late:d<=5});
     if(!x.drvDone&&(!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim()))){const hd=String(x.carHead||'').trim();if(hd){if(d!==null&&d<=3)T.push({k:'nodrv',late:true,why:'車頭已安排，確認司機資料'})}else{const tr=teslaDrvRule(x,d);T.push(tr?{k:'nodrv',late:d<=14||tr.late,why:tr.why}:{k:'nodrv',late:d<=14})}}
@@ -2957,7 +2974,7 @@ function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];c
     else if(x.memoSentAt&&!x.memoOkAt&&d>=0&&d<=3)T.push({k:'memowait',late:d<=2});
     if(x.balPlan==='transfer'&&!x.balPaid&&d>=0&&d<=1)T.push({k:'balxfer',late:true,why:x.balInfo?'客人已回傳匯款資訊，待對帳':'客人選提前匯款，還沒回傳匯款資訊'});}
   if(x.paid&&d!==null&&d>=0&&d<=2&&!x.callAt&&!preDispatch(x))T.push({k:'call',late:d<=1,why:'前一天 12:00 前回報'});
-  if(x.partner){if(x.partner.stage==='ask')return d!==null&&d>=0?[{k:'ptask',late:d<=30,why:'等同業確認訂車'}]:[];if(x.partner.stage==='held'&&d!==null&&d>=0)T.push({k:'ptinfo',late:d<=14,why:'同業還沒給完整派單'});
+  if(x.partner){if(x.partner.stage==='ask')return d!==null&&d>=0?[{k:'ptask',late:d<=30,why:'等同業確認訂車'}]:[];if(x.partner.stage==='held'&&!x.partner.infoDone&&d!==null&&d>=0)T.push({k:'ptinfo',late:d<=14,why:'同業還沒給完整派單'});
     /* 同業場次用完車：照片要傳給同業負責人（每週一整理），打勾後就完成 */
     if(x.paid&&!x.lost&&d!==null&&d<0&&d>=-60&&x.date>='2026-10-05'&&!x.ptPhotoAt)T.push({k:'ptphoto',late:d<=-2});
     return T.filter(t=>t.k==='tt'||t.k==='nodrv'||t.k==='call'||t.k==='ptinfo'||t.k==='ptphoto')}
@@ -3033,9 +3050,10 @@ function renderTodo(){if(!document.querySelector('.dr-bar[data-dr="todo"] input'
   if(todoF==='photo')B.push(['tsPhotoSent','標記已傳照片']);
   if(todoF==='ptphoto')B.push(['tsPtCodes','複製代碼（搜尋 LINE 群組）'],['tsPtPhoto','標記照片已傳同業']);
   if(todoF==='done')B.push(['tsPhotoReq','標記客人要照片']);
+  if(TODO_DONE[todoF]&&!B.some(b=>/^標記/.test(b[1])))B.push(['tsDone','標記完成']);
   $('todoBatch').innerHTML=B.map(([id,l],i)=>`<button class="btn sm${i>1?' pri':''}" data-tb="${id}"${i&&!todoSel.size?' disabled':''}>${l}</button>`).join('')+`<span class="hint" style="margin:0 0 0 4px">已選 ${todoSel.size} / ${rows.length}</span>`;
   $('todoList').innerHTML=rows.length?rows.map(({x,T,st})=>{const d=daysTo(x),nm=[x.c.groom,x.c.bride].filter(Boolean).join('&');
-    const tg=(todoF==='lost'||todoF==='done')?`<span class="chip">${STAGE_LABEL[st]}</span>`:T.map(t=>`<span class="chip${t.late?' late':''}">${ST[t.k]}${t.why?'（'+t.why+'）':''}</span>`).join('');
+    const tg=(todoF==='lost'||todoF==='done')?`<span class="chip">${STAGE_LABEL[st]}</span>`:T.map(t=>`<span class="chip${t.late?' late':''}">${ST[t.k]}${t.why?'（'+t.why+'）':''}</span>${TODO_DONE[t.k]&&t.k!=='call'?`<button type="button" class="btn sm" data-tdone="${x.id}|${t.k}" style="padding:2px 10px">${TODO_DONE_L[t.k]||'完成'}</button>`:''}`).join('');
     return `<label class="todo-row"><input type="checkbox" data-tsel="${x.id}" style="width:auto"${todoSel.has(x.id)?' checked':''}><div class="m"><div><b>${esc(orderNo(x))}</b>${esc(nm)}</div><div class="sub">${x.partner?`<b style="font-size:1.05em;letter-spacing:.06em">代碼 ${esc(findCode(x))}</b> <button type="button" class="btn sm" data-copycode="${esc(findCode(x))}" style="padding:2px 10px;margin:0 4px">📋 複製代碼</button>｜`:''}${esc(x.c.chatName||'（沒填客人顯示名稱）')}${x.date?`｜${esc(x.date.replace(/-/g,'/'))}${d!==null&&d>=0?`（${d?d+' 天後':'今天'}）`:''}`:''}｜${STAGE_LABEL[st]}</div></div><div class="tg">${tg}</div>${T.some(t=>t.k==='call')?`<button class="btn sm pri" data-tcall="${x.id}">負責人已聯絡新人</button>`:''}<button class="btn sm" data-topen="${x.id}">開啟</button>${rmTexts(x).length?`<button class="btn sm pri" data-trm="${x.id}">提醒文字</button>`:''}</label>`}).join(''):'<p class="hint">沒有符合的訂單。</p>'}
 const RM_LABEL={inq:'提醒決定方案',unpaid:'提醒匯款',noform:'提醒填訂車表單',cfsend:'行前確認',cfwait:'提醒回覆行前確認',rev:'詢問評價',revlink:'傳評價連結'};
 function rmHi(x){const c=x.c||{},ct=String(c.contact||'').trim();if(ct&&!/^(新郎|新娘|其他)$/.test(ct)&&((x.src&&x.src.vendor)||/婚顧|主持/.test(ct))){const n=ct.split(/[\s\/]/).pop().replace(/^(婚顧|主持人)/,'');if(n)return n+'您好'}return '您好'}
@@ -3054,6 +3072,7 @@ let rmX=null;function showRemind(x){if(!x)return;rmX=x;const L=rmTexts(x);let m=
   m.hidden=false;m.innerHTML=`<div style="max-width:640px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px"><div class="row" style="justify-content:space-between;margin-bottom:12px;gap:8px"><h3 style="margin:0">提醒文字 <small>${esc(orderNo(x))} ${esc(x.c.chatName||[x.c.groom,x.c.bride].filter(Boolean).join('&'))}</small></h3><button class="btn" data-rmclose="1">關閉</button></div>`+(L.length?L.map((z,i)=>`<div class="card" style="margin-bottom:10px"><div class="row" style="justify-content:space-between;margin-bottom:6px"><b>${z.l}</b><span class="row" style="gap:6px">${z.k==='inq'?`<button class="btn sm" data-rmreply="1">客人有回覆</button><button class="btn sm pri" data-rmfollow="${i}">複製＋標記已追</button>`:`<button class="btn sm pri" data-rmcopy="${i}">複製</button>`}</span></div><textarea data-rmt="${i}" rows="8" style="width:100%">${esc(z.t)}</textarea></div>`).join('')+'<p class="hint">可以先在框裡修改再複製；複製後到 LINE 貼上傳送。</p>':'<p class="hint">這張單目前沒有需要傳給客人的提醒（剩下的是內部作業，例如出合約、派司機）。</p>')+'</div>'}
 const clip=v=>{if(navigator.clipboard)navigator.clipboard.writeText(v).then(()=>toast('已複製'),()=>toast('複製失敗'))};
 function todoBatch(id){const rows=todoRows(),sel=rows.filter(r=>todoSel.has(r.x.id)).map(r=>r.x),now=Date.now();
+  if(id==='tsDone'){const ids=sel.map(x=>x.id);todoSel.clear();todoDone(ids,todoF);return}
   if(id==='tsAll'){if(todoSel.size===rows.length)todoSel.clear();else rows.forEach(r=>todoSel.add(r.x.id));renderTodo();return}
   if(!sel.length)return;
   if(id==='tsCfPush'){cfPreview(sel.filter(x=>!x.partner));return}
@@ -3316,6 +3335,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.ibb){const rows=[...document.querySelectorAll('[data-ibsel]')].map(c=>c.dataset.ibsel);if(t.dataset.ibb==='all'){if(ibSel.size===rows.length)ibSel.clear();else rows.forEach(id=>ibSel.add(id));renderInbox()}else if(ibSel.size)ibSet([...ibSel],t.dataset.ibb==='done'?{done:true}:{reopen:true});return}
   if(t.dataset.scpick){$('scKey').value=t.dataset.scpick;scLoad();$('scText').focus();return}
   if(t.dataset.matsent){logSent(t.dataset.matsent);toast('已記錄');return}
+  if(t.dataset.tdone){e.preventDefault();e.stopPropagation();const[id,k]=t.dataset.tdone.split('|');todoDone([id],k);return}
   if(t.dataset.tf){todoF=t.dataset.tf;todoSel.clear();renderTodo();return}
   if(t.dataset.tb){todoBatch(t.dataset.tb);return}
   if(t.dataset.tcall){e.preventDefault();const x=DB.orders[t.dataset.tcall];if(x){const now=Date.now();x.callAt=now;x.updated=now;if(o&&o.id===x.id){o.callAt=now;o.updated=now}store('nwcw_orders',DB);pushSync();try{renderAll()}catch(_){}renderTodo();toast('已記錄：'+orderNo(x)+' 負責人已聯絡新人')}return}
