@@ -542,7 +542,7 @@ nav.tabs button{scroll-snap-align:start}
       <div id="ctStep2" hidden>
         <label class="f wide" style="margin-bottom:8px">合約連結（按上方「存到 Google Drive」後自動帶入，也可以自己貼）<input id="c_contractUrl" data-b="contractUrl" placeholder="https://drive.google.com/..."></label>
         <p class="hint" id="ctLinkHint" style="margin:0 0 8px"></p><p class="hint" id="ctSignHint" style="margin:0 0 8px"></p>
-        <div class="row" style="justify-content:flex-end;gap:8px;margin-bottom:8px"><button class="btn sm" id="btnCtBack">回上一步</button><button class="btn sm pri" id="btnCtCopy">複製訊息（標記已傳合約）</button></div>
+        <div class="row" style="justify-content:flex-end;gap:8px;margin-bottom:8px"><button class="btn sm" id="btnCtBack">回上一步</button><button class="btn sm" id="btnCtCopy">複製訊息（標記已傳合約）</button><button class="btn sm pri" id="btnCtBot">用機器人傳給客人</button></div>
         <pre class="out" id="outPaid"></pre>
       </div>
     </div>
@@ -2731,7 +2731,7 @@ function renderSigned(){const v=$('signedView');if(!v)return;const pdf=String(o.
   if(!v.hidden)drawSigned(o)}
 document.addEventListener('click',e=>{if(e.target.id!=='btnShowDraft')return;showDraft[o.id]=!showDraft[o.id];renderAll()});
 function renderCtSend(){if(!$('ctStep1'))return;const ok=!!(ctOk[o.id]||o.ctSentAt),url=(signUrlOf(o)||o.contractUrl||'').trim();$('ctStep1').hidden=ok;$('ctStep2').hidden=!ok;
-  $('ctLinkHint').textContent=!url?'還沒有合約連結：先按上方「存到 Google Drive」產生 PDF，或把連結貼進來。':o.ctSentAt?'已於 '+new Date(o.ctSentAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+' 複製傳送過。':'';$('btnCtCopy').disabled=!url;
+  $('ctLinkHint').textContent=!url?'還沒有合約連結：先按上方「存到 Google Drive」產生 PDF，或把連結貼進來。':o.ctSentAt?'已於 '+new Date(o.ctSentAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+(o.ctBotAt&&o.ctBotAt===o.ctSentAt?' 用機器人傳給客人。':' 複製傳送過。'):'';$('btnCtCopy').disabled=!url;if($('btnCtBot'))$('btnCtBot').disabled=!url;
   const sg=$('ctSignHint');if(sg)sg.innerHTML=o.signedAt?`✅ 客人已於 ${esc(new Date(o.signedAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}))} 完成線上簽署　<a href="${esc(o.signedPdf||'')}" target="_blank" rel="noopener">開啟已簽署合約</a>`:signUrlOf(o)?`線上簽署連結：<a href="${esc(signUrlOf(o))}" target="_blank" rel="noopener">預覽客人看到的頁面</a>（客人尚未簽署）`:'按上方「存到 Google Drive」後會自動產生線上簽署連結。'}
 function paidTextOld(x){const r=calc(x),c=x.c,ps=payState(x);const p=dparts(x.date);
   return [`您好，已收到您的訂金匯款，謝謝！`,`訂單編號：${orderNo(x)}`,`匯款日期：${c.payDate?fmtDate(c.payDate):'—'}｜金額：${ps.amt?money(ps.amt):money(r.deposit)}｜後五碼：${c.last5||'—'}`,'',
@@ -4219,6 +4219,19 @@ try{renderRev()}catch(e){}
 document.addEventListener('change',e=>{if(e.target.id!=='revSkipCb')return;o.revSkip=e.target.checked;save();renderAll();renderOrderSel();toast(o.revSkip?'已標註當天有缺失，不會自動詢問評價':'已取消缺失標註')});
 /* 2026-11-02 Nicole：每張訂單都能直接進篩選照片（相簿） */
 document.addEventListener('click',e=>{if(!e.target.closest||!e.target.closest('#btnPhotoAlbum')||!o)return;e.preventDefault();if(!o.date){toast('這張單還沒有用車日');return}openAlbum(o)});
+/* 2026-11-02 Nicole：合約訊息也能直接用機器人傳給客人 */
+document.addEventListener('click',async e=>{if(!e.target.closest||!e.target.closest('#btnCtBot')||!o)return;e.preventDefault();
+  const text=String(($('outPaid')||{}).textContent||'').trim();if(!text||/請貼上合約連結/.test(text)){toast('還沒有合約連結');return}
+  if(!S.driveUrl||!S.driveKey){toast('還沒設定同步，無法用機器人傳');return}
+  if(!confirm((o.ctSentAt?'這張單之前已經傳過合約。\n\n':'')+'要用機器人把合約連結和注意事項傳給客人嗎？'))return;
+  const b=$('btnCtBot');b.disabled=true;b.textContent='傳送中…';
+  try{o.updated=Date.now();save();try{await doSync()}catch(_){}
+    let j=await cfQApi({action:'balNotice',id:o.id,text});
+    if(j&&!j.ok&&/還沒同步/.test(j.error||'')){await new Promise(r=>setTimeout(r,4000));try{await doSync()}catch(_){}j=await cfQApi({action:'balNotice',id:o.id,text})}
+    if(!j)throw new Error('連不到機器人');if(!j.ok)throw new Error(j.error||'傳送失敗');
+    o.ctSentAt=o.ctBotAt=Date.now();o.contractDone=true;o.updated=Date.now();save();renderCtSend();renderOrderSel();toast('✅ 合約已傳給客人')}
+  catch(err){alert('合約沒傳出去：'+err.message+'\n\n可以改按「複製訊息」自己傳給客人。')}
+  finally{b.disabled=false;b.textContent='用機器人傳給客人'}});
 /* 2026-11-02 Nicole：下單訊息直接用機器人傳給客人（官方 LINE／FB／IG），不用複製貼上 */
 function renderOrderBotSt(){const el=$('orderBotSt');if(!el||!o)return;const t=o.orderMsgSentAt;el.hidden=!t;if(t)el.textContent='已用機器人傳給客人：'+new Date(t).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}
 document.addEventListener('click',async e=>{if(!e.target.closest||!e.target.closest('#btnOrderBot')||!o)return;e.preventDefault();
