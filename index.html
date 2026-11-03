@@ -522,7 +522,7 @@ nav.tabs button{scroll-snap-align:start}
     </div>
     <div class="row noBus" style="margin-bottom:12px;justify-content:space-between">
       <span class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><button class="btn pri" id="btnCoupleCt" type="button">修改新人資料</button><span class="hint" style="margin:0" id="contractHint">資料來自「報價」與「新人資料」，改那邊這裡就會更新。</span></span>
-      <div class="row"><a class="btn" id="signedOpen" hidden target="_blank" rel="noopener" style="text-decoration:none">開新分頁</a><button class="btn" id="btnShowDraft" type="button" hidden>看原始合約（未簽名版）</button><span class="hint" id="driveLink" style="margin:0"></span><button class="btn" id="btnDrive" hidden>存到 Google Drive</button><button class="btn pri" id="btnPrint" hidden>列印／存成 PDF</button></div>
+      <div class="row"><a class="btn" id="signedOpen" hidden target="_blank" rel="noopener" style="text-decoration:none">開新分頁</a><button class="btn" id="btnShowDraft" type="button" hidden>看原始合約（未簽名版）</button><span class="hint" id="driveLink" style="margin:0"></span><button class="btn" id="btnCtVoid" type="button" hidden>更改方案，作廢合約</button><button class="btn" id="btnDrive" hidden>產生合約</button><button class="btn pri" id="btnPrint" hidden>列印／存成 PDF</button></div>
     </div>
     <div id="signedView" hidden>
       <div class="paperwrap"><div id="signedPages" class="signed-pages"></div></div>
@@ -540,7 +540,7 @@ nav.tabs button{scroll-snap-align:start}
       <h3>傳合約給客人 <small>附注意事項；有指定車色會自動拿掉第 7 點</small></h3>
       <div id="ctStep1"><p class="hint">請先檢查上面的合約：日期、時間、車款、金額、地址都正確後，再按下一步。</p><button class="btn pri" id="btnCtOk">合約內容確認無誤，下一步</button></div>
       <div id="ctStep2" hidden>
-        <label class="f wide" style="margin-bottom:8px">合約連結（按上方「存到 Google Drive」後自動帶入，也可以自己貼）<input id="c_contractUrl" data-b="contractUrl" placeholder="https://drive.google.com/..."></label>
+        <label class="f wide" style="margin-bottom:8px">合約連結（按上方「產生合約」後自動帶入，也可以自己貼）<input id="c_contractUrl" data-b="contractUrl" placeholder="https://drive.google.com/..."></label>
         <p class="hint" id="ctLinkHint" style="margin:0 0 8px"></p><p class="hint" id="ctSignHint" style="margin:0 0 8px"></p>
         <div class="row" style="justify-content:flex-end;gap:8px;margin-bottom:8px"><button class="btn sm" id="btnCtBack">回上一步</button><button class="btn sm" id="btnCtCopy">複製訊息（標記已傳合約）</button><button class="btn sm pri" id="btnCtBot">用機器人傳給客人</button></div>
         <pre class="out" id="outPaid"></pre>
@@ -690,12 +690,17 @@ nav.tabs button{scroll-snap-align:start}
     <div class="doc" id="memoDoc" style="margin-bottom:18px"></div>
     <!-- 2026-10-19 開場訊息從「車隊與流程」移到這裡，跟派車單連結放一起 -->
     <div class="card" style="margin-bottom:18px">
-      <h3>司機 LINE 群組 <small>建群後貼開場訊息；按「複製訊息」會自動產生／更新派車單連結；緊急聯絡人只出現在這裡</small></h3>
+      <h3>司機 LINE 群組 <small>照順序做：1 建立群組 → 2 偵測群組 → 3 發綁定車卡提醒</small></h3>
       <div class="fields">
         <label class="f wide">群組名稱<div class="row" style="flex-wrap:nowrap"><input id="lgName" readonly style="flex:1"><button class="btn sm pri" data-copyv="lgName">複製</button></div></label>
       </div>
-      <div id="lgCard" style="margin-top:8px"></div>
-      <div class="row" style="justify-content:space-between;margin:10px 0 6px"><span class="hint" style="margin:0">開場訊息</span><span class="row" style="gap:6px"><button class="btn sm pri" id="btnLgPub">禮車助手發到群組</button><button class="btn sm" data-copy="lgMsg">複製訊息</button></span></div><div class="hint" style="margin:0 0 6px">「禮車助手發到群組」會發成有「查看派車單」按鈕的卡片，並一起發禮車教案；自己貼的話只能是文字連結。</div>
+      <div id="lgCard" style="margin-top:8px;min-height:200px"></div>
+    </div>
+    <!-- 2026-11-03 Nicole：發派車單跟綁定車卡分開，避免誤按；客人填完行前確認後才發 -->
+    <div class="card" style="margin-bottom:18px">
+      <h3>4 發派車單到群組 <small>客人填完行前確認後再發；緊急聯絡人只出現在這裡</small></h3>
+      <div id="pubGate" class="hint" style="margin:0 0 6px"></div>
+      <div class="row" style="justify-content:space-between;margin:10px 0 6px"><span class="hint" style="margin:0">開場訊息</span><span class="row" style="gap:6px"><button class="btn sm" id="btnLgPub">發派車單到群組</button><button class="btn sm" data-copy="lgMsg">複製訊息</button></span></div><div class="hint" style="margin:0 0 6px">「發派車單到群組」會發成有「查看派車單」按鈕的卡片，並一起發禮車教案；自己貼的話只能是文字連結。</div>
       <pre class="out" id="lgMsg"></pre>
       <div class="pubBox" style="margin-top:10px"></div>
     </div>
@@ -2138,7 +2143,7 @@ async function saveToDrive(){const btn=$('btnDrive');if(!S.driveUrl||!S.driveKey
     const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');
     o.driveFolder=j.folder;if(j.file)o.contractUrl=j.file;save();btn.textContent='建立簽署連結中…';$('driveLink').textContent='✅ 合約 PDF 已存好，正在建立線上簽署連結…';
     try{const k=await gasCall({action:'signReg',id:o.id,orderNo:orderNo(o),couple:coupleName(o),html:contractPdfDoc(o)});o.signKey=k.sign;o.signUrl=signLink(k.sign);o.signedAt=null;o.signedPdf='';save()}catch(e){toast('簽署連結建立失敗：'+e.message)}fillInputs();renderAll();$('driveLink').innerHTML=`<a href="${esc(j.folder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`;toast('合約已完成，可以到下方複製訊息傳給客人');try{ctOk[o.id]=1;renderCtSend();$('ctSendCard').scrollIntoView({behavior:'smooth',block:'start'})}catch(e){}}
-  catch(e){toast('存檔失敗：'+e.message);$('driveLink').textContent='❌ 存檔失敗：'+e.message+'，請再按一次'}finally{btn.disabled=false;btn.textContent='存到 Google Drive'}}
+  catch(e){toast('存檔失敗：'+e.message);$('driveLink').textContent='❌ 存檔失敗：'+e.message+'，請再按一次'}finally{btn.disabled=false;btn.textContent=ctGenLabel(o)}}
 
 /* ---------- form paste parser ---------- */
 const FORM_ORDER=['orderNo','groom','bride','role','phone','start','end','meet','wed','o1','o2','route','caneAns','decoAns','payDate','payAmt','last5','o1L','o2L'];
@@ -2732,9 +2737,17 @@ async function drawSigned(x){const box=$('signedPages'),pdf=String(x.signedPdf||
     const doc=await window.pdfjsLib.getDocument({data:u8}).promise;if(box.dataset.k!==pdf)return;box.innerHTML='';
     for(let n=1;n<=doc.numPages;n++){const pg=await doc.getPage(n),vp0=pg.getViewport({scale:1}),sc=(794/vp0.width)*(window.devicePixelRatio>1?2:1.5),vp=pg.getViewport({scale:sc});const cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;box.appendChild(cv);await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise}
   }catch(err){console.warn(err);if(box.dataset.k!==pdf)return;box.innerHTML='';const f=$('signedFrame');f.hidden=false;const pv=pdf.replace(/\/view.*$/,'/preview');if(f.getAttribute('src')!==pv)f.setAttribute('src',pv)}}
+function ctGenLabel(x){return x.signKey||x.contractUrl||x.ctVoidAt?'產生新合約':'產生合約'}
+async function ctVoid(){if(!o.signedAt)return;if(!confirm('作廢後，客人已簽的合約就不再算數，需要重新產生新合約給客人簽。\n\n確定要作廢 '+orderNo(o)+' 的合約嗎？'))return;
+  const b=$('btnCtVoid');b.disabled=true;b.textContent='作廢中…';
+  try{await gasCall({action:'signVoid',id:o.id});(o.ctVoided=o.ctVoided||[]).push({at:Date.now(),signedAt:o.signedAt,pdf:o.signedPdf||''});o.ctVoidAt=Date.now();o.signedAt=null;o.signedPdf='';o.contractDone=false;o.ctSentAt=null;o.ctBotAt=null;delete ctOk[o.id];delete showDraft[o.id];save();renderAll();toast('舊合約已作廢，改好報價後按「產生新合約」')}
+  catch(e){toast('作廢失敗：'+e.message)}finally{b.disabled=false;b.textContent='更改方案，作廢合約'}}
+document.addEventListener('click',e=>{if(e.target.id==='btnCtVoid')ctVoid()});
 function renderSigned(){const v=$('signedView');if(!v)return;const pdf=String(o.signedPdf||'');const on=!!(o.signedAt&&/^https:\/\/drive\.google\.com\//.test(pdf));
   const draft=!on||!!showDraft[o.id];v.hidden=!on||draft;$('draftWrap').hidden=!draft;$('signedOpen').hidden=!on;$('btnShowDraft').hidden=!on;
   if(window.__ctBtns!==undefined){$('btnDrive').hidden=$('btnPrint').hidden=!(window.__ctBtns&&draft)}
+  /* 2026-11-03 Nicole：重新簽約＝先按「更改方案，作廢合約」，再按「產生新合約」 */
+  $('btnCtVoid').hidden=!(on&&window.__ctBtns);if(!$('btnDrive').disabled)$('btnDrive').textContent=ctGenLabel(o);
   const ch=$('contractHint');ch.style.color='';ch.style.fontWeight='';
   if(!on){if(window.__ctHint)ch.textContent=window.__ctHint;return}
   $('signedOpen').href=pdf;$('btnShowDraft').textContent=draft?'看簽好的合約':'看原始合約（未簽名版）';
@@ -2743,8 +2756,8 @@ function renderSigned(){const v=$('signedView');if(!v)return;const pdf=String(o.
   if(!v.hidden)drawSigned(o)}
 document.addEventListener('click',e=>{if(e.target.id!=='btnShowDraft')return;showDraft[o.id]=!showDraft[o.id];renderAll()});
 function renderCtSend(){if(!$('ctStep1'))return;const ok=!!(ctOk[o.id]||o.ctSentAt),url=(signUrlOf(o)||o.contractUrl||'').trim();$('ctStep1').hidden=ok;$('ctStep2').hidden=!ok;
-  $('ctLinkHint').textContent=!url?'還沒有合約連結：先按上方「存到 Google Drive」產生 PDF，或把連結貼進來。':o.ctSentAt?'已於 '+new Date(o.ctSentAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+(o.ctBotAt&&o.ctBotAt===o.ctSentAt?' 用機器人傳給客人。':' 複製傳送過。'):'';$('btnCtCopy').disabled=!url;if($('btnCtBot'))$('btnCtBot').disabled=!url;
-  const sg=$('ctSignHint');if(sg)sg.innerHTML=o.signedAt?`✅ 客人已於 ${esc(new Date(o.signedAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}))} 完成線上簽署　<a href="${esc(o.signedPdf||'')}" target="_blank" rel="noopener">開啟已簽署合約</a>`:signUrlOf(o)?`線上簽署連結：<a href="${esc(signUrlOf(o))}" target="_blank" rel="noopener">預覽客人看到的頁面</a>（客人尚未簽署）`:'按上方「存到 Google Drive」後會自動產生線上簽署連結。'}
+  $('ctLinkHint').textContent=!url?'還沒有合約連結：先按上方「產生合約」產生 PDF，或把連結貼進來。':o.ctSentAt?'已於 '+new Date(o.ctSentAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+(o.ctBotAt&&o.ctBotAt===o.ctSentAt?' 用機器人傳給客人。':' 複製傳送過。'):'';$('btnCtCopy').disabled=!url;if($('btnCtBot'))$('btnCtBot').disabled=!url;
+  const sg=$('ctSignHint');if(sg)sg.innerHTML=o.signedAt?`✅ 客人已於 ${esc(new Date(o.signedAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}))} 完成線上簽署　<a href="${esc(o.signedPdf||'')}" target="_blank" rel="noopener">開啟已簽署合約</a>`:signUrlOf(o)?`線上簽署連結：<a href="${esc(signUrlOf(o))}" target="_blank" rel="noopener">預覽客人看到的頁面</a>（客人尚未簽署）`:'按上方「產生合約」後會自動產生線上簽署連結。'}
 function paidTextOld(x){const r=calc(x),c=x.c,ps=payState(x);const p=dparts(x.date);
   return [`您好，已收到您的訂金匯款，謝謝！`,`訂單編號：${orderNo(x)}`,`匯款日期：${c.payDate?fmtDate(c.payDate):'—'}｜金額：${ps.amt?money(ps.amt):money(r.deposit)}｜後五碼：${c.last5||'—'}`,'',
    `用車日期：${x.date?fmtDate(x.date)+'（'+WD.zh[p.w]+'）':'未定'} ${c.start||''}${c.end?'-'+c.end:''}`,`預約車款：${carsText(x,'zh')}`,`尾款金額：${money(r.balance)}${r.red?'（含司機禮）':''}`,'',
@@ -3477,17 +3490,21 @@ const LGST={};let lgBusy='',lgF='all';
 /* 車隊與流程頁「司機 LINE 群組」卡：已建立勾選、傳綁定車卡、司機綁定狀態（跟群組名稱清單共用） */
 function renderLgCard(){const el=$('lgCard');if(!el||!o)return;if(o.sample||!lgOk(o)){el.innerHTML='<span class="hint" style="margin:0">收訂後才會出現「已建立」與「傳綁定車卡」。</span>';return}
   const g=LGST[o.id],bd=lgBind(o);
-  el.innerHTML=`<div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer"><input type="checkbox" data-lgdone="${esc(o.id)}" style="width:auto"${o.lgAt?' checked':''}>群組已建立</label><label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;white-space:nowrap" title="只有車頭的群組：不需要綁定車卡，也不發禮車教案"><input type="checkbox" data-headonly="${esc(o.id)}" style="width:auto"${o.headOnly?' checked':''}>此群組只有車頭</label>${o.headOnly?'<span class="hint" style="margin:0">只有車頭：不需綁定車卡、不發禮車教案</span>':`<button class="btn sm" data-lgbind="${esc(o.id)}"${g&&g.ok?'':' disabled'}>📨 傳綁定車卡</button>${lgMentBtn(o,g)}`}<button class="btn sm" id="btnLgCardRefresh" title="剛建好或改名的群組，按這裡重新偵測">🔄 重新偵測</button><span class="hint" style="margin:0">${g==null?'查詢群組中…':g.ok?'🤖 禮車助手已在群組':'⚠️ 還沒偵測到群組（群組名稱要有代碼、禮車助手要在群組裡）'}</span></div>`
+  const stp=(n,t)=>`<div style="font-weight:600;margin:10px 0 4px">${n} ${t}</div>`;
+  el.innerHTML=stp(1,'建立群組')+`<div class="hint" style="margin:0 0 6px">先加入禮車助手，再加入司機；群組名稱用上面的名稱</div><div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer"><input type="checkbox" data-lgdone="${esc(o.id)}" style="width:auto"${o.lgAt?' checked':''}>群組已建立</label><label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;white-space:nowrap" title="只有車頭的群組：不需要綁定車卡，也不發禮車教案"><input type="checkbox" data-headonly="${esc(o.id)}" style="width:auto"${o.headOnly?' checked':''}>此群組只有車頭</label></div>`
+    +stp(2,'偵測群組')+`<div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><button class="btn sm" id="btnLgCardRefresh" title="剛建好或改名的群組，按這裡重新偵測">重新偵測</button><span class="hint" style="margin:0">${g==null?'查詢群組中…':g.ok?'禮車助手已在群組':'還沒偵測到群組（群組名稱要有代碼、禮車助手要在群組裡）'}</span></div>`
+    +stp(3,'發綁定車卡提醒')+`<div class="row" style="gap:10px;flex-wrap:wrap;align-items:center">${o.headOnly?'<span class="hint" style="margin:0">只有車頭：不需綁定車卡、不發禮車教案</span>':`<button class="btn sm" data-lgbind="${esc(o.id)}"${g&&g.ok?'':' disabled'}>傳綁定車卡</button>${lgMentBtn(o,g)}`}</div>`
     +`<div class="hint" style="margin:6px 0 0">${!bd.total?'還沒派司機':bd.miss.length?`<b style="color:var(--warn)">未綁車卡 ${bd.miss.length}/${bd.total}：${esc(bd.miss.join('、'))}</b>`:`✅ 司機 ${bd.total} 位都已綁車卡`}</div>${lgUbLine(g)}`
     +((o.fleet||[]).some(f=>String(f.driver||'').trim())?`<div class="row" style="gap:4px 14px;flex-wrap:wrap;margin-top:6px;font-size:.9rem">${(o.fleet||[]).map((f,i)=>String(f.driver||'').trim()?`<label style="display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;color:var(--muted)"><input type="checkbox" data-nogrp="${i}" style="width:auto"${f.noGrp?' checked':''}>${esc(f.role||'')} ${esc(String(f.driver).trim())} 不進群組</label>`:'').join('')}</div>`:'');   /* 2026-10-20 Nicole：某台車司機不進群組（不用綁車卡、不用報到） */
   try{lgNameWarn(g)}catch(_){}
+  {const pg=$('pubGate');if(pg){pg.innerHTML=o.cfDoneAt?'<span style="color:var(--ok)">客人已填行前確認，可以發派車單</span>':'<b style="color:var(--warn)">客人還沒填行前確認，派車單先不要發</b>'}}
   if(g==null)lgStatus([o])}
 /* 2026-10-21 Nicole：LINE 群組現在的名稱和系統建議的不一樣（例：地點改過，新莊→三重）→ 提醒改名 */
 function lgNameWarn(g){const want=lgName(o),flat=v=>String(v||'').replace(/\s+/g,'');const diff=!!(g&&g.ok&&g.name&&flat(g.name)!==flat(want));
   document.querySelectorAll('.lgWarn').forEach(el=>{el.hidden=!diff;el.innerHTML=diff?`LINE 群組目前叫「${esc(g.name)}」，跟上面建議的名稱不一樣（可能是地點改過）。要一致的話，到 LINE 把群組改名成上面的名稱；不改也可以，代號還在就不影響派車單和提醒。`:''})}
 /* 群組裡還沒綁定車卡、系統可以 @ 的人（LINE 名稱）：有人加入或在群組說過話才認得 */
 function lgUbLine(g){if(!g||!g.ok||!Array.isArray(g.ub))return '';return `<div class="sub" style="margin-top:2px">${g.ub.length?`📣 群組裡可以 @ 的未綁定成員：<b>${esc(g.ub.join('、'))}</b>`:'群組裡沒有可以 @ 的未綁定成員（沒在群組說過話、或禮車助手加入前就在群組的人認不到）'}</div>`}
-function lgMentBtn(x,g){const n=g&&g.ok&&Array.isArray(g.ub)?g.ub.length:0;return n?`<button class="btn sm" data-lgment="${esc(x.id)}" title="在群組 @ 還沒綁定的人，並附上綁定車卡按鈕">📣 @ 沒綁定的人（${n}）</button>`:''}
+function lgMentBtn(x,g){const n=g&&g.ok&&Array.isArray(g.ub)?g.ub.length:0;return n?`<button class="btn sm" data-lgment="${esc(x.id)}" title="在群組 @ 還沒綁定的人，並附上綁定車卡按鈕">@ 沒綁定的人（${n}）</button>`:''}
 async function lgCall(body){if(!S.driveUrl||!S.driveKey)throw new Error('未設定同步');const r=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({token:S.driveKey,action:'wedGrp'},body))});const j=await r.json();if(!j.ok)throw new Error(j.error||'失敗');return j}
 const lgKeys=x=>[tripCode(x),findCode(x),x._no||orderNo(x)].filter(Boolean);
 async function lgStatus(L){const need=L.filter(x=>LGST[x.id]==null);const k=need.map(x=>x.id).join(',');if(!need.length||lgBusy===k)return;lgBusy=k;
@@ -4013,7 +4030,9 @@ function renderLsn(){if(!o)return;const bx=document.querySelectorAll('.lsnBox');
   bx.forEach(b=>b.innerHTML=h)}
 /* 2026-10-20 Nicole：派車單由禮車助手發到群組，用按鈕卡片（跟客人收到的一樣）＋禮車教案 */
 document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.closest('#btnLgPub');if(!b||!o)return;const x=o;
-  if(!confirm(x.pubAt?'這張派車單已經發佈過了，確定要再發一次到司機群組？':'由禮車助手把派車單（按鈕卡片）'+(x.headOnly?'':'和禮車教案')+'發到這趟的司機群組？'))return;
+  /* 2026-11-03 Nicole：行前確認還沒填完不能發派車單；要強制發得再確認一次 */
+  if(!x.cfDoneAt&&!confirm('客人還沒填行前確認，派車單先不要發。\n\n（要傳綁定車卡請按上方「傳綁定車卡」）\n\n確定要強制先發派車單到司機群組？'))return;
+  if(!confirm(x.pubAt?'這張派車單已經發佈過了，確定要再發一次到司機群組？':'【發派車單】禮車助手會把派車單'+(x.headOnly?'':'和禮車教案')+'發到這趟的司機群組（不是綁定車卡提醒）。確定發送？'))return;
   if(new Date().getHours()<9&&!confirm('現在是司機休息時間（00:00–09:00），確定現在就發到司機群組？'))return;   /* 2026-10-20 Nicole：00:00–09:00 先問 */
   b.disabled=true;const tx=b.textContent;b.textContent='傳送中…';
   try{const t=await lgMsgReady();const j=await lgCall({op:'pub',keys:lgKeys(x),no:orderNo(x),text:t,ho:x.headOnly?1:0,lead:((lead(x)||{}).driver||'')});x.pubAt=Date.now();if(j.lesson&&!x.lsnSentAt)x.lsnSentAt=Date.now();if(o&&o.id===x.id){save()}else{x.updated=Date.now();DB.orders[x.id]=x;store('nwcw_orders',DB);pushSync()}
