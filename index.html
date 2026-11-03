@@ -399,6 +399,9 @@ nav.tabs button{scroll-snap-align:start}
           <textarea id="scText" rows="7" style="width:100%;box-sizing:border-box"></textarea>
           <p class="hint" id="scWarn" style="margin:6px 0 0"></p>
           <h3 style="margin-top:16px">素材 <small>依階段建議，標記已傳避免重複</small></h3>
+          <!-- 2026-11-03 Nicole：一鍵傳價目表＋服務摘要到這張訂單的客人對話 -->
+          <div class="row" style="gap:6px;flex-wrap:wrap;margin:0 0 4px"><button class="btn sm" data-matsend="tesla">一鍵傳送特斯拉報價+服務摘要</button><button class="btn sm" data-matsend="benz">一鍵傳送賓士報價+服務摘要</button><button class="btn sm" data-matsend="summary">傳送服務摘要</button><button class="btn sm" data-matsend="all">傳送全部報價+服務摘要</button></div>
+          <p class="hint" style="margin:0 0 8px">禮車助手直接傳到這張訂單綁定的客人對話（官方 LINE／FB／IG），傳完自動標記已傳。FB／IG 客人超過 24 小時沒傳訊息時傳不出去。</p>
           <div id="matList"></div>
           <p class="hint" id="sentLog" style="margin:8px 0 0"></p>
         </div>
@@ -3584,6 +3587,10 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.ibb){const rows=[...document.querySelectorAll('[data-ibsel]')].map(c=>c.dataset.ibsel);if(t.dataset.ibb==='all'){if(ibSel.size===rows.length)ibSel.clear();else rows.forEach(id=>ibSel.add(id));renderInbox()}else if(ibSel.size)ibSet([...ibSel],t.dataset.ibb==='done'?{done:true}:{reopen:true});return}
   if(t.dataset.scpick){$('scKey').value=t.dataset.scpick;scLoad();$('scText').focus();return}
   if(t.dataset.matsent){logSent(t.dataset.matsent);toast('已記錄');return}
+  if(t.dataset.matsend){const k=t.dataset.matsend,N={tesla:'特斯拉報價+服務摘要',benz:'賓士報價+服務摘要',summary:'服務摘要',all:'全部報價+服務摘要'},K={tesla:['p_tesla','m_summary'],benz:['p_benz','m_summary'],summary:['m_summary'],all:['p_tesla','p_benz','m_summary']};
+    if(!confirm('禮車助手會把「'+N[k]+'」傳到 '+orderNo(o)+' 的客人對話，確定傳送？'))return;const x=o,tx=t.textContent;t.disabled=true;t.textContent='傳送中…';
+    gasCall({action:'matSend',id:x.id,set:k}).then(j=>{K[k].forEach(m=>{(x.sent=x.sent||[]).push({k:m,at:Date.now()})});x.updated=Date.now();if(o&&o.id===x.id){save();renderNeed()}else{DB.orders[x.id]=x;store('nwcw_orders',DB);pushSync()}toast('已傳給'+(j.who||'客人')+'（'+(j.plat==='line'?'官方 LINE':j.plat==='ig'?'IG':'FB')+'）')})
+      .catch(e=>toast('沒傳出去：'+e.message)).finally(()=>{t.disabled=false;t.textContent=tx});return}
   if(t.dataset.tdone){e.preventDefault();e.stopPropagation();const[id,k]=t.dataset.tdone.split('|');todoDone([id],k);return}
   if(t.dataset.tf){todoF=t.dataset.tf;todoSel.clear();renderTodo();return}
   if(t.dataset.tb){todoBatch(t.dataset.tb);return}
