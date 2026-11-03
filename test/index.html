@@ -2208,7 +2208,7 @@ function applyLoop(f){const c=o.c,diffs=['行程：單點繞圈'],warn=[];o.samp
   return{diffs,warn}}
 /* 2026-10-20 舊版（10/18 以前）帶入的行前確認沒有把「想提醒司機」放進注意事項 → 每張只補一次（cfNoteChk），之後你刪改不會再加回 */
 const cfNz=s=>String(s||'').replace(/[\s　，,。.、！!~～]/g,'');
-function cfSegsTxt(f){const N={A:'男方家',B:'女方家',C:'餐廳',D:'其他地點'};return String(f.segs||'').split('\n').filter(Boolean).map(z=>{const m=z.match(/^(\S+) ([A-D])→([A-D])$/);return m?`${m[1]} ${m[2]===m[3]?N[m[2]]+'附近繞一圈':N[m[2]]+' → '+N[m[3]]}`:z}).join('\n')}
+function cfSegsTxt(f){const N={A:f.meetL||'男方家',B:f.wedL||'女方家',C:f.restL||'餐廳',D:f.dL||'其他地點'};return String(f.segs||'').split('\n').filter(Boolean).map(z=>{const m=z.match(/^(\S+) ([A-D])→([A-D])$/);return m?`${m[1]} ${m[2]===m[3]?N[m[2]]+'附近繞一圈':N[m[2]]+' → '+N[m[3]]}`:z}).join('\n')}
 function cfNoteIn(x,nt){return !!nt&&cfNz(x.drvNote).indexOf(cfNz(nt))>=0}
 function cfNoteFill(){const ch=[];Object.values(DB.orders).forEach(x=>{if(x.sample)return;const cf=CONFIRMS[normNo(orderNo(x))];if(!cf||!cf.f||+x.cfNoteChk===+cf.at)return;if(!(+x.cfApplyAt>=+cf.at))return;
   const nt=String(cf.f.note||'').trim();x.cfNoteChk=+cf.at;
@@ -2216,7 +2216,7 @@ function cfNoteFill(){const ch=[];Object.values(DB.orders).forEach(x=>{if(x.samp
   x.updated=Date.now();DB.orders[x.id]=x;ch.push(x)});return ch.filter(x=>cfNoteIn(x,String(CONFIRMS[normNo(orderNo(x))].f.note||'').trim())&&!(x.cfLast&&x.cfLast.f))}
 function cfNoteAdd(){const cf=CONFIRMS[normNo(orderNo(o))],nt=String(((cf&&cf.f)||(o.cfLast&&o.cfLast.f)||{}).note||'').trim();if(!nt)return;if(!cfNoteIn(o,nt))o.drvNote=(String(o.drvNote||'').trim()?String(o.drvNote).trim()+'\n\n':'')+nt;o.sample=false;save();try{renderAll()}catch(_){}toast('已加進注意事項（派車單＋服務確認單），記得重新產生文件')}
 function cfAuto(){const ch=[];Object.values(DB.orders).forEach(x=>{if(x.sample)return;const cf=CONFIRMS[normNo(orderNo(x))];if(!cf||!cf.f||!(+cf.at>(+x.cfApplyAt||0))||+x.locEditAt>=+cf.at)return;   /* 2026-10-20 你手動改過地點／流程後，同一份行前確認不再覆蓋 */
-  const keep=o;o=x;try{x.cfPrev={meet:x.c.meet||'',wed:x.c.wed||'',o1:x.c.o1||''};const f=cf.f,r=f.mode==='loop'?applyLoop(f):applyConfirm({c2name:f.c2name,c2phone:f.c2phone,crole:f.crole,crel:f.crel,segs:f.segs,dAddr:f.dAddr,name:f.name,phone:f.phone,meet:f.meet,wed:f.wed,start:f.start,combo:f.combo,cane:f.cane,back:f.back,restYN:f.restYN,restT:f.restT,restAddr:f.restAddr});
+  const keep=o;o=x;try{x.cfPrev={meet:x.c.meet||'',wed:x.c.wed||'',o1:x.c.o1||''};const f=cf.f,r=f.mode==='loop'?applyLoop(f):applyConfirm({c2name:f.c2name,c2phone:f.c2phone,crole:f.crole,crel:f.crel,segs:f.segs,dAddr:f.dAddr,meetL:f.meetL,meetN:f.meetN,wedL:f.wedL,wedN:f.wedN,restL:f.restL,restN:f.restN,dL:f.dL,dN:f.dN,name:f.name,phone:f.phone,meet:f.meet,wed:f.wed,start:f.start,combo:f.combo,cane:f.cane,back:f.back,restYN:f.restYN,restT:f.restT,restAddr:f.restAddr});
     if(f.friend){const ft=f.friend==='有'?`${f.friendN} 台，排第 ${String(f.friendPos||'').split(',').join('、')} 車`:f.friend;if(f.friend==='有')r.warn.unshift(`親友車加入車隊：${ft}，已自動排進用車確認單和司機派車單，請到「車隊」確認車序。`);else r.diffs.push(`親友車加入車隊：${ft}`)}   // 2026-10-15 行前確認新增親友車題目
     if(f.fireYN){x.fireYN=f.fireYN;x.fire=f.fire||'';x.fireType=f.fireType||'';x.fireMode=f.mode==='loop'?'loop':'';r.diffs.push('鞭炮：'+(f.fireYN==='要放'?fireLines(x,'cust')[0].replace(/^鞭炮：/,''):f.fireYN))}   // 2026-10-20 鞭炮
     if(f.host){x.host=f.host==='有'?{name:f.hostName||'',phone:f.hostPhone||''}:null;if(f.host==='有')r.diffs.push('儀式老師／主持人：'+([f.hostName,f.hostPhone].filter(Boolean).join(' ')||'有（沒留資料）'))}
@@ -2271,16 +2271,20 @@ function applyConfirm(res){const c=o.c,before=clone(o),diffs=[],warn=[];o.sample
   if(res.name){const nm=res.name.replace(/\s+/g,'');const prev=contactName(o);if(nm===c.groom)c.role='新郎';else if(nm===c.bride)c.role='新娘';else{c.role='其他';c.contact=res.name}chg('聯絡人',prev,res.name)}
   cfRole(c,res,chg);   /* 2026-10-20 客人填的聯絡人身分 */
   if(res.phone){chg('電話',c.phone,res.phone);c.phone=res.phone.replace(/\s/g,'')}
+  /* 2026-11-03 Nicole：行前確認每個地點可自訂名稱＋備註 → 地點名稱寫成「名稱（備註）」 */
+  const ptLab=(n,m,d)=>{n=String(n||'').trim();m=String(m||'').trim();if(!n&&!m)return '';n=n||d;return m&&m!==n?`${n}（${m}）`:n};
   if(res.meet){chg('男方家／集合地點',c.meet,res.meet);c.meet=res.meet;if(!c.meetL)c.meetL='男方家'}
+  {const L=ptLab(res.meetL,res.meetN,'男方家');if(L&&L!==c.meetL){chg('A 地點名稱',c.meetL,L);c.meetL=L}}
   if(res.wed){chg('女方家',c.wed,res.wed);c.wed=res.wed;if(!c.wedL)c.wedL='女方家'}
+  {const L=ptLab(res.wedL,res.wedN,'女方家');if(L&&res.wed&&L!==c.wedL){chg('B 地點名稱',c.wedL,L);c.wedL=L}}
   const st=normTime(res.start);if(st){chg('出發時間',c.start,st);c.start=st;c.gather=addMin(st,-20)}
   if(res.combo){c.combo=res.combo}
   if(res.cane){c.caneNote=res.cane;const cv=caneYN(res.cane);if(cv)c.caneAns=cv}
   const back=normTime(res.back);const restT=normTime(res.restT);const rest=yesish(res.restYN)||(!!res.restAddr&&!/^(否|不|無|沒|n\/?a)/i.test(res.restAddr));
-  if(rest&&res.restAddr&&!/^(否|不|無|沒|n\/?a)/i.test(res.restAddr)){chg('餐廳',c.o1,res.restAddr);c.o1=res.restAddr;c.o1L='餐廳'}
+  if(rest&&res.restAddr&&!/^(否|不|無|沒|n\/?a)/i.test(res.restAddr)){chg('餐廳',c.o1,res.restAddr);c.o1=res.restAddr;c.o1L=ptLab(res.restL,res.restN,'餐廳')||'餐廳'}
   // rebuild flow
   const SG=String(res.segs||'').split('\n').map(z=>z.trim().match(/^(\d{1,2}:\d{2}) ([A-D])→([A-D])$/)).filter(Boolean);   /* 2026-10-20 新版行前確認：當天流程一段一行 */
-  if(SG.length){if(SG.some(m=>m[2]==='D'||m[3]==='D')&&res.dAddr){const fd=ptField('D');chg('其他地點（D）',c[fd],res.dAddr);c[fd]=res.dAddr;if(!c[fd+'L'])c[fd+'L']='其他地點'}
+  if(SG.length){if(SG.some(m=>m[2]==='D'||m[3]==='D')&&res.dAddr){const fd=ptField('D');chg('其他地點（D）',c[fd],res.dAddr);c[fd]=res.dAddr;c[fd+'L']=ptLab(res.dL,res.dN,'其他地點')||c[fd+'L']||'其他地點'}
     o.flow=SG.map(m=>({t:normTime(m[1])||m[1],who:'',seg:m[2]===m[3]?`${m[2]} 繞圈`:`${m[2]} - ${m[3]}`}));const ks=[SG[0][2]];SG.forEach(m=>{if(ks[ks.length-1]!==m[3])ks.push(m[3])});o.path=ks.join(' - ')}
   else{const flow=[{t:c.start,who:'',seg:'A - B'}];if(back)flow.push({t:back,who:'',seg:'B - A'});if(rest)flow.push({t:restT||'',who:'',seg:'A - C'});
   o.flow=flow;o.path=rest?'A - B - A - C':'A - B - A'}
@@ -2392,7 +2396,7 @@ function renderCfFlow(){const card=$('cfFlowCard'),b=$('cfFlowBody');if(!card||!
   let h=`<b style="color:var(--ok)">✅ ${L&&L.manual&&!f?'已用貼上的回覆帶入':'客人已送出'}（${tm(at)}${who?'，'+(who==='agent'?'婚顧／主持人代填':'新人填寫'):''}${ln?'，LINE：'+esc(ln):''}）</b>`;
   if(f){const loop=f.mode==='loop',fr=f.friend?(f.friend==='有'?`${f.friendN} 台，排第 ${String(f.friendPos||'').split(',').join('、')} 車`:f.friend):'';
     const rows=(loop?[['行程','單點繞圈'],['聯絡人',[f.name,f.phone].filter(Boolean).join(' ')+(f.crole&&!f.c2name?`（${[f.crole,f.crel].filter(Boolean).join('／')}）`:'')],['第二聯絡人',f.c2name?[f.c2name+(f.crole?`（${[f.crole,f.crel].filter(Boolean).join('／')}）`:''),f.c2phone].filter(Boolean).join(' '):''],['集合地點（男方家）',f.meet],['第一圈',f.loop1],['繞第二圈',f.loop2YN],['第二圈',f.loop2T]]
-      :[['聯絡人',[f.name,f.phone].filter(Boolean).join(' ')+(f.crole&&!f.c2name?`（${[f.crole,f.crel].filter(Boolean).join('／')}）`:'')],['第二聯絡人',f.c2name?[f.c2name+(f.crole?`（${[f.crole,f.crel].filter(Boolean).join('／')}）`:''),f.c2phone].filter(Boolean).join(' '):''],['男方家／集合地點',f.meet],['女方家',f.wed],['當天流程',cfSegsTxt(f)],['其他地點（D）',f.dAddr],['出發時間',f.segs?'':f.start],['迎娶回男方家',f.segs?'':f.back],['接送至餐廳',f.restYN],['出發去餐廳',f.segs?'':f.restT],['餐廳地址',f.restAddr]])
+      :[['聯絡人',[f.name,f.phone].filter(Boolean).join(' ')+(f.crole&&!f.c2name?`（${[f.crole,f.crel].filter(Boolean).join('／')}）`:'')],['第二聯絡人',f.c2name?[f.c2name+(f.crole?`（${[f.crole,f.crel].filter(Boolean).join('／')}）`:''),f.c2phone].filter(Boolean).join(' '):''],[`A ${[f.meetL||'男方家',f.meetN].filter(Boolean).join('／')}`,f.meet],[`B ${[f.wedL||'女方家',f.wedN].filter(Boolean).join('／')}`,f.wed],['當天流程',cfSegsTxt(f)],[`D ${[f.dL||'其他地點',f.dN].filter(Boolean).join('／')}`,f.dAddr],['出發時間',f.segs?'':f.start],['迎娶回男方家',f.segs?'':f.back],['接送至餐廳',f.restYN],['出發去餐廳',f.segs?'':f.restT],[`C ${[f.restL||'餐廳',f.restN].filter(Boolean).join('／')}`,f.restAddr]])
       .concat([['訂結一起',f.combo],['甘蔗竹子',f.cane],['親友車加入車隊',fr],['鞭炮',f.fireYN==='要放'?fireLines({fireYN:'要放',fire:f.fire,fireType:f.fireType,fireMode:f.mode,c:o.c},'cust').join('\n'):f.fireYN],['儀式老師／主持人',f.host==='有'?([f.hostName,f.hostPhone].filter(Boolean).join(' ')||'有'):f.host],['想提醒司機',f.note]]).filter(r=>String(r[1]||'').trim());const ntIn=cfNoteIn(o,String(f.note||'').trim());
     h+=`<div class="tbl" style="margin-top:8px"><table><tbody>${rows.map(r=>`<tr><th style="white-space:nowrap;width:1%">${esc(r[0])}</th><td style="white-space:pre-wrap">${esc(r[1])}${r[0]==='想提醒司機'?(ntIn?'<div class="sub" style="color:var(--ok);white-space:normal">✅ 已在注意事項（派車單、服務確認單都看得到）</div>':'<div style="color:var(--warn);white-space:normal;margin-top:4px">⚠️ 還沒放進注意事項，派車單看不到 <button class="btn sm" id="btnCfNoteAdd">加進注意事項</button></div>'):''}</td></tr>`).join('')}${(f.files||[]).length?`<tr><th style="white-space:nowrap">行程表</th><td>${f.files.map(z=>`<a href="https://drive.google.com/file/d/${encodeURIComponent(z.id)}/view" target="_blank" rel="noopener">${esc(z.name||(z.pdf?'PDF':'照片'))}</a>`).join('、')}</td></tr>`:''}</tbody></table></div>`}
   if(L&&L.cmp&&(L.cmp.lines||[]).length)h+=`<div class="sum" style="margin-top:8px;border-left:3px solid #A0453A"><b style="color:#A0453A">⚠️ 跟 ${tm(L.cmp.at)}（${L.cmp.who==='agent'?'婚顧／主持人代填':L.cmp.who?'新人':'之前'}）填的不一樣，請跟客人核對：</b>${L.cmp.lines.map(z=>`<div class="sub">・${esc(z)}</div>`).join('')}</div>`;
