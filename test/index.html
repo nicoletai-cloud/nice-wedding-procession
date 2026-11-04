@@ -3101,8 +3101,8 @@ function ctHint5(){const el=$('ctHint5');if(!el||!o)return;const c=o.c||{},h=(+o
 /* 2026-10-20 Nicole：用車時間超過合約 → 勾「已和客人確認加時」，加時金額自動加進尾款（列在加項） */
 /* 2026-10-21 Nicole：尾款寫成「尾款 $3,900+1HR $1,000x2=$5,900」，不寫「加時 60 分鐘 $2,000」 */
 function otExpr(x,e){const ov=+((x.otOk||{}).min)||+((String(e.n||'').match(/(\d+)\s*分鐘/)||[])[1])||0;if(!ov)return `${String(e.n||'加時').trim()} ${money(xAmt(x,e))}`;const u=+x.hours>0&&+x.hours<3?30:60,n=Math.ceil(ov/u),h=n*u/60;
-  const ps=MODELS.filter(m=>num((x.cars||{})[m])>0&&num(S.ot[m])>0).map(m=>money(num(S.ot[m]))+(num(x.cars[m])>1?'x'+num(x.cars[m]):''));if(!ps.length)return `${h}HR ${money(xAmt(x,e))}`;
-  const per=ps.join('+');return `${h}HR ${n>1?`(${per})x${n}`:per}`}
+  const ps=MODELS.filter(m=>num((x.cars||{})[m])>0&&num(S.ot[m])>0).map(m=>money(num(S.ot[m]))+(num(x.cars[m])>1?'x'+num(x.cars[m]):''));if(!ps.length)return `加時 ${h}HR ${money(xAmt(x,e))}`;
+  const per=ps.join('+');return `加時 ${h}HR ${n>1?`(${per})x${n}`:per}`}   /* 2026-11-04 Nicole：寫成「尾款 $7,400+加時 1HR $1,200+$800=$9,400」 */
 function otCalc(x,ov){const u=+x.hours>0&&+x.hours<3?30:60,n=Math.ceil(ov/u);return MODELS.reduce((a,m)=>a+num((x.cars||{})[m])*num(S.ot[m]),0)*n}
 document.addEventListener('change',e=>{const t=e.target;if(!t||t.id!=='otOkChk'||!o)return;o.extras=(o.extras||[]).filter(z=>!(z&&z.otAuto));
   if(t.checked){const ov=ctOver(o);if(!ov){t.checked=false;toast('目前用車時間沒有超過合約');return}const amt=otCalc(o,ov);o.otOk={min:ov,amt,at:Date.now()};o.extras.push({n:`加時 ${ov} 分鐘`,a:amt,late:true,at:Date.now(),otAuto:1});toast(`已確認加時 ${ov} 分鐘，尾款加 ${money(amt)}`)}
