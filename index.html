@@ -769,6 +769,7 @@ nav.tabs button{scroll-snap-align:start}
         <div class="card">
           <h3>合作廠商與回金</h3>
           <label class="f">一行一家：名稱=回金%，月結廠商加「,月結」<textarea id="s_vendors" rows="8"></textarea></label>
+           <label class="f" style="margin-top:10px">回佣匯款帳戶（一行一位：名稱=銀行 代碼 帳號，例：晴雅chin=第一銀行 007 帳號）<textarea id="s_payAcc" rows="4" autocomplete="off"></textarea></label>
           <label class="f" style="margin-top:10px">遊覽車車頭（一行一家：名稱=地區=聯絡方式=收款習慣=備註；收款習慣寫「先收訂金」或「用完再匯款」）<textarea id="s_busHeads" rows="5" placeholder="例：大大遊覽車=桃園=王經理 0912345678=先收訂金=訂金每台 3000"></textarea></label>
           <label class="f" style="margin-top:10px">幸福故事館配套價（3HR，一行一個：組合=價格）<textarea id="s_vp" rows="8"></textarea></label>
         </div>
@@ -882,6 +883,7 @@ nav.tabs button{scroll-snap-align:start}
   <div style="max-width:980px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px">
     <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">月結 <small>我要收的、我要匯的</small></h3><button class="btn sm" data-mclose="billModal">關閉</button></div>
     <div class="row" style="margin-bottom:12px"><label class="f" style="max-width:200px">月份<input type="month" id="billMonth"></label></div>
+    <div style="margin:-4px 0 12px"><span class="hint" style="margin:0 0 4px;display:block">可再勾選其他月份一起結算（多月合併）</span><div id="billMs" class="row" style="gap:6px;flex-wrap:wrap"></div></div>
       <div class="card">
         <h3>我要收 <small>月結請款（廠商、機場月結客人）</small></h3>
         <div id="billIn"></div>
@@ -2508,7 +2510,7 @@ function fillInputs(){try{oTypeSplit(o)}catch(_){}try{if(o&&o.c&&!o.c.wedT)o.c.w
   $('mapLinks').checked=!!o.mapLinks;
   if(document.activeElement!==$('s_vp'))$('s_vp').value=(S.vprices&&S.vprices['幸福故事館'])||'';
   if($('s_busHeads')&&document.activeElement!==$('s_busHeads'))$('s_busHeads').value=(S.busHeads||[]).map(h=>[h.name,h.area||'',h.contact||'',h.pay==='dep'?'先收訂金':h.pay==='after'?'用完再匯款':'',h.note||''].join('=').replace(/=+$/,'')).join('\n');
-  if(document.activeElement!==$('s_vendors'))$('s_vendors').value=(S.vendors||[]).map(v=>`${v.name}=${v.rate}${v.monthly?',月結':''}`).join('\n');
+  if(document.activeElement!==$('s_vendors'))$('s_vendors').value=(S.vendors||[]).map(v=>`${v.name}=${v.rate}${v.monthly?',月結':''}`).join('\n');if($('s_payAcc')&&document.activeElement!==$('s_payAcc'))$('s_payAcc').value=S.payAcc||'';
   if(document.activeElement!==$('s_cc'))$('s_cc').value=Object.entries(S.cc).map(([k,v])=>k+'='+v).join('\n');
   const hs=$('q_hours');if(![...hs.options].some(op=>+op.value===+o.hours)){const op=document.createElement('option');op.value=o.hours;op.textContent=hrsLabel(o.hours);hs.appendChild(op)}hs.value=String(o.hours)}
 document.addEventListener('input',e=>{const el=e.target;
@@ -2529,9 +2531,10 @@ document.addEventListener('input',e=>{const el=e.target;
   if(el.id==='s_busHeads'){S.busHeads=el.value.split('\n').map(l=>{const m=l.split(/[=＝]/).map(z=>z.trim());if(!m[0])return null;const pw=m[3]||'';return{name:m[0],area:m[1]||'',contact:m[2]||'',pay:/訂金/.test(pw)?'dep':/用完|結束|再匯|後付|事後/.test(pw)?'after':'',note:m[4]||''}}).filter(Boolean);saveS();renderAll();return}   /* 2026-11-01 遊覽車車頭名單 */
   if(el.id==='s_billGroups'){const o2={};el.value.split('\n').forEach(l=>{const m=l.match(/^(.+?)[=＝]\s*(https?:\/\/\S+)/);if(m)o2[m[1].trim()]=m[2]});S.billGroups=o2;saveS();renderBill();return}
   if(el.id==='s_airMonthly'){S.airMonthly=el.value;saveS();renderBill();return}
+  if(el.id==='s_payAcc'){S.payAcc=el.value;saveS();renderBill();return}   /* 2026-11-04 Nicole：婚顧回佣匯款帳戶記在系統 */
   if(el.id==='s_vendors'){S.vendors=el.value.split('\n').map(l=>{const m=l.split(/[=＝]/);if(!m[0].trim())return null;const rest=(m[1]||'');return{name:m[0].trim(),rate:num(rest),monthly:/月結/.test(rest)}}).filter(Boolean);saveS();renderAll();return}
   if(el.id==='refMonth'){renderRefs();return}
-  if(el.id==='billMonth'){renderBill();return}
+  if(el.id==='billMonth'){BILLSEL=[el.value];renderBill();return}
   if(el.id==='setDate'){renderSettle();return}
   if(el.id==='s_cc'){const cc={};el.value.split('\n').forEach(l=>{const m=l.split(/[=＝:：]/);if(m.length>=2&&m[0].trim())cc[m[0].trim().replace(/臺/g,'台')]=m[1].trim().toUpperCase()});S.cc=cc;saveS();renderAll();return}
   if(el.dataset.s){const k=el.dataset.s;S[k]=el.type==='number'?num(el.value):el.value;saveS();renderAll();return}
@@ -2904,20 +2907,29 @@ function airMonRules(){return String(S.airMonthly==null?AIR_MON_DEF:S.airMonthly
 let AIRSYNC_BUSY=false;function airLoad(force){if(AIRSYNC_BUSY)return;if(!force&&Date.now()-AIRSYNC_AT<60000)return;AIRSYNC_AT=Date.now();AIRSYNC_BUSY=true;gasCall({action:'airSyncPull'}).then(j=>{AIRSYNC=j.data||{orders:[]};AIRSYNC_ERR=''}).catch(e=>{AIRSYNC_ERR=e.message||'讀不到'}).then(()=>{AIRSYNC_BUSY=false;try{renderBill()}catch(_){}})}
 function billKey(ym,dir,name){return ym+'|'+dir+'|'+name}
 function billDoneAt(k){return (S.billDone||{})[k]||0}
-function billBlock(dir,ym,name,tot,text,sub){const k=billKey(ym,dir,name),d=billDoneAt(k),id='bt_'+Math.abs([...k].reduce((h,c)=>(h*31+c.charCodeAt(0))|0,7));
-  return `<div style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0${d?';opacity:.7':''}"><div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>${esc(name)}${sub?` <small class="hint" style="margin:0">${esc(sub)}</small>`:''}</b><span class="row" style="gap:8px;align-items:center"><b>${money(tot)}</b><label class="row" style="gap:4px;align-items:center;cursor:pointer"><input type="checkbox" data-billdone="${esc(k)}" style="width:auto"${d?' checked':''}>${dir==='in'?'已收款':'已匯款'}${d?' '+new Date(d).toLocaleDateString('zh-TW'):''}</label><button class="btn sm pri" data-copy="${id}">複製</button></span></div><pre class="out" id="${id}" style="margin-top:8px">${esc(text)}</pre></div>`}
-function billGroups(ym){const ymT=ym.replace('-','年')+'月',G=[];
-  const blist=Object.values(DB.orders).filter(x=>!x.sample&&!x.lost&&x.date&&x.date.slice(0,7)===ym&&vendorOf(x)).sort((a,b)=>a.date.localeCompare(b.date));
+/* 2026-11-04 Nicole：回佣匯款帳戶（設定頁 s_payAcc，一行一位：名稱=帳戶）→ 回金明細直接帶入 */
+function payAccOf(k){const nz=v=>String(v||'').toLowerCase().replace(/[\s　]/g,'');const parts=String(k||'').split('/').map(nz).filter(Boolean);let hit='';String(S.payAcc||'').split('\n').forEach(l=>{const i=l.search(/[=＝]/);if(i<1)return;const n=nz(l.slice(0,i)),a=l.slice(i+1).trim();if(n&&a&&!hit&&parts.some(p=>p===n||p.includes(n)||n.includes(p)))hit=a});return hit}
+/* 2026-11-04 Nicole：月份可複選；已匯款勾選後自動複製匯款通知給婚顧 */
+let BILLSEL=[];
+function billYms(){const p=($('billMonth')||{}).value||billDefYm();if(!BILLSEL.includes(p))BILLSEL=[p];return BILLSEL.slice().sort()}
+function billYmT(yms){if(yms.length===1)return yms[0].replace('-','年')+'月';const y=yms[0].slice(0,4);return yms.every(m=>m.slice(0,4)===y)?y+'年'+yms.map(m=>+m.slice(5)).join('、')+'月':yms.map(m=>m.replace('-','年')+'月').join('、')}
+function billAccShort(a){a=String(a||'');const ds=a.match(/\d[\d-]{6,}\d/g)||[];const acc=ds.sort((x,y)=>y.length-x.length)[0]||'';const d=acc.replace(/\D/g,'');const head=(acc?a.replace(acc,''):a).replace(/帳號[:：]?/g,'').replace(/\s+/g,' ').trim();return d?`${head}（帳號末五碼 ${d.slice(-5)}）`:head}
+function billPaidNote(ymT,name,tot,at){const acc=payAccOf(name),dt=new Date(at||Date.now());return [`【好好禮車】${ymT} 回金已匯款｜${name}`,`${dt.getMonth()+1}/${dt.getDate()} 已匯款 ${money(tot)}`+(acc?` 至 ${billAccShort(acc)}`:''),'請老師查收，謝謝🧡'].join('\n')}
+const BILLNOTE={};
+function billBlock(dir,ym,name,tot,text,sub){const yms=Array.isArray(ym)?ym:[ym],ks=yms.map(m=>billKey(m,dir,name)),k=ks.join('||'),d=ks.every(z=>billDoneAt(z))?Math.max(...ks.map(billDoneAt)):0,id='bt_'+Math.abs([...k].reduce((h,c)=>(h*31+c.charCodeAt(0))|0,7));
+  return `<div style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0${d?';opacity:.7':''}"><div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>${esc(name)}${sub?` <small class="hint" style="margin:0">${esc(sub)}</small>`:''}</b><span class="row" style="gap:8px;align-items:center"><b>${money(tot)}</b><label class="row" style="gap:4px;align-items:center;cursor:pointer"><input type="checkbox" data-billdone="${esc(k)}" style="width:auto"${d?' checked':''}>${dir==='in'?'已收款':'已匯款'}${d?' '+new Date(d).toLocaleDateString('zh-TW'):''}</label><button class="btn sm pri" data-copy="${id}">複製</button></span></div><pre class="out" id="${id}" style="margin-top:8px">${esc(text)}</pre>${(()=>{if(dir!=='out')return '';const nt=billPaidNote(billYmT(yms),name,tot,d||Date.now());BILLNOTE[k]=nt;return d?`<div class="row" style="justify-content:space-between;align-items:center;margin-top:8px"><b>匯款通知</b><button class="btn sm pri" data-copy="${id}n">複製通知</button></div><pre class="out" id="${id}n" style="margin-top:6px">${esc(nt)}</pre>`:''})()}</div>`}
+function billGroups(ym){const yms=(Array.isArray(ym)?ym:[ym]).slice().sort(),inM=d=>yms.includes(String(d||'').slice(0,7)),ymT=billYmT(yms),G=[];
+  const blist=Object.values(DB.orders).filter(x=>!x.sample&&!x.lost&&x.date&&inM(x.date)&&vendorOf(x)).sort((a,b)=>a.date.localeCompare(b.date));
   (S.vendors||[]).filter(v=>v.monthly).forEach(v=>{const os=blist.filter(x=>vendorOf(x).name===v.name);if(!os.length)return;const tot=os.reduce((a,x)=>a+calc(x).bill,0);
     G.push({dir:'in',name:v.name,tot,sub:'禮車月結廠商',rows:os.map(x=>({date:x.date,no:orderNo(x),who:[x.c.groom,x.c.bride].filter(Boolean).join('&'),what:planName(x).replace(/^Tesla /,'').replace(/ \S*禮車方案$/,''),agent:(x.src&&(x.src.agent||x.src.ref))||'',amt:calc(x).bill,note:''})),text:[`【好好禮車】${ymT} 請款明細｜${v.name}`,...os.map(x=>`${x.date.slice(5).replace('-','/')} ${orderNo(x)} ${[x.c.groom,x.c.bride].filter(Boolean).join('&')} ${planName(x).replace(/^Tesla /,'').replace(/ \S*禮車方案$/,'')} ${money(calc(x).bill)}`),`合計：${money(tot)}`,`（司機紅包、甘蔗固定費由司機現場收取，不列入請款）`,'',`匯款資訊：`,S.bank].join('\n')})});
-  if(AIRSYNC){const R=airMonRules(),del=AIRSYNC.deleted||{},grp={};(AIRSYNC.orders||[]).forEach(o2=>{if(!o2||del[o2.id]||String(o2.date||'').slice(0,7)!==ym)return;if(o2.paymentMethod==='cash'||o2.paymentMethod==='paid')return;if(/取消/.test(String(o2.note||'')))return;
+  if(AIRSYNC){const R=airMonRules(),del=AIRSYNC.deleted||{},grp={};(AIRSYNC.orders||[]).forEach(o2=>{if(!o2||del[o2.id]||!inM(o2.date))return;if(o2.paymentMethod==='cash'||o2.paymentMethod==='paid')return;if(/取消/.test(String(o2.note||'')))return;
       const nm=[o2.custSourceName,o2.contactName,o2.riderName].map(z=>String(z||'').toLowerCase()).join(' ');const r=R.find(z=>nm.includes(z.k));if(!r)return;(grp[r.to]=grp[r.to]||[]).push(o2)});
     Object.keys(grp).forEach(k=>{const os=grp[k].sort((a,b)=>(a.date+(a.pickupTime||'')).localeCompare(b.date+(b.pickupTime||'')));const tot=os.reduce((a,z)=>a+num(z.amount),0);const miss=os.filter(z=>!num(z.amount)).length;
       G.push({dir:'in',name:k,tot,sub:'機場月結客人',rows:os.map(z=>({date:String(z.date),no:z.formalNo||'',who:z.riderName||z.contactName||z.custSourceName||'',from:z.pickupAddr||billArea(z.pickupFullAddr),to:z.dropoffAddr||billArea(z.dropoffFullAddr),svc:z.svcType||'',what:[z.svcType,z.pickupTime].filter(Boolean).join(' '),agent:'',amt:num(z.amount),note:num(z.amount)?'':'金額未填'})),text:[`【好好禮車】${ymT} 機場接送月結明細｜${k}`,...os.map(z=>`${String(z.date).slice(5).replace('-','/')} ${z.pickupTime||''} ${z.svcType||''} ${z.riderName||z.contactName||z.custSourceName||''} ${z.formalNo||''} ${num(z.amount)?money(num(z.amount)):'金額未填'}`.replace(/\s+/g,' ').trim()),`合計：${money(tot)}`+(miss?`（${miss} 趟金額未填）`:''),'',`匯款資訊：`,S.bank].join('\n')})})}
   const by={};blist.filter(x=>!isMonthly(x)).forEach(x=>{const r=calc(x);if(!(r.refAmt>0))return;const k=vendorOf(x).name+(x.src&&x.src.ref?' / '+x.src.ref:'');(by[k]=by[k]||[]).push(x)});
-  Object.keys(by).forEach(k=>{const os=by[k],tot=os.reduce((a,x)=>a+calc(x).refAmt,0);G.push({dir:'out',name:k,tot,sub:'',text:[`【好好禮車】${ymT} 回金明細｜${k}`,...os.map(x=>`${x.date.slice(5).replace('-','/')} ${orderNo(x)} ${[x.c.groom,x.c.bride].filter(Boolean).join('&')} 方案 ${money(calc(x).planFee)} 回金 ${money(calc(x).refAmt)}`),`合計：${money(tot)}`,'','麻煩提供匯款帳號，謝謝🧡'].join('\n')})});
+  Object.keys(by).forEach(k=>{const os=by[k],tot=os.reduce((a,x)=>a+calc(x).refAmt,0);G.push({dir:'out',name:k,tot,sub:'',text:[`【好好禮車】${ymT} 回金明細｜${k}`,...os.map(x=>`${x.date.slice(5).replace('-','/')} ${orderNo(x)} ${[x.c.groom,x.c.bride].filter(Boolean).join('&')} 方案 ${money(calc(x).planFee)}*${refRate(x)}%=${money(calc(x).refAmt)}`),`合計：${money(tot)}`,'',...(payAccOf(k)?[`將匯款至：${payAccOf(k)}`,'匯款完成會再通知您，謝謝🧡']:['麻煩提供匯款帳號，謝謝🧡'])].join('\n')})});
   /* 手動帳款（系統外的單、試算表搬過來的） */
-  const lg={};(S.ledger||[]).filter(l=>String(l.date||'').slice(0,7)===ym).forEach(l=>{const k=l.dir+'|'+l.name;(lg[k]=lg[k]||[]).push(l)});
+  const lg={};(S.ledger||[]).filter(l=>inM(l.date)).forEach(l=>{const k=l.dir+'|'+l.name;(lg[k]=lg[k]||[]).push(l)});
   Object.keys(lg).forEach(k=>{const L=lg[k].sort((a,b)=>String(a.date).localeCompare(String(b.date))),dir=L[0].dir,name=L[0].name,tot=L.reduce((a,l)=>a+num(l.amt),0);const ex=G.find(g=>g.dir===dir&&g.name===name);
     const lines=L.map(l=>`${String(l.date).slice(5).replace('-','/')} ${l.note||''} ${money(num(l.amt))}`.replace(/\s+/g,' ').trim());
     const lrows=L.map(l=>({date:l.date,no:(String(l.note||'').match(/^\d{8}[A-Z]{2,6}\d{0,2}/)||[''])[0],who:'',what:String(l.note||'').replace(/^\d{8}[A-Z]{2,6}\d{0,2}\s*/,''),agent:'',amt:num(l.amt),note:'手動帳款'}));
@@ -2926,24 +2938,27 @@ function billGroups(ym){const ymT=ym.replace('-','年')+'月',G=[];
   return G}
 /* 月結預設月份: 每月 1-15 號看上個月 (月初請款), 16 號以後看本月 */
 function billDefYm(){const d=new Date();if(d.getDate()<=15)d.setDate(0);return `${d.getFullYear()}-${p2(d.getMonth()+1)}`}
-function renderBill(){const inEl=$('billIn'),outEl=$('billOut');if(!inEl)return;const bEl=$('billMonth');if(!bEl.value)bEl.value=billDefYm();const ym=bEl.value;
+function renderBill(){const inEl=$('billIn'),outEl=$('billOut');if(!inEl)return;const bEl=$('billMonth');if(!bEl.value)bEl.value=billDefYm();const yms=billYms(),ym=yms[0],ymK=yms.join(','),multi=yms.length>1;
   {const tg=$('s_billGroups');if(tg&&document.activeElement!==tg)tg.value=Object.entries(S.billGroups||{}).map(([k,v])=>k+'='+v).join('\n')}
   const ta=$('s_airMonthly');if(ta&&document.activeElement!==ta)ta.value=S.airMonthly==null?AIR_MON_DEF:S.airMonthly;
   if(!AIRSYNC)airLoad();
-  const G=billGroups(ym),lgDel=g=>(g.ledger||[]).map(l=>`<button type="button" class="btn sm" data-lgdel="${esc(l.id)}" style="padding:0 8px;margin:2px 4px 0 0">刪除 ${esc(String(l.date).slice(5))} ${money(num(l.amt))}</button>`).join('');
-  const blk=g=>billBlock(g.dir,ym,g.name,g.tot,g.text,g.sub)+(g.dir==='in'?`<div style="margin:-4px 0 8px" class="row"><button type="button" class="btn sm pri" data-oabill="${esc(g.name)}">產生請款單</button><button type="button" class="btn sm pri" data-oarcpt="${esc(g.name)}">產生電子收據</button>${(S.billSent||{})[ym+'|'+g.name]?`<span class="hint" style="margin:0;align-self:center">請款已傳 ${new Date(S.billSent[ym+'|'+g.name]).toLocaleDateString('zh-TW')}</span>`:''}${(()=>{const R=(S.rcptSent||{})[ym+'|'+g.name];return R?`<span class="hint" style="margin:0;align-self:center">${R.url?`<a href="${esc(R.url)}" target="_blank" rel="noopener">收據 ${esc(R.no||'')}</a>`:'收據'}${R.at?' 已傳 '+new Date(R.at).toLocaleDateString('zh-TW'):''}</span>`:''})()}${(S.billGroups||{})[g.name]?`<a class="btn sm" href="${esc(S.billGroups[g.name])}" target="_blank" rel="noopener">開啟請款群組</a>`:''}</div>`:'')+(g.ledger?`<div style="margin:-4px 0 8px">${lgDel(g)}</div>`:'');
+  const G=billGroups(yms),lgDel=g=>(g.ledger||[]).map(l=>`<button type="button" class="btn sm" data-lgdel="${esc(l.id)}" style="padding:0 8px;margin:2px 4px 0 0">刪除 ${esc(String(l.date).slice(5))} ${money(num(l.amt))}</button>`).join('');
+  const blk=g=>billBlock(g.dir,yms,g.name,g.tot,g.text,g.sub)+(g.dir==='in'&&multi?`<p class="hint" style="margin:-4px 0 8px">多月合併時，請款單／電子收據請改選單一月份產生</p>`:g.dir==='in'?`<div style="margin:-4px 0 8px" class="row"><button type="button" class="btn sm pri" data-oabill="${esc(g.name)}">產生請款單</button><button type="button" class="btn sm pri" data-oarcpt="${esc(g.name)}">產生電子收據</button>${(S.billSent||{})[ym+'|'+g.name]?`<span class="hint" style="margin:0;align-self:center">請款已傳 ${new Date(S.billSent[ym+'|'+g.name]).toLocaleDateString('zh-TW')}</span>`:''}${(()=>{const R=(S.rcptSent||{})[ym+'|'+g.name];return R?`<span class="hint" style="margin:0;align-self:center">${R.url?`<a href="${esc(R.url)}" target="_blank" rel="noopener">收據 ${esc(R.no||'')}</a>`:'收據'}${R.at?' 已傳 '+new Date(R.at).toLocaleDateString('zh-TW'):''}</span>`:''})()}${(S.billGroups||{})[g.name]?`<a class="btn sm" href="${esc(S.billGroups[g.name])}" target="_blank" rel="noopener">開啟請款群組</a>`:''}</div>`:'')+(g.ledger?`<div style="margin:-4px 0 8px">${lgDel(g)}</div>`:'');
   inEl.innerHTML=(G.filter(g=>g.dir==='in').map(blk).join('')||'<p class="hint">這個月沒有要請款的。</p>')+(AIRSYNC?`<div class="row" style="justify-content:flex-end"><button class="btn sm" type="button" id="btnAirReload">重新讀取機場訂單</button></div>`:`<p class="hint">${AIRSYNC_ERR?'機場訂單讀不到：'+esc(AIRSYNC_ERR)+' <button class="btn sm" type="button" id="btnAirReload">重試</button>':'讀取機場訂單中…'}</p>`);
   outEl.innerHTML=G.filter(g=>g.dir==='out').map(blk).join('')||'<p class="hint">這個月沒有要匯的回金。</p>';
   /* 之前月份還沒勾的 */
   const pv=$('billPrev');if(pv){const ms=new Set();Object.values(DB.orders).forEach(x=>{if(x.date&&!x.sample)ms.add(x.date.slice(0,7))});(S.ledger||[]).forEach(l=>ms.add(String(l.date||'').slice(0,7)));if(AIRSYNC)(AIRSYNC.orders||[]).forEach(z=>ms.add(String(z.date||'').slice(0,7)));
-    const prev=[...ms].filter(m=>/^\d{4}-\d{2}$/.test(m)&&m<ym).sort().reverse(),rows=[];prev.forEach(m=>billGroups(m).forEach(g=>{if(!billDoneAt(billKey(m,g.dir,g.name)))rows.push({m,g})}));
+    const prev=[...ms].filter(m=>/^\d{4}-\d{2}$/.test(m)&&m<ym).sort().reverse(),rows=[];
+    {const bm=$('billMs');if(bm){const now=billDefYm(),all=[...new Set([...ms,...yms])].filter(m=>/^\d{4}-\d{2}$/.test(m)&&m<=now&&m>=String(+now.slice(0,4)-1)+now.slice(4)).sort().reverse();bm.innerHTML=all.map(m=>`<label class="row" style="gap:4px;align-items:center;cursor:pointer;border:1px solid var(--line);border-radius:999px;padding:2px 10px"><input type="checkbox" data-billm="${m}" style="width:auto"${yms.includes(m)?' checked':''}>${+m.slice(0,4)===new Date().getFullYear()?(+m.slice(5))+'月':m.replace('-','/')}</label>`).join('')}}prev.forEach(m=>billGroups(m).forEach(g=>{if(!billDoneAt(billKey(m,g.dir,g.name)))rows.push({m,g})}));
     pv.innerHTML=rows.length?rows.map(({m,g})=>`<div class="row" style="justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line)"><span>${esc(m.replace('-','/'))}｜${g.dir==='in'?'要收':'要匯'}｜<b>${esc(g.name)}</b></span><span class="row" style="gap:8px;align-items:center"><b>${money(g.tot)}</b><button type="button" class="btn sm" data-billgo="${m}">看明細</button><label class="row" style="gap:4px;align-items:center;cursor:pointer"><input type="checkbox" data-billdone="${esc(billKey(m,g.dir,g.name))}" style="width:auto">${g.dir==='in'?'已收款':'已匯款'}</label></span></div>`).join(''):'<p class="hint">之前月份都處理完了。</p>'}}
-document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!t.dataset.billdone)return;S.billDone=Object.assign({},S.billDone||{});if(t.checked)S.billDone[t.dataset.billdone]=Date.now();else delete S.billDone[t.dataset.billdone];saveS();renderBill()});
+document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!t.dataset.billm)return;const m=t.dataset.billm,cur=billYms();if(t.checked)BILLSEL=[...new Set(cur.concat([m]))];else if(cur.length>1)BILLSEL=cur.filter(z=>z!==m);else{t.checked=true;return}const bEl=$('billMonth');if(bEl&&!BILLSEL.includes(bEl.value))bEl.value=BILLSEL.slice().sort()[0];if(bEl&&!BILLSEL.includes(bEl.value))BILLSEL.push(bEl.value);renderBill()});
+document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!t.dataset.billdone)return;S.billDone=Object.assign({},S.billDone||{});const ks=t.dataset.billdone.split('||'),now=Date.now();ks.forEach(k=>{if(t.checked)S.billDone[k]=now;else delete S.billDone[k]});saveS();renderBill();
+  if(t.checked&&/\|out\|/.test(ks[0])){const nt=BILLNOTE[t.dataset.billdone];if(nt&&navigator.clipboard)navigator.clipboard.writeText(nt).then(()=>toast('已複製匯款通知，可直接貼給婚顧'),()=>toast('請按「複製通知」'))}});
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-billgo],[data-lgdel],#btnLgAdd');if(!t)return;
-  if(t.dataset.billgo){$('billMonth').value=t.dataset.billgo;renderBill();try{$('billModal').scrollTop=0}catch(_){}return}
+  if(t.dataset.billgo){$('billMonth').value=t.dataset.billgo;BILLSEL=[t.dataset.billgo];renderBill();try{$('billModal').scrollTop=0}catch(_){}return}
   if(t.dataset.lgdel){if(!confirm('刪除這筆手動帳款？'))return;S.ledger=(S.ledger||[]).filter(l=>l.id!==t.dataset.lgdel);saveS();renderBill();return}
   const d=$('lgDate').value,dir=$('lgDir').value,name=$('lgName').value.trim(),amt=num($('lgAmt').value),note=$('lgNote').value.trim();if(!d||!name||!amt){toast('日期、對象、金額都要填');return}
-  S.ledger=(S.ledger||[]).concat([{id:'L'+Date.now().toString(36),date:d,dir,name,amt,note}]);saveS();$('lgName').value='';$('lgAmt').value='';$('lgNote').value='';$('billMonth').value=d.slice(0,7);renderBill();toast('已新增')});
+  S.ledger=(S.ledger||[]).concat([{id:'L'+Date.now().toString(36),date:d,dir,name,amt,note}]);saveS();$('lgName').value='';$('lgAmt').value='';$('lgNote').value='';$('billMonth').value=d.slice(0,7);BILLSEL=[d.slice(0,7)];renderBill();toast('已新增')});
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#btnAirReload')){AIRSYNC=null;AIRSYNC_ERR='';airLoad(true);renderBill()}});
 /* 2026-11-02 Nicole：試算表以前的資料都整合進系統 → 「更多 → 舊資料」直接讀試算表各分頁（系統金鑰不開放） */
 const OLD={tabs:null,cache:{}};
@@ -4136,7 +4151,7 @@ document.addEventListener('click',e=>{{const u=e.target.closest&&e.target.closes
   const b=e.target.closest&&e.target.closest('#btnSettle,#btnBill,#btnPriceSet,[data-mclose]');if(!b)return;   /* 2026-10-20 每日帳款／月結／價目設定移到「更多」 */
   if(b.dataset.mclose){$(b.dataset.mclose).hidden=true;return}try{const ms=$('moreSheet');if(ms)ms.hidden=true}catch(_){}
   if(b.id==='btnPriceSet'){showTab('settings');try{window.scrollTo(0,0)}catch(_){}return}
-  if(b.id==='btnBill'){try{$('billMonth').value=billDefYm()}catch(_){}}
+  if(b.id==='btnBill'){try{$('billMonth').value=billDefYm();BILLSEL=[]}catch(_){}}
   renderRefs();$(b.id==='btnSettle'?'settleModal':'billModal').hidden=false});
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#btnPtDrvCopy,#btnPtCustCopy,#btnPtDrvRegen,#btnPtDrvPost');if(!b||!o||!isPt(o))return;const p=o.partner;
   if(b.id==='btnPtDrvPost'){const t=String(String(p.drvSheet||'').trim()?ptAddC(p.drvSheet,o):ptDrvGen(o)).trim();if(!t){toast('還沒有內容');return}if(!confirm(o.pubAt?'這份派車單已經發過了，確定要再發一次到群組？':'由禮車助手把這份司機派車單發到這趟的 LINE 群組？'))return;b.disabled=true;b.textContent='發送中…';
