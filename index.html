@@ -1565,7 +1565,7 @@ function calc(x){
   // driver pay
   const fl=fleetOf(x);let dsum=0,dsum0=0,dok=fl.length>0;
   /* 2026-10-30 Nicole：手動填的司機酬勞也要加上確認後的加時（跟派車單每台金額一致），匯回＝尾款－司機酬勞合計才會對；訂金仍照原本算法，不影響已收的訂金 */
-  fl.forEach(f=>{const man=f.pay!==''&&f.pay!=null,v0=plusX(man?num(f.pay):driverBasePay(f.m,x),f,x),v=man&&v0!=null?v0+otDrvAdd(f.m,x):v0;if(v==null)dok=false;else{dsum+=v;dsum0+=v0}});
+  fl.forEach(f=>{const man=f.pay!==''&&f.pay!=null,v0=plusX(man?num(f.pay):driverBasePay(f.m,x),f,x),v=v0;/* 2026-11-04 Nicole：手動填的司機車資＝已含加時的總額，不再另加 */if(v==null)dok=false;else{dsum+=v;dsum0+=v0}});
   let deposit;const dTot=total-sumX(x,lateX(x));   // 2026-10-20 出發前新增的款項不算進訂金，全部列在尾款
   if(x.depOverride!==''&&x.depOverride!=null)deposit=num(x.depOverride);
   else if(isMonthly(x))deposit=0;
@@ -1723,7 +1723,7 @@ document.addEventListener('input',e=>{const t=e.target;if(!t||!t.dataset)return;
   if(t.id==='q_color'||t.id==='q_colorQty')setTimeout(()=>{if(applyColorReq(o)){save();renderFleet()}},0)});
 document.addEventListener('change',e=>{const t=e.target;if(t&&(t.id==='q_color'||t.id==='q_colorQty'))setTimeout(()=>{if(applyColorReq(o)){save();renderFleet()}},0)});
 /* 2026-10-22 哪台司機酬勞含甘蔗固定費：有勾 f.cane，或客人要固定甘蔗且這台酬勞剛好比價目多一筆甘蔗固定費 */
-function caneCar(f,x){x=x||o;if(f.cane)return true;if(!(num(x.cane)>0)||(x.fleet||[]).some(g=>g.cane)||f.pay===''||f.pay==null)return false;let b=null;try{b=driverBasePay(f.m,x)}catch(_){}if(b==null)return false;const d=num(f.pay)+otDrvAdd(f.m,x)-b;return d>0&&(d===num(S.cane)||d===ptCaneFee())}
+function caneCar(f,x){x=x||o;if(f.cane)return true;if(!(num(x.cane)>0)||(x.fleet||[]).some(g=>g.cane)||f.pay===''||f.pay==null)return false;let b=null;try{b=driverBasePay(f.m,x)}catch(_){}if(b==null)return false;const d=num(f.pay)-b;return d>0&&(d===num(S.cane)||d===ptCaneFee())}
 /* 2026-10-26 Nicole：加項可填「司機額外酬勞」(例：多一趟單程接送)；車頭彩等公司收入填 0。預設算在第一台(主禮車)，多台車可選哪一台 */
 function xDefCar(L){let i=L.findIndex(g=>g.lead);if(i<0)i=L.findIndex(g=>g.role==='主禮車');return i<0?0:i}
 /* 2026-10-26 Nicole：多台車時每台可以填不同的額外酬勞(例：單程接送三台、金額不同) → e.dm[台序]；一台車用 e.d */
@@ -1731,7 +1731,7 @@ function xDrvList(f,x){if(!x||x.partner)return[];const L=fleetOf(x);const i=L.in
 function xDrv(f,x){return xDrvList(f,x).reduce((s,e)=>s+num(e.d),0)}
 function xTag(f,x){return xDrvList(f,x).map(e=>'+'+(/接送/.test(String(e.n||''))?'接送':String(e.n||'加項').trim())).join('')}
 function plusX(v,f,x){return v==null?null:v+xDrv(f,x)}
-function payOf(f,x){x=x||o;return plusX(f.pay!==''&&f.pay!=null?num(f.pay)+otDrvAdd(f.m,x):driverBasePay(f.m,x),f,x)}
+function payOf(f,x){x=x||o;return plusX(f.pay!==''&&f.pay!=null?num(f.pay):driverBasePay(f.m,x),f,x)}   /* 2026-11-04 Nicole：車隊手動填的司機車資＝司機總共拿的金額（已含加時），不再自動加加時 */
 /* 2026-10-21 Nicole：已和客人確認加時 → 司機酬勞改成加時後時數（例：3HR＋1HR＝4HR 的酬勞） */
 function otHrs(x){const mn=+((x&&x.otOk)||{}).min||0;if(!mn)return 0;const u=+x.hours>0&&+x.hours<3?30:60;return Math.ceil(mn/u)*u/60}
 function drvHrs(x){return +x.hours===0?0:+x.hours+otHrs(x)}
