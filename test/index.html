@@ -3018,7 +3018,7 @@ function billRcptData(g,ym){const isV=g.sub==='禮車月結廠商',[y,mm]=ym.spl
 async function oaSendDlg(name,kind){const ym=$('billMonth').value,g=billGroups(ym).find(z=>z.dir==='in'&&z.name===name);if(!g){toast('找不到這筆請款');return}
   const isV=g.sub==='禮車月結廠商',isInv=kind==='bill'&&isV,tot=money(g.tot).replace('$','$ ');
   const bank=String(S.bank||'').trim(),per=oaPeriod(ym),key=ym+'|'+name;
-  const txt=kind==='rcpt'?/* 2026-11-04 Nicole：電子收據不含統編，開統編發票要 +5%；附將來銀行匯款帳號 */`您好，這是好好禮車 ${per}份${isV?'禮車':'機場接送'}電子收據，請查收 (編號 {RNO}，金額 NT${tot}):\n{RCPT}\n\n電子收據不含統編，如需開立統編發票，費用需另加 5%。\n\n往後匯款帳號:\n${bank}\n\n謝謝您🙏`
+  const txt=kind==='rcpt'?(/jeff/i.test(name)?/* 2026-11-04 Nicole：只有 Jeff Chen 改成這段（電子收據不含統編，開統編發票要 +5%；附將來銀行匯款帳號） */`您好，這是好好禮車 ${per}份${isV?'禮車':'機場接送'}電子收據，請查收 (編號 {RNO}，金額 NT${tot}):\n{RCPT}\n\n電子收據不含統編，如需開立統編發票，費用需另加 5%。\n\n往後匯款帳號:\n${bank}\n\n謝謝您🙏`:`您好，這是好好禮車 ${per} ${isV?'禮車':'機場接送'}的電子收據 (編號 {RNO}，金額 NT${tot})，可以直接存檔:\n{RCPT}\n\n若需要公司抬頭或統編，再跟我們說，謝謝您🙏`)
     :isInv?`【好好禮車】${per} 請款單請查收🙏\n{PDF}\n\n合計: NT${tot}\n匯款資訊:\n${bank}\n\n匯款完成再麻煩告知帳號後五碼，謝謝您`
     :`您好🙂\n好好禮車 ${per} 接送費用合計 NT${tot}\n\n${(g.rows||[]).map(r=>`${String(r.date).slice(5).replace('-','/')} ${r.svc||''} ${r.who||''} ${money(r.amt)}`.replace(/\s+/g,' ')).join('\n')}\n\n❤️匯款資訊:\n${bank}\n金額: NT${tot}\n\n匯款完成再麻煩告知帳號後五碼，謝謝您`;
   const map=S.billGroupIds||{},cur=map[name]||'';let m=$('oaDlg');if(!m){m=document.createElement('div');m.id='oaDlg';m.style.cssText='position:fixed;inset:0;z-index:80;background:rgba(40,30,20,.45);overflow:auto;padding:24px 16px';document.body.appendChild(m)}
