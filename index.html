@@ -1730,7 +1730,7 @@ function defaultRoles(list){const roles=new Array(list.length).fill('伴娘車')
   if(list.length>1){let li=list.findIndex((m,i)=>i!==mainI&&m==='S');if(li<0)li=list.findIndex((m,i)=>i!==mainI&&m!=='X');if(li<0)li=list.findIndex((m,i)=>i!==mainI);if(li>=0)roles[li]='前導車'}
   return roles}
 function fleetOf(x){const want=expandCars(x);const cur=x.fleet||[];const pool=cur.slice();const out=[];const roles=defaultRoles(want);
-  want.forEach((m,i)=>{const k=pool.findIndex(f=>f.m===m);if(k>=0){out.push(pool.splice(k,1)[0])}else out.push({m,role:roles[i],plate:'',driver:'',phone:'',color:'白色',seats:S.seats[m],pay:'',lead:roles[i]==='主禮車'})});
+  want.forEach((m,i)=>{const k=pool.findIndex(f=>f.m===m);if(k>=0){out.push(pool.splice(k,1)[0])}else out.push({m,role:roles[i],plate:'',driver:'',phone:'',color:'',seats:S.seats[m],pay:'',lead:roles[i]==='主禮車'})   /* 2026-11-04 Nicole：車隊不預填顏色（有指定車色才由 applyColorReq 帶入） */});
   const ord=r=>{const i=ROLES.indexOf(r);return i<0?9:i};
   return out.sort((a,b)=>ord(a.role)-ord(b.role))}
 /* 升等：只列出比原車款價格高的車款 */
@@ -1749,7 +1749,7 @@ document.addEventListener('input',e=>{const t=e.target;if(!t||!t.dataset)return;
   if(t.id==='q_color'||t.id==='q_colorQty')setTimeout(()=>{if(applyColorReq(o)){save();renderFleet()}},0)});
 document.addEventListener('change',e=>{const t=e.target;if(t&&(t.id==='q_color'||t.id==='q_colorQty'))setTimeout(()=>{if(applyColorReq(o)){save();renderFleet()}},0)});
 /* 2026-10-22 哪台司機酬勞含甘蔗固定費：有勾 f.cane，或客人要固定甘蔗且這台酬勞剛好比價目多一筆甘蔗固定費 */
-function caneCar(f,x){x=x||o;if(f.cane)return true;if(!(num(x.cane)>0)||(x.fleet||[]).some(g=>g.cane)||f.pay===''||f.pay==null)return false;let b=null;try{b=driverBasePay(f.m,x)}catch(_){}if(b==null)return false;const d=num(f.pay)-b;return d>0&&(d===num(S.cane)||d===ptCaneFee())}
+function caneCar(f,x){x=x||o;if(f.cane)return true;if(f.caneSet)return false;   /* 2026-11-04 Nicole：車隊可以勾「含甘蔗固定」，勾掉就是不含 */if(!(num(x.cane)>0)||(x.fleet||[]).some(g=>g.cane)||f.pay===''||f.pay==null)return false;let b=null;try{b=driverBasePay(f.m,x)}catch(_){}if(b==null)return false;const d=num(f.pay)-b;return d>0&&(d===num(S.cane)||d===ptCaneFee())}
 /* 2026-10-26 Nicole：加項可填「司機額外酬勞」(例：多一趟單程接送)；車頭彩等公司收入填 0。預設算在第一台(主禮車)，多台車可選哪一台 */
 function xDefCar(L){let i=L.findIndex(g=>g.lead);if(i<0)i=L.findIndex(g=>g.role==='主禮車');return i<0?0:i}
 /* 2026-10-26 Nicole：多台車時每台可以填不同的額外酬勞(例：單程接送三台、金額不同) → e.dm[台序]；一台車用 e.d */
@@ -1980,9 +1980,9 @@ function kwCodeOpen(raw){const t=String(raw||'').trim();if(!t||/\s/.test(t))retu
 function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr);const fl0=x.findM?x.fleet.filter(f=>f.m===x.findM):x.fleet;/* 只算還沒派司機的車；全部都派了才顯示全部 */const fl=fl0.some(f=>!String(f.driver||'').trim())?fl0.filter(f=>!String(f.driver||'').trim()):fl0;
   const CNN=['零','一','兩','三','四','五','六','七','八','九','十'];const n2=n=>CNN[n]||String(n);
   const ng={};fl.forEach(f=>{const k=`${(f.color||'').trim()} ${MNAME[f.m]}`.trim();ng[k]=(ng[k]||0)+1});
-  const pg={};fl.forEach(f=>{const v=payOf(f,x);const k=(v==null?'?':String(v))+'§'+xTag(f,x);(pg[k]=pg[k]||new Set()).add(MNAME[f.m])});
+  const pg={};fl.forEach(f=>{const v=payOf(f,x);const k=(v==null?'?':String(v))+'§'+xTag(f,x)+'§'+(caneCar(f,x)?'c':'');(pg[k]=pg[k]||new Set()).add(MNAME[f.m])});
   const pk=Object.keys(pg),hl=hrsLabel(drvHrs(x));
-  const payOne=k=>{const v=k.split('§')[0],tg=k.split('§')[1]||'';return v==='?'?'（待定）':+x.hours===0?`實拿 ${money(+v)}（單程接送・綁彩）`:`${money(+v)}/${hl}${tg}${r.red?(tg?'(含司機禮)':'（含紅包）'):''}`};
+  const payOne=k=>{const v=k.split('§')[0],tg=k.split('§')[1]||'',cn=k.split('§')[2]==='c';return v==='?'?'（待定）':+x.hours===0?`實拿 ${money(+v)}（單程接送・綁彩${cn?'・含甘蔗固定':''}）`:`${money(+v)}/${hl}${tg}${r.red?(tg?'(含司機禮'+(cn?'、甘蔗固定':'')+')':'（含紅包'+(cn?'、甘蔗固定':'')+'）'):(cn?'（含甘蔗固定）':'')}`};   /* 2026-11-04 Nicole：酬勞是全含金額，勾了含甘蔗固定就寫出來 */
   const payL=pk.length===1?payOne(pk[0]):pk.map(v=>`${[...pg[v]].join('、')} ${payOne(v)}`).join('；');
   const cane=caneOf(x),deco=(c.decoAns||'').trim();
   /* 找司機訊息只放司機需要知道的：方案備註（同業單才帶同業的備註）；內部備註（婚顧、回金、報價、訂金…）不給司機看 */
@@ -2538,7 +2538,7 @@ document.addEventListener('input',e=>{const el=e.target;
   if(el.dataset.p){const [grp,m,k]=el.dataset.p.split('.');const v=el.value===''?'':num(el.value);if(k)S[grp][m][k]=v;else S[grp][m]=v;saveS();renderCars();renderFleet();renderAll();return}
   if(el.dataset.mm){const [i,k]=el.dataset.mm.split('.');S.models[+i][k]=el.value;rebuildModels();saveS();renderCars();renderAll();return}
   if(el.dataset.bd){const [i,k]=el.dataset.bd.split('.');const b=S.bundles[+i];if(k==='name')b.name=el.value;else if(k==='price')b.price=num(el.value);else if(k==='combo')b.cars=parseCombo(el.value);else b.cars[k]=num(el.value);saveS();renderAll();return}
-  if(el.dataset.fl){const [i,k]=el.dataset.fl.split('.');const f=o.fleet[+i];if(k==='lead'){o.fleet.forEach(x=>x.lead=false);f.lead=el.checked}else f[k]=(k==='seats')?num(el.value):k==='plate'?el.value.toUpperCase():el.value;o.sample=false;save();renderAll();return}
+  if(el.dataset.fl){const [i,k]=el.dataset.fl.split('.');const f=o.fleet[+i];if(k==='lead'){o.fleet.forEach(x=>x.lead=false);f.lead=el.checked}else if(k==='cane'){f.cane=el.checked;f.caneSet=true;if(f.cane&&!f.caneFee)f.caneFee=num(S.cane)}else f[k]=(k==='seats')?num(el.value):k==='plate'?el.value.toUpperCase():el.value;o.sample=false;save();renderAll();return}
   if(el.dataset.fw){const [i,k]=el.dataset.fw.split('.');o.flow[+i][k]=el.value;o.sample=false;o.locEditAt=Date.now();save();renderAll();return}
   if(el.id==='mapLinks'){o.mapLinks=el.checked;save();renderMemo()}
 });
@@ -2588,7 +2588,7 @@ function renderFleet(){try{renderFr()}catch(_){}try{setTimeout(renderEq,0)}catch
   <td><select data-fl="${i}.up" id="fl_u${i}" style="width:120px">${upOptions(f)}</select></td>
   <td><input data-fl="${i}.color" id="fl_c${i}" value="${esc(f.color)}" style="width:72px"></td>
   <td><input type="number" data-fl="${i}.seats" id="fl_s${i}" value="${esc(f.seats)}" style="width:62px"></td>
-  <td><input type="number" data-fl="${i}.pay" id="fl_y${i}" value="${esc(f.pay)}" placeholder="${dp==null?'未設定':dp}" style="width:96px"></td>
+  <td><input type="number" data-fl="${i}.pay" id="fl_y${i}" value="${esc(f.pay)}" placeholder="${dp==null?'未設定':dp}" style="width:96px" title="司機總共拿的金額（全含：紅包、加時、甘蔗固定）"><label style="display:flex;align-items:center;gap:3px;margin:3px 0 0;font-size:.8rem;white-space:nowrap;cursor:pointer"><input type="checkbox" data-fl="${i}.cane" id="fl_cn${i}" style="width:auto"${caneCar(f,o)?' checked':''}>含甘蔗固定</label></td>
   <td style="text-align:center"><input type="radio" name="leadR" data-fl="${i}.lead" id="fl_l${i}" ${f.lead?'checked':''} style="width:auto" aria-label="負責人"></td></tr>`}).join('')||'<tr><td colspan="11" class="hint">先在「報價」選車款。</td></tr>'}
 /* 2026-10-20 Nicole：流程代號按鈕（A–D、繞圈、退一步），按了自動排好下面每一段 */
 function pbTokens(p){return String(p||'').split(/\s*[-－>＞→]\s*/).map(z=>z.trim()).filter(Boolean).map(z=>/繞圈/.test(z)?'繞圈':z.toUpperCase()).filter(z=>z==='繞圈'||/^[A-Z]$/.test(z))}
