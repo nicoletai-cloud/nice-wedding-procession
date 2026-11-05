@@ -1775,11 +1775,26 @@ function eqIssues(x){const out=[];if(!x||x.sample||x.lost)return out;const F=x.f
   if(mc){const d=drvOf(mc);if(d){const t=String(d.tools||'');if(!t.trim())out.push(`主禮車 ${mc.driver} 車卡沒填裝備（車頭彩／甘蔗固定器）`);else{if(t.indexOf('車頭彩')<0)out.push(`主禮車 ${mc.driver} 沒有車頭彩`);if(caneOf(x)==='是'&&!/甘蔗/.test(t))out.push(`客人要固定甘蔗，主禮車 ${mc.driver} 沒有甘蔗固定器`)}}}
   return out}
 /* 2026-10-20 Nicole：裝備不足已經安排好（例：借用對講機）→ 勾「已解決」＋備註怎麼解決；裝備問題有變動（換司機等）會重新提醒 */
+/* 2026-11-05 Nicole：負責人／主禮車缺裝備時，提醒同一趟任務裡誰有可以支援（自己的車 REA-2768／EAB-0029 視為有 10 支對講機、車頭彩、甘蔗固定器） */
+function eqOf(f){if(!f||!String(f.driver||'').trim())return null;const pl=String(f.plate||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(OWN_PLATES.includes(pl))return {radios:10,tools:'車頭彩 甘蔗固定器',own:true};const d=drvOf(f);if(!d)return null;const r=String(d.radios==null?'':d.radios).trim();return {radios:r===''?null:+r||0,tools:String(d.tools||'')}}
+function eqHelp(x){const out=[];if(!x||x.sample||x.lost)return out;const F=x.fleet||[];if(!F.length)return out;
+  const nm=f=>`${f.driver}${f.role?`(${f.role})`:''}`;
+  const ld=F.find(f=>f.lead&&String(f.driver||'').trim());
+  if(ld){const e=eqOf(ld),need=F.length;if(e&&!e.own&&(e.radios==null||e.radios<need)){const have=e.radios||0,short=need-have;
+    const H=F.filter(f=>f!==ld).map(f=>({f,e:eqOf(f)})).filter(h=>h.e&&h.e.radios>0);const sum=H.reduce((s,h)=>s+h.e.radios,0);
+    if(!H.length)out.push(`對講機：同一趟沒有其他司機的車卡登記對講機，需要另外準備${e.radios==null?'':` ${short} 支`}`);
+    else out.push(`對講機${e.radios==null?'':`還差 ${short} 支`}：同一趟可支援 ${H.map(h=>`${nm(h.f)} ${h.e.radios} 支`).join('、')}${e.radios!=null&&sum<short?`（合計 ${sum} 支，還差 ${short-sum} 支）`:''}`)}}
+  const mc=F.find(f=>f.role==='主禮車'&&String(f.driver||'').trim());
+  if(mc){const e=eqOf(mc);if(e&&!e.own){const others=F.filter(f=>f!==mc).map(f=>({f,e:eqOf(f)})).filter(h=>h.e);
+    const want=[];if(e.tools.indexOf('車頭彩')<0)want.push(['車頭彩',/車頭彩/]);if(caneOf(x)==='是'&&!/甘蔗/.test(e.tools))want.push(['甘蔗固定器',/甘蔗/]);
+    want.forEach(([n,re])=>{const H=others.filter(h=>re.test(h.e.tools));out.push(H.length?`${n}：同一趟可支援 ${H.map(h=>nm(h.f)).join('、')}`:`${n}：同一趟沒有其他司機的車卡登記${n}，需要另外準備`)})}}
+  return out}
 function eqSig(x){return eqIssues(x).join('｜')}
 function eqResolved(x){const E=eqIssues(x);return !!(E.length&&x.eqOk&&x.eqOk.sig===E.join('｜'))}
 function renderEq(){const el=$('eqWarn');if(!el||!o)return;{const r=$('eqSaveRow');if(r&&!r.hidden&&el.contains(document.activeElement))return}const E=eqIssues(o);if(!E.length){el.innerHTML='';return}const ok=eqResolved(o),k=o.eqOk||{},chg=k.at&&!ok;
   const tm=t=>{const d=new Date(+t);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`};
   el.innerHTML=`<div class="sum" style="border-left:3px solid ${ok?'var(--ok,#2f7d4f)':'var(--warn)'}">${E.map(t=>`<div style="color:${ok?'var(--muted)':'var(--warn)'}">${ok?'✅':'⚠️'} ${esc(t)}</div>`).join('')}
+    ${!ok&&eqHelp(o).length?`<div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--line,#ddd)">${eqHelp(o).map(h=>`<div style="font-size:.92em">💡 ${esc(h)}</div>`).join('')}</div>`:''}
     ${chg?`<div style="color:var(--warn);font-size:.9em">裝備狀況有變動（例如換了司機），之前標記的「已解決」已失效，請重新確認</div>`:''}
     <label class="row" style="gap:8px;align-items:center;margin-top:8px;cursor:pointer"><input type="checkbox" id="eqOkChk" ${ok?'checked':''} style="width:20px;height:20px">已安排解決${ok&&k.at?`<span class="hint" style="margin:0">（${tm(k.at)} 標記）</span>`:''}</label>
     <input id="eqOkNote" placeholder="怎麼解決的，例：跟楊修誠借對講機 2 支、當天帶到集合地點" value="${esc(ok||chg?k.note||'':'')}" style="width:100%;margin-top:6px">
@@ -3304,7 +3319,7 @@ function tasksOf(x){const st=stageOf(x);if(st==='sample'||st==='lost')return[];c
   if(st==='nocontract')T.push({k:'nocontract',late:ago(x.formAt)>=2});
   if(st!=='inq'&&!String(x.carHead||'').trim()&&!x.headDone){const R=headNeed(x,d);if(R.length)T.push({k:'head',late:R.some(r=>r.late),why:R.map(r=>r.why).join('、')})}
   if(x.paid&&d!==null){
-    {const E=eqIssues(x);if(E.length&&d>=0&&!eqResolved(x)&&!(x.eqDoneSig&&x.eqDoneSig===E.join('｜')))T.push({k:'equip',late:d<=7,why:E.join('；')})}   /* 2026-10-20 對講機／車頭彩／甘蔗固定器 */
+    {const E=eqIssues(x);if(E.length&&d>=0&&!eqResolved(x)&&!(x.eqDoneSig&&x.eqDoneSig===E.join('｜')))T.push({k:'equip',late:d<=7,why:E.join('；')+(eqHelp(x).length?'｜'+eqHelp(x).join('；'):'')})}   /* 2026-10-20 對講機／車頭彩／甘蔗固定器 */
     if(!x.partner&&d<=7&&!x.cfSentAt&&!x.cfDoneAt)T.push({k:'cfsend',late:d<=5});
     if(!x.partner&&x.cfSentAt&&!x.cfDoneAt)T.push({k:'cfwait',late:d<=5});
     if(!x.drvDone&&(!(x.fleet||[]).length||x.fleet.some(f=>!String(f.driver||'').trim()))){const hd=String(x.carHead||'').trim();if(hd){if(d!==null&&d<=3)T.push({k:'nodrv',late:true,why:'車頭已安排，確認司機資料'})}else{const tr=teslaDrvRule(x,d);T.push(tr?{k:'nodrv',late:d<=14||tr.late,why:tr.why}:{k:'nodrv',late:d<=14})}}
