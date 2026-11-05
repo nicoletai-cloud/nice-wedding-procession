@@ -2364,7 +2364,7 @@ function renderMemoOk(){const el=$('memoOkSt'),card=$('memoOkCard');if(!el||!o)r
   if(o.memoFixAt&&!(+o.memoOkAt>+o.memoFixAt))L.push(`✏️ 客人說內容要修改（${tm(o.memoFixAt)}）：${o.memoFixNote||''}\n改好後請再按一次「傳確認單給客人核對」`);
   {const M=MEMOS&&MEMOS[normNo(orderNo(o))]||{};if(o.memoHoldAt&&!o.memoOkAt&&!(+M.sentAt>+o.memoHoldAt))L.push(`🪪 等司機綁定車卡：${tm(o.memoHoldAt)} 按了傳送，群組裡還有司機沒綁定車卡${o.memoHoldNames?`（${o.memoHoldNames}）`:''}，已 @ 他們綁定；全部綁好後系統會自動把確認單傳給客人核對（22:00–10:00 排到 10:00）`)}
   const q10=t=>{const d=new Date(+t);if(d.getHours()>=10)d.setDate(d.getDate()+1);d.setHours(10,0,0,0);return d.getTime()};   /* 2026-10-20 夜間按傳送 → 10:00 才傳 */
-  if(o.memoSentAt&&!o.memoOkAt&&!(o.memoHoldAt&&+o.memoHoldAt===+o.memoSentAt&&!(+((MEMOS&&MEMOS[normNo(orderNo(o))])||{}).sentAt>+o.memoHoldAt))){if(o.memoQAt&&+o.memoQAt===+o.memoSentAt&&Date.now()<q10(o.memoQAt))L.push(`🕙 已排程：${tm(o.memoQAt)} 按了傳送，現在是 22:00–10:00 不打擾客人，系統會在 ${tm(q10(o.memoQAt))} 自動傳給客人核對`);else L.push(`⏳ 已傳給${o.memoAgent?`婚顧「${o.memoAgent}」（官方 LINE）`:'客人'}（${tm(o.memoQAt&&+o.memoQAt===+o.memoSentAt?q10(o.memoQAt):o.memoSentAt)}），${o.memoAgent?'還沒確認':'客人還沒確認'}`)}
+  if(o.memoSentAt&&!o.memoOkAt&&!(o.memoHoldAt&&+o.memoHoldAt===+o.memoSentAt&&!(+((MEMOS&&MEMOS[normNo(orderNo(o))])||{}).sentAt>+o.memoHoldAt))){if(o.memoQAt&&+o.memoQAt===+o.memoSentAt&&Date.now()<q10(o.memoQAt))L.push(`🕙 已排程：${tm(o.memoQAt)} 按了傳送，現在是 22:00–10:00 不打擾客人，系統會在 ${tm(q10(o.memoQAt))} 自動傳給客人核對`);else if(memoAgentCase(o))L.push(o.memoAgentCopyAt?`📋 已複製給婚顧的訊息（${tm(o.memoAgentCopyAt)}），婚顧或新人還沒確認`:`⚠️ 這張是婚顧的單，系統用官方 LINE 傳出的確認單婚顧可能收不到（婚顧沒加官方 LINE 好友），請按下方「複製給婚顧」用私人 LINE 傳`);else L.push(`⏳ 已傳給客人（${tm(o.memoQAt&&+o.memoQAt===+o.memoSentAt?q10(o.memoQAt):o.memoSentAt)}），客人還沒確認`)}
   if(o.memoPushErr)L.push(`⚠️ 上次傳送失敗：${o.memoPushErr}（可按「複製核對連結」手動傳）`);
   el.textContent=L.join('\n')||'還沒傳給客人核對';
   {let bx=$('memoAgentBox');if(!bx){bx=document.createElement('div');bx.id='memoAgentBox';bx.style.cssText='margin-top:10px;padding:10px 12px;border:1px solid var(--line,#e5d9cf);border-radius:10px';el.parentNode.insertBefore(bx,el.nextSibling)}   /* 2026-11-05 婚顧代訂：複製給婚顧的話術 */
@@ -2377,7 +2377,8 @@ function askChoice(title,msg,btns){return new Promise(res=>{const w=document.cre
   const done=v=>{document.removeEventListener('keydown',kd,true);w.remove();res(v)},kd=e=>{if(e.key==='Escape'){e.preventDefault();done(btns[0][0])}};
   btns.forEach(([v,l],i)=>{const x=document.createElement('button');x.type='button';x.className='btn'+(i===btns.length-1?' pri':'');x.style.minHeight='44px';x.textContent=l;x.onclick=()=>done(v);row.appendChild(x)});
   w.addEventListener('click',e=>{if(e.target===w)done(btns[0][0])});document.addEventListener('keydown',kd,true);w.appendChild(b);document.body.appendChild(w);setTimeout(()=>{try{row.lastChild.focus()}catch(_){}},30)})}
-async function memoPush(){if(!S.driveUrl||!S.driveKey){toast('還沒設定機器人連線');return}let r=calc(o);
+async function memoPush(){if(!S.driveUrl||!S.driveKey){toast('還沒設定機器人連線');return}
+  if(memoAgentCase(o)){memoLinkCopy(u=>memoAgentMsg(o,u));return}   /* 2026-11-05 Nicole：婚顧的單（私人 LINE／代訂／婚顧代填）婚顧多半沒加官方 LINE，改成複製給婚顧的訊息，不用官方 LINE 傳 */let r=calc(o);
   const qh=(h=>h<10||h>=22)(new Date().getHours());
   if(!confirm(`要傳禮車服務確認單給客人核對嗎？${qh?'\n\n🕙 現在是 22:00–10:00，按確定後系統會在 10:00 才傳給客人（不打擾客人休息）':''}\n\n客人會看到整份確認單，並選擇尾款付款方式：\n・用車當天付現金 ${money(r.balance)}（尾款＋司機禮）\n・提前匯款（最晚用車前一天）\n\n（傳之前請先確認「行前」頁的確認單內容都是最新的）`))return;
   const now1=qh&&(await askChoice('客人正在等嗎？','「白日傳送」＝照原本排到 10:00 再傳，不打擾客人休息\n「立即傳送」＝現在立刻傳給客人',[['day','白日傳送'],['now','立即傳送']]))==='now';   /* 2026-10-30 Nicole：按鈕改成「白日傳送」「立即傳送」 */   /* 2026-10-20 Nicole：22:00 後客人在等也能立刻傳 */
@@ -2394,7 +2395,7 @@ function memoLinkCopy(wrap){const url=memoOkUrl(o),xid=o.id;   /* 2026-11-05 wra
     const x=DB.orders[xid]||o,r=calc(x),text=memoText(memoModel(x,'cust','zh'),false);   /* 2026-10-20 同步完才拿最新版產生內容 */
     let grp='';try{grp=await lgMsgReady()}catch(_){}
     const j=await cfQApi({action:'memoSend',noPush:true,items:[{id:x.id,text,bal:r.balance,mon:!!r.mon,grp}]});const res=(j&&j.res||[])[0]||{};if(!j||!j.ok||!res.ok)throw new Error((res&&res.err)||(j&&j.error)||'連不到機器人');
-    x.memoDone=true;x.memoPushErr='';x.updated=Date.now();save();pushSync();try{renderMemoOk()}catch(_){};return res.url||url})();   /* 2026-10-20 用機器人回傳的連結（含版本 v） */
+    x.memoDone=true;x.memoPushErr='';if(typeof wrap==='function'){x.memoAgentCopyAt=Date.now();if(!x.memoSentAt)x.memoSentAt=x.memoAgentCopyAt;x.memoSentText=text}x.updated=Date.now();save();pushSync();try{renderMemoOk()}catch(_){};return res.url||url})();   /* 2026-10-20 用機器人回傳的連結（含版本 v） */
   const jobW=typeof wrap==='function'?job.then(wrap):job,lbl=typeof wrap==='function'?'這段訊息':'這個連結';
   toast('存確認單內容中…');
   const done=()=>toast(typeof wrap==='function'?'已複製給婚顧的訊息（確認單內容已更新）':'已複製核對連結（確認單內容已更新，客人打開就看得到）'),fail=e=>{toast('確認單內容沒存成功：'+(e&&e.message||e));};
