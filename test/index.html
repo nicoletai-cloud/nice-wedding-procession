@@ -1767,10 +1767,11 @@ function payOf(f,x){x=x||o;return plusX(f.pay!==''&&f.pay!=null?num(f.pay):drive
 function otHrs(x){const mn=+((x&&x.otOk)||{}).min||0;if(!mn)return 0;const u=+x.hours>0&&+x.hours<3?30:60;return Math.ceil(mn/u)*u/60}
 function drvHrs(x){return +x.hours===0?0:+x.hours+otHrs(x)}
 function otDrvAdd(m,x){const h=otHrs(x);if(!h||+x.hours===0)return 0;const a=driverBasePay0(m,x),b=driverBasePay0(m,Object.assign({},x,{hours:+x.hours+h}));return a==null||b==null?0:b-a}
+/* 2026-11-06 Nicole：只有一台車不用提醒對講機 */
 /* 2026-10-20 Nicole：負責人對講機要夠（客人預約幾台車就要幾支，親友車不算）；客人要固定甘蔗時主禮車要有甘蔗固定器；主禮車要有車頭彩。資料來自司機在禮車助手填的車卡 */
 function eqIssues(x){const out=[];if(!x||x.sample||x.lost)return out;const F=x.fleet||[];if(!F.length)return out;
   const ld=F.find(f=>f.lead&&String(f.driver||'').trim());
-  if(ld){const d=drvOf(ld),need=F.length;if(d){const r=String(d.radios==null?'':d.radios).trim();if(r==='')out.push(`負責人[${ld.driver}]車卡沒填對講機數量（需要 ${need} 支）`);else if(+r<need)out.push(`負責人[${ld.driver}]只有 ${+r} 支對講機，需要 ${need} 支`)}}
+  if(ld&&F.length>1){const d=drvOf(ld),need=F.length;if(d){const r=String(d.radios==null?'':d.radios).trim();if(r==='')out.push(`負責人[${ld.driver}]車卡沒填對講機數量（需要 ${need} 支）`);else if(+r<need)out.push(`負責人[${ld.driver}]只有 ${+r} 支對講機，需要 ${need} 支`)}}
   const mc=F.find(f=>f.role==='主禮車'&&String(f.driver||'').trim());
   if(mc){const d=drvOf(mc);if(d){const t=String(d.tools||'');if(!t.trim())out.push(`主禮車 ${mc.driver} 車卡沒填裝備（車頭彩／甘蔗固定器）`);else{if(t.indexOf('車頭彩')<0)out.push(`主禮車 ${mc.driver} 沒有車頭彩`);if(caneOf(x)==='是'&&!/甘蔗/.test(t))out.push(`客人要固定甘蔗，主禮車 ${mc.driver} 沒有甘蔗固定器`)}}}
   return out}
@@ -1780,7 +1781,7 @@ function eqOf(f){if(!f||!String(f.driver||'').trim())return null;const pl=String
 function eqHelp(x){const out=[];if(!x||x.sample||x.lost)return out;const F=x.fleet||[];if(!F.length)return out;
   const nm=f=>`${f.driver}${f.role?`(${f.role})`:''}`;
   const ld=F.find(f=>f.lead&&String(f.driver||'').trim());
-  if(ld){const e=eqOf(ld),need=F.length;if(e&&!e.own&&(e.radios==null||e.radios<need)){const have=e.radios||0,short=need-have;
+  if(ld&&F.length>1){const e=eqOf(ld),need=F.length;if(e&&!e.own&&(e.radios==null||e.radios<need)){const have=e.radios||0,short=need-have;
     const H=F.filter(f=>f!==ld).map(f=>({f,e:eqOf(f)})).filter(h=>h.e&&h.e.radios>0);const sum=H.reduce((s,h)=>s+h.e.radios,0);
     if(!H.length)out.push(`對講機：同一趟沒有其他司機的車卡登記對講機，需要另外準備${e.radios==null?'':` ${short} 支`}`);
     else out.push(`對講機${e.radios==null?'':`還差 ${short} 支`}：同一趟可支援 ${H.map(h=>`${nm(h.f)} ${h.e.radios} 支`).join('、')}${e.radios!=null&&sum<short?`（合計 ${sum} 支，還差 ${short-sum} 支）`:''}`)}}
