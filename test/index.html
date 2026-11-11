@@ -588,6 +588,7 @@ nav.tabs button{scroll-snap-align:start}
           <h3>司機車資</h3>
           <p class="hint" style="margin:0 0 10px">預設＝價目設定的司機酬勞（含紅包）＋加時；總行程超過 35km 且跨區（不同縣市；台北新北同區、新竹縣市同區），每多 35km 每台 +$300；同區不加。個別車輛可在下面「車隊」再調。</p>
           <div class="sum" id="payBox"></div>
+          <label class="row" style="gap:8px;align-items:center;cursor:pointer;margin-top:10px"><input type="checkbox" id="payTotCb" style="width:auto">只給車頭總金額：司機派車單不列每台車酬勞（只顯示收尾款、加時、匯回）</label>
         </div>
       </div>
       <div class="card">
@@ -1885,7 +1886,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   }else{
     const groups={};x.fleet.forEach(f=>{const v=payOf(f,x);const key=(v==null?'?':v)+'§'+xTag(f,x)+(caneCar(f,x)?'|c':'');(groups[key]=groups[key]||[]).push(f.role)});
     pay=[r.mon?(r.onsite?`收取${[r.red?`紅包 ${money(S.red)}x${r.n}=${money(r.red)}`:'',r.cane?`甘蔗固定費 ${money(r.cane)}`:''].filter(Boolean).join('、')}`:'現場不用收款'):x.balPaid?(postX(x).length?(x.balRed&&r.red?`尾款客人已匯款，現場收司機紅包 ${money(S.red)}/台（共 ${money(r.red)}）＋${xTxt(x,postX(x))}`:`尾款 ${money(r.balance-sumX(x,postX(x)))} 客人已匯款，現場另收 ${xTxt(x,postX(x))}`):x.balRed&&r.red?`尾款客人已匯款，現場只收司機紅包 ${money(S.red)}/台（共 ${money(r.red)}）`:`尾款 ${money(r.balance)} 客人已匯款，現場不用收款`):x.balPlan==='transfer'?`客人選提前匯款；若當天還沒入帳，請收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}`:`收取尾款 ${money(r.balance)}${r.red?'(含司機禮)':''}${x.balPlan==='cash'?'・客人付現金':''}`];
-    Object.keys(groups).forEach(gk=>{const cn=/\|c$/.test(gk),g0=gk.replace(/\|c$/,''),v=g0.split('§')[0],tg=g0.split('§')[1]||'';const roles=[...new Set(groups[gk])].join('＋');const inc=cn?(r.red?'(含司機禮+甘蔗固定)':'(含甘蔗固定)'):(r.red?(tg?'(含司機禮)':'(含紅包)'):'');pay.push(+x.hours===0?`${roles} 實拿${v==='?'?'（未設定）':money(+v)}（單程接送・綁彩）${cn?'(含甘蔗固定)':''}`:`${roles} ${v==='?'?'（未設定）':money(+v)}/${hrsLabel(drvHrs(x))}${tg}${inc}`)});   // 2026-10-22 Nicole：掛甘蔗那台寫(含司機禮+甘蔗固定)
+    if(!x.payTotalOnly)Object.keys(groups).forEach(gk=>{const cn=/\|c$/.test(gk),g0=gk.replace(/\|c$/,''),v=g0.split('§')[0],tg=g0.split('§')[1]||'';const roles=[...new Set(groups[gk])].join('＋');const inc=cn?(r.red?'(含司機禮+甘蔗固定)':'(含甘蔗固定)'):(r.red?(tg?'(含司機禮)':'(含紅包)'):'');pay.push(+x.hours===0?`${roles} 實拿${v==='?'?'（未設定）':money(+v)}（單程接送・綁彩）${cn?'(含甘蔗固定)':''}`:`${roles} ${v==='?'?'（未設定）':money(+v)}/${hrsLabel(drvHrs(x))}${tg}${inc}`)});   // 2026-10-22 Nicole：掛甘蔗那台寫(含司機禮+甘蔗固定)
     const ms=MODELS.filter(m=>num(x.cars[m])>0);
     if(+x.hours===0)pay.push(`等候 15 分鐘未出發，每半小時：${ms.map(m=>driverOtText(m,x).replace(' 等候每 0.5HR','')).join(' ; ')}`);
     else pay.push(x.hours<3?'未滿 3 小時方案無緩衝，超過即以每 0.5 小時計加時':'加時 15 分鐘內不計 ; 第 16 分鐘起收加時費用',`加時：${otl}`);
@@ -2626,6 +2627,7 @@ function renderSum(){const r=calc(o);const rows=[];
     <div class="sub"><span>${o.bus?(r.mon?'現場收':'尾款'):r.mon?'司機現場收（紅包＋甘蔗）':'尾款（含司機禮，當天交主禮車司機）'}</span><span>${money(r.balance)}</span></div>
     <div class="sub"><span>${o.bus?'車頭成本':'司機車資合計'}</span><span>${r.dok?money(r.dsum):'未設定'}</span></div>${o.bus&&r.dok?`<div class="sub"><span>毛利（合計−稅−車頭成本${r.refAmt?'−回金':''}）</span><span>${money(r.total-r.tax-r.dsum-r.refAmt)}</span></div>`:''}`;
   $('bundleChip').innerHTML=r.b?`<span class="chip ok">已套用 ${esc(r.b.name)}方案 ${money(r.b.price)}</span>`:(o.hours<3?`<span class="chip">${hrsLabel(o.hours)}不適用優惠方案</span>`:'')+r.miss.map(t=>`<span class="chip" style="color:var(--warn)">${esc(t)}</span>`).join('');
+  {const cb=$('payTotCb');if(cb)cb.checked=!!o.payTotalOnly}   /* 2026-11-11 Nicole：有些禮車只對車頭給總金額 */
   $('payBox').innerHTML=o.fleet.map(f=>{const v=payOf(f),xl=xDrvList(f,o);return `<div><span>${esc(f.role)}・${MNAME[f.m]}${xl.length?`<small style="color:var(--muted)"> (含${xl.map(e=>` ${esc(String(e.n||'加項').trim())} ${money(num(e.d))}`).join('、')})</small>`:''}</span><span>${v==null?'未設定':money(v)}</span></div>`}).join('')+`<div class="tot"><span>合計</span><span>${r.dok?money(r.dsum):'—'}</span></div>`}
 function renderFleet(){try{renderFr()}catch(_){}try{setTimeout(renderEq,0)}catch(_){}$('fleetBody').innerHTML=o.fleet.map((f,i)=>{const dp=plusX(driverBasePay(f.m,o),f,o);return `<tr><td><b>${MNAME[f.m]}</b></td>
   <td><select data-fl="${i}.role" id="fl_r${i}" style="min-width:104px">${ROLES.map(r=>`<option${r===f.role?' selected':''}>${r}</option>`).join('')}</select></td>
@@ -4399,6 +4401,7 @@ function busStopsRender(){const w=$('busStops');if(!w||!o||!o.bus)return;if(!Arr
 document.addEventListener('click',e=>{const t=e.target;if(!t||!t.closest||!o)return;if(t.closest('#busStopAdd')){o.busStops=(o.busStops||[]).concat([{t:'',from:'',via:'',to:''}]);save();renderAll();const w=$('busStops');const l=w&&w.querySelectorAll('.bstop');if(l&&l.length)l[l.length-1].querySelector('input').focus();return}
   const d=t.closest('[data-busdel]');if(d){const i=+d.dataset.busdel;if((o.busStops||[]).length>1){o.busStops.splice(i,1);const w=$('busStops');if(w)w.dataset.k='';save();renderAll()}}});
 try{renderRev()}catch(e){}
+document.addEventListener('change',e=>{if(e.target.id!=='payTotCb'||!o)return;o.payTotalOnly=e.target.checked;save();renderAll();toast(o.payTotalOnly?'已設定：司機派車單只顯示收尾款、加時、匯回，不列每台酬勞':'已取消，派車單會列出每台車酬勞')});
 document.addEventListener('change',e=>{if(e.target.id!=='revSkipCb')return;o.revSkip=e.target.checked;save();renderAll();renderOrderSel();toast(o.revSkip?'已標註當天有缺失，不會自動詢問評價':'已取消缺失標註')});
 /* 2026-11-02 Nicole：每張訂單都能直接進篩選照片（相簿） */
 document.addEventListener('click',e=>{if(!e.target.closest||!e.target.closest('#btnPhotoAlbum')||!o)return;e.preventDefault();if(!o.date){toast('這張單還沒有用車日');return}openAlbum(o)});
