@@ -344,7 +344,7 @@ nav.tabs button{scroll-snap-align:start}
   <!-- 1 報價 -->
   <section class="tab" id="tab-quote">
     <div class="card" id="recentCard" style="margin-bottom:14px">
-      <h3>最近詢問 <small>官方 LINE、FB／IG 各最近 5 位；按「建立報價」帶入已知資料</small></h3>
+      <h3>最近詢問 <small>官方 LINE、FB／IG 各最近 5 位禮車（含未分類）客人；按「建立報價」帶入已知資料</small></h3>
       <div id="recentList"><p class="hint">讀取中…</p></div>
     </div>
     <div class="grid">
@@ -3675,7 +3675,7 @@ function ibKnown(u){const d=(u.bot&&u.bot.data)||{},L=[];const dt=d.iso?(d.show|
   if(dt)L.push('婚期 '+dt);if(d.groomAddr||d.groom)L.push('男方 '+(d.groomAddr||d.groom));if(d.brideAddr||d.bride)L.push('女方 '+(d.brideAddr||d.bride));if(d.venue)L.push('餐廳 '+d.venue);
   if(!d.groom&&!d.bride&&!d.venue&&d.area)L.push('地區 '+d.area);if(d.meal||d.time)L.push([d.meal,d.time].filter(Boolean).join(' '));if(d.car)L.push('車款 '+d.car);if(d.count)L.push(d.count+' 台');return L}
 function renderRecent(){const el=$('recentList');if(!el)return;
-  const pick=ch=>IB.filter(u=>{const c=ibChOf(u.uid);return (ch==='LINE'?c==='LINE':(c==='FB'||c==='IG'))&&!u.vendor&&(u.cat||'禮車')!=='應徵'}).sort((a,b)=>(b.last||0)-(a.last||0)).slice(0,5);
+  const pick=ch=>IB.filter(u=>{const c=ibChOf(u.uid);return (ch==='LINE'?c==='LINE':(c==='FB'||c==='IG'))&&!u.vendor&&!u.spam&&['禮車',''].includes(u.cat||'')}).sort((a,b)=>(b.last||0)-(a.last||0)).slice(0,5);
   const row=u=>{const k=ibKnown(u),done=u.order&&DB.orders[u.order];const last=(u.texts||[]).filter(t=>!/^（.*）$/.test(t)).slice(-2).join('｜');
     return `<div class="todo-row" style="cursor:default;align-items:flex-start"><div class="m" style="flex:1;min-width:0"><div><b>${esc(String(u.name||'（讀不到名字）').replace(/^\((fb|ig)\)/,''))}</b> <span class="sub">${ibChOf(u.uid)}｜${ibAgo(u.last||u.since||Date.now())}${u.pending?'｜待回覆':''}${u.cat&&u.cat!=='禮車'?'｜'+esc(u.cat):''}</span></div>`+
       (k.length?`<div class="sub" style="color:#8a6a3a">${esc(k.join('｜'))}</div>`:'<div class="sub">機器人還沒問到資料</div>')+
