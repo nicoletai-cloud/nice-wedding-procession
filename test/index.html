@@ -504,7 +504,7 @@ nav.tabs button{scroll-snap-align:start}
       </div>
       <div class="card">
         <h3>收到訂金回覆</h3>
-        <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm pri" data-copy="outPaidAck">複製</button></div>
+        <div class="row" style="justify-content:flex-end;margin-bottom:8px;gap:8px"><button class="btn sm" data-copy="outPaidAck">複製</button><button class="btn sm pri" data-paidsend="1">傳送</button></div>
         <pre class="out" id="outPaidAck">已確認收到訂金，後續提供合約給您</pre>
         <p class="hint" id="paidAckHint" style="margin-top:12px">傳合約給客人：到「3 合約」分頁預覽，確認內容後就會出現可複製的訊息。</p>
       </div>
@@ -3718,6 +3718,10 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.ibb){const rows=[...document.querySelectorAll('[data-ibsel]')].map(c=>c.dataset.ibsel);if(t.dataset.ibb==='all'){if(ibSel.size===rows.length)ibSel.clear();else rows.forEach(id=>ibSel.add(id));renderInbox()}else if(ibSel.size)ibSet([...ibSel],t.dataset.ibb==='done'?{done:true}:{reopen:true});return}
   if(t.dataset.scpick){$('scKey').value=t.dataset.scpick;scLoad();$('scText').focus();return}
   if(t.dataset.matsent){logSent(t.dataset.matsent);toast('已記錄');return}
+  if(t.dataset.paidsend){const txt=(($('outPaidAck')||{}).textContent||'').trim();if(!txt||!o){toast('沒有要傳的內容');return}   /* 2026-11-11 Nicole：收到訂金回覆改成一鍵傳送 */
+    if(!confirm('禮車助手會把「收到訂金回覆」傳到 '+orderNo(o)+' 的客人對話，確定傳送？'))return;const x=o,tx=t.textContent;t.disabled=true;t.textContent='傳送中…';
+    gasCall({action:'matSend',id:x.id,set:'text',text:txt}).then(j=>{x.paidAckAt=Date.now();x.updated=Date.now();if(o&&o.id===x.id)save();else{DB.orders[x.id]=x;store('nwcw_orders',DB);pushSync()}toast('已傳給'+(j.who||'客人')+'（'+(j.plat==='line'?'官方 LINE':j.plat==='ig'?'IG':'FB')+'）')})
+      .catch(e=>toast('沒傳出去：'+e.message)).finally(()=>{t.disabled=false;t.textContent=tx});return}
   if(t.dataset.matsend){const k=t.dataset.matsend,N={tesla:'特斯拉報價+服務摘要',benz:'賓士報價+服務摘要',summary:'服務摘要',all:'全部報價+服務摘要'},K={tesla:['p_tesla','m_summary'],benz:['p_benz','m_summary'],summary:['m_summary'],all:['p_tesla','p_benz','m_summary']};
     if(!confirm('禮車助手會把「'+N[k]+'」傳到 '+orderNo(o)+' 的客人對話，確定傳送？'))return;const x=o,tx=t.textContent;t.disabled=true;t.textContent='傳送中…';
     gasCall({action:'matSend',id:x.id,set:k}).then(j=>{K[k].forEach(m=>{(x.sent=x.sent||[]).push({k:m,at:Date.now()})});x.updated=Date.now();if(o&&o.id===x.id){save();renderNeed()}else{DB.orders[x.id]=x;store('nwcw_orders',DB);pushSync()}toast('已傳給'+(j.who||'客人')+'（'+(j.plat==='line'?'官方 LINE':j.plat==='ig'?'IG':'FB')+'）')})
