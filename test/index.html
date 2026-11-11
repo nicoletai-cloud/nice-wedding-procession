@@ -343,6 +343,10 @@ nav.tabs button{scroll-snap-align:start}
 
   <!-- 1 報價 -->
   <section class="tab" id="tab-quote">
+    <div class="card" id="recentCard" style="margin-bottom:14px">
+      <h3>最近詢問 <small>官方 LINE、FB／IG 各最近 5 位；按「建立報價」帶入已知資料</small></h3>
+      <div id="recentList"><p class="hint">讀取中…</p></div>
+    </div>
     <div class="grid">
       <div class="stack">
         <div class="card">
@@ -1125,7 +1129,7 @@ nav.tabs button{scroll-snap-align:start}
       cfSend:card(cm,'行前確認'),rev:card(cm,'評價詢問'),photo:card(cm,'側拍照片')};
     var miss=Object.keys(C).filter(function(k){return !C[k]&&k!=='mat'});if(miss.length)console.warn('layout v2 找不到：',miss.join(','));
     /* 1 詢價 */
-    var q1=col();[C.info,C.need,C.src,C.script,C.mat].forEach(function(c){put(c,q1)});
+    var q1=col();[$('recentCard'),C.info,C.need,C.src,C.script,C.mat].forEach(function(c){put(c,q1)});   /* 2026-11-11 最近詢問放詢價頁最上面 */
     /* 2 報價 */
     var tp=document.createElement('section');tp.className='tab';tp.id='tab-price';tp.hidden=true;var q2=col();[C.cars,C.bus,C.extra,C.sum,C.quote].forEach(function(c){put(c,q2)});
     /* 3 成交：下單、收款放在合約上面 */
@@ -3652,7 +3656,7 @@ document.addEventListener('change',e=>{const t=e.target;if(!t)return;if(t.id==='
   x.lgAt=t.checked?Date.now():0;x.updated=Date.now();store('nwcw_orders',DB);try{pushSync()}catch(_){}renderLg();try{renderLgCard()}catch(_){}});
 async function loadInbox(){try{IB=await ibCall({action:'inbox'});renderInbox()}catch(e){if(!$('inboxModal').hidden)$('ibList').innerHTML='<p class="hint">讀取失敗，請按重新整理</p>'}}
 function ibAgo(t){const m=Math.round((Date.now()-t)/60000);return m<60?m+' 分鐘前':m<1440?Math.round(m/60)+' 小時前':Math.round(m/1440)+' 天前'}
-function renderInbox(){const n=IB.filter(u=>u.pending).length;$('btnInbox').innerHTML='訊息'+(n?`<b>${n}</b>`:'');
+function renderInbox(){const n=IB.filter(u=>u.pending).length;$('btnInbox').innerHTML='訊息'+(n?`<b>${n}</b>`:'');try{renderRecent()}catch(_){}
   /* 2026-10-19 底部「訊息」紅點跟著實際待回覆數更新（之前沿用首頁舊的暫存數字，回覆完還顯示 1） */
   try{if(window.nwcTabbarBadge)window.nwcTabbarBadge('msg',n);const c=JSON.parse(localStorage.getItem('nwc_hub_today')||'null');if(c&&c.data){c.data.inbox=c.data.inbox||{};c.data.inbox.pending=n;localStorage.setItem('nwc_hub_today',JSON.stringify(c))}}catch(_){}
   if($('inboxModal').hidden)return;
@@ -3665,16 +3669,30 @@ function renderInbox(){const n=IB.filter(u=>u.pending).length;$('btnInbox').inne
   $('ibList').innerHTML=rows.length?rows.map(u=>`<label class="todo-row"><input type="checkbox" data-ibsel="${esc(u.uid)}" style="width:auto"${ibSel.has(u.uid)?' checked':''}><div class="m"><div><b>${esc(u.name||'（讀不到名字）')}</b><span class="sub">${ibAgo(u.pending?u.since:u.doneAt)}</span> ${ibLink(u)}</div><div class="sub" style="white-space:pre-line">${esc((u.texts||[]).slice(-3).join('\n'))}</div>${ibBot(u)}</div><div class="tg"><select data-ibcat="${esc(u.uid)}" style="width:auto">${cats.map(c=>`<option value="${c}"${(u.cat||'')===c?' selected':''}>${cn(c)}</option>`).join('')}</select></div>${u.bot&&u.bot.step==='done'?`<button class="btn sm" data-ibq="${esc(u.uid)}">${u.order&&DB.orders[u.order]?'開啟報價':'建立報價'}</button>`:''}${u.pending?`<button class="btn sm pri" data-ibdone="${esc(u.uid)}">已回覆</button>`:''}</label>`).join(''):(ibF==='done'?'<p class="hint">3 天內沒有回覆過的訊息。</p>':'<p class="hint">目前沒有待回覆的客人。'+(IB.length-n?'最近回覆過的在「已回覆（3 天內）」。':'')+'</p>')}
 function ibBot(u){const b=u.bot;if(!b)return '';if(b.step!=='done')return b.stop?'':'<div class="sub">🤖 機器人問答進行中…</div>';const d=b.data||{};
   return `<div class="sub" style="color:#8a6a3a">🤖 婚期 ${esc(d.iso||((d.month||'').trim()||'未定'))}｜男方 ${esc(d.groomAddr||d.groom||'—')}｜女方 ${esc(d.brideAddr||d.bride||'—')}${d.venue?'｜餐廳 '+esc(d.venue):''}｜${esc(d.meal||'—')}${d.time?' '+esc(d.time):''}｜車款 ${esc(d.car||'—')}</div>`}
+/* 2026-11-11 Nicole：報價頁最上面直接列出官方 LINE、FB／IG 各最近 5 位客人，帶入機器人已問到的資料，方便快速建立報價 */
+function ibChOf(uid){return /^fb:/.test(uid)?'FB':/^ig:/.test(uid)?'IG':/^U[0-9a-f]{32}$/.test(uid)?'LINE':''}
+function ibKnown(u){const d=(u.bot&&u.bot.data)||{},L=[];const dt=d.iso?(d.show||d.iso):((d.month||'').trim()||(d.date&&d.date!=='未定'?d.date:''));
+  if(dt)L.push('婚期 '+dt);if(d.groomAddr||d.groom)L.push('男方 '+(d.groomAddr||d.groom));if(d.brideAddr||d.bride)L.push('女方 '+(d.brideAddr||d.bride));if(d.venue)L.push('餐廳 '+d.venue);
+  if(!d.groom&&!d.bride&&!d.venue&&d.area)L.push('地區 '+d.area);if(d.meal||d.time)L.push([d.meal,d.time].filter(Boolean).join(' '));if(d.car)L.push('車款 '+d.car);if(d.count)L.push(d.count+' 台');return L}
+function renderRecent(){const el=$('recentList');if(!el)return;
+  const pick=ch=>IB.filter(u=>{const c=ibChOf(u.uid);return (ch==='LINE'?c==='LINE':(c==='FB'||c==='IG'))&&!u.vendor&&(u.cat||'禮車')!=='應徵'}).sort((a,b)=>(b.last||0)-(a.last||0)).slice(0,5);
+  const row=u=>{const k=ibKnown(u),done=u.order&&DB.orders[u.order];const last=(u.texts||[]).filter(t=>!/^（.*）$/.test(t)).slice(-2).join('｜');
+    return `<div class="todo-row" style="cursor:default;align-items:flex-start"><div class="m" style="flex:1;min-width:0"><div><b>${esc(String(u.name||'（讀不到名字）').replace(/^\((fb|ig)\)/,''))}</b> <span class="sub">${ibChOf(u.uid)}｜${ibAgo(u.last||u.since||Date.now())}${u.pending?'｜待回覆':''}${u.cat&&u.cat!=='禮車'?'｜'+esc(u.cat):''}</span></div>`+
+      (k.length?`<div class="sub" style="color:#8a6a3a">${esc(k.join('｜'))}</div>`:'<div class="sub">機器人還沒問到資料</div>')+
+      (last?`<div class="sub" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(last)}</div>`:'')+
+      `</div><button class="btn sm${done?'':' pri'}" data-ibq="${esc(u.uid)}" style="flex:none">${done?'開啟報價':'建立報價'}</button></div>`};
+  const sec=(t,L)=>`<div style="margin-bottom:6px"><div class="sub" style="font-weight:700;margin:4px 0 6px">${t}</div>${L.length?L.map(row).join(''):'<p class="hint" style="margin:0 0 8px">最近沒有對話</p>'}</div>`;
+  el.innerHTML=sec('官方 LINE',pick('LINE'))+sec('FB／IG',pick('META'))}
 function ibQuote(uid){const u=IB.find(x=>x.uid===uid);if(!u)return;$('inboxModal').hidden=true;
   if(u.order&&DB.orders[u.order]){o=DB.orders[u.order];DB.cur=o.id;store('nwcw_orders',DB);loadOrder();showTab('quote');return}
   const d=(u.bot&&u.bot.data)||{};o=newOrder();o.sample=false;
-  o.c.chatName=u.name||'';o.c.channel='LINE';if(d.iso)o.date=d.iso;
+  const ch_=ibChOf(uid)||'LINE';o.c.chatName=String(u.name||'').replace(/^\((fb|ig)\)/,'');o.c.channel=ch_;if(d.iso)o.date=d.iso;
   o.need.dateSt=d.st||'';o.need.month=d.iso?'':(d.month||'').trim();o.need.brand={tesla:'特斯拉',benz:'賓士',other:'其他'}[d.brand]||'';
   o.cars={X:0,S:0,Y:0,'3':0};   // 新訂單車輛一律從 0 開始，不預選
   o.c.meet=d.groomAddr||d.groom||'';o.c.wed=d.brideAddr||d.bride||'';if(d.venue){o.c.o1=d.venueAddr||d.venue;o.c.o1L='宴客餐廳'}
   if(d.meal==='午宴'){o.c.start='08:30';o.c.end='11:30'}else if(d.meal==='晚宴'){o.c.start='14:30';o.c.end='17:30'}
   o.cityA=countyOf(o.c.meet);o.cityB=countyOf(o.c.wed);
-  o.need.note=['LINE 機器人問答','婚期：'+(d.date||'—'),'地區：'+(d.area||'—'),'時段：'+(d.meal||'—')+(d.time?' '+d.time:''),'車款：'+(d.car||'—')].join('\n');
+  o.need.note=[ch_+' 機器人問答','婚期：'+(d.date||'—'),'地區：'+(d.area||'—'),'時段：'+(d.meal||'—')+(d.time?' '+d.time:''),'車款：'+(d.car||'—')+(d.count?'｜'+d.count+' 台':''),'客人最近訊息：'+(u.texts||[]).slice(-3).join(' / ')].join('\n');
   DB.orders[o.id]=o;syncFleet();save();loadOrder();showTab('quote');
   toast(d.meal?'已建立報價：時段先帶預設，地址請再確認':'已建立報價：地址、時段請再確認');
   ibCall({action:'inboxSet',uids:[uid],set:{order:o.id}}).then(r=>{IB=r;renderInbox()}).catch(()=>{});
