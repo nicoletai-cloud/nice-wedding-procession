@@ -3713,9 +3713,14 @@ function renderInbox(){const n=IB.filter(u=>u.pending).length;$('btnInbox').inne
 function ibBot(u){const b=u.bot;if(!b)return '';if(b.step!=='done')return b.stop?'':'<div class="sub">🤖 機器人問答進行中…</div>';const d=b.data||{};
   return `<div class="sub" style="color:#8a6a3a">🤖 婚期 ${esc(d.iso||((d.month||'').trim()||'未定'))}｜男方 ${esc(d.groomAddr||d.groom||'—')}｜女方 ${esc(d.brideAddr||d.bride||'—')}${d.venue?'｜餐廳 '+esc(d.venue):''}｜${esc(d.meal||'—')}${d.time?' '+esc(d.time):''}｜車款 ${esc(d.car||'—')}</div>`}
 /* 2026-11-11 Nicole：報價頁最上面直接列出官方 LINE、FB／IG 各最近 5 位客人，帶入機器人已問到的資料，方便快速建立報價 */
+/* 2026-11-12 Nicole：客人自己打字講的婚期（沒經過機器人問答）也要帶入報價 */
+function ibTxtDate(t){t=String(t||'').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-65248)).replace(/／/g,'/');const now=new Date(),t0=new Date(now.getFullYear(),now.getMonth(),now.getDate());let y,mo,d,m=t.match(/(20\d{2})\s*[\/\-.年]\s*(\d{1,2})\s*[\/\-.月]\s*(\d{1,2})/);
+  if(m){y=+m[1];mo=+m[2];d=+m[3]}else{m=t.match(/(?:^|[^\d\/:.$])(\d{1,2})\s*(?:\/|月)\s*(\d{1,2})(?![\d:])/);if(!m)return '';mo=+m[1];d=+m[2];y=now.getFullYear();if(new Date(y,mo-1,d)<t0)y++}
+  if(mo<1||mo>12||d<1||d>31)return '';const r=y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');return new Date(r+'T00:00:00')<t0?'':r}
+function ibDateOf(u){const d=(u&&u.bot&&u.bot.data)||{};return d.iso||(u&&u.hintDate)||ibTxtDate((u&&u.texts||[]).join('\n'))}
 function ibChOf(uid){return /^fb:/.test(uid)?'FB':/^ig:/.test(uid)?'IG':/^U[0-9a-f]{32}$/.test(uid)?'LINE':''}
 function ibKnown(u){const d=(u.bot&&u.bot.data)||{},L=[];const dt=d.iso?(d.show||d.iso):((d.month||'').trim()||(d.date&&d.date!=='未定'?d.date:''));
-  if(dt)L.push('婚期 '+dt);if(d.groomAddr||d.groom)L.push('男方 '+(d.groomAddr||d.groom));if(d.brideAddr||d.bride)L.push('女方 '+(d.brideAddr||d.bride));if(d.venue)L.push('餐廳 '+d.venue);
+  if(dt)L.push('婚期 '+dt);else{const hd=ibDateOf(u);if(hd)L.push('婚期 '+hd.slice(5).replace('-','/')+'(客人訊息)')}if(d.groomAddr||d.groom)L.push('男方 '+(d.groomAddr||d.groom));if(d.brideAddr||d.bride)L.push('女方 '+(d.brideAddr||d.bride));if(d.venue)L.push('餐廳 '+d.venue);
   if(!d.groom&&!d.bride&&!d.venue&&d.area)L.push('地區 '+d.area);if(d.meal||d.time)L.push([d.meal,d.time].filter(Boolean).join(' '));if(d.car)L.push('車款 '+d.car);if(d.count)L.push(d.count+' 台');return L}
 function renderRecent(){const el=$('recentList');if(!el)return;
   const pick=ch=>IB.filter(u=>{const c=ibChOf(u.uid);return (ch==='LINE'?c==='LINE':(c==='FB'||c==='IG'))&&!u.vendor&&!u.spam&&['禮車',''].includes(u.cat||'')}).sort((a,b)=>(b.last||0)-(a.last||0)).slice(0,5);
@@ -3730,15 +3735,15 @@ function renderRecent(){const el=$('recentList');if(!el)return;
 function ibPin(x,uid){if(!x||!x.c||!uid)return false;let ch=false;if(!x.c.ibUid){x.c.ibUid=uid;ch=true}
   return ch}   /* 2026-11-12 Nicole：客人編號只記在系統（不是可點的網址），不動「官方 LINE 聊天室網址」欄 */
 function ibQuote(uid){const u=IB.find(x=>x.uid===uid);if(!u)return;$('inboxModal').hidden=true;
-  if(u.order&&DB.orders[u.order]){o=DB.orders[u.order];DB.cur=o.id;if(ibPin(o,uid))save();else store('nwcw_orders',DB);loadOrder();showTab('quote');return}
+  if(u.order&&DB.orders[u.order]){o=DB.orders[u.order];DB.cur=o.id;let ch=ibPin(o,uid);const hd=!o.date&&ibDateOf(u);if(hd){o.date=hd;ch=true;toast('已帶入客人說的婚期 '+hd.slice(5).replace('-','/')+'，請再確認')}if(ch)save();else store('nwcw_orders',DB);loadOrder();showTab('quote');return}
   const d=(u.bot&&u.bot.data)||{};o=newOrder();o.sample=false;
-  const ch_=ibChOf(uid)||'LINE';o.c.chatName=String(u.name||'').replace(/^\((fb|ig)\)/,'');o.c.channel=ch_;if(d.iso)o.date=d.iso;
+  const ch_=ibChOf(uid)||'LINE';o.c.chatName=String(u.name||'').replace(/^\((fb|ig)\)/,'');o.c.channel=ch_;{const hd=ibDateOf(u);if(hd)o.date=hd}
   o.need.dateSt=d.st||'';o.need.month=d.iso?'':(d.month||'').trim();o.need.brand={tesla:'特斯拉',benz:'賓士',other:'其他'}[d.brand]||'';
   o.cars={X:0,S:0,Y:0,'3':0};   // 新訂單車輛一律從 0 開始，不預選
   o.c.meet=d.groomAddr||d.groom||'';o.c.wed=d.brideAddr||d.bride||'';if(d.venue){o.c.o1=d.venueAddr||d.venue;o.c.o1L='宴客餐廳'}
   if(d.meal==='午宴'){o.c.start='08:30';o.c.end='11:30'}else if(d.meal==='晚宴'){o.c.start='14:30';o.c.end='17:30'}
   o.cityA=countyOf(o.c.meet);o.cityB=countyOf(o.c.wed);
-  o.need.note=[ch_+' 機器人問答','婚期：'+(d.date||'—'),'地區：'+(d.area||'—'),'時段：'+(d.meal||'—')+(d.time?' '+d.time:''),'車款：'+(d.car||'—')+(d.count?'｜'+d.count+' 台':''),'客人最近訊息：'+(u.texts||[]).slice(-3).join(' / ')].join('\n');
+  o.need.note=[ch_+' 機器人問答','婚期：'+(d.date||(o.date&&!d.iso?o.date+'(從客人訊息讀到)':'')||'—'),'地區：'+(d.area||'—'),'時段：'+(d.meal||'—')+(d.time?' '+d.time:''),'車款：'+(d.car||'—')+(d.count?'｜'+d.count+' 台':''),'客人最近訊息：'+(u.texts||[]).slice(-3).join(' / ')].join('\n');
   ibPin(o,uid);DB.orders[o.id]=o;syncFleet();save();loadOrder();showTab('quote');
   toast(d.meal?'已建立報價：時段先帶預設，地址請再確認':'已建立報價：地址、時段請再確認');
   ibCall({action:'inboxSet',uids:[uid],set:{order:o.id}}).then(r=>{IB=r;renderInbox()}).catch(()=>{});
