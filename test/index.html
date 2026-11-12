@@ -17,7 +17,7 @@
 header.top .orderbar{display:grid!important;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:8px;width:100%;position:relative}
 header.top .orderbar select{grid-column:auto!important;max-width:none!important;width:100%}
 header.top .orderbar .kw-search{grid-column:auto!important;min-width:0;position:relative}
-.quick{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.quick{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.quick .btn{white-space:nowrap;overflow:hidden;padding-inline:2px}@media (max-width:600px){.quick .btn,.quick .kw-date .btn{font-size:12px!important;letter-spacing:-.02em;padding-inline:1px!important}}
 .quick .btn,.quick .kw-date .btn{width:100%;text-align:center;padding-inline:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .quick .kw-date{position:static}.quick .kw-date-pop{left:0;right:0;width:auto}
 .more-wrap{position:fixed;inset:0;z-index:2147483600}.more-wrap[hidden]{display:none!important}
@@ -274,6 +274,7 @@ nav.tabs button{scroll-snap-align:start}
         <div class="kw-date"><button type="button" class="btn sm" id="kwDateBtn" title="依用車日期篩選車趟">用車日</button><div class="kw-date-pop" id="kwDatePop" hidden><div class="dr-bar" data-dr="kw"></div><div class="row" style="justify-content:flex-end;margin-top:8px"><button type="button" class="btn sm pri" id="kwDateShow">列出這段日期的車趟</button></div></div></div>
         <button class="btn" id="btnTodo">待辦</button>
         <button class="btn" id="btnInbox">訊息</button>
+        <button class="btn" id="btnRecent" title="官方 LINE、FB／IG 最近來詢問的客人">最近詢問</button>   <!-- 2026-11-12 Nicole：任何畫面（含同業單沒有詢價頁）都能直接打開最近詢問 -->
         <button class="btn" id="btnMore" aria-haspopup="true">更多</button>
       </div>
     </div>
@@ -933,6 +934,14 @@ nav.tabs button{scroll-snap-align:start}
 <style>#inboxModal .ibBox,#annModal .ibBox{max-width:980px;margin:0 auto;background:var(--bg);border-radius:14px;padding:18px}
 #ibChips{gap:6px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-bottom:10px;padding-bottom:2px}#ibChips::-webkit-scrollbar{display:none}#ibChips .btn{flex:0 0 auto;white-space:nowrap}
 @media (max-width:820px){#inboxModal,#annModal{padding:10px 8px!important}#inboxModal .ibBox,#annModal .ibBox{padding:14px 12px;min-height:calc(100vh - 20px);min-height:calc(100dvh - 20px)}}</style>
+<!-- 2026-11-12 Nicole：最近詢問獨立視窗（功能按鈕「最近詢問」） -->
+<div id="recentModal" hidden style="position:fixed;inset:0;z-index:61;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px"><div style="max-width:760px;margin:0 auto;position:relative"><div class="row" style="justify-content:flex-end;margin-bottom:6px"><button type="button" class="btn sm" id="recentModalClose">關閉</button></div><div id="recentModalBox"></div></div></div>
+<script>(function(){var M=document.getElementById('recentModal'),B=document.getElementById('recentModalBox'),ph=null;
+  function open(){var c=document.getElementById('recentCard');if(!c||!M)return;if(!ph){ph=document.createComment('recentCard');}if(c.parentNode!==B){c.parentNode.insertBefore(ph,c);B.appendChild(c)}var l=document.getElementById('recentList'),f=document.getElementById('recentFold');if(l&&l.hidden&&f)f.click();M.hidden=false;document.body.style.overflow='hidden'}
+  function close(){var c=document.getElementById('recentCard');M.hidden=true;document.body.style.overflow='';if(c&&ph&&ph.parentNode){ph.parentNode.insertBefore(c,ph);ph.parentNode.removeChild(ph)}}
+  document.addEventListener('click',function(e){var t=e.target;if(t.closest&&t.closest('#btnRecent')){open();return}if(t.id==='recentModalClose'||t===M){close();return}
+    if(!M.hidden&&t.closest&&t.closest('#recentModal button')&&/建立報價|開啟報價/.test(t.textContent||''))setTimeout(close,0)});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!M.hidden)close()})})();</script>
 <div id="inboxModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);overflow:auto;padding:24px 16px">
   <div class="ibBox">
     <div class="row" style="justify-content:space-between;flex-wrap:nowrap;gap:8px;margin-bottom:10px"><h3 style="margin:0;white-space:nowrap">LINE 訊息</h3><div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm" id="btnInboxReload">重新整理</button><button class="btn sm" id="btnInboxClose">關閉</button></div></div>
