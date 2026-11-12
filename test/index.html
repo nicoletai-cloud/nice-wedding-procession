@@ -3753,7 +3753,12 @@ function renderRecent(){const el=$('recentList');if(!el)return;
 /* 2026-11-12 Nicole：從「最近詢問」開的報價，把客人的聊天室記在訂單上（官方 LINE 聊天室網址＋來源 ID），客人之後改名也找得到、傳得到 */
 function ibPin(x,uid){if(!x||!x.c||!uid)return false;let ch=false;if(!x.c.ibUid){x.c.ibUid=uid;ch=true}
   return ch}   /* 2026-11-12 Nicole：客人編號只記在系統（不是可點的網址），不動「官方 LINE 聊天室網址」欄 */
-function ibQuote(uid){const u=IB.find(x=>x.uid===uid);if(!u)return;$('inboxModal').hidden=true;
+/* 2026-11-12 Nicole：建立報價前先確認這位客人是不是剛被別台裝置建立過報價（同一個帳號只建一張，避免重複） */
+async function ibQuote(uid){let u=IB.find(x=>x.uid===uid);if(!u)return;const mine=()=>Object.values(DB.orders).find(x=>x&&!x.lost&&x.c&&x.c.ibUid===uid);
+  if(!u.order||!DB.orders[u.order]){let l=mine();if(!l){toast('確認中…');try{IB=await ibCall({action:'inbox'})}catch(_){}u=IB.find(x=>x.uid===uid)||u;if(u.order&&!DB.orders[u.order]){try{await syncFresh()}catch(_){}}l=mine()}
+    if(!(u.order&&DB.orders[u.order])&&l){u.order=l.id;toast('這位客人已經有報價，直接開啟')}}
+  ibQuote0(uid)}
+function ibQuote0(uid){const u=IB.find(x=>x.uid===uid);if(!u)return;$('inboxModal').hidden=true;
   if(u.order&&DB.orders[u.order]){o=DB.orders[u.order];DB.cur=o.id;let ch=ibPin(o,uid);const hd=!o.date&&ibDateOf(u);if(hd){o.date=hd;ch=true;toast('已帶入客人說的婚期 '+hd.slice(5).replace('-','/')+'，請再確認')}{const ti=ibInfoOf(u),c=o.c,got=[];if(!c.meet&&ti.groom){c.meet=ti.groom;o.cityA=countyOf(c.meet);got.push('男方')}if(!c.wed&&ti.bride){c.wed=ti.bride;o.cityB=countyOf(c.wed);got.push('女方')}if(!c.o1&&ti.venue){c.o1=ti.venue;c.o1L='宴客餐廳';got.push('餐廳')}if(!c.start&&ti.start){c.start=ti.start;if(ti.end&&!c.end)c.end=ti.end;got.push('時間')}if(got.length){ch=true;setTimeout(()=>toast('已帶入客人說的'+got.join('、')+'，請再確認'),1200)}}if(ch)save();else store('nwcw_orders',DB);loadOrder();showTab('quote');return}
   const d=(u.bot&&u.bot.data)||{};o=newOrder();o.sample=false;
   const ch_=ibChOf(uid)||'LINE';o.c.chatName=String(u.name||'').replace(/^\((fb|ig)\)/,'');o.c.channel=ch_;{const hd=ibDateOf(u);if(hd)o.date=hd}
