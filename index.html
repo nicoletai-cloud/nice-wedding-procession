@@ -1706,8 +1706,12 @@ function quoteText(x,lang){const b=quoteBody(x,lang);const ref=qRef(x,b);return 
 const QREF_RE=/\n*(?:報價編號：|Quote ref: |見積番号：)Q-[A-Z0-9]{4,5}-\d+$/;
 function qVer(q,i){if(q.v)return q.v;const m=String(q.text||'').match(/Q-[A-Z0-9]{4,5}-(\d+)$/);return m?+m[1]:i+1}
 function qRef(x,body){if(!x||x.sample)return'';const c=findCode(x);if(!c)return'';const Q=x.quotes||[],last=Q[Q.length-1];
-  const v=last&&String(last.text||'').replace(QREF_RE,'')===body?qVer(last,Q.length-1):Q.reduce((a,q,i)=>Math.max(a,qVer(q,i)),0)+1;return `Q-${c}-${v}`}
-function quoteBody(x,lang){if(x&&x.bus)return busQuote(x,lang);if(lang==='zh'&&!x.__alt&&qAltList(x).length)return quoteMultiBody(x);   /* 2026-10-28 Nicole：遊覽車接駁單 */
+  const v=last&&qHalf(String(last.text||'').replace(QREF_RE,''),lang_q(body))===body?qVer(last,Q.length-1):Q.reduce((a,q,i)=>Math.max(a,qVer(q,i)),0)+1;return `Q-${c}-${v}`}
+/* 2026-11-12 Nicole：報價的括號一律半形 ( ) */
+function lang_q(b){return /見積|お見積/.test(String(b||''))?'ja':'zh'}
+function qHalf(t,lang){return lang==='ja'?t:String(t||'').replace(/（/g,'(').replace(/）/g,')')}
+function quoteBody(x,lang){return qHalf(quoteBody0(x,lang),lang)}
+function quoteBody0(x,lang){if(x&&x.bus)return busQuote(x,lang);if(lang==='zh'&&!x.__alt&&qAltList(x).length)return quoteMultiBody(x);   /* 2026-10-28 Nicole：遊覽車接駁單 */
  const r=calc(x),f=feeLines(x,lang);const rt=routeLine(x,lang),tk=num(x.tripKm),zb=num(S.zBase||35),zr=num(S.zRate||500),zu=num(S.zRound)||0,oneWay=+x.hours===0;
  const kmL=lang==='en'?[rt?`Route: ${rt}`:'',tk?`Estimated distance: approx. ${tk} km`:'']:lang==='ja'?[rt?`ルート：${rt}`:'',tk?`予想走行距離：約 ${tk}km`:'']:[rt?`預計流程：${rt}`:'',tk?`預估里程：約 ${tk} 公里`:''];
  const kmN=oneWay?'':tk&&tk<=zb?(lang==='en'?`* Estimated ${tk} km, within ${zb} km — no mileage fee.`:lang==='ja'?`＊予想走行距離 約${tk}km（${zb}km以内）のため、距離料金はかかりません。`:`＊預估約 ${tk} 公里，在 ${zb} 公里內，不另收里程費`):lang==='en'?`* Includes up to ${zb} km; beyond that, ${money(zr,lang)} per car for every additional ${zb} km (pro-rated${zu?`, rounded up to ${money(zu,lang)}`:''}).`:lang==='ja'?`＊${zb}km以内の料金です。超過分は${zb}kmごとに1台 ${money(zr,lang)}（按分${zu?`、${money(zu,lang)}単位で切り上げ`:''}）。`:`＊用車含 ${zb} 公里內，超過加收里程費用`;const d=x.date?fmtDate(x.date)+(()=>{const p=dparts(x.date);return lang==='en'?` (${WD.en[p.w]})`:`（${WD[lang][p.w]}）`})():(lang==='en'?'TBD':lang==='ja'?'未定':'未定');
@@ -3717,9 +3721,23 @@ function ibTxtDate(t){t=String(t||'').replace(/[０-９]/g,c=>String.fromCharCod
   if(m){y=+m[1];mo=+m[2];d=+m[3]}else{m=t.match(/(?:^|[^\d\/:.$])(\d{1,2})\s*(?:\/|月)\s*(\d{1,2})(?![\d:])/);if(!m)return '';mo=+m[1];d=+m[2];y=now.getFullYear();if(new Date(y,mo-1,d)<t0)y++}
   if(mo<1||mo>12||d<1||d>31)return '';const r=y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');return new Date(r+'T00:00:00')<t0?'':r}
 function ibDateOf(u){const d=(u&&u.bot&&u.bot.data)||{};return d.iso||(u&&u.hintDate)||ibTxtDate((u&&u.texts||[]).join('\n'))}
+/* 2026-11-12 Nicole：客人自己打的男方／女方／餐廳／台數／時間，也帶進報價（機器人沒問到時） */
+function ibTxtInfo(t){t=String(t||'').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-65248)).replace(/：/g,':');const r={},cut=v=>String(v||'').split(/\n|，|,|。|;|；/)[0].replace(/^[\s:]+/,'').trim().slice(0,40);
+  let m=t.match(/(?:男方|新郎家?|男家)(?:\s*(?:家|地址))?(?:\s*[:\s]|在)\s*([^\n]+)/);if(m&&cut(m[1]))r.groom=cut(m[1]);
+  m=t.match(/(?:女方|新娘家?|女家)(?:\s*(?:家|地址))?(?:\s*[:\s]|在)\s*([^\n]+)/);if(m&&cut(m[1]))r.bride=cut(m[1]);
+  m=t.match(/(?:餐廳|宴客|喜宴|婚宴)(?:\s*地點)?(?:\s*[:\s]|在)\s*([^\n]+)/);if(m&&cut(m[1]))r.venue=cut(m[1]);
+  m=t.match(/(\d{1,2})\s*台(?!北|中|南|東|灣)/);if(m&&+m[1]>0&&+m[1]<=30)r.count=+m[1];
+  if(/特斯拉|tesla|model\s*[xsy3]/i.test(t))r.brand='tesla';else if(/賓士|benz|w2\d\d|s-?class|e-?class/i.test(t))r.brand='benz';
+  const tm=[...t.matchAll(/(?:^|[^\d\/.])(\d{1,2})[:點](\d{2})?/g)].map(x=>({h:+x[1],mm:x[2]?+x[2]:0,s:x.index})).filter(x=>x.h<=23&&x.mm<60);
+  const lineOf=x=>{const a=t.lastIndexOf('\n',x.s)+1,b=t.indexOf('\n',x.s);return t.slice(a,b<0?t.length:b)};
+  const st=tm.find(x=>/出發|集合|開始|迎娶|接/.test(lineOf(x)))||tm[0],en=tm.find(x=>x!==st&&/回程|結束|回到|到|送/.test(lineOf(x)))||tm.find(x=>x!==st);
+  const f=(x,base)=>{let h=x.h;if(base!=null&&h<base&&h+12<=23)h+=12;return String(h).padStart(2,'0')+':'+String(x.mm).padStart(2,'0')};
+  if(st&&/出發|集合|開始|迎娶|\d[:點]/.test(lineOf(st)))r.start=f(st);if(st&&en)r.end=f(en,st.h);
+  return r}
+function ibInfoOf(u){return Object.assign({},ibTxtInfo((u&&u.texts||[]).join('\n')),(u&&u.hintInfo)||{})}
 function ibChOf(uid){return /^fb:/.test(uid)?'FB':/^ig:/.test(uid)?'IG':/^U[0-9a-f]{32}$/.test(uid)?'LINE':''}
 function ibKnown(u){const d=(u.bot&&u.bot.data)||{},L=[];const dt=d.iso?(d.show||d.iso):((d.month||'').trim()||(d.date&&d.date!=='未定'?d.date:''));
-  if(dt)L.push('婚期 '+dt);else{const hd=ibDateOf(u);if(hd)L.push('婚期 '+hd.slice(5).replace('-','/')+'(客人訊息)')}if(d.groomAddr||d.groom)L.push('男方 '+(d.groomAddr||d.groom));if(d.brideAddr||d.bride)L.push('女方 '+(d.brideAddr||d.bride));if(d.venue)L.push('餐廳 '+d.venue);
+  if(dt)L.push('婚期 '+dt);else{const hd=ibDateOf(u);if(hd)L.push('婚期 '+hd.slice(5).replace('-','/')+'(客人訊息)')};if(!d.groom&&!d.bride&&!d.area){const ti=ibInfoOf(u);if(ti.groom)L.push('男方 '+ti.groom);if(ti.bride)L.push('女方 '+ti.bride);if(ti.venue)L.push('餐廳 '+ti.venue);if(ti.start)L.push(ti.start+(ti.end?'-'+ti.end:''));if(ti.count)L.push(ti.count+' 台')}if(d.groomAddr||d.groom)L.push('男方 '+(d.groomAddr||d.groom));if(d.brideAddr||d.bride)L.push('女方 '+(d.brideAddr||d.bride));if(d.venue)L.push('餐廳 '+d.venue);
   if(!d.groom&&!d.bride&&!d.venue&&d.area)L.push('地區 '+d.area);if(d.meal||d.time)L.push([d.meal,d.time].filter(Boolean).join(' '));if(d.car)L.push('車款 '+d.car);if(d.count)L.push(d.count+' 台');return L}
 function renderRecent(){const el=$('recentList');if(!el)return;
   const pick=ch=>IB.filter(u=>{const c=ibChOf(u.uid);return (ch==='LINE'?c==='LINE':(c==='FB'||c==='IG'))&&!u.vendor&&!u.spam&&['禮車',''].includes(u.cat||'')}).sort((a,b)=>(b.last||0)-(a.last||0)).slice(0,5);
@@ -3735,15 +3753,16 @@ function renderRecent(){const el=$('recentList');if(!el)return;
 function ibPin(x,uid){if(!x||!x.c||!uid)return false;let ch=false;if(!x.c.ibUid){x.c.ibUid=uid;ch=true}
   return ch}   /* 2026-11-12 Nicole：客人編號只記在系統（不是可點的網址），不動「官方 LINE 聊天室網址」欄 */
 function ibQuote(uid){const u=IB.find(x=>x.uid===uid);if(!u)return;$('inboxModal').hidden=true;
-  if(u.order&&DB.orders[u.order]){o=DB.orders[u.order];DB.cur=o.id;let ch=ibPin(o,uid);const hd=!o.date&&ibDateOf(u);if(hd){o.date=hd;ch=true;toast('已帶入客人說的婚期 '+hd.slice(5).replace('-','/')+'，請再確認')}if(ch)save();else store('nwcw_orders',DB);loadOrder();showTab('quote');return}
+  if(u.order&&DB.orders[u.order]){o=DB.orders[u.order];DB.cur=o.id;let ch=ibPin(o,uid);const hd=!o.date&&ibDateOf(u);if(hd){o.date=hd;ch=true;toast('已帶入客人說的婚期 '+hd.slice(5).replace('-','/')+'，請再確認')}{const ti=ibInfoOf(u),c=o.c,got=[];if(!c.meet&&ti.groom){c.meet=ti.groom;o.cityA=countyOf(c.meet);got.push('男方')}if(!c.wed&&ti.bride){c.wed=ti.bride;o.cityB=countyOf(c.wed);got.push('女方')}if(!c.o1&&ti.venue){c.o1=ti.venue;c.o1L='宴客餐廳';got.push('餐廳')}if(!c.start&&ti.start){c.start=ti.start;if(ti.end&&!c.end)c.end=ti.end;got.push('時間')}if(got.length){ch=true;setTimeout(()=>toast('已帶入客人說的'+got.join('、')+'，請再確認'),1200)}}if(ch)save();else store('nwcw_orders',DB);loadOrder();showTab('quote');return}
   const d=(u.bot&&u.bot.data)||{};o=newOrder();o.sample=false;
   const ch_=ibChOf(uid)||'LINE';o.c.chatName=String(u.name||'').replace(/^\((fb|ig)\)/,'');o.c.channel=ch_;{const hd=ibDateOf(u);if(hd)o.date=hd}
   o.need.dateSt=d.st||'';o.need.month=d.iso?'':(d.month||'').trim();o.need.brand={tesla:'特斯拉',benz:'賓士',other:'其他'}[d.brand]||'';
   o.cars={X:0,S:0,Y:0,'3':0};   // 新訂單車輛一律從 0 開始，不預選
   o.c.meet=d.groomAddr||d.groom||'';o.c.wed=d.brideAddr||d.bride||'';if(d.venue){o.c.o1=d.venueAddr||d.venue;o.c.o1L='宴客餐廳'}
   if(d.meal==='午宴'){o.c.start='08:30';o.c.end='11:30'}else if(d.meal==='晚宴'){o.c.start='14:30';o.c.end='17:30'}
+  const ti_=ibInfoOf(u);if(!o.c.meet&&ti_.groom)o.c.meet=ti_.groom;if(!o.c.wed&&ti_.bride)o.c.wed=ti_.bride;if(!o.c.o1&&ti_.venue){o.c.o1=ti_.venue;o.c.o1L='宴客餐廳'}if(!d.meal&&ti_.start){o.c.start=ti_.start;if(ti_.end)o.c.end=ti_.end}if(!o.need.brand&&ti_.brand)o.need.brand={tesla:'特斯拉',benz:'賓士'}[ti_.brand]||'';   /* 2026-11-12 客人自己打的資料 */
   o.cityA=countyOf(o.c.meet);o.cityB=countyOf(o.c.wed);
-  o.need.note=[ch_+' 機器人問答','婚期：'+(d.date||(o.date&&!d.iso?o.date+'(從客人訊息讀到)':'')||'—'),'地區：'+(d.area||'—'),'時段：'+(d.meal||'—')+(d.time?' '+d.time:''),'車款：'+(d.car||'—')+(d.count?'｜'+d.count+' 台':''),'客人最近訊息：'+(u.texts||[]).slice(-3).join(' / ')].join('\n');
+  o.need.note=[ch_+' 機器人問答','婚期：'+(d.date||(o.date&&!d.iso?o.date+'(從客人訊息讀到)':'')||'—'),'地區：'+(d.area||'—'),'時段：'+(d.meal||'—')+(d.time?' '+d.time:''),'車款：'+(d.car||'—')+(d.count?'｜'+d.count+' 台':''),(Object.keys(ti_).length?'客人訊息讀到：'+[ti_.groom&&'男方 '+ti_.groom,ti_.bride&&'女方 '+ti_.bride,ti_.venue&&'餐廳 '+ti_.venue,ti_.start&&ti_.start+(ti_.end?'-'+ti_.end:''),ti_.count&&ti_.count+' 台'].filter(Boolean).join('｜'):''),'客人最近訊息：'+(u.texts||[]).slice(-3).join(' / ')].join('\n');
   ibPin(o,uid);DB.orders[o.id]=o;syncFleet();save();loadOrder();showTab('quote');
   toast(d.meal?'已建立報價：時段先帶預設，地址請再確認':'已建立報價：地址、時段請再確認');
   ibCall({action:'inboxSet',uids:[uid],set:{order:o.id}}).then(r=>{IB=r;renderInbox()}).catch(()=>{});
