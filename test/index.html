@@ -3728,6 +3728,7 @@ function renderRecent(){const el=$('recentList');if(!el)return;
     return `<div class="todo-row" style="cursor:default;align-items:flex-start"><div class="m" style="flex:1;min-width:0"><div><b>${esc(String(u.name||'（讀不到名字）').replace(/^\((fb|ig)\)/,''))}</b> <span class="sub">${ibChOf(u.uid)}｜${ibAgo(u.last||u.since||Date.now())}${u.pending?'｜待回覆':''}${u.cat&&u.cat!=='禮車'?'｜'+esc(u.cat):''}</span></div>`+
       (k.length?`<div class="sub" style="color:#8a6a3a">${esc(k.join('｜'))}</div>`:'<div class="sub">機器人還沒問到資料</div>')+
       (last?`<div class="sub" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(last)}</div>`:'')+
+      (u.nameHint&&!u.order&&DB.orders[u.nameHint]?`<div class="sub" style="color:var(--warn)">暱稱跟 ${esc(orderNo(DB.orders[u.nameHint]))} 的客人一樣，可能是同一位 <button class="btn sm" data-ibbind="${esc(u.uid)}" style="margin-left:4px">是本人，綁定</button></div>`:'')+   /* 2026-11-12 Nicole：系統只認帳號；名字相同由我確認後綁定 */
       `</div><button class="btn sm${done?'':' pri'}" data-ibq="${esc(u.uid)}" style="flex:none">${done?'開啟報價':'建立報價'}</button></div>`};
   const sec=(t,L)=>`<div style="margin-bottom:6px"><div class="sub" style="font-weight:700;margin:4px 0 6px">${t}</div>${L.length?L.map(row).join(''):'<p class="hint" style="margin:0 0 8px">最近沒有對話</p>'}</div>`;
   el.innerHTML=sec('官方 LINE',pick('LINE'))+sec('FB／IG',pick('META'))}
@@ -3748,6 +3749,11 @@ function ibQuote(uid){const u=IB.find(x=>x.uid===uid);if(!u)return;$('inboxModal
   toast(d.meal?'已建立報價：時段先帶預設，地址請再確認':'已建立報價：地址、時段請再確認');
   ibCall({action:'inboxSet',uids:[uid],set:{order:o.id}}).then(r=>{IB=r;renderInbox()}).catch(()=>{});
   if(o.c.meet&&o.c.wed)setTimeout(()=>{try{calcKm()}catch(_){}},300)}
+/* 2026-11-12 Nicole：名字相同的新好友，確認是本人 → 綁定到那張訂單（記客人編號、收件匣連到訂單、機器人停止問新客問題） */
+function ibBind(uid){const u=IB.find(x=>x.uid===uid);const x=u&&DB.orders[u.nameHint];if(!x)return;if(!confirm('確認 '+(u.name||'這位客人')+' 就是 '+orderNo(x)+' 的客人？\n\n按確定後會把這個 LINE 帳號綁定到這張訂單，機器人不會再問新客人的問題。'))return;
+  if(ibPin(x,uid)){x.updated=Date.now();DB.orders[x.id]=x;store('nwcw_orders',DB);pushSync()}
+  ibCall({action:'inboxSet',uids:[uid],set:{bind:x.id}}).then(r=>{IB=r;renderInbox();toast('已綁定到 '+orderNo(x))}).catch(()=>toast('綁定失敗，請再試一次'))}
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-ibbind]');if(!t)return;e.preventDefault();e.stopPropagation();ibBind(t.dataset.ibbind)});
 async function ibSet(uids,set){try{IB=await ibCall({action:'inboxSet',uids,set});ibSel.clear();renderInbox();toast(set.done?'已標記已回覆':'已更新')}catch(e){toast('更新失敗，請再試一次')}}
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset)return;if(t.dataset.ibsel){t.checked?ibSel.add(t.dataset.ibsel):ibSel.delete(t.dataset.ibsel);renderInbox()}else if(t.dataset.ibcat!==undefined&&t.dataset.ibcat){ibSet([t.dataset.ibcat],{cat:t.value||'其他'})}});
 
