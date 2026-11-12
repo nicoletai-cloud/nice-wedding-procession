@@ -3717,8 +3717,12 @@ function renderRecent(){const el=$('recentList');if(!el)return;
       `</div><button class="btn sm${done?'':' pri'}" data-ibq="${esc(u.uid)}" style="flex:none">${done?'開啟報價':'建立報價'}</button></div>`};
   const sec=(t,L)=>`<div style="margin-bottom:6px"><div class="sub" style="font-weight:700;margin:4px 0 6px">${t}</div>${L.length?L.map(row).join(''):'<p class="hint" style="margin:0 0 8px">最近沒有對話</p>'}</div>`;
   el.innerHTML=sec('官方 LINE',pick('LINE'))+sec('FB／IG',pick('META'))}
+/* 2026-11-12 Nicole：從「最近詢問」開的報價，把客人的聊天室記在訂單上（官方 LINE 聊天室網址＋來源 ID），客人之後改名也找得到、傳得到 */
+function ibPin(x,uid){if(!x||!x.c||!uid)return false;let ch=false;if(!x.c.ibUid){x.c.ibUid=uid;ch=true}
+  if(/^U[0-9a-f]{32}$/.test(uid)&&!String(x.c.lineChat||'').includes(uid)&&!/U[0-9a-f]{32}/.test(String(x.c.lineChat||''))){x.c.lineChat='https://chat.line.biz/Ue90e29f8f9c9830e188d84fdbe7138ff/chat/'+uid;ch=true}
+  return ch}
 function ibQuote(uid){const u=IB.find(x=>x.uid===uid);if(!u)return;$('inboxModal').hidden=true;
-  if(u.order&&DB.orders[u.order]){o=DB.orders[u.order];DB.cur=o.id;store('nwcw_orders',DB);loadOrder();showTab('quote');return}
+  if(u.order&&DB.orders[u.order]){o=DB.orders[u.order];DB.cur=o.id;if(ibPin(o,uid))save();else store('nwcw_orders',DB);loadOrder();showTab('quote');return}
   const d=(u.bot&&u.bot.data)||{};o=newOrder();o.sample=false;
   const ch_=ibChOf(uid)||'LINE';o.c.chatName=String(u.name||'').replace(/^\((fb|ig)\)/,'');o.c.channel=ch_;if(d.iso)o.date=d.iso;
   o.need.dateSt=d.st||'';o.need.month=d.iso?'':(d.month||'').trim();o.need.brand={tesla:'特斯拉',benz:'賓士',other:'其他'}[d.brand]||'';
@@ -3727,7 +3731,7 @@ function ibQuote(uid){const u=IB.find(x=>x.uid===uid);if(!u)return;$('inboxModal
   if(d.meal==='午宴'){o.c.start='08:30';o.c.end='11:30'}else if(d.meal==='晚宴'){o.c.start='14:30';o.c.end='17:30'}
   o.cityA=countyOf(o.c.meet);o.cityB=countyOf(o.c.wed);
   o.need.note=[ch_+' 機器人問答','婚期：'+(d.date||'—'),'地區：'+(d.area||'—'),'時段：'+(d.meal||'—')+(d.time?' '+d.time:''),'車款：'+(d.car||'—')+(d.count?'｜'+d.count+' 台':''),'客人最近訊息：'+(u.texts||[]).slice(-3).join(' / ')].join('\n');
-  DB.orders[o.id]=o;syncFleet();save();loadOrder();showTab('quote');
+  ibPin(o,uid);DB.orders[o.id]=o;syncFleet();save();loadOrder();showTab('quote');
   toast(d.meal?'已建立報價：時段先帶預設，地址請再確認':'已建立報價：地址、時段請再確認');
   ibCall({action:'inboxSet',uids:[uid],set:{order:o.id}}).then(r=>{IB=r;renderInbox()}).catch(()=>{});
   if(o.c.meet&&o.c.wed)setTimeout(()=>{try{calcKm()}catch(_){}},300)}
