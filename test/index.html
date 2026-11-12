@@ -357,7 +357,7 @@ nav.tabs button{scroll-snap-align:start}
           <div class="fields">
             <label class="f">客人顯示名稱（LINE / FB / IG）<input id="q_chat" data-b="c.chatName" placeholder="對話裡的名字"></label>
             <label class="f">聯絡管道<select id="q_ch" data-b="c.channel"><option value="LINE">官方 LINE</option><option value="私人LINE">私人 LINE（我的個人帳號）</option><option>FB</option><option>IG</option><option value="其他">私客其他管道（電話、簡訊等）</option></select></label>
-            <label class="f wide">官方 LINE 聊天室網址 <small class="hint" style="margin:0">機器人比對不到客人時，到 chat.line.biz 打開這位客人的聊天室，把網址貼上</small><input id="q_linechat" data-b="c.lineChat" placeholder="https://chat.line.biz/…/chat/U…" autocomplete="off"></label>
+            <label class="f wide">官方 LINE 聊天室網址 <small class="hint" style="margin:0">機器人比對不到客人時，到 chat.line.biz 打開這位客人的聊天室，把網址貼上</small><input id="q_linechat" data-b="c.lineChat" placeholder="https://chat.line.biz/…/chat/U…" autocomplete="off"><small class="hint" id="q_ibuid" style="margin:4px 0 0;display:none"></small></label>
             <div class="f" style="grid-column:1/-1"><span>同一組新人的其他對話 <small class="hint" style="margin:0">FB／IG／另一個 LINE，機器人會認成同一組客人</small></span><div id="q_chats"></div><div><button class="btn sm" id="btnChatAdd" type="button">＋ 加對話</button></div></div>
             <label class="f">用車日期<input type="date" id="q_date" data-b="date"></label>
             <label class="f noBus">用車時數
@@ -2574,7 +2574,7 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   if(PBLK_OPEN[o.id])PBLK_OPEN[o.id]=Math.max(0,PBLK_OPEN[o.id]-1);o.updated=Date.now();save();renderAll();try{renderPlaceBlocks()}catch(_){}try{renderRtChips()}catch(_){}toast('已刪除 '+del+' 地點')});
 {const _raZ=renderAll;renderAll=function(){_raZ.apply(this,arguments);try{const w=$('zRateXWrap');if(w&&o)w.hidden=!(carCount(o)-teslaN(o)>0)}catch(_){}}}
 function oTypeSplit(x){const c=x&&x.c;if(!c)return;for(let i=1;i<=5;i++){const l=String(c['o'+i+'L']||'').trim(),m=l.match(/^(迎娶地點|入房地點|宴客地點|證婚地點|儀式地點|其他地點)(?:・(.*))?$/);if(m&&!c['o'+i+'T']){c['o'+i+'T']=m[1]==='儀式地點'?'證婚地點':m[1];c['o'+i+'L']=(m[2]||'').trim()}}}   /* 2026-10-24 新人資料：停靠地點改成「類型下拉＋名稱」 */
-function fillInputs(){try{oTypeSplit(o)}catch(_){}try{if(o&&o.c&&!o.c.wedT)o.c.wedT='迎娶地點'}catch(_){}setTimeout(()=>{try{renderPlaceBlocks()}catch(_){}try{renderRtChips()}catch(_){}},0);if(DN_DIRTY&&(!o||o.id!==DN_ID))dnDirty(false);try{renderXList()}catch(e){}document.querySelectorAll('[data-b]').forEach(el=>{if(DN_DIRTY&&el.closest('#drvNoteCard'))return;const v=getPath(o,el.dataset.b);if(el.hasAttribute('data-bool'))el.value=v?'1':'0';else el.value=v==null||(el.dataset.b==='tripKm'&&!+v)?'':v});try{nlAll()}catch(e){}
+function fillInputs(){try{const z=$('q_ibuid');if(z){const u=o&&o.c&&o.c.ibUid||'';z.style.display=u?'block':'none';z.textContent=u?'系統已記錄客人編號（從最近詢問建立，系統自動比對用，不用修改）：'+u:''}}catch(_){}try{oTypeSplit(o)}catch(_){}try{if(o&&o.c&&!o.c.wedT)o.c.wedT='迎娶地點'}catch(_){}setTimeout(()=>{try{renderPlaceBlocks()}catch(_){}try{renderRtChips()}catch(_){}},0);if(DN_DIRTY&&(!o||o.id!==DN_ID))dnDirty(false);try{renderXList()}catch(e){}document.querySelectorAll('[data-b]').forEach(el=>{if(DN_DIRTY&&el.closest('#drvNoteCard'))return;const v=getPath(o,el.dataset.b);if(el.hasAttribute('data-bool'))el.value=v?'1':'0';else el.value=v==null||(el.dataset.b==='tripKm'&&!+v)?'':v});try{nlAll()}catch(e){}
   document.querySelectorAll('[data-s]').forEach(el=>{el.value=S[el.dataset.s]==null?'':S[el.dataset.s]});
   try{renderFormPlaces()}catch(e){}
   try{renderChats()}catch(e){}
@@ -3719,8 +3719,7 @@ function renderRecent(){const el=$('recentList');if(!el)return;
   el.innerHTML=sec('官方 LINE',pick('LINE'))+sec('FB／IG',pick('META'))}
 /* 2026-11-12 Nicole：從「最近詢問」開的報價，把客人的聊天室記在訂單上（官方 LINE 聊天室網址＋來源 ID），客人之後改名也找得到、傳得到 */
 function ibPin(x,uid){if(!x||!x.c||!uid)return false;let ch=false;if(!x.c.ibUid){x.c.ibUid=uid;ch=true}
-  if(/^U[0-9a-f]{32}$/.test(uid)&&!String(x.c.lineChat||'').includes(uid)&&!/U[0-9a-f]{32}/.test(String(x.c.lineChat||''))){x.c.lineChat='https://chat.line.biz/Ue90e29f8f9c9830e188d84fdbe7138ff/chat/'+uid;ch=true}
-  return ch}
+  return ch}   /* 2026-11-12 Nicole：客人編號只記在系統（不是可點的網址），不動「官方 LINE 聊天室網址」欄 */
 function ibQuote(uid){const u=IB.find(x=>x.uid===uid);if(!u)return;$('inboxModal').hidden=true;
   if(u.order&&DB.orders[u.order]){o=DB.orders[u.order];DB.cur=o.id;if(ibPin(o,uid))save();else store('nwcw_orders',DB);loadOrder();showTab('quote');return}
   const d=(u.bot&&u.bot.data)||{};o=newOrder();o.sample=false;
