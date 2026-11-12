@@ -344,8 +344,11 @@ nav.tabs button{scroll-snap-align:start}
   <!-- 1 報價 -->
   <section class="tab" id="tab-quote">
     <div class="card" id="recentCard" style="margin-bottom:14px">
-      <h3>最近詢問 <small>官方 LINE、FB／IG 各最近 5 位禮車（含未分類）客人；按「建立報價」帶入已知資料</small></h3>
+      <h3 style="display:flex;align-items:center;gap:8px"><span style="flex:1">最近詢問 <small id="recentSub">官方 LINE、FB／IG 各最近 5 位禮車（含未分類）客人；按「建立報價」帶入已知資料</small></span><button type="button" class="btn sm" id="recentFold" aria-expanded="false">展開</button></h3>
       <div id="recentList"><p class="hint">讀取中…</p></div>
+      <script>/* 2026-11-12 Nicole：最近詢問可以收起，預設收起，記住上次的選擇 */(function(){var b=document.getElementById('recentFold'),l=document.getElementById('recentList');if(!b||!l)return;var open=false;try{open=localStorage.getItem('nwcw_recent_open')==='1'}catch(e){}
+        function set(v){open=v;l.hidden=!v;var sb=document.getElementById('recentSub');if(sb)sb.hidden=!v;b.textContent=v?'收起':'展開';b.setAttribute('aria-expanded',v?'true':'false');try{localStorage.setItem('nwcw_recent_open',v?'1':'0')}catch(e){}}
+        set(open);b.addEventListener('click',function(){set(!open)})})();</script>
     </div>
     <div class="grid">
       <div class="stack">
