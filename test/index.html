@@ -345,7 +345,7 @@ nav.tabs button{scroll-snap-align:start}
   <!-- 1 報價 -->
   <section class="tab" id="tab-quote">
     <div class="card" id="recentCard" style="margin-bottom:14px">
-      <h3 style="display:flex;align-items:center;gap:8px"><span style="flex:1">最近詢問 <small id="recentSub">官方 LINE、FB／IG 各最近 5 位禮車（含未分類）客人；按「建立報價」帶入已知資料</small></span><button type="button" class="btn sm" id="recentFold" aria-expanded="false">展開</button></h3>
+      <h3 style="display:flex;align-items:center;gap:8px"><span style="flex:1">最近詢問 <small id="recentSub">官方 LINE、FB／IG 各最近 5 位禮車、機場接送、包車（含未分類）客人；禮車按「建立報價」、機場接送按「建立接送報價」帶入已知資料</small></span><button type="button" class="btn sm" id="recentFold" aria-expanded="false">展開</button></h3>
       <div id="recentList"><p class="hint">讀取中…</p></div>
       <script>/* 2026-11-12 Nicole：最近詢問可以收起，預設收起，記住上次的選擇 */(function(){var b=document.getElementById('recentFold'),l=document.getElementById('recentList');if(!b||!l)return;var open=false;try{open=localStorage.getItem('nwcw_recent_open')==='1'}catch(e){}
         function set(v){open=v;l.hidden=!v;var sb=document.getElementById('recentSub');if(sb)sb.hidden=!v;b.textContent=v?'收起':'展開';b.setAttribute('aria-expanded',v?'true':'false');try{localStorage.setItem('nwcw_recent_open',v?'1':'0')}catch(e){}}
@@ -3736,18 +3736,24 @@ function ibTxtInfo(t){t=String(t||'').replace(/[０-９]/g,c=>String.fromCharCod
   if(st&&/出發|集合|開始|迎娶|\d[:點]/.test(lineOf(st)))r.start=f(st);if(st&&en)r.end=f(en,st.h);
   return r}
 function ibInfoOf(u){return Object.assign({},ibTxtInfo((u&&u.texts||[]).join('\n')),(u&&u.hintInfo)||{})}
+/* 2026-11-12 Nicole：最近詢問也會有機場接送／包車客人 → 按「建立接送報價」開機場接送工具新報價，帶入客人帳號、名稱和說過的內容 */
+function ibIsAir(u){return !!u&&(u.cat==='接送機'||u.cat==='包車'||(!!u.ab&&u.cat!=='禮車'))}
+function ibAirText(u){const d=(u.ab&&u.ab.data)||{},L=[];const a=[d.date||'',d.flight||'',d.time||'',d.place||'',d.pax?d.pax+'人':'',d.lug||''].filter(Boolean).join(' ');if(a)L.push(a);(u.texts||[]).filter(t=>t&&!/^（.*）$/.test(t)&&!/^#/.test(t)).forEach(t=>{if(!L.includes(t))L.push(t)});return L.join('\n')}
+function ibAir(uid){const u=IB.find(x=>x.uid===uid);if(!u)return;const h={from:'ib',ts:Date.now(),ibUid:uid,channel:ibChOf(uid),chatName:String(u.name||'').replace(/^\((fb|ig)\)/,''),text:ibAirText(u)};try{localStorage.setItem('hhlc_handoff',JSON.stringify(h))}catch(_){}
+  const w=window.open(location.pathname.indexOf('/test/')>=0?'/nice-wedding-car/test/':'/nice-wedding-car/','_blank');if(!w)location.href=location.pathname.indexOf('/test/')>=0?'/nice-wedding-car/test/':'/nice-wedding-car/'}
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-ibair]');if(!t)return;e.preventDefault();e.stopPropagation();ibAir(t.dataset.ibair)});
 function ibChOf(uid){return /^fb:/.test(uid)?'FB':/^ig:/.test(uid)?'IG':/^U[0-9a-f]{32}$/.test(uid)?'LINE':''}
 function ibKnown(u){const d=(u.bot&&u.bot.data)||{},L=[];const dt=d.iso?(d.show||d.iso):((d.month||'').trim()||(d.date&&d.date!=='未定'?d.date:''));
   if(dt)L.push('婚期 '+dt);else{const hd=ibDateOf(u);if(hd)L.push('婚期 '+hd.slice(5).replace('-','/')+'(客人訊息)')};if(!d.groom&&!d.bride&&!d.area){const ti=ibInfoOf(u);if(ti.groom)L.push('男方 '+ti.groom);if(ti.bride)L.push('女方 '+ti.bride);if(ti.venue)L.push('餐廳 '+ti.venue);if(ti.start)L.push(ti.start+(ti.end?'-'+ti.end:''));if(ti.count)L.push(ti.count+' 台')}if(d.groomAddr||d.groom)L.push('男方 '+(d.groomAddr||d.groom));if(d.brideAddr||d.bride)L.push('女方 '+(d.brideAddr||d.bride));if(d.venue)L.push('餐廳 '+d.venue);
-  if(!d.groom&&!d.bride&&!d.venue&&d.area)L.push('地區 '+d.area);if(d.meal||d.time)L.push([d.meal,d.time].filter(Boolean).join(' '));if(d.car)L.push('車款 '+d.car);if(d.count)L.push(d.count+' 台');return L}
+  if(!d.groom&&!d.bride&&!d.venue&&d.area)L.push('地區 '+d.area);if(d.meal||d.time)L.push([d.meal,d.time].filter(Boolean).join(' '));if(d.car)L.push('車款 '+d.car);if(d.count)L.push(d.count+' 台');if(u.ab&&u.ab.data){const a=u.ab.data;L.unshift(u.cat==='包車'?'包車':'機場接送');[a.date&&'日期 '+a.date,a.flight&&'航班 '+a.flight,a.time&&'時間 '+a.time,a.place&&'地點 '+a.place,a.pax&&a.pax+' 人',a.lug&&'行李 '+a.lug].filter(Boolean).forEach(x=>L.push(x))}else if(u.cat==='接送機'||u.cat==='包車')L.unshift(u.cat==='包車'?'包車':'機場接送');return L}
 function renderRecent(){const el=$('recentList');if(!el)return;
-  const pick=ch=>IB.filter(u=>{const c=ibChOf(u.uid);return (ch==='LINE'?c==='LINE':(c==='FB'||c==='IG'))&&!u.vendor&&!u.spam&&['禮車',''].includes(u.cat||'')}).sort((a,b)=>(b.last||0)-(a.last||0)).slice(0,5);
+  const pick=ch=>IB.filter(u=>{const c=ibChOf(u.uid);return (ch==='LINE'?c==='LINE':(c==='FB'||c==='IG'))&&!u.vendor&&!u.spam&&['禮車','','接送機','包車'].includes(u.cat||'')}).sort((a,b)=>(b.last||0)-(a.last||0)).slice(0,5);
   const row=u=>{const k=ibKnown(u),done=u.order&&DB.orders[u.order];const last=(u.texts||[]).filter(t=>!/^（.*）$/.test(t)).slice(-2).join('｜');
     return `<div class="todo-row" style="cursor:default;align-items:flex-start"><div class="m" style="flex:1;min-width:0"><div><b>${esc(String(u.name||'（讀不到名字）').replace(/^\((fb|ig)\)/,''))}</b> <span class="sub">${ibChOf(u.uid)}｜${ibAgo(u.last||u.since||Date.now())}${u.pending?'｜待回覆':''}${u.cat&&u.cat!=='禮車'?'｜'+esc(u.cat):''}</span></div>`+
       (k.length?`<div class="sub" style="color:#8a6a3a">${esc(k.join('｜'))}</div>`:'<div class="sub">機器人還沒問到資料</div>')+
       (last?`<div class="sub" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(last)}</div>`:'')+
       (u.nameHint&&!u.order&&DB.orders[u.nameHint]?`<div class="sub" style="color:var(--warn)">暱稱跟 ${esc(orderNo(DB.orders[u.nameHint]))} 的客人一樣，可能是同一位 <button class="btn sm" data-ibbind="${esc(u.uid)}" style="margin-left:4px">是本人，綁定</button></div>`:'')+   /* 2026-11-12 Nicole：系統只認帳號；名字相同由我確認後綁定 */
-      `</div><button class="btn sm${done?'':' pri'}" data-ibq="${esc(u.uid)}" style="flex:none">${done?'開啟報價':'建立報價'}</button></div>`};
+      `</div>`+(ibIsAir(u)?`<button class="btn sm pri" data-ibair="${esc(u.uid)}" style="flex:none">建立接送報價</button>`:`<button class="btn sm${done?'':' pri'}" data-ibq="${esc(u.uid)}" style="flex:none">${done?'開啟報價':'建立報價'}</button>`)+`</div>`};
   const sec=(t,L)=>`<div style="margin-bottom:6px"><div class="sub" style="font-weight:700;margin:4px 0 6px">${t}</div>${L.length?L.map(row).join(''):'<p class="hint" style="margin:0 0 8px">最近沒有對話</p>'}</div>`;
   el.innerHTML=sec('官方 LINE',pick('LINE'))+sec('FB／IG',pick('META'))}
 /* 2026-11-12 Nicole：從「最近詢問」開的報價，把客人的聊天室記在訂單上（官方 LINE 聊天室網址＋來源 ID），客人之後改名也找得到、傳得到 */
