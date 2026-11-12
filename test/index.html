@@ -4105,7 +4105,7 @@ document.addEventListener('change',e=>{const t=e.target;if(t.id==='drvMode'){ren
   if(t.dataset&&t.dataset.fl&&/\.(phone|emg)$/.test(t.dataset.fl)){const v=fixTel(t.value);if(v!==t.value){t.value=v;t.dispatchEvent(new Event('input',{bubbles:true}))}return}
   if(t.classList&&t.classList.contains('drvPick')&&t.value==='__clear'){const f=o.fleet[+t.dataset.dp];if(f){const nm=f.driver;f.driver='';f.phone='';f.plate='';f.emg='';f.emgRel='';f.zod='';o.sample=false;save();renderFleet();renderAll();toast(`已移除 ${nm}`)}return}
   if(t.classList&&t.classList.contains('drvPick')&&t.value){const [nm,pl]=t.value.split('|');const d=DRV.find(z=>z.name===nm&&z.plate===pl);const f=o.fleet[+t.dataset.dp];if(!d||!f)return;
-    f.driver=d.name;f.phone=fixTel(d.phone)||f.phone;f.plate=d.plate||f.plate;if(d.emPhone){f.emg=fixTel(d.emPhone);f.emgRel=d.emRel||''}else if(!f.emg&&d.emg)f.emg=fixTel(d.emg);f.zod=zodOf(d);if(+d.seats)f.seats=+d.seats;o.sample=false;save();renderFleet();renderAll();toast(`已填入 ${d.name}`)}});
+    f.driver=d.name;f.phone=fixTel(d.phone)||f.phone;f.plate=d.plate||f.plate;if(d.emPhone){f.emg=fixTel(d.emPhone);f.emgRel=d.emRel||''}else if(!f.emg&&d.emg)f.emg=fixTel(d.emg);f.zod=zodOf(d);{const sn=parseInt(String(d.seats||'').replace(/[^0-9]/g,''),10);if(sn)f.seats=sn}o.sample=false;save();renderFleet();renderAll();toast(`已填入 ${d.name}`)}});
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('#btnDrvReload');if(t)loadDrivers(true)});
 /* 2026-10-15 司機搜尋：姓名／車牌／電話（有輸入時不套用車款、地區、生肖篩選） */
 let drvQT=0;document.addEventListener('input',e=>{if(e.target&&e.target.id==='drvQ'){clearTimeout(drvQT);drvQT=setTimeout(()=>{renderFleet();const sel=document.querySelector('.drvPick');},250)}});
