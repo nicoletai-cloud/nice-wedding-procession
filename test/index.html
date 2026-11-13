@@ -2641,7 +2641,7 @@ document.addEventListener('change',e=>{if(e.target.dataset.fl&&e.target.dataset.
       /* 2026-10-22 Nicole：確認收到尾款 → 同時通知客人 */
       if(v&&v!==pv0&&!isPt(x)){const amt=v==='nored'&&r.red?r.balance-r.red:r.balance;const ct=v==='nored'&&r.red?`您好，${no} 的尾款 ${money(amt)} 已收到，謝謝您🙏\n用車當天只需準備司機禮 ${money(r.red)}，交給現場禮車負責人即可。`:`您好，${no} 的尾款 ${money(amt)}${r.red?'（含司機禮）':''} 已收到，謝謝您🙏\n用車當天不需要再付款；如有加時，加時費用再請交給現場禮車負責人即可。`;
         cfQApi({action:'balNotice',id:x.id,text:ct}).then(j=>{if(j&&j.ok)toast('已用 LINE 通知客人已收到尾款');else alert('客人通知沒送出，請自己傳給客人：\n\n'+ct+'\n\n（'+((j&&j.error)||'連不到機器人')+'）')}).catch(err=>alert('客人通知沒送出，請自己傳給客人：\n\n'+ct+'\n\n（'+(err&&err.message||err)+'）'))}}}
-  if(e.target.dataset&&e.target.dataset.settle){const x=DB.orders[e.target.dataset.settle];if(x){x.settled=e.target.checked;if(o.id===x.id)o.settled=x.settled;store('nwcw_orders',DB);renderSettle()}}});
+  if(e.target.dataset&&e.target.dataset.settle){const x=DB.orders[e.target.dataset.settle];if(x){x.settled=e.target.checked;x.updated=Date.now();if(o.id===x.id){o.settled=x.settled;o.updated=x.updated}store('nwcw_orders',DB);pushSync();renderSettle()}}});
 
 /* ---------- renderers ---------- */
 function carRow(m){const cp=cPrice(m,o.hours);const pr=blank(S.price[m])?'客人價未設定':`${money(cp.v)}／${hrsLabel(o.hours)}${cp.miss?'（暫用 3HR 價）':''}${num(S.ot[m])?`・加時 ${money(S.ot[m])}/${+o.hours>0&&+o.hours<3?'0.5 時':'時'}`:''}`;
