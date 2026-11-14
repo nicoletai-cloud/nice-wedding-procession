@@ -312,7 +312,7 @@ nav.tabs button{scroll-snap-align:start}
       <div class="more-grid">
         <button class="btn" id="btnNew">新訂單</button>
         <button class="btn" id="btnPartner">同業單</button>
-        <button class="btn" id="btnBus">遊覽車單</button><button class="btn" id="btnShuttle">婚禮接送單</button>   <!-- 2026-11-12 Nicole：婚宴貴賓接送單 -->   <!-- 2026-10-28 Nicole：遊覽車接駁單 -->
+        <button class="btn" id="btnBus">遊覽車單</button><button class="btn" id="btnShuttle">婚禮貴賓接送單</button>   <!-- 2026-11-12 Nicole：婚宴貴賓接送單 -->   <!-- 2026-10-28 Nicole：遊覽車接駁單 -->
       </div>
       <div class="more-g">設定</div>
       <div class="more-grid">
@@ -419,12 +419,12 @@ nav.tabs button{scroll-snap-align:start}
           <div class="cars" id="carList"></div>
         </div>
         <div class="card busOnly" id="busCard">   <!-- 2026-10-28 Nicole：遊覽車接駁單：一天一口價，依行程報價 -->
-          <h3><span class="noShuttle">遊覽車接駁 <small>一天一口價，依行程報價；不收加時、里程、司機紅包</small></span><span class="shuttleOnly">婚宴貴賓接送 <small>沒勾遊覽車＝用禮車車款、接送價；勾遊覽車＝中巴／大巴</small></span></h3>
+          <h3><span class="noShuttle">遊覽車接駁 <small>一天一口價，依行程報價；不收加時、里程、司機紅包</small></span><span class="shuttleOnly">婚禮貴賓接送 <small>沒勾遊覽車＝用禮車車款、接送價；勾遊覽車＝中巴／大巴</small></span></h3>
           <div class="busLn noShuttle"><b>大巴 43 人座</b><label class="f"><span class="noShOne">台數</span><span class="shOneOnly">趟數（單程）</span><input type="number" id="bus_q43" data-b="busLines.0.q" data-num min="0" inputmode="numeric"></label><label class="f"><span class="noShuttle">每台一口價</span><span class="shuttleOnly">每台單程價</span><input type="number" id="bus_p43" data-b="busLines.0.p" data-num min="0" inputmode="numeric" placeholder="例：18000"></label></div>
           <div class="busLn noShuttle"><b>中巴 26 人座</b><label class="f"><span class="noShOne">台數</span><span class="shOneOnly">趟數（單程）</span><input type="number" id="bus_q26" data-b="busLines.1.q" data-num min="0" inputmode="numeric"></label><label class="f"><span class="noShuttle">每台一口價</span><span class="shuttleOnly">每台單程價</span><input type="number" id="bus_p26" data-b="busLines.1.p" data-num min="0" inputmode="numeric" placeholder="例：12000"></label></div>
           <div class="row shuttleOnly" style="gap:14px;align-items:center;flex-wrap:wrap;margin:4px 0 8px"><label class="f" style="min-width:150px">計價方式<select id="shTripSel"><option value="one">單程</option><option value="round">來回（去程＋回程）</option></select></label><label class="row" style="gap:8px;align-items:center;cursor:pointer;flex-wrap:nowrap;width:auto;margin-top:18px"><input type="checkbox" id="shBusCb" style="width:auto;flex:none">用遊覽車（中巴／大巴）</label></div><p class="hint shuttleOnly" style="margin:0 0 6px">價格一律填單程價。單程：填總共幾趟；來回：填幾台車，自動 ×2 趟</p>
           <div class="shuttleOnly shCarOnly"><div id="shCars"></div><button type="button" class="btn sm" id="shCarAdd">＋ 新增車款</button></div>
-          <label class="f wide shuttleOnly">合約注意事項（一行一點；所有婚禮接送單共用；這張單另外要加的寫在「合約」頁的補充說明）<textarea id="shuttle_cl" rows="6"></textarea></label>
+          <label class="f wide shuttleOnly">合約注意事項（一行一點；所有婚禮貴賓接送單共用；這張單另外要加的寫在「合約」頁的補充說明）<textarea id="shuttle_cl" rows="6"></textarea></label>
           <div class="fields">
             <div class="f wide"><span><span class="noShuttle">行程（每段：時間、上車地點、中停地點、下車地點）</span><span class="shuttleOnly">每車行程（上車時間、上車地點、中停地點、下車地點）</span></span><div id="busStops"></div><button type="button" class="btn sm" id="busStopAdd" style="margin-top:4px"><span class="noShuttle">＋ 新增一段</span><span class="shuttleOnly">＋ 新增一車</span></button></div>   <!-- 2026-10-28 Nicole：遊覽車行程一段一列 -->
             <label class="f wide">行程補充說明（選填，一行一點）<textarea id="bus_route" data-b="busRoute" rows="2" placeholder="例：回程送客到台中高鐵站"></textarea></label>
@@ -525,7 +525,7 @@ nav.tabs button{scroll-snap-align:start}
   <section class="tab" id="tab-contract" hidden>
     <!-- 2026-10-28 Nicole：遊覽車不用合約，改用機場接送的方式給客人用車說明 -->
     <div class="card busOnly" id="busInfoCard" style="max-width:900px;margin:0 auto 14px">
-      <h3><span class="shuttleOnly">婚宴接送用車說明 <small>出發前一天把司機資料填好，傳給客人</small></span><span class="noShuttle">遊覽車用車說明 <small>遊覽車不用合約；客人付款、填完表單後，把這份用車說明傳給客人</small></span></h3>
+      <h3><span class="shuttleOnly">婚禮貴賓接送用車說明 <small>出發前一天把司機資料填好，傳給客人</small></span><span class="noShuttle">遊覽車用車說明 <small>遊覽車不用合約；客人付款、填完表單後，把這份用車說明傳給客人</small></span></h3>
       <div class="fields">
         <label class="f"><span class="noShuttle">當天聯絡人</span><span class="shuttleOnly">訂車人</span><input id="bus_cName" data-b="busCName" placeholder="客人填表後自動帶入"></label>
         <label class="f"><span class="noShuttle">聯絡人電話</span><span class="shuttleOnly">訂車人電話</span><input id="bus_cPhone" data-b="busCPhone" type="tel" inputmode="tel" placeholder="09xxxxxxxx"></label>
@@ -1577,7 +1577,8 @@ function shTrips(x){return isShut(x)&&x.shTrip==='round'?2:1}
 /* 2026-11-12 Nicole：單程時數量算「趟」（例：單程十趟），來回時算「台」 */
 function shOne(x){return isShut(x)&&x.shTrip!=='round'}
 function shTripTxt(x){return x&&x.shTrip==='round'?'來回：去程＋回程':'單程'}
-function bw(x){return isShut(x)?'婚宴接送':'遊覽車'}
+function bw(x){return isShut(x)?'婚禮貴賓接送':'遊覽車'}   /* 2026-11-14 Nicole：改名婚禮貴賓接送 */
+function bwC(x){return isShut(x)?'婚宴接送':'遊覽車'}   /* 給客人的文字：待 Nicole 確認後再改 */
 const SHUTTLE_CL_DEF='所有車輛皆附司機，司機著正式服裝，車上備有礦泉水。\n司機會提早 5 分鐘抵達上車地點等候，並協助長輩貴賓上下車。\n各車上車時間如尚未確定，請確認後提供：每台的上車時間（宴前）、宴後回程大約的出發時間、每台乘車貴賓的姓名與聯絡電話。\n提供 15 分鐘免費等候，超過後酌收 NT$300／每 15 分鐘。\n出發前一天會提供車輛資訊及司機聯絡方式。\n確認預約後會再提供訂金資訊，完成後即保留車輛。\n行程異動請於用車前三天電話或 Line 告知。\n此報價單暨合約書為現金價格，不含發票 5% 營業稅。\n付訂金當日起取消用車，則不退回。\n本公司非常重視服務流程與品質，若訂車人未透過本公司窗口直接與司機有任何協議，如產生糾紛或其他衍生相關問題，本公司將不負擔任何賠償責任。';
 function shuttleCl(){return String(S.shuttleCl==null?SHUTTLE_CL_DEF:S.shuttleCl).split('\n').map(t=>t.trim()).filter(Boolean)}
 /* 2026-10-28 Nicole：遊覽車行程：時間 上車 → 中停 → 下車，一段一列 */
@@ -2635,7 +2636,7 @@ document.addEventListener('change',e=>{if(e.target.dataset.fl&&e.target.dataset.
     if(v!==pv&&!confirm(`尾款收款方式改成「${lb[v]}」？\n\n${o.pubAt?'派車單已經發到司機群組：按確定後，禮車助手會在群組通知禮車負責人。':'派車單還沒發到群組：只會更新派車單和確認單內容，不會通知司機。'}${v?'\n\n同時會用 LINE 通知客人「已收到尾款」。':''}`)){document.querySelectorAll('.balMode').forEach(s=>s.value=pv);return}}o.balPaid=!!v;if(o.balPaid&&!was)o.balPaidTs=Date.now();if(!o.balPaid)o.balPaidTs=0;o.balRed=v==='nored';o.balPaidAt=o.balPaid?`${d.getMonth()+1}/${d.getDate()}`:'';document.querySelectorAll('.balMode').forEach(s=>s.value=v);save();renderMemo();renderAll();toast(v==='all'?'已標記：客人已匯尾款＋紅包，司機只收加時':v==='nored'?'已標記：客人已匯尾款，司機現場收紅包':'已改回：司機現場收尾款');
     /* 2026-10-19 尾款入帳狀態改了：派車單自動更新；已在群組發佈過派車單 → 通知禮車負責人 */
     {const x=o,r=calc(x),no=orderNo(x),ld=lead(x)||{},who=ld.driver?'禮車負責人['+ld.driver+']':'禮車負責人';memoDocsFor(x);
-      if(x.pubAt){const t=`📣 尾款收款更新｜${no} ${coupleName(x)}\n`+(v==='all'?'客人已匯尾款（含司機禮），現場不用收款，只收加時費用（如有）':v==='nored'?`客人已匯尾款，${who}當天只需收司機禮 ${money(r.red)}`:`尾款改回現場收取：請${who}當天向客人收取尾款 ${money(r.balance)}${r.red?'（含司機禮）':''}`);
+      if(x.pubAt){const t=`📣 尾款收款更新｜${no} ${[x.c.groom,x.c.bride].filter(Boolean).join('&')}\n`+(v==='all'?'客人已匯尾款（含司機禮），現場不用收款，只收加時費用（如有）':v==='nored'?`客人已匯尾款，${who}當天只需收司機禮 ${money(r.red)}`:`尾款改回現場收取：請${who}當天向客人收取尾款 ${money(r.balance)}${r.red?'（含司機禮）':''}`);
         lgCall({op:'notice',keys:lgKeys(x),text:t}).then(j=>toast('已在「'+(j.name||'司機群組')+'」通知尾款收款更新')).catch(err=>alert('司機群組通知沒送出，請自己告知禮車負責人：\n\n'+t+'\n\n（'+(err&&err.message||err)+'）'))}
       /* 2026-10-22 Nicole：確認收到尾款 → 同時通知客人 */
       if(v&&v!==pv0&&!isPt(x)){const amt=v==='nored'&&r.red?r.balance-r.red:r.balance;const ct=v==='nored'&&r.red?`您好，${no} 的尾款 ${money(amt)} 已收到，謝謝您🙏\n用車當天只需準備司機禮 ${money(r.red)}，交給現場禮車負責人即可。`:`您好，${no} 的尾款 ${money(amt)}${r.red?'（含司機禮）':''} 已收到，謝謝您🙏\n用車當天不需要再付款；如有加時，加時費用再請交給現場禮車負責人即可。`;
@@ -3865,7 +3866,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
     try{localStorage.setItem('hhlc_handoff',JSON.stringify({from:'wed',ts:Date.now(),wedId:o.id,wedDate:o.date||'',name:nm||C.groom||C.bride||'',phone:C.phone||'',chatName:C.chatName||'',channel:C.channel||'LINE',addrs:A}))}catch(e){toast('無法交接資料');break}
     window.open(location.origin+'/nice-wedding-car/','_blank');toast('已開啟機場接送報價');break}
    case 'btnNew':{o=newOrder();DB.orders[o.id]=o;syncFleet();save();loadOrder();showTab('quote');{const ms=$('moreSheet');if(ms)ms.hidden=true}setTimeout(()=>{const f=$('q_chat');if(f){f.scrollIntoView({behavior:'smooth',block:'center'});try{f.focus({preventScroll:true})}catch(_){}}},150);toast('已建立新訂單');break}   /* 2026-10-28 Nicole：按新訂單直接跳到第一個分頁填客人資料 */
-   case 'btnShuttle':{o=newOrder();o.bus=true;o.shuttle=true;o.shuttleBus=false;o.shTrip='one';o.red=false;o.busLines=[{m:'43',q:0,p:0},{m:'26',q:0,p:0},{m:'c:',q:0,p:0}];DB.orders[o.id]=o;syncFleet();save();loadOrder();showTab('quote');{const ms=$('moreSheet');if(ms)ms.hidden=true}setTimeout(()=>{const f=$('q_chat');if(f){f.scrollIntoView({behavior:'smooth',block:'center'});try{f.focus({preventScroll:true})}catch(_){}}},150);toast('已建立婚禮接送單');break}   /* 2026-11-12 Nicole：婚宴貴賓接送單 */
+   case 'btnShuttle':{o=newOrder();o.bus=true;o.shuttle=true;o.shuttleBus=false;o.shTrip='one';o.red=false;o.busLines=[{m:'43',q:0,p:0},{m:'26',q:0,p:0},{m:'c:',q:0,p:0}];DB.orders[o.id]=o;syncFleet();save();loadOrder();showTab('quote');{const ms=$('moreSheet');if(ms)ms.hidden=true}setTimeout(()=>{const f=$('q_chat');if(f){f.scrollIntoView({behavior:'smooth',block:'center'});try{f.focus({preventScroll:true})}catch(_){}}},150);toast('已建立婚禮貴賓接送單');break}   /* 2026-11-12 Nicole：婚宴貴賓接送單 */
    case 'btnBus':{o=newOrder();o.bus=true;o.red=false;DB.orders[o.id]=o;syncFleet();save();loadOrder();showTab('quote');{const ms=$('moreSheet');if(ms)ms.hidden=true}setTimeout(()=>{const f=$('q_chat');if(f){f.scrollIntoView({behavior:'smooth',block:'center'});try{f.focus({preventScroll:true})}catch(_){}}},150);toast('已建立遊覽車接駁單');break}   /* 2026-10-28 Nicole：遊覽車接駁單 */
    case 'btnAlbum':{albumPicker();break}
    case 'btnDup':{const n=clone(o);n.id=newOrder().id;n.sample=false;n.seq='';n._seqKey='';n._seq='';n.c=Object.assign(newOrder().c,{});n.fleet=n.fleet.map(f=>Object.assign(f,{plate:'',driver:'',phone:''}));Object.assign(n,{paid:false,paidAt:'',paidTs:'',contractUrl:'',memoLinks:null,driveFolder:'',inqAt:Date.now(),orderedAt:'',followAt:'',lost:false,formAt:'',cfSentAt:'',cfDoneAt:'',cfSchedAt:'',revAskAt:'',revLinkAt:'',revSkip:false,photoSentAt:'',carHead:'',balPaid:false,settled:false,sent:[],quotes:[],need:clone(newOrder().need)});o=n;DB.orders[o.id]=o;save();loadOrder();showTab('quote');{const ms=$('moreSheet');if(ms)ms.hidden=true}try{window.scrollTo(0,0)}catch(_){}toast('已複製車款與價格到新訂單');break}
@@ -4447,7 +4448,7 @@ function renderRev(){const el=$('revSt'),cb=$('revSkipCb');if(!el||!cb||!o)retur
 /* 2026-10-28 Nicole：遊覽車用車說明（像機場接送的乘客資訊）＋客人填寫頁帶入 */
 const BUS_NOTICE_DEF='司機會在上車時間前抵達上車地點，請依約定時間上車。\n行程（時間、地點、人數）如有變動，請提前告知客服。\n用車當天如需聯繫，請直接撥打司機電話。';
 function busNotice(){return S.busNotice==null?BUS_NOTICE_DEF:String(S.busNotice)}
-function busInfoText(x){const L=['【好好禮車｜'+bw(x)+'用車說明】',`訂單編號：${orderNo(x)}`,`用車日期：${fmtDate(x.date)}`,`車型：${busText(x,'zh')}`,'','行程：'],r=busRouteLines(x);L.push(...(r.length?r:['（待確認）']));
+function busInfoText(x){const L=['【好好禮車｜'+bwC(x)+'用車說明】',`訂單編號：${orderNo(x)}`,`用車日期：${fmtDate(x.date)}`,`車型：${busText(x,'zh')}`,'','行程：'],r=busRouteLines(x);L.push(...(r.length?r:['（待確認）']));
   const cn=String(x.busCName||'').trim(),cp=String(x.busCPhone||'').trim();if(cn||cp)L.push('',`${isShut(x)?'訂車人':'當天聯絡人'}：${[cn,cp].filter(Boolean).join(' ')}`);if(isShut(x)&&String(x.busContacts||'').trim())L.push(...String(x.busContacts).split('\n').map(t=>t.trim()).filter(Boolean).map(t=>/^其他聯絡人/.test(t)?t:'其他聯絡人：'+t));
   const d=String(x.busDriver||'').trim();L.push('',`司機資料：${d||'用車前一天提供'}`);
   const n=busNotice().split('\n').map(t=>t.trim()).filter(Boolean);if(n.length)L.push('','注意事項：',...n.map(t=>/^[＊*・]/.test(t)?t:'＊'+t));return L.join('\n')}
