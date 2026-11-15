@@ -613,7 +613,7 @@ nav.tabs button{scroll-snap-align:start}
   <!-- 5 車隊與流程 -->
   <section class="tab" id="tab-dispatch" hidden>
 <div class="card busOnly busNotice" style="margin-bottom:18px"><h3>遊覽車單 <small>由車頭派車，車頭資訊請在報價頁填寫</small></h3><div class="sum busHeadInfo" data-bh="dispatch"></div></div>   <!-- 2026-10-28 Nicole：遊覽車接駁單 -->
-<div class="card lgTop" style="margin-bottom:14px;padding:10px 14px"><div class="row" style="gap:8px;align-items:center;flex-wrap:nowrap"><b style="white-space:nowrap">群組名稱</b><input id="lgName5" readonly style="flex:1;min-width:0"><button class="btn sm pri" data-copyv="lgName5">複製</button></div><div class="lgWarn" id="lgWarn5" hidden style="margin-top:6px;font-size:.9rem;color:var(--warn)"></div></div>   <!-- 2026-10-20 車隊與流程、派車單頁上方都能複製群組名稱 -->
+<div class="card lgTop" style="margin-bottom:14px;padding:10px 14px"><div class="row" style="gap:8px;align-items:center;flex-wrap:nowrap"><b style="white-space:nowrap">群組名稱</b><input id="lgName5" readonly style="flex:1;min-width:0"><button class="btn sm pri" data-copyv="lgName5">複製</button></div><div class="lgDet" style="margin-top:6px;font-size:.9rem"></div><div class="lgWarn" id="lgWarn5" hidden style="margin-top:6px;font-size:.9rem;color:var(--warn)"></div></div>   <!-- 2026-10-20 車隊與流程、派車單頁上方都能複製群組名稱 -->
     <div class="stack">
       <div class="card" id="xCard5"><h3>加項 <small>客人傳過行前確認後才加的款項，填在這裡會列在尾款（尾款 $X+項目 $Y=$Z）</small></h3><div class="xList" data-xw="5"></div></div>
       <div class="card" id="ptCard" hidden style="border-color:#A77D4C"><h3>同業單 <small>只要選司機；不用出合約、memo、派車單</small></h3><datalist id="ptCoList"></datalist><div id="ptCardBody"></div></div>
@@ -686,7 +686,7 @@ nav.tabs button{scroll-snap-align:start}
   <!-- 6 memo -->
   <section class="tab" id="tab-memo" hidden>
 <div class="card busOnly busNotice" style="margin-bottom:18px"><h3>遊覽車單 <small>由車頭派車，車頭資訊請在報價頁填寫</small></h3><div class="sum busHeadInfo" data-bh="memo"></div></div>   <!-- 2026-10-28 Nicole：遊覽車接駁單 -->
-<div class="card lgTop" style="margin-bottom:14px;padding:10px 14px"><div class="row" style="gap:8px;align-items:center;flex-wrap:nowrap"><b style="white-space:nowrap">群組名稱</b><input id="lgName6" readonly style="flex:1;min-width:0"><button class="btn sm pri" data-copyv="lgName6">複製</button></div><div class="lgWarn" id="lgWarn6" hidden style="margin-top:6px;font-size:.9rem;color:var(--warn)"></div></div>   <!-- 2026-10-20 車隊與流程、派車單頁上方都能複製群組名稱 -->
+<div class="card lgTop" style="margin-bottom:14px;padding:10px 14px"><div class="row" style="gap:8px;align-items:center;flex-wrap:nowrap"><b style="white-space:nowrap">群組名稱</b><input id="lgName6" readonly style="flex:1;min-width:0"><button class="btn sm pri" data-copyv="lgName6">複製</button></div><div class="lgDet" style="margin-top:6px;font-size:.9rem"></div><div class="lgWarn" id="lgWarn6" hidden style="margin-top:6px;font-size:.9rem;color:var(--warn)"></div></div>   <!-- 2026-10-20 車隊與流程、派車單頁上方都能複製群組名稱 -->
     <div id="memoCall" class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 12px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2,#faf5ee)" hidden></div>
     <div id="ptMemo"></div>   <!-- 2026-10-20 同業單：服務確認單＝同業原始內容；司機派車單＝加上匯回、每台實拿 -->
     <div class="row" style="margin-bottom:12px;gap:14px">
@@ -3661,6 +3661,7 @@ function renderLgCard(){const el=$('lgCard');if(!el||!o)return;if(o.sample||!lgO
     +`<div class="hint" style="margin:6px 0 0">${!bd.total?'還沒派司機':bd.miss.length?`<b style="color:var(--warn)">未綁車卡 ${bd.miss.length}/${bd.total}：${esc(bd.miss.join('、'))}</b>`:`✅ 司機 ${bd.total} 位都已綁車卡`}</div>${lgUbLine(g,o)}`
     +((o.fleet||[]).some(f=>String(f.driver||'').trim())?`<div class="row" style="gap:4px 14px;flex-wrap:wrap;margin-top:6px;font-size:.9rem">${(o.fleet||[]).map((f,i)=>String(f.driver||'').trim()?`<label style="display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;color:var(--muted)"><input type="checkbox" data-nogrp="${i}" style="width:auto"${f.noGrp?' checked':''}>${esc(f.role||'')} ${esc(String(f.driver).trim())} 不進群組</label>`:'').join('')}</div>`:'');   /* 2026-10-20 Nicole：某台車司機不進群組（不用綁車卡、不用報到） */
   try{lgNameWarn(g)}catch(_){}
+  document.querySelectorAll('.lgDet').forEach(d=>{d.innerHTML=`<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><span style="color:${g&&g.ok?'var(--ok)':'var(--warn)'}">${g==null?'偵測禮車助手中…':g.ok?'✅ 禮車助手已在群組「'+esc(g.name||'')+'」':'還沒偵測到群組（群組名稱要有代碼、禮車助手要在群組裡）'}</span><button class="btn sm" data-lgre="1">重新偵測</button></div>`});   /* 2026-11-15 Nicole：派車頁也要能偵測禮車助手 */
   {const pg=$('pubGate');if(pg){pg.innerHTML=o.cfDoneAt?'<span style="color:var(--ok)">客人已填行前確認，可以發派車單</span>':'<b style="color:var(--warn)">客人還沒填行前確認，派車單先不要發</b>'}}
   if(g==null)lgStatus([o])}
 /* 2026-10-21 Nicole：LINE 群組現在的名稱和系統建議的不一樣（例：地點改過，新莊→三重）→ 提醒改名 */
@@ -3678,10 +3679,10 @@ async function lgCall(body){if(!S.driveUrl||!S.driveKey)throw new Error('未設�
 const lgKeys=x=>[tripCode(x),findCode(x),x._no||orderNo(x)].filter(Boolean);
 async function lgStatus(L){const need=L.filter(x=>LGST[x.id]==null);const k=need.map(x=>x.id).join(',');if(!need.length||lgBusy===k)return;lgBusy=k;
   try{const j=await lgCall({op:'status',trips:need.map(x=>({id:x.id,keys:lgKeys(x)}))});Object.assign(LGST,j.st||{})}catch(e){need.forEach(x=>LGST[x.id]={ok:false,err:1})}lgBusy='';if(!$('lgModal').hidden)renderLg();try{renderLgCard()}catch(_){}}
-document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#btnLgRefresh,#btnLgCardRefresh,#grpName,#btnLgClose,[data-lgday],[data-lgcopy],[data-lgbind],[data-lgf],[data-lgment]');if(!b)return;e.preventDefault();
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#btnLgRefresh,#btnLgCardRefresh,[data-lgre],#grpName,#btnLgClose,[data-lgday],[data-lgcopy],[data-lgbind],[data-lgf],[data-lgment]');if(!b)return;e.preventDefault();
   if(b.dataset.lgment){const x=DB.orders[b.dataset.lgment];if(!x)return;const sel=[...(LGSEL[x.id]||[])];if(!sel.length){toast('請先勾選要 @ 誰');return}if(!confirm('禮車助手會在「'+lgName(x)+'」群組 @ '+sel.join('、')+' 綁定車卡，確定發送？'))return;b.disabled=true;b.textContent='傳送中…';lgCall({op:'mention',keys:lgKeys(x),names:sel}).then(j=>toast('已在「'+(j.name||'群組')+'」@ '+(j.names||[]).join('、'))).catch(err=>toast('傳送失敗：'+err.message)).finally(()=>{delete LGST[x.id];renderLg();try{renderLgCard()}catch(_){}});return}
   if(b.dataset.lgf){lgF=b.dataset.lgf;renderLg();return}
-  if(b.id==='btnLgRefresh'||b.id==='btnLgCardRefresh'){const ids=b.id==='btnLgCardRefresh'?[o&&o.id]:Object.values(DB.orders).filter(x=>lgOk(x)&&x.date===$('lgDate').value).map(x=>x.id);ids.forEach(k=>{if(k)delete LGST[k]});lgBusy='';try{loadDrivers(true)}catch(_){}toast('重新偵測群組中…');renderLg();try{renderLgCard()}catch(_){}return}
+  if(b.id==='btnLgRefresh'||b.id==='btnLgCardRefresh'||b.dataset.lgre){const ids=b.id!=='btnLgRefresh'?[o&&o.id]:Object.values(DB.orders).filter(x=>lgOk(x)&&x.date===$('lgDate').value).map(x=>x.id);ids.forEach(k=>{if(k)delete LGST[k]});lgBusy='';try{loadDrivers(true)}catch(_){}toast('重新偵測群組中…');renderLg();try{renderLgCard()}catch(_){}return}
   if(b.dataset.lgbind){const x=DB.orders[b.dataset.lgbind];if(!x)return;if(!confirm('禮車助手會在「'+lgName(x)+'」群組傳「綁定車卡」按鈕，確定發送？'))return;b.disabled=true;b.textContent='傳送中…';lgCall({op:'bind',keys:lgKeys(x)}).then(j=>toast('已在「'+(j.name||'群組')+'」傳綁定車卡按鈕')).catch(err=>toast('傳送失敗：'+err.message)).finally(()=>{renderLg();try{renderLgCard()}catch(_){}});return}
   if(b.id==='grpName'){openLg(o&&!o.sample&&o.date?o.date:'');return}
   if(b.id==='btnLgClose'){$('lgModal').hidden=true;return}
