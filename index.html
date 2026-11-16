@@ -4738,5 +4738,25 @@ body :is(.pr,.helper-note,label.f b,.calmsg,#pairMsg,.grid7 .wd,.stat .l,a>.l,h3
 body :is(.sum .tot,.sum .tot span){font-size:21px!important}
 body :is(.stat .n,a>.n){font-size:30px!important}
 </style>
+<script>/* 2026-11-16 Nicole：司機黑名單（姓名、車號、電話任一符合就警示）；機器人那邊也會擋綁定 */
+(function(){
+  var BL=[{name:'陳志成',plate:'RFR9972',phone:'0937464188',why:'回金慢、欠錢不還、接了單又叫車頭自己改派'}];
+  function hit(s){s=String(s||'');if(!s)return null;var a=s.replace(/\s/g,''),p=s.toUpperCase().replace(/[^A-Z0-9]+/g,' '),d=s.replace(/[\s-]/g,'');
+    for(var i=0;i<BL.length;i++){var b=BL[i];if(a.indexOf(b.name)>=0||(' '+p.replace(/ (?=\d)/g,'')+' ').indexOf(b.plate)>=0||d.indexOf(b.phone)>=0)return b}return null}
+  window.nwcBlackHit=hit;
+  var bar=null,hideT=null;
+  function show(b,where){if(!bar){bar=document.createElement('div');bar.id='nwcBlackBar';bar.style.cssText='position:fixed;left:8px;right:8px;top:8px;z-index:99999;background:#b3261e;color:#fff;border-radius:12px;padding:10px 14px;font-size:15px;line-height:1.5;box-shadow:0 4px 16px rgba(0,0,0,.3)';bar.addEventListener('click',function(){bar.style.display='none'});document.body.appendChild(bar)}
+    bar.textContent='⛔ 黑名單司機 '+b.name+' (RFR-9972)'+(where?' | '+where:'')+'\n原因: '+b.why+' (點一下關閉)';bar.style.whiteSpace='pre-line';bar.style.display='block';clearTimeout(hideT);hideT=setTimeout(function(){bar.style.display='none'},15000)}
+  function val(el){if(!el)return '';if(el.tagName==='SELECT'){var o=el.options[el.selectedIndex];return o?o.text+' '+o.value:''}return el.value||''}
+  function chk(e){var el=e.target;if(!el||!/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))return;if(el.type==='password')return;
+    var b=hit(val(el));if(b)show(b,e.type==='paste'?'貼上的內容有他的資料':'派車/填寫的資料有他')}
+  document.addEventListener('change',chk,true);document.addEventListener('input',chk,true);
+  document.addEventListener('paste',function(e){var t='';try{t=(e.clipboardData||window.clipboardData).getData('text')}catch(_){}var b=hit(t);if(b)show(b,'貼上的內容有他的資料')},true);
+  /* 存檔/派車前再擋一次：畫面上的司機欄位有他就要再確認 */
+  document.addEventListener('click',function(e){var t=e.target&&e.target.closest&&e.target.closest('#saveOrderBtn,[data-drvsend],#btnDispatch,#btnLgSend');if(!t)return;
+    var box=document.getElementById('dDriverReadout')||document.getElementById('dDriverSelect');var s=box?(box.textContent||'')+' '+val(document.getElementById('dDriverSelect')):'';
+    var b=hit(s);if(b&&!confirm('⛔ '+b.name+' 是黑名單司機\n原因: '+b.why+'\n確定還要派給他嗎？')){e.preventDefault();e.stopImmediatePropagation()}},true);
+})();</script>
+
 </body>
 </html>
