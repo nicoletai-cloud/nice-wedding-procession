@@ -496,6 +496,7 @@ nav.tabs button{scroll-snap-align:start}
             <button class="btn sm pri" id="btnOrderBot">用機器人傳給客人</button>
           </div>
           <p class="hint" id="orderBotSt" style="margin:0 0 6px;text-align:right" hidden></p>
+          <p class="hint" id="depWarn" style="color:#b8323a;font-weight:600;margin:0 0 6px" hidden></p>
           <pre class="out" id="outOrder"></pre>
           <p class="hint">表單連結已自動帶入訂單編號，不必再填「好好禮車管理端」表單。</p>
         </div>
@@ -3242,7 +3243,7 @@ document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest
   if(on&&o.paid&&!confirm('這張單已收訂金，確定標記為訂單流失？（訂金退還請另外處理）'))return;o.lost=on;save();try{renderAll()}catch(_){}try{renderOrderSel()}catch(_){}try{renderTodoBadge()}catch(_){}toast(on?'已標記訂單流失':'已恢復訂單')});
 document.addEventListener('change',e=>{const t=e.target;if(!t||t.id!=='ptPhotoCb'||!o)return;o.ptPhotoAt=t.checked?Date.now():'';save();try{renderAll()}catch(_){}try{renderOrderSel()}catch(_){}try{renderTodoBadge()}catch(_){}});
 function renderAll(){try{renderOrderBotSt()}catch(_){}try{renderOTodo()}catch(e){}try{ctHint5()}catch(e){}try{renderAttach()}catch(e){}try{renderQx()}catch(e){}try{renderFormDataBtn()}catch(e){}renderNeed();{const R=headNeed(o,daysTo(o)),k=carKind(o),big=bigDay(o);const rules=[k.lux?'豪車：付款完成就指派車頭':''].filter(Boolean),tr=[k.tesla&&o.colorReq==='紅色'?'紅色特斯拉：下單就派司機':'',k.tesla&&o.colorReq==='黑色'?'黑色特斯拉：用車前 2 個月派司機':'',k.tesla&&o.colorReq==='白色'?(big?'白色特斯拉（當天 5 場以上大日子）：用車前 2 個月派司機':'白色特斯拉：用車前一週派司機'):''].filter(Boolean);$('headHint').textContent=(rules.length?'本單規則：'+rules.join('；')+(R.length&&!String(o.carHead||'').trim()?'　⚠️ 現在該指派了':''):k.tesla&&!k.lux?'特斯拉由你擔任車頭，不用指派車頭。':'本單沒有提前指派車頭的需求。')+(tr.length?'　'+tr.join('；'):'')+(String(o.carHead||'').trim()?'　✅ 已找車頭：司機由車頭安排，用車前 3 天再確認司機資料即可。':'')}$('outPhoto').textContent=PHOTO_TPL+(o.c.photoUrl||'（先貼上照片資料夾連結）');$('photoSt').textContent=o.photoSentAt?'已傳給客人 '+new Date(o.photoSentAt).toLocaleDateString('zh-TW'):'';renderMemoLinks();$('outConfirm').textContent=cfMsg(o);try{renderCfSt()}catch(e){}try{renderCfFlow()}catch(e){}try{renderMemoOk()}catch(e){}renderPay();renderSrc();renderRefs();$('driveLink').innerHTML=o.driveFolder?`<a href="${esc(o.driveFolder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`:'';$('q_no').value=orderNo(o);$('q_code').placeholder=autoCode(o)||'自動';$('q_seq').placeholder=autoSeq(o);renderSum();
-  try{renderQAlts()}catch(_){}$('outQuote').textContent=quoteText(o,'zh');if($('outQuoteAdd'))$('outQuoteAdd').textContent=isShut(o)?QUOTE_ADD_SHUTTLE:o.bus?QUOTE_ADD_BUS:QUOTE_ADD;$('outOrder').textContent=orderText(o,'zh');
+  try{renderQAlts()}catch(_){}$('outQuote').textContent=quoteText(o,'zh');if($('outQuoteAdd'))$('outQuoteAdd').textContent=isShut(o)?QUOTE_ADD_SHUTTLE:o.bus?QUOTE_ADD_BUS:QUOTE_ADD;$('outOrder').textContent=orderText(o,'zh');try{renderDepWarn()}catch(_){}
   renderFind();$('contractPaper').innerHTML=contractHTML(o);ctTuneFill();renderSigned();renderMemo();
   ['meet','wed','o1','o2'].forEach(k=>{$('c_'+k+'S').placeholder=shortArea(o.c[k])||'自動'});
   $('sampleBar').hidden=!o.sample;renderOrderSel()}
@@ -3319,10 +3320,16 @@ function qSnap(x){const r={};QSNAP_K.forEach(k=>{if(x[k]!==undefined)r[k]=JSON.p
 function qParseCars(t){const m=String(t||'').match(/預約車款：([^\n]+)/);if(!m)return null;const N={'一':1,'兩':2,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10};const cars={};MODELS.forEach(k=>cars[k]=0);let ok=0;
   m[1].split(/[、,，]/).forEach(p=>{p=p.trim();const q=p.match(/\s*(?:([一兩二三四五六七八九十])台|[×x*]\s*(\d+)|(\d+)\s*台)\s*$/);const n=q?(q[1]?N[q[1]]:+(q[2]||q[3])):1;const nm=(q?p.slice(0,q.index):p).trim().toLowerCase();if(!nm)return;
     const hit=MODELS.find(k=>String(MNAME[k]||'').toLowerCase()===nm)||MODELS.find(k=>{const a=String(MNAME[k]||'').toLowerCase();return a.endsWith(' '+nm)||nm.endsWith(a)})||MODELS.find(k=>String(MABBR[k]||'').toLowerCase()===nm);if(hit){cars[hit]+=n;ok++}});return ok?cars:null}
+
+/* 2026-11-18 Nicole：客人反映付款連結訂金金額不對（訂單車款事後被改，付款頁用的是當下重算的訂金）。
+ * 傳／複製下單訊息時把當時的訂金鎖住（depLock），付款連結一律收這個金額；之後訂單金額變了，這裡會提醒要重傳下單訊息。 */
+function depLockSet(x){try{const d=Math.round(num(calc(x).deposit));if(d>0){x.depLock=d;x.depLockAt=Date.now()}}catch(_){}}
+function renderDepWarn(){const el=$('depWarn');if(!el||!o)return;let d=0;try{d=Math.round(num(calc(o).deposit))}catch(_){}
+  const L=num(o.depLock),bad=!o.paid&&L>0&&d>0&&L!==d;el.hidden=!bad;if(bad)el.textContent='⚠️ 現在的訂金 '+money(d)+' 跟傳給客人的下單訊息 '+money(L)+' 不一樣，付款連結仍收 '+money(L)+'。如果要改金額，請重新傳下單訊息給客人。'}
 function qUse(i){const q=(o.quotes||[])[i];if(!q)return;let snap=q.snap;
   if(!snap){const c=qParseCars(q.text);if(!c){toast('這個舊版本讀不到車款，請手動調整');return}snap={cars:c};const h=String(q.text).match(/用車時數：\s*([\d.]+)\s*HR/i);if(h)snap.hours=+h[1]}
   if(o.paid&&!confirm('這張單已付訂金，確定要把車款和金額改成第 '+qVer(q,i)+' 版嗎？'))return;
-  Object.keys(snap).forEach(k=>{o[k]=JSON.parse(JSON.stringify(snap[k]))});save();try{syncFleet()}catch(_){}renderAll();
+  Object.keys(snap).forEach(k=>{o[k]=JSON.parse(JSON.stringify(snap[k]))});try{syncFleet()}catch(_){}save();renderAll();   /* 2026-11-18 先重排車隊再存，避免舊車款留在車隊 */
   const t=calc(o).total;toast('已改用第 '+qVer(q,i)+' 版'+(num(q.total)&&t!==num(q.total)?'（金額 '+money(t)+'，和當時 '+money(q.total)+' 不同，請檢查）':'（金額 '+money(t)+'）'))}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-quse]');if(!b)return;e.preventDefault();e.stopPropagation();qUse(+b.dataset.quse)},true);
 function snapQuote(){const t=$('outQuote').textContent,Q=o.quotes||(o.quotes=[]);if(!Q.length||Q[Q.length-1].text!==t){Q.push({at:Date.now(),text:t,total:calc(o).total,v:qVer({text:t},Q.length),snap:qSnap(o)});if(Q.length>20)Q.shift();save()}renderNeed()}
@@ -3833,7 +3840,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.tcall){e.preventDefault();const x=DB.orders[t.dataset.tcall];if(x){const now=Date.now();x.callAt=now;x.updated=now;if(o&&o.id===x.id){o.callAt=now;o.updated=now}store('nwcw_orders',DB);pushSync();try{renderAll()}catch(_){}renderTodo();toast('已記錄：'+orderNo(x)+' 負責人已聯絡新人')}return}
   if(t.dataset.topen){e.preventDefault();const x=DB.orders[t.dataset.topen];if(x){const k=(tasksOf(x)[0]||{}).k;o=x;DB.cur=o.id;store('nwcw_orders',DB);loadOrder();renderOrderSel();$('todoModal').hidden=true;if(k==='cfsend'||k==='cfwait')goCard('cfSendCard');else if(k==='photo')goCard('photoCard');else if(ST_TAB[k])showTab(ST_TAB[k])}return}
   if(t.dataset.copy==='lgMsg'){copyLgMsg();return}
-  if(t.dataset.copy){copy($(t.dataset.copy).textContent,$(t.dataset.copy));if(t.dataset.copy==='outConfirm'&&o&&!o.cfSentAt){o.cfSentAt=Date.now();o.updated=Date.now();store('nwcw_orders',DB);try{pushSync()}catch(_){}try{renderCfSt();renderAll()}catch(_){}}if(t.dataset.copy==='outQuote'){snapQuote();const qb=$('quoteAddBox');if(qb){qb.scrollIntoView({behavior:'smooth',block:'center'});qb.style.boxShadow='0 0 0 3px var(--accent,#a67c45)';setTimeout(()=>qb.style.boxShadow='',2500)}setTimeout(()=>toast('已複製報價，貼上後再按「複製補充」'),300)}if(t.dataset.copy==='outOrder'&&!o.orderedAt){o.orderedAt=Date.now();save();renderOrderSel()}if(t.dataset.copy==='outConfirm'&&!o.cfSentAt){o.cfSentAt=Date.now();save();renderOrderSel()}return}
+  if(t.dataset.copy){copy($(t.dataset.copy).textContent,$(t.dataset.copy));if(t.dataset.copy==='outConfirm'&&o&&!o.cfSentAt){o.cfSentAt=Date.now();o.updated=Date.now();store('nwcw_orders',DB);try{pushSync()}catch(_){}try{renderCfSt();renderAll()}catch(_){}}if(t.dataset.copy==='outQuote'){snapQuote();const qb=$('quoteAddBox');if(qb){qb.scrollIntoView({behavior:'smooth',block:'center'});qb.style.boxShadow='0 0 0 3px var(--accent,#a67c45)';setTimeout(()=>qb.style.boxShadow='',2500)}setTimeout(()=>toast('已複製報價，貼上後再按「複製補充」'),300)}if(t.dataset.copy==='outOrder'){if(!o.orderedAt)o.orderedAt=Date.now();depLockSet(o);save();renderOrderSel();renderDepWarn()}if(t.dataset.copy==='outConfirm'&&!o.cfSentAt){o.cfSentAt=Date.now();save();renderOrderSel()}return}
   if(t.dataset.copytext){const v=t.dataset.copytext;if(navigator.clipboard)navigator.clipboard.writeText(v).then(()=>toast('已複製'),()=>toast('複製失敗，請點開啟後從網址列複製'));return}
   if(t.dataset.copyv){const el=$(t.dataset.copyv);if(navigator.clipboard)navigator.clipboard.writeText(el.value).then(()=>toast('已複製'),()=>{el.select();toast('已選取文字，請按複製')});else{el.select()}return}
   if(t.dataset.fdel){o.flow.splice(+t.dataset.fdel,1);o.locEditAt=Date.now();save();renderFlow();renderAll();return}
@@ -4533,7 +4540,7 @@ document.addEventListener('click',async e=>{if(!e.target.closest||!e.target.clos
   if(!S.driveUrl||!S.driveKey){toast('還沒設定同步，無法用機器人傳');return}
   if(!confirm((o.orderMsgSentAt?'這張單之前已經傳過下單訊息。\n\n':'')+'要用機器人把下單訊息傳給客人嗎？'))return;
   const b=$('btnOrderBot');b.disabled=true;b.textContent='傳送中…';
-  try{o.updated=Date.now();save();try{await doSync()}catch(_){}
+  try{depLockSet(o);o.updated=Date.now();save();try{await doSync()}catch(_){}
     let j=await cfQApi({action:'balNotice',id:o.id,text});
     if(j&&!j.ok&&/還沒同步/.test(j.error||'')){await new Promise(r=>setTimeout(r,4000));try{await doSync()}catch(_){}j=await cfQApi({action:'balNotice',id:o.id,text})}
     if(!j)throw new Error('連不到機器人');if(!j.ok)throw new Error(j.error||'傳送失敗');
