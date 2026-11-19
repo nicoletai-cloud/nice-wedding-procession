@@ -2285,7 +2285,8 @@ function fireLines(x,who){const L=[],c=x.c||{},loop=x.fireMode==='loop';
   else if(x.fireYN==='不放')L.push('鞭炮：不放');
   if(who==='drv'&&x.host&&(x.host.name||x.host.phone))L.push(`儀式老師／主持人：${[x.host.name,x.host.phone].filter(Boolean).join(' ')}`);
   return L}
-function caneOf(x){const c=x.c||{},n=caneYN(c.caneNote);if(n&&(!c.caneAns||c.caneAns==='待確認'))return n;return c.caneAns||(x.cane?'是':'否')}
+function caneOf(x){const c=x.c||{},n=caneYN(c.caneNote);if(num(x.cane)>0)return '是';   /* 2026-11-19 Nicole：報價有收甘蔗固定就是要固定，不看表單填的否 */
+  if(n&&(!c.caneAns||c.caneAns==='待確認'))return n;return c.caneAns||(x.cane?'是':'否')}
 /* 2026-10-20 Nicole：行前確認填的聯絡人身分（新郎／新娘／親友／婚顧或主持人／其他＋說明）→ 訂單聯絡人身分 */
 function cfRole(c,r,chg){const cr=String(r.crole||'').trim(),rel=String(r.crel||'').trim();
   /* 2026-11-03 Nicole：聯絡人分「前一天核對行程」(name/phone/role1) 和「當天現場」(c2name/c2phone/crole，same=是＝同前一天) */
