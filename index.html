@@ -2236,7 +2236,7 @@ async function saveToDrive(){const btn=$('btnDrive');if(!S.driveUrl||!S.driveKey
   btn.disabled=true;btn.textContent='產生合約 PDF 中…';$('driveLink').textContent='合約產生中，大約需要 30 秒～1 分鐘，請不要關閉頁面…';
   try{const res=await fetch(S.driveUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.driveKey,orderNo:orderNo(o),html:contractPdfDoc(o),couple:coupleName(o)})});
     const j=await res.json();if(!j.ok)throw new Error(j.error||'失敗');
-    o.driveFolder=j.folder;if(j.file)o.contractUrl=j.file;save();btn.textContent='建立簽署連結中…';$('driveLink').textContent='✅ 合約 PDF 已存好，正在建立線上簽署連結…';
+    const hadCt=!!String(o.contractUrl||'').trim()||!!o.signKey;o.driveFolder=j.folder;if(j.file)o.contractUrl=j.file;if(hadCt){o.ctRenewAt=Date.now();o.ctSentAt=null;o.ctBotAt=null;delete ctOk[o.id]}save();btn.textContent='建立簽署連結中…';$('driveLink').textContent='✅ 合約 PDF 已存好，正在建立線上簽署連結…';
     try{const fr=!!o.signKey;const k=await gasCall({action:'signReg',id:o.id,orderNo:orderNo(o),couple:coupleName(o),html:contractPdfDoc(o),fresh:fr});o.signKey=k.sign;o.signUrl=signLink(k.sign);o.signedAt=null;o.signedPdf='';if(fr){o.ctSentAt=null;o.ctBotAt=null;delete ctOk[o.id]}save()}   /* 2026-11-19 Nicole：重出合約＝舊簽署連結作廢、給新連結，要重新傳給客人 */catch(e){toast('簽署連結建立失敗：'+e.message)}fillInputs();renderAll();$('driveLink').innerHTML=`<a href="${esc(j.folder)}" target="_blank" rel="noopener">開啟 Drive 資料夾</a>`;toast('合約已完成，可以到下方複製訊息傳給客人');try{ctOk[o.id]=1;renderCtSend();$('ctSendCard').scrollIntoView({behavior:'smooth',block:'start'})}catch(e){}}
   catch(e){toast('存檔失敗：'+e.message);$('driveLink').textContent='❌ 存檔失敗：'+e.message+'，請再按一次'}finally{btn.disabled=false;btn.textContent=ctGenLabel(o)}}
 
@@ -2826,6 +2826,7 @@ function paidText(x){const tips=['我們會在用車前一週再次與您核對�
   if(!x.colorReq)tips.push('車色無法指定，一般為黑色或白色由派車人員安排。');
   tips.push('為安全起見，請勿從禮車上丟擲或施放鞭炮；如需施放，請於禮車停妥後在路邊施放，並與車輛保持距離。');
   const hi=typeof rmHi==='function'?rmHi(x):'您好';
+  if(x.ctRenewAt||x.ctVoidAt){const u=signUrlOf(x)||(x.contractUrl||'').trim()||'（請貼上合約連結）';return [(hi==='您好'?'':hi+'🧡 ')+'合約內容已更新，原本的合約已作廢，請以這份新合約為準'+(signUrlOf(x)?'，點開以下連結確認後按下方「簽名完成合約」完成線上簽署：':'：'),u].join('\n')}   /* 2026-11-19 Nicole：重新產生的合約只告知更新，不再重述注意事項 */
   return [(hi==='您好'?'':hi+'🧡 ')+(signUrlOf(x)?'已經收到訂金，請點開以下連結確認合約內容，並按下方「簽名完成合約」完成線上簽署：':'已經收到訂金，合約提供您留存：'),signUrlOf(x)||(x.contractUrl||'').trim()||'（請貼上合約連結）','',...tips.map((t,i)=>`${i+1}.${t}`)].join('\n')}
 /* 後台入帳（paidAt=已入帳）等路徑不會設 ttDone；10/5 之後收訂的單一律當作還沒填 TimeTree */
 /* 2026/10/9 起不再用 TimeTree（行程改看 Google 日曆，由機器人自動寫入）；要恢復把 TT_ON 改成 true */
