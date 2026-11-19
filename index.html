@@ -1640,7 +1640,7 @@ function xTxt(x,L){return L.map(e=>`${String(e.n||'加項').trim()} ${money(xAmt
 function balExpr(x,r){const oh=+x.cfOtH||0;   /* 2026-11-19 Nicole：合約本來的時數不列算式，只有客人在合約之外增加時數 (cfOtH) 才列加時算式；預估超過合約不算 */
   if(r.mon)return money(r.balance);const parts=[];let sub=0;
   if(oh>0&&r.ot>0){const ms=MODELS.filter(m=>num(x.cars[m])>0&&num(S.ot[m])>0),ps=ms.map(m=>money(num(S.ot[m]))+(num(x.cars[m])>1?'*'+num(x.cars[m]):'')),per=ps.join('+'),amt=Math.min(r.ot,ms.reduce((s,m)=>s+num(S.ot[m])*num(x.cars[m]),0)*oh);parts.push(`加時 ${oh}HR ${oh>1?`(${per})*${oh}`:per}`);sub+=amt}
-  lateX(x).forEach(e=>{parts.push(e.otAuto?otExpr(x,e):`${String(e.n||'加項').trim()} ${money(xAmt(x,e))}`);sub+=xAmt(x,e)});
+  lateX(x).forEach(e=>{parts.push(e.otAuto?otExpr(x,e):`${money(xAmt(x,e)).replace(/^\$/,'')}(${String(e.n||'加項').trim()})`);sub+=xAmt(x,e)});   /* 2026-11-19 Nicole：尾款寫成 $4,500+1,200(指定車頭彩)=$5,700 */
   if(!parts.length||r.balance-sub<=0)return money(r.balance);return `${money(r.balance-sub)}+${parts.join('+')}=${money(r.balance)}`}
 function qtyWord(q,lang){if(lang==='en')return '×'+q;if(lang==='ja')return q+'台';return (ZHN[q]||q)+'台'}
 function carsText(x,lang){if(x&&x.bus)return busText(x,lang);   /* 2026-10-28 Nicole：遊覽車接駁單 */
@@ -1935,7 +1935,7 @@ function memoModel(x,who,lang){const t=MT[lang],r=calc(x),c=x.c,ld=lead(x)||{};
   }
   return{payHead,who,no:orderNo(x),wd:p?`${p2(p.m)}/${p2(p.d)}`:'--/--',dateLine:(who==='drv'&&String(x.drvTimeTxt||'').trim())?`${fmtMDW(x.date,lang)} ${String(x.drvTimeTxt).trim()}`:`${fmtMDW(x.date,lang)} ${ap(c.start)}-${ap(useEnd(x))}`,gather:(who==='drv'&&x.drvGather)?ap(x.drvGather):ap(c.gather||addMin(c.start,-20)),   /* 2026-11-19 Nicole：特殊單司機派車單時間可跟客人確認單不同（drvTimeTxt／drvGather，空白＝一樣） */
     contact:(c.contact2||'').trim()?(lang==='en'||lang==='ja'?`\n${cname||''}${crole}  ${ph(c.phone)} / ${c.contact2.trim()}${(c.rel2||'').trim()?`(${c.rel2.trim()})`:''} ${ph(c.phone2)}`:`\n前一天核對: ${cname||''}${crole} ${ph(c.phone)}\n當天現場: ${c.contact2.trim()}${(c.rel2||'').trim()?`(${c.rel2.trim()})`:''} ${ph(c.phone2)}`).trimEnd()+((c.contact3||'').trim()?`\n${c.contact3.trim()}${(c.rel3||'').trim()?`(${c.rel3.trim()})`:''} ${ph(c.phone3)}`.trimEnd():''):`${cname||''}${crole} ${ph(c.phone)}`.trim(),boss:`${ld.driver||''} ${ph(ld.phone)}`.trim(),plan:planName(x),
-    flags:`${t.deco}：${(v=>lang==='zh'&&v==='否'?'否 (依司機預備款式安排)':v)(who==='drv'&&String(x.decoDrv||'').trim()?String(x.decoDrv).trim():lang==='zh'&&String(x.decoStyle||'').trim()?String(decoName(x.decoStyle)||x.decoStyle).trim():yn(decoAnsShow(x),lang))} / ${t.cane}：${yn(caneOf(x),lang)}`+((x.flagNote||'').trim()?`\n*${x.flagNote.trim()}`:'')+(lang==='zh'?fireLines(x,who).map(l=>'\n*'+l).join(''):''),fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',drvNote:who==='cust'&&String(x.custMemoNote||'').trim()?String(x.custMemoNote).trim():String(x.drvNote||'').replace(/^[ \t]*客人行前確認[:：][ \t]*/gm,'').trim(),drvLabel:who==='drv'?(t.drvAdd||'給司機的補充'):(t.drvRelay||'已轉達司機'),files:cfFiles(x),   /* 2026-10-19 給司機的補充＋客人附件：確認單和派車單都放，客人知道有轉達 */
+    flags:`${t.deco}：${(v=>lang==='zh'&&v==='否'?'否 (依司機預備款式安排)':v)(who==='drv'&&String(x.decoDrv||'').trim()?String(x.decoDrv).trim():lang==='zh'&&String(x.decoStyle||'').trim()?String(decoShort(x.decoStyle)||x.decoStyle).trim():yn(decoAnsShow(x),lang))} / ${t.cane}：${yn(caneOf(x),lang)}`+((x.flagNote||'').trim()?`\n*${x.flagNote.trim()}`:'')+(lang==='zh'?fireLines(x,who).map(l=>'\n*'+l).join(''):''),fleet,pts,path:x.path,flow,route:x.routeInMemo?c.route:'',drvNote:who==='cust'&&String(x.custMemoNote||'').trim()?String(x.custMemoNote).trim():String(x.drvNote||'').replace(/^[ \t]*客人行前確認[:：][ \t]*/gm,'').trim(),drvLabel:who==='drv'?(t.drvAdd||'給司機的補充'):(t.drvRelay||'已轉達司機'),files:cfFiles(x),   /* 2026-10-19 給司機的補充＋客人附件：確認單和派車單都放，客人知道有轉達 */
     tips:(t=>t.length?t:(who==='cust'?tipsC(x,lang):TIPS_D))(String((who==='cust'?x.tipsCOv:x.tipsDOv)||'').split('\n').map(z=>z.trim()).filter(Boolean)),   /* 2026-10-20 每張單可以各自改小提醒 */tipsTitle:who==='cust'?t.tipsC:t.tipsD,pay,t}}
 /* 2026-10-20 Nicole：答維正（Vincent）接的禮車趟次要同步到 TimeTree 2768 → 每張單存一份司機派車單純文字（drvText），同步時直接拿 */
 const TT_DRIVERS=['答維正'];
@@ -3996,6 +3996,7 @@ const DECO_DEF=[['A','40cm 紅玫瑰心環'],['B','40cm 囍字紅金花環'],['C
 const DECO_NEAR=['台北','新北','基隆','桃園','新竹'];
 const OWN_PLATES=['REA2768','EAB0029'];function ownCar(x){return (x.fleet||[]).some(f=>OWN_PLATES.includes(String(f.plate||'').toUpperCase().replace(/[^A-Z0-9]/g,'')))}
 function decoStyles(){if(!Array.isArray(S.decoStyles)||!S.decoStyles.length)S.decoStyles=clone(DECO_DEF);return S.decoStyles.filter(s=>s&&s.code)}
+function decoShort(code){const z=decoStyles().find(s=>s.code===code);return z&&!z.multi?z.code:decoName(code)}   /* 2026-11-19 Nicole：確認單／派車單寫「指定車頭彩：Q」(目錄款式只寫代號；多套款式寫名稱) */
 function decoName(code){const s=decoStyles().find(z=>z.code===code);return s?(s.name&&s.name!==s.code?`${s.code}. ${s.name}`:s.code):code}
 function dAdd(d,n){const t=new Date(d+'T00:00:00Z');t.setUTCDate(t.getUTCDate()+n);return t.toISOString().slice(0,10)}
 function dShort(d){return d?(+d.slice(5,7))+'/'+(+d.slice(8,10)):''}
