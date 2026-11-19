@@ -2590,8 +2590,14 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   const del=LT[j],cur=String(c.route||'').trim();if(cur&&!/行前一週確認/.test(cur)){const out=[];cur.split(/\s*>\s*/).forEach(p=>{const m=p.match(/^([A-G])(?=（|\(|$|\s)/);if(m&&m[1]===del)return;if(m&&m[1]>del)p=String.fromCharCode(m[1].charCodeAt(0)-1)+p.slice(1);if(out.length&&out[out.length-1]===p)return;out.push(p)});c.route=out.join(' > ')}
   if(PBLK_OPEN[o.id])PBLK_OPEN[o.id]=Math.max(0,PBLK_OPEN[o.id]-1);o.updated=Date.now();save();renderAll();try{renderPlaceBlocks()}catch(_){}try{renderRtChips()}catch(_){}toast('已刪除 '+del+' 地點')});
 {const _raZ=renderAll;renderAll=function(){_raZ.apply(this,arguments);try{const w=$('zRateXWrap');if(w&&o)w.hidden=!(carCount(o)-teslaN(o)>0)}catch(_){}}}
-function oTypeSplit(x){const c=x&&x.c;if(!c)return;for(let i=1;i<=5;i++){const l=String(c['o'+i+'L']||'').trim(),m=l.match(/^(迎娶地點|入房地點|宴客地點|證婚地點|儀式地點|其他地點)(?:・(.*))?$/);if(m&&!c['o'+i+'T']){c['o'+i+'T']=m[1]==='儀式地點'?'證婚地點':m[1];c['o'+i+'L']=(m[2]||'').trim()}}}   /* 2026-10-24 新人資料：停靠地點改成「類型下拉＋名稱」 */
-function fillInputs(){try{const z=$('q_ibuid');if(z){const u=o&&o.c&&o.c.ibUid||'';z.style.display=u?'block':'none';z.textContent=u?'系統已記錄客人編號（從最近詢問建立，系統自動比對用，不用修改）：'+u:''}}catch(_){}try{oTypeSplit(o)}catch(_){}try{if(o&&o.c&&!o.c.wedT)o.c.wedT='迎娶地點'}catch(_){}setTimeout(()=>{try{renderPlaceBlocks()}catch(_){}try{renderRtChips()}catch(_){}},0);if(DN_DIRTY&&(!o||o.id!==DN_ID))dnDirty(false);try{renderXList()}catch(e){}document.querySelectorAll('[data-b]').forEach(el=>{if(DN_DIRTY&&el.closest('#drvNoteCard'))return;const v=getPath(o,el.dataset.b);if(el.hasAttribute('data-bool'))el.value=v?'1':'0';else el.value=v==null||(el.dataset.b==='tripKm'&&!+v)?'':v});try{nlAll()}catch(e){}
+/* 2026-11-19 Nicole：地點說明欄不要重複寫地點類型。行前確認帶回「集合地點（男方家）」「宴客地點（維多利亞酒店）」→ 類型放下拉、說明只留括號內（A～Z 全部地點） */
+function oTypeSplit(x){const c=x&&x.c;if(!c)return false;let ch=false;
+  for(let i=0;i<26;i++){const f=ptField(PT_L[i]);if(!f)continue;const l=String(c[f+'L']||'').trim();if(!l)continue;
+    const m=l.match(/^([^（(・\s]{1,8}地點)(?:\s*[（(](.*)[）)])?\s*((?:・.*)?)$/);if(!m)continue;
+    const t=m[1]==='儀式地點'?'證婚地點':m[1],nl=[(m[2]||'').trim(),(m[3]||'').replace(/^・/,'').trim()].filter(Boolean).join('・'),ct=String(c[f+'T']||'').trim();
+    if(!ct||ct==='其他地點'||ct===ptDefType(PT_L[i])||ct===t)c[f+'T']=t;c[f+'L']=nl;ch=true}
+  return ch}   /* 2026-10-24 新人資料：停靠地點改成「類型下拉＋名稱」 */
+function fillInputs(){try{const z=$('q_ibuid');if(z){const u=o&&o.c&&o.c.ibUid||'';z.style.display=u?'block':'none';z.textContent=u?'系統已記錄客人編號（從最近詢問建立，系統自動比對用，不用修改）：'+u:''}}catch(_){}try{if(oTypeSplit(o)&&!FDRAFT)setTimeout(()=>{try{save()}catch(_){}},0)}catch(_){}try{if(o&&o.c&&!o.c.wedT)o.c.wedT='迎娶地點'}catch(_){}setTimeout(()=>{try{renderPlaceBlocks()}catch(_){}try{renderRtChips()}catch(_){}},0);if(DN_DIRTY&&(!o||o.id!==DN_ID))dnDirty(false);try{renderXList()}catch(e){}document.querySelectorAll('[data-b]').forEach(el=>{if(DN_DIRTY&&el.closest('#drvNoteCard'))return;const v=getPath(o,el.dataset.b);if(el.hasAttribute('data-bool'))el.value=v?'1':'0';else el.value=v==null||(el.dataset.b==='tripKm'&&!+v)?'':v});try{nlAll()}catch(e){}
   document.querySelectorAll('[data-s]').forEach(el=>{el.value=S[el.dataset.s]==null?'':S[el.dataset.s]});
   try{renderFormPlaces()}catch(e){}
   try{renderChats()}catch(e){}
