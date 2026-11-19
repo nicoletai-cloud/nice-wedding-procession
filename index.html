@@ -3833,8 +3833,11 @@ async function ibQuote(uid){let u=IB.find(x=>x.uid===uid);if(!u)return;const min
   if(!u.order||!DB.orders[u.order]){let l=mine();if(!l){toast('確認中…');try{IB=await ibCall({action:'inbox'})}catch(_){}u=IB.find(x=>x.uid===uid)||u;if(u.order&&!DB.orders[u.order]){try{await syncFresh()}catch(_){}}l=mine()}
     if(!(u.order&&DB.orders[u.order])&&l){u.order=l.id;toast('這位客人已經有報價，直接開啟')}}
   ibQuote0(uid)}
-function ibQuote0(uid){const u=IB.find(x=>x.uid===uid);if(!u)return;$('inboxModal').hidden=true;
-  if(u.order&&DB.orders[u.order]){o=DB.orders[u.order];DB.cur=o.id;let ch=ibPin(o,uid);const hd=!o.date&&ibDateOf(u);if(hd){o.date=hd;ch=true;toast('已帶入客人說的婚期 '+hd.slice(5).replace('-','/')+'，請再確認')}{const ti=ibInfoOf(u),c=o.c,got=[];if(!c.meet&&ti.groom){c.meet=ti.groom;o.cityA=countyOf(c.meet);got.push('男方')}if(!c.wed&&ti.bride){c.wed=ti.bride;o.cityB=countyOf(c.wed);got.push('女方')}if(!c.o1&&ti.venue){c.o1=ti.venue;c.o1L='宴客餐廳';got.push('餐廳')}if(!c.start&&ti.start){c.start=ti.start;if(ti.end&&!c.end)c.end=ti.end;got.push('時間')}if(got.length){ch=true;setTimeout(()=>toast('已帶入客人說的'+got.join('、')+'，請再確認'),1200)}}if(ch)save();else store('nwcw_orders',DB);loadOrder();showTab('quote');return}
+/* 2026-11-20 Nicole：客人訊息有「來源：官網」→ 客人怎麼找到我們自動帶「官網」；建立／開啟報價後最近詢問自動收起，不佔版面 */
+function ibSrcOf(x,u){const t=(u.texts||[]).join('\n')+'\n'+String((u.bot&&u.bot.data&&u.bot.data.text)||'');if(!/來源\s*[:：]\s*官網/.test(t))return false;x.src=x.src||{};if(x.src.from)return false;x.src.from='官網';return true}
+function ibFold(){const b=$('recentFold');if(b&&b.getAttribute('aria-expanded')==='true')b.click()}
+function ibQuote0(uid){const u=IB.find(x=>x.uid===uid);if(!u)return;$('inboxModal').hidden=true;ibFold();
+  if(u.order&&DB.orders[u.order]){o=DB.orders[u.order];DB.cur=o.id;let ch=ibPin(o,uid);if(ibSrcOf(o,u))ch=true;const hd=!o.date&&ibDateOf(u);if(hd){o.date=hd;ch=true;toast('已帶入客人說的婚期 '+hd.slice(5).replace('-','/')+'，請再確認')}{const ti=ibInfoOf(u),c=o.c,got=[];if(!c.meet&&ti.groom){c.meet=ti.groom;o.cityA=countyOf(c.meet);got.push('男方')}if(!c.wed&&ti.bride){c.wed=ti.bride;o.cityB=countyOf(c.wed);got.push('女方')}if(!c.o1&&ti.venue){c.o1=ti.venue;c.o1L='宴客餐廳';got.push('餐廳')}if(!c.start&&ti.start){c.start=ti.start;if(ti.end&&!c.end)c.end=ti.end;got.push('時間')}if(got.length){ch=true;setTimeout(()=>toast('已帶入客人說的'+got.join('、')+'，請再確認'),1200)}}if(ch)save();else store('nwcw_orders',DB);loadOrder();showTab('quote');return}
   const d=(u.bot&&u.bot.data)||{};o=newOrder();o.sample=false;
   const ch_=ibChOf(uid)||'LINE';o.c.chatName=String(u.name||'').replace(/^\((fb|ig)\)/,'');o.c.channel=ch_;{const hd=ibDateOf(u);if(hd)o.date=hd}
   o.need.dateSt=d.st||'';o.need.month=d.iso?'':(d.month||'').trim();o.need.brand={tesla:'特斯拉',benz:'賓士',other:'其他'}[d.brand]||'';
@@ -3844,7 +3847,7 @@ function ibQuote0(uid){const u=IB.find(x=>x.uid===uid);if(!u)return;$('inboxModa
   const ti_=ibInfoOf(u);if(!o.c.meet&&ti_.groom)o.c.meet=ti_.groom;if(!o.c.wed&&ti_.bride)o.c.wed=ti_.bride;if(!o.c.o1&&ti_.venue){o.c.o1=ti_.venue;o.c.o1L='宴客餐廳'}if(!d.meal&&ti_.start){o.c.start=ti_.start;if(ti_.end)o.c.end=ti_.end}if(!o.need.brand&&ti_.brand)o.need.brand={tesla:'特斯拉',benz:'賓士'}[ti_.brand]||'';   /* 2026-11-12 客人自己打的資料 */
   o.cityA=countyOf(o.c.meet);o.cityB=countyOf(o.c.wed);
   o.need.note=[ch_+' 機器人問答','婚期：'+(d.date||(o.date&&!d.iso?o.date+'(從客人訊息讀到)':'')||'—'),'地區：'+(d.area||'—'),'時段：'+(d.meal||'—')+(d.time?' '+d.time:''),'車款：'+(d.car||'—')+(d.count?'｜'+d.count+' 台':''),(Object.keys(ti_).length?'客人訊息讀到：'+[ti_.groom&&'男方 '+ti_.groom,ti_.bride&&'女方 '+ti_.bride,ti_.venue&&'餐廳 '+ti_.venue,ti_.start&&ti_.start+(ti_.end?'-'+ti_.end:''),ti_.count&&ti_.count+' 台'].filter(Boolean).join('｜'):''),'客人最近訊息：'+(u.texts||[]).slice(-3).join(' / ')].join('\n');
-  ibPin(o,uid);DB.orders[o.id]=o;syncFleet();save();loadOrder();showTab('quote');
+  ibSrcOf(o,u);ibPin(o,uid);DB.orders[o.id]=o;syncFleet();save();loadOrder();showTab('quote');
   toast(d.meal?'已建立報價：時段先帶預設，地址請再確認':'已建立報價：地址、時段請再確認');
   ibCall({action:'inboxSet',uids:[uid],set:{order:o.id}}).then(r=>{IB=r;renderInbox()}).catch(()=>{});
   if(o.c.meet&&o.c.wed)setTimeout(()=>{try{calcKm()}catch(_){}},300)}
