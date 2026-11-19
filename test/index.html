@@ -1636,9 +1636,9 @@ function lateX(x){return (x.extras||[]).filter(e=>e&&e.late&&num(e.a))}
 function postX(x){if(!x.balPaid)return[];return lateX(x).filter(e=>!x.balPaidTs||+e.at>+x.balPaidTs)}
 function sumX(x,L){return L.reduce((a,e)=>a+xAmt(x,e),0)}
 function xTxt(x,L){return L.map(e=>`${String(e.n||'加項').trim()} ${money(xAmt(x,e))}`).join('、')}
-function balExpr(x,r){const cfOt=!!x.cfOtH||((x.cfLast&&x.cfLast.warn)||[]).some(w=>/超過合約/.test(w));   /* 2026-10-20 只有客人行前確認的用車時間超過合約時才列加時算式 */
+function balExpr(x,r){const oh=+x.cfOtH||0;   /* 2026-11-19 Nicole：合約本來的時數不列算式，只有客人在合約之外增加時數 (cfOtH) 才列加時算式；預估超過合約不算 */
   if(r.mon)return money(r.balance);const parts=[];let sub=0;
-  if(cfOt&&r.ot>0){const ps=MODELS.filter(m=>num(x.cars[m])>0&&num(S.ot[m])>0).map(m=>money(num(S.ot[m]))+(num(x.cars[m])>1?'*'+num(x.cars[m]):''));const per=ps.join('+');parts.push(`加時 ${r.eh}HR ${r.eh>1?`(${per})*${r.eh}`:per}`);sub+=r.ot}
+  if(oh>0&&r.ot>0){const ms=MODELS.filter(m=>num(x.cars[m])>0&&num(S.ot[m])>0),ps=ms.map(m=>money(num(S.ot[m]))+(num(x.cars[m])>1?'*'+num(x.cars[m]):'')),per=ps.join('+'),amt=Math.min(r.ot,ms.reduce((s,m)=>s+num(S.ot[m])*num(x.cars[m]),0)*oh);parts.push(`加時 ${oh}HR ${oh>1?`(${per})*${oh}`:per}`);sub+=amt}
   lateX(x).forEach(e=>{parts.push(e.otAuto?otExpr(x,e):`${String(e.n||'加項').trim()} ${money(xAmt(x,e))}`);sub+=xAmt(x,e)});
   if(!parts.length||r.balance-sub<=0)return money(r.balance);return `${money(r.balance-sub)}+${parts.join('+')}=${money(r.balance)}`}
 function qtyWord(q,lang){if(lang==='en')return '×'+q;if(lang==='ja')return q+'台';return (ZHN[q]||q)+'台'}
