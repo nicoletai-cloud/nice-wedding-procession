@@ -2278,8 +2278,8 @@ function isHotel(a){return /飯店|酒店|旅館|旅店|會館|行館|渡假村|
 function caneYN(v){v=String(v||'').trim();if(!v)return '';if(/沒有|不需|不用|無|否|^no$/i.test(v))return '否';if(/有|需要|是|要/.test(v))return '是';return ''}
 /* 2026-10-20 行前確認的鞭炮、儀式老師／主持人 → 確認單／派車單的「指定車頭彩」那格下面 */
 function fireLines(x,who){const L=[],c=x.c||{},loop=x.fireMode==='loop';
-  if(x.fireYN==='要放'){const N={A:loop?'繞圈回到 A 點':'迎娶回 A 點(男方家)',B:'抵達 B 點(女方家)',C:'抵達 C 點(餐廳)'},ad={A:c.meet,B:c.wed,C:c.o1},ps=String(x.fire||'').split(',').filter(String);
-    L.push(`鞭炮：${ps.map(z=>N[z]||z).join('、')} ${x.fireType?'放'+String(x.fireType).replace(/^放/,''):'放炮(種類未定)'}`);   /* 2026-11-04 Nicole：半形括號、寫成完整句子「…放實體鞭炮」 */
+  if(x.fireYN==='要放'){/* 2026-11-19 Nicole：20261122MLHC01 C 點是祭祖地點卻寫成餐廳 → 每個點照實際地點類型＋名稱寫；回到 A 點和其他放炮點同地址就不重複寫 */const PK={A:'meet',B:'wed',C:'o1',D:'o2',E:'o3',F:'o4',G:'o5'},ad={},lab=z=>{const k=PK[z];if(!k)return '';const T=String(c[k+'T']||'').trim(),Lb=String(c[k+'L']||'').trim();return [T,Lb].filter((v,i,a)=>v&&a.indexOf(v)===i).join('/')};Object.keys(PK).forEach(z=>ad[z]=c[PK[z]]);const na=v=>String(v||'').replace(/\s+/g,'').replace(/^\d{3,6}/,'').replace(/臺/g,'台');const N=z=>{const l=lab(z);return z==='A'?(loop?'繞圈回到 A 點':'迎娶回 A 點'+(l?'('+l+')':'')):'抵達 '+z+' 點'+(l?'('+l+')':'')};let ps=String(x.fire||'').split(',').filter(String);if(!loop&&ps.indexOf('A')>=0&&na(ad.A)&&ps.some(z=>z!=='A'&&na(ad[z])===na(ad.A)))ps=ps.filter(z=>z!=='A');
+    L.push(`鞭炮：${ps.map(N).join('、')} ${x.fireType?'放'+String(x.fireType).replace(/^放/,''):'放炮(種類未定)'}`);   /* 2026-11-04 Nicole：半形括號、寫成完整句子「…放實體鞭炮」 */
     if(ps.some(z=>/飯店|酒店|旅館|會館|行館|渡假|度假|宴會|hotel|resort/i.test(ad[z]||'')))L.push('施放地點是飯店／會館，請依照飯店要求的地點施放');
     if(/實體/.test(x.fireType||''))L.push(who==='drv'?'實體鞭炮：不可以從車上丟出鞭炮，請鞭炮手下車到定點施放，並與人、車保持距離':'鞭炮注意事項：不可以從車上丟出鞭炮，需下車到定點施放')}
   else if(x.fireYN==='不放')L.push('鞭炮：不放');
