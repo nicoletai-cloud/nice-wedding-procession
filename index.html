@@ -3781,7 +3781,14 @@ document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!t.da
   x.headOnly=t.checked;x.updated=Date.now();store('nwcw_orders',DB);try{pushSync()}catch(_){}try{renderLg()}catch(_){}try{renderLgCard()}catch(_){}try{renderPtCard()}catch(_){}try{renderLsn()}catch(_){}toast(t.checked?'已設定：此群組只有車頭（不需綁定車卡、不發禮車教案）':'已取消「只有車頭」');});
 document.addEventListener('change',e=>{const t=e.target;if(!t)return;if(t.id==='lgDate'){renderLg();return}if(!t.dataset||!t.dataset.lgdone)return;const x=DB.orders[t.dataset.lgdone];if(!x)return;
   x.lgAt=t.checked?Date.now():0;x.updated=Date.now();store('nwcw_orders',DB);try{pushSync()}catch(_){}renderLg();try{renderLgCard()}catch(_){}});
-async function loadInbox(){try{IB=await ibCall({action:'inbox'});renderInbox()}catch(e){if(!$('inboxModal').hidden)$('ibList').innerHTML='<p class="hint">讀取失敗，請按重新整理</p>'}}
+/* 2026-11-24 Nicole：FB／IG 婚禮詢問自動建立詢問單（不用等回答婚期、不用手動按建立報價），進追蹤名單才不會漏追；同一個帳號只建一張 */
+let ibAutoOk=false;function ibAutoMeta(){if(!Array.isArray(IB)||!syncReady||!ibAutoOk)return;let n=0;const ids=[];IB.forEach(u=>{const ch=ibChOf(u.uid);if(ch!=='FB'&&ch!=='IG')return;if(u.vendor||u.spam||!['禮車',''].includes(u.cat||''))return;if(u.order&&DB.orders[u.order])return;if(Object.values(DB.orders).some(x=>x&&x.c&&x.c.ibUid===u.uid))return;
+  const d=(u.bot&&u.bot.data)||{},x=newOrder();x.c.chatName=String(u.name||'').replace(/^\((fb|ig)\)/,'');x.c.channel=ch;x.c.ibUid=u.uid;{const hd=ibDateOf(u);if(hd)x.date=hd}
+  x.need.dateSt=d.st||'';x.need.month=d.iso?'':(d.month||'').trim();x.need.brand={tesla:'特斯拉',benz:'賓士',other:'其他'}[d.brand]||'';x.c.meet=d.groomAddr||d.groom||'';x.c.wed=d.brideAddr||d.bride||'';if(d.venue){x.c.o1=d.venueAddr||d.venue;x.c.o1L='宴客餐廳'}x.cityA=countyOf(x.c.meet);x.cityB=countyOf(x.c.wed);
+  x.inqAt=+u.since||+u.last||Date.now();x.src.from=ch;x.src.fromAuto=1;try{ibSrcOf(x,u)}catch(_){}x.autoIb=Date.now();
+  x.need.note=[ch+' 自動建立的詢問單(還沒報價)','婚期:'+(d.date||x.date||'—'),'地區:'+(d.area||'—'),'客人最近訊息:'+(u.texts||[]).slice(-3).join(' / ')].join('\n');x.updated=Date.now();DB.orders[x.id]=x;ids.push([u.uid,x.id]);n++});
+  if(!n)return;store('nwcw_orders',DB);pushSync();ids.forEach(([uid,id])=>{ibCall({action:'inboxSet',uids:[uid],set:{order:id}}).catch(()=>{})});toast('已自動建立 '+n+' 位 FB/IG 客人的詢問單')}
+async function loadInbox(){try{IB=await ibCall({action:'inbox'});try{ibAutoMeta()}catch(_){}renderInbox()}catch(e){if(!$('inboxModal').hidden)$('ibList').innerHTML='<p class="hint">讀取失敗，請按重新整理</p>'}}
 function ibAgo(t){const m=Math.round((Date.now()-t)/60000);return m<60?m+' 分鐘前':m<1440?Math.round(m/60)+' 小時前':Math.round(m/1440)+' 天前'}
 function renderInbox(){const n=IB.filter(u=>u.pending).length;$('btnInbox').innerHTML='訊息'+(n?`<b>${n}</b>`:'');try{renderRecent()}catch(_){}
   /* 2026-10-19 底部「訊息」紅點跟著實際待回覆數更新（之前沿用首頁舊的暫存數字，回覆完還顯示 1） */
@@ -4507,7 +4514,7 @@ renderPriceSettings();loadOrder();
 let startTab='quote';try{startTab=sessionStorage.getItem('nwcw_tab')||'quote'}catch(_){}
 showTab(startTab);setTimeout(markTabs,300);
 {const m=location.hash.match(/setup=([^&]+)/);if(m){try{const v=JSON.parse(decodeURIComponent(m[1]));if(v.u&&v.k){S.driveUrl=v.u;S.driveKey=v.k;store('nwcw_settings',S);renderPriceSettings();toast('已設定同步，正在下載訂單…')}}catch(_){}history.replaceState(null,'',location.pathname)}}
-openFromHash();syncReady=true;doSync();setTimeout(()=>{try{let n=0;Object.values(DB.orders).forEach(x=>{if(autoSrc(x)){x.updated=Date.now();n++}});if(n){store('nwcw_orders',DB);pushSync();try{renderSrcStats&&renderSrcStats()}catch(_){}}}catch(_){}},25000);
+openFromHash();syncReady=true;doSync();setTimeout(()=>{ibAutoOk=true;try{ibAutoMeta()}catch(_){}try{let n=0;Object.values(DB.orders).forEach(x=>{if(autoSrc(x)){x.updated=Date.now();n++}});if(n){store('nwcw_orders',DB);pushSync();try{renderSrcStats&&renderSrcStats()}catch(_){}}}catch(_){}},25000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')doSync()});
 setInterval(()=>{if(document.visibilityState==='visible')doSync()},60000);
 loadInbox();loadSigned();setInterval(()=>{if(document.visibilityState==='visible'){loadInbox();loadSigned()}},60000);
