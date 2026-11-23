@@ -439,7 +439,7 @@ nav.tabs button{scroll-snap-align:start}
         <div class="card">
           <h3>案件來源 <span id="srcChip"></span></h3>
           <div class="fields">
-            <label class="f">客人怎麼找到我們<select id="q_from" data-b="src.from"><option value="">（還不知道）</option><option>Google 搜尋／地圖</option><option>IG</option><option>FB</option><option>FB/IG 廣告</option><option>Google 廣告</option><option>婚顧／廠商介紹</option><option>朋友介紹</option><option>老客回購</option><option>官網</option><option>網路文章／論壇</option><option>AI 推薦</option><option>其他</option></select></label>
+            <label class="f">客人怎麼找到我們<select id="q_from" data-b="src.from"><option value="">（還不知道）</option><option>Google 搜尋／地圖</option><option>IG</option><option>FB</option><option>FB/IG 廣告</option><option>Google 廣告</option><option>婚顧／廠商介紹</option><option>同業</option><option>朋友介紹</option><option>老客回購</option><option>官網</option><option>網路文章／論壇</option><option>AI 推薦</option><option>其他</option></select></label>
             <label class="f">合作廠商／婚顧<input id="q_vendor" data-b="src.vendor" list="vendorList" placeholder="直客免填"></label>
             <label class="f">婚顧方式<select id="q_vmode" data-b="src.mode"><option value="">—</option><option value="推薦">推薦（客人自己訂車）</option><option value="代訂">代訂（婚顧幫客人訂車）</option></select></label>
             <label class="f">婚顧窗口<input id="q_vagent" data-b="src.agent" placeholder="例：Demi、Jungle"></label>
@@ -1328,7 +1328,12 @@ function renderFdBar(){if(FDRAFT&&o&&FDRAFT.id!==o.id){fdCommit(true);toast('上
 ['input','change','click'].forEach(ev=>document.addEventListener(ev,e=>{const t=e.target;if(!t||!t.closest)return;if(t.closest('#fdBar')||t.closest('.fdBar2')||t.closest('#eqWarn'))return;if(!t.closest('.flowEdit')&&!t.closest('.fdZone'))return;if(ev==='click'&&!t.closest('button'))return;fdBegin()},true));
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-fd]');if(!b)return;if(b.dataset.fd==='save')fdCommit();else fdCancel()});
 window.addEventListener('beforeunload',e=>{if(FDRAFT){e.preventDefault();e.returnValue=''}});
-function save(){try{if(!ptTyping())ptMerge(o)}catch(_){}if(FDRAFT&&o&&FDRAFT.id===o.id){o.updated=Date.now();DB.orders[o.id]=o;setTimeout(renderFdBar,0);return}o.updated=Date.now();DB.cur=o.id;DB.orders[o.id]=o;store('nwcw_orders',DB);pushSync();drvAutoQ()}
+/* 2026-11-23 Nicole：「客人怎麼找到我們」自動判斷，不用手填（手動選的不覆蓋）：婚顧欄有填→婚顧／廠商介紹；同業→同業；FB／IG 進來→FB／IG；訊息有「來源：官網」→官網；提到 Google／搜尋→Google 搜尋／地圖 */
+function autoSrc(x){if(!x||x.sample)return false;const s=x.src=x.src||{};if(s.from)return false;const ch=String((x.c&&x.c.channel)||''),t=[JSON.stringify(x.need||''),x.note||'',x.inqText||''].join(' ');let v='';
+  if(s.vendor||s.agent||s.ref)v='婚顧／廠商介紹';else if(ch==='同業')v='同業';else if(/^FB$/i.test(ch))v='FB';else if(/^IG$/i.test(ch))v='IG';
+  else if(/來源[:：]\s*官網/.test(t))v='官網';else if(/google|谷歌|估狗|搜尋到|搜尋看到/i.test(t))v='Google 搜尋／地圖';
+  if(!v)return false;s.from=v;s.fromAuto=1;return true}
+function save(){try{autoSrc(o)}catch(_){}try{if(!ptTyping())ptMerge(o)}catch(_){}if(FDRAFT&&o&&FDRAFT.id===o.id){o.updated=Date.now();DB.orders[o.id]=o;setTimeout(renderFdBar,0);return}o.updated=Date.now();DB.cur=o.id;DB.orders[o.id]=o;store('nwcw_orders',DB);pushSync();drvAutoQ()}
 function saveS(){if(syncReady)S._ts=Date.now();store('nwcw_settings',S);pushSync()}
 let syncReady=false,syncBusy=false,syncTimer=null,syncAgain=false;
 function syncStat(t){const el=$('btnSync');if(el)el.textContent=t}
@@ -3840,7 +3845,7 @@ async function ibQuote(uid){let u=IB.find(x=>x.uid===uid);if(!u)return;const min
     if(!(u.order&&DB.orders[u.order])&&l){u.order=l.id;toast('這位客人已經有報價，直接開啟')}}
   ibQuote0(uid)}
 /* 2026-11-20 Nicole：客人訊息有「來源：官網」→ 客人怎麼找到我們自動帶「官網」；建立／開啟報價後最近詢問自動收起，不佔版面 */
-function ibSrcOf(x,u){const t=(u.texts||[]).join('\n')+'\n'+String((u.bot&&u.bot.data&&u.bot.data.text)||'');if(!/來源\s*[:：]\s*官網/.test(t))return false;x.src=x.src||{};if(x.src.from)return false;x.src.from='官網';return true}
+function ibSrcOf(x,u){const t=(u.texts||[]).join('\n')+'\n'+String((u.bot&&u.bot.data&&u.bot.data.text)||'');const v=/來源\s*[:：]\s*官網/.test(t)?'官網':/google|谷歌|估狗|搜尋到|網路上搜/i.test(t)?'Google 搜尋／地圖':/朋友(介紹|推薦)|親友(介紹|推薦)/.test(t)?'朋友介紹':/(看|在|從)\s*(IG|instagram)/i.test(t)?'IG':/(看|在|從)\s*(FB|臉書|facebook)/i.test(t)?'FB':/chatgpt|gemini|AI\s*推薦/i.test(t)?'AI 推薦':'';if(!v)return false;x.src=x.src||{};if(x.src.from)return false;x.src.from=v;x.src.fromAuto=1;return true}
 function ibFold(){const b=$('recentFold');if(b&&b.getAttribute('aria-expanded')==='true')b.click()}
 function ibQuote0(uid){const u=IB.find(x=>x.uid===uid);if(!u)return;$('inboxModal').hidden=true;ibFold();
   if(u.order&&DB.orders[u.order]){o=DB.orders[u.order];DB.cur=o.id;let ch=ibPin(o,uid);if(ibSrcOf(o,u))ch=true;const hd=!o.date&&ibDateOf(u);if(hd){o.date=hd;ch=true;toast('已帶入客人說的婚期 '+hd.slice(5).replace('-','/')+'，請再確認')}{const ti=ibInfoOf(u),c=o.c,got=[];if(!c.meet&&ti.groom){c.meet=ti.groom;o.cityA=countyOf(c.meet);got.push('男方')}if(!c.wed&&ti.bride){c.wed=ti.bride;o.cityB=countyOf(c.wed);got.push('女方')}if(!c.o1&&ti.venue){c.o1=ti.venue;c.o1L='宴客餐廳';got.push('餐廳')}if(!c.start&&ti.start){c.start=ti.start;if(ti.end&&!c.end)c.end=ti.end;got.push('時間')}if(got.length){ch=true;setTimeout(()=>toast('已帶入客人說的'+got.join('、')+'，請再確認'),1200)}}if(ch)save();else store('nwcw_orders',DB);loadOrder();showTab('quote');return}
@@ -4502,7 +4507,7 @@ renderPriceSettings();loadOrder();
 let startTab='quote';try{startTab=sessionStorage.getItem('nwcw_tab')||'quote'}catch(_){}
 showTab(startTab);setTimeout(markTabs,300);
 {const m=location.hash.match(/setup=([^&]+)/);if(m){try{const v=JSON.parse(decodeURIComponent(m[1]));if(v.u&&v.k){S.driveUrl=v.u;S.driveKey=v.k;store('nwcw_settings',S);renderPriceSettings();toast('已設定同步，正在下載訂單…')}}catch(_){}history.replaceState(null,'',location.pathname)}}
-openFromHash();syncReady=true;doSync();
+openFromHash();syncReady=true;doSync();setTimeout(()=>{try{let n=0;Object.values(DB.orders).forEach(x=>{if(autoSrc(x)){x.updated=Date.now();n++}});if(n){store('nwcw_orders',DB);pushSync();try{renderSrcStats&&renderSrcStats()}catch(_){}}}catch(_){}},25000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')doSync()});
 setInterval(()=>{if(document.visibilityState==='visible')doSync()},60000);
 loadInbox();loadSigned();setInterval(()=>{if(document.visibilityState==='visible'){loadInbox();loadSigned()}},60000);
