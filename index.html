@@ -1800,7 +1800,8 @@ function expandCars(x){const a=[];MODELS.forEach(m=>{for(let i=0;i<num(x.cars[m]
 function defaultRoles(list){const roles=new Array(list.length).fill('伴娘車');const xi=list.indexOf('X');const mainI=xi>=0?xi:0;roles[mainI]='主禮車';
   if(list.length>1){let li=list.findIndex((m,i)=>i!==mainI&&m==='S');if(li<0)li=list.findIndex((m,i)=>i!==mainI&&m!=='X');if(li<0)li=list.findIndex((m,i)=>i!==mainI);if(li>=0)roles[li]='前導車'}
   return roles}
-function fleetOf(x){const want=expandCars(x);const cur=x.fleet||[];const pool=cur.slice();const out=[];const roles=defaultRoles(want);
+function ptAccomp(x){const r=String((x&&x.partner&&x.partner.raw)||'');return !!(x&&x.partner)&&(/陪嫁車/.test(r)||/自備[^\n]{0,8}(前導|主禮)/.test(r))}   /* 2026-11-24 Nicole: 同業單新人自備主禮/前導, 我們的車當陪嫁 → 全部伴娘車 */
+function fleetOf(x){const want=expandCars(x);const cur=x.fleet||[];const pool=cur.slice();const out=[];const roles=ptAccomp(x)?want.map(()=>'伴娘車'):defaultRoles(want);
   want.forEach((m,i)=>{const k=pool.findIndex(f=>f.m===m);if(k>=0){out.push(pool.splice(k,1)[0])}else out.push({m,role:roles[i],plate:'',driver:'',phone:'',color:'',seats:S.seats[m],pay:'',lead:roles[i]==='主禮車'})   /* 2026-11-04 Nicole：車隊不預填顏色（有指定車色才由 applyColorReq 帶入） */});
   const ord=r=>{const i=ROLES.indexOf(r);return i<0?9:i};
   return out.sort((a,b)=>ord(a.role)-ord(b.role))}
