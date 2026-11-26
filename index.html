@@ -1468,8 +1468,10 @@ function busCounties(x){const r=[];(x.busStops||[]).forEach(t=>{if(t)['from','vi
 function codeOf(x){return (x.code||autoCode(x)||'').toUpperCase()}
 /* 同日期＋同縣市代碼的第幾組：第一次決定後就固定，刪掉別張單也不會變號 */
 function autoSeq(x){const key=dstr(x)+codeOf(x);if(x._seqKey===key&&x._seq)return x._seq;
-  let mx=0;Object.values(DB.orders).forEach(y=>{if(y.id===x.id)return;if(dstr(y)+codeOf(y)===key)mx=Math.max(mx,num(y.seq||autoSeq(y)))});
-  x._seqKey=key;x._seq=p2(mx+1);return x._seq}
+  /* 2026-11-26 兩張同日同縣市、都還沒編號的單會互相呼叫 → 無限遞迴讓整個系統當掉（最近詢問讀不到、同步停住）；正在算的單先跳過 */
+  if(x._seqBusy)return '';x._seqBusy=1;
+  try{let mx=0;Object.values(DB.orders).forEach(y=>{if(y.id===x.id||y._seqBusy)return;if(dstr(y)+codeOf(y)===key)mx=Math.max(mx,num(y.seq||autoSeq(y)))});
+  x._seqKey=key;x._seq=p2(mx+1);return x._seq}finally{delete x._seqBusy}}
 function seqOf(x){return x.seq?p2(num(x.seq)||x.seq):autoSeq(x)}
 function orderNo(x){return dstr(x)+codeOf(x)+seqOf(x)}
 /* 地址前面常夾時間或說明（例：「8:30新郎家 屏東縣屏東市…」），縣市不一定在開頭，所以整段搜尋 */
