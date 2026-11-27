@@ -2084,7 +2084,7 @@ function findText(x){const r=calc(x),c=x.c;const pts=points(x).filter(p=>p.addr)
    cane==='是'?'甘蔗：需固定':'',deco&&!/^(否|無|不)|待確認|待定|未定/.test(deco)?`指定車頭彩：${deco}`:'',noteShow?`備註：${note}`:'',x.findMain?'主禮車請預備：車頭彩／門把彩／對講機':'','','請問能支援嗎？'].filter((l,i,a)=>l!==''||i===a.length-2).join('\n')}
 
 /* ---------- contract ---------- */
-const CLAUSES=['所有車輛皆附司機，著正式服裝，出車前一律洗車、清內裝。','若新人要求趕時辰，而導致車輛行駛違反中華民國交通法規須由訂車人吸收罰款。','此報價單暨合約書為現金價格，不含發票 5%營業稅。','行程異動請於用車前三天電話或 Line 告知。','車隊會在指定時間提早 10~15 分鐘左右到達準備，實際依指定時間計算。','倘若發生以下情形而致無法依約定時間用車者，本公司將向消費者酌收手續費：','預訂車輛如遇不可抗拒因素無法出車時，訂車人同意租車公司免費升級為更高階車款。','若無加價指定車色，則由本公司安排車色，並於用車日三天前提供司機聯絡資訊。','本公司非常重視服務流程與品質，若訂車人未透過本公司窗口直接與司機有任何協議，如產生糾紛或其他衍生相關問題，本公司將不負擔任何賠償責任。'];
+const CLAUSES=['所有車輛皆附司機，著正式服裝，出車前一律洗車、清內裝。','若新人要求趕時辰，而導致車輛行駛違反中華民國交通法規須由訂車人吸收罰款。','此報價單暨合約書為現金價格，不含發票 5%營業稅。','行程異動請於用車前三天電話或 Line 告知。','車隊會在指定時間提早 10~15 分鐘左右到達準備，實際依指定時間計算。','倘若發生以下情形而致無法依約定時間用車者，本公司將向消費者酌收手續費：','預訂車輛如遇不可抗拒因素無法出車時，訂車人同意租車公司免費升級為更高階車款。','若無加價指定車色，則由本公司安排車色，並於用車日三天前提供司機聯絡資訊。','本公司非常重視服務流程與品質，若訂車人未透過本公司窗口直接與司機有任何協議，如產生糾紛或其他衍生相關問題，本公司將不負擔任何賠償責任。','為維護行車安全，禮車上禁止丟擲或施放鞭炮；如需施放，請親友於禮車停妥後下車至安全定點施放，並與人、車保持距離，司機會配合停車或放慢。'];   /* 2026-11-27 Nicole：禮車合約第 10 點禁止車上放炮（遊覽車／婚宴貴賓接送不加） */
 const CT2_CSS=`.ct2{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;color:#343A35;line-height:1.45;font-size:9pt}
 .ct2 .pg{box-sizing:border-box;width:595pt;padding:26pt 38pt 22pt 30pt;border-left:8pt solid #C5AA82;background:#fff}
 .ct2 .pg2{page-break-before:always}
@@ -2154,7 +2154,7 @@ function contractHTML(x){const BUS=!!(x&&x.bus),SH=isShut(x);   /* 2026-10-28 Ni
   <table><tr><td class="sf gold" style="font-size:16pt">好好禮車</td><td class="no">訂單編號&nbsp;&nbsp;${no}</td></tr></table>
   <div class="c2ttl sf" style="margin-top:34pt">合約約定與簽署</div><div class="mu" style="margin-top:4pt">${SH?'婚宴貴賓接送':BUS?'遊覽車':'禮車'}預約單暨合約書</div>
   <div class="sec" style="margin-top:26pt"><i>05</i>注意事項</div>
-  <table class="cl">${(SH?shuttleCl():BUS?CLAUSES.map(busClause):CLAUSES).map((s,i)=>`<tr><td class="c2n" style="font-size:13pt;line-height:1.3">•</td><td>${E(s)}${i===5&&!SH?'<div class="c2sub">a. 付訂金當日起取消用車，則不退回</div><div class="c2sub">b. 因個人因素婚期延期用車時，訂金可保留，但不接受轉讓和改變用途</div>':''}</td></tr>`).join('')}</table>
+  <table class="cl">${(SH?shuttleCl():BUS?CLAUSES.filter(c=>!/鞭炮/.test(c)).map(busClause):CLAUSES).map((s,i)=>`<tr><td class="c2n" style="font-size:13pt;line-height:1.3">•</td><td>${E(s)}${i===5&&!SH?'<div class="c2sub">a. 付訂金當日起取消用車，則不退回</div><div class="c2sub">b. 因個人因素婚期延期用車時，訂金可保留，但不接受轉讓和改變用途</div>':''}</td></tr>`).join('')}</table>
   <table style="margin-top:150pt"><tr><td class="mu" style="width:272pt">禮車公司</td><td class="mu">租車人簽署</td></tr>
    <tr><td style="padding-top:8pt"><table style="width:auto"><tr><td class="sf gold" style="font-size:16pt;width:128pt;vertical-align:middle">好好禮車</td><td style="width:66pt"><div class="seal"><div><table><tr><td class="sf">禮</td><td class="sf">好</td></tr><tr><td class="sf">車</td><td class="sf">好</td></tr></table></div></div></td></tr></table></td>
    <td style="vertical-align:bottom"><div class="sgn" style="border-bottom:.5pt solid #DDD6CA;min-height:44pt"><!--SIGN--></div></td></tr></table>
