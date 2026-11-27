@@ -4187,7 +4187,8 @@ function DRV_AREA_(){return {'北部':['基隆','台北','新北','桃園','新�
 function upId(f){const u=String(f.up||'').trim();if(!u)return'';const m=S.models.find(z=>z.name===u||z.abbr===u);return m?m.id:''}
 function drvColorOk(d,c){const w=String(c||'').replace(/色/g,'').trim();if(!w)return true;const dc=String(d.color||'');return dc.includes(w)||dc.includes(w[0])}
 /* 禮車助手車卡狀態（後台 drivers 名單帶 wc）：綁定、保險是否在效期 */
-function wcTag(d){const w=d&&d.wc;if(!w)return'';if(!w.bound)return'未綁車卡';if(!w.ins)return'⚠️未傳保險';if(!w.exp)return'⚠️保險日期待確認';if(!w.expOk)return'⛔保險已過期 '+w.exp.replace(/-/g,'/');return'✅保險至 '+w.exp.replace(/-/g,'/')+(w.both?'':'（部分）')}
+function wcTag(d){const w=d&&d.wc;if(!w)return'';if(!w.bound)return'未綁車卡';if(w.na)return'⛔拒派 '+w.na;   /* 2026-11-27 Nicole：車卡勾沒有強制險／任意險 → 拒派 */
+if(!w.ins)return'⚠️未傳保險';if(!w.exp)return'⚠️保險日期待確認';if(!w.expOk)return'⛔保險已過期 '+w.exp.replace(/-/g,'/');return'✅保險至 '+w.exp.replace(/-/g,'/')+(w.both?'':'（部分）')}
 function drvOptions(f){const mode=($('drvMode')&&$('drvMode').value)||'mc';if(!DRV.length)return'<option value="">（載入司機名單中…）</option>';
   zodSync();const av=o.avoidZ||[];const ar=($('drvArea')&&$('drvArea').value)||'',arL=DRV_AREA_()[ar]||[];const fm=upId(f)||f.m,dq=nz($('drvQ')&&$('drvQ').value),dqd=dq.replace(/\D/g,'');let L=dq?DRV.filter(d=>nz(d.name).includes(dq)||nz(d.plate).includes(dq)||(dqd.length>=3&&String(d.phone||'').replace(/\D/g,'').includes(dqd))):DRV.filter(d=>(!ar||arL.some(n=>String(d.city||'').replace(/臺/g,'台').includes(n)))&&(mode==='all'||drvModelOk(d,fm)&&(mode==='m'||drvColorOk(d,f.color)))&&!(av.length&&av.includes(zodOf(d))));
   L=L.sort((a,b)=>(a.src==='司機總表'?0:1)-(b.src==='司機總表'?0:1)||a.name.localeCompare(b.name,'zh-Hant'));
